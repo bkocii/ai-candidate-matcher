@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-candidate-matcher"
+version = "0.1.0.dev0"
+description = "AI-assisted candidate rediscovery and shortlisting for recruiters."
+readme = "README.md"
+requires-python = ">=3.11,<3.15"
+dependencies = [
+    "Django==5.2.17",
+    "python-ai-toolkit[django]==1.0.0",
+    "python-dotenv==1.2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "pytest-django==4.13.0",
+    "ruff==0.16.2",
+]
+
+[tool.setuptools]
+packages = []
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py", "*_test.py"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
