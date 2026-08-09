@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 1 — Django foundation.
 
-Status: In progress. `FOUND-001` is complete.
+Status: In progress. `FOUND-001` and `FOUND-002` are complete.
 
 ## Decisions made
 
@@ -47,12 +47,23 @@ Status: In progress. `FOUND-001` is complete.
 - Verified the toolkit imports from `.venv` site-packages and no local `ai` package
   exists in the application repository.
 
+### `FOUND-002 — Accounts, organizations, memberships, and roles`
+
+- Added a custom `accounts.User` model before domain migrations are established.
+- Added `organizations.Organization` as the future data-isolation boundary.
+- Added unique user/organization memberships with active state and database-
+  constrained `admin` and `recruiter` roles.
+- Kept organization roles separate from Django staff and superuser privileges.
+- Registered users, organizations, and memberships in Django admin.
+- Added initial migrations and model tests for roles, inactive membership,
+  multi-organization membership, uniqueness, and invalid-role rejection.
+
 ## Verification
 
 Verified on 2026-08-09 with Python 3.12.13:
 
 - `python manage.py check`: passed.
-- `pytest`: 5 passed.
+- `pytest`: 13 passed.
 - `ruff check .`: passed.
 - `ruff format --check .`: passed.
 - Dependency compatibility check: passed for 29 installed packages.
@@ -60,9 +71,10 @@ Verified on 2026-08-09 with Python 3.12.13:
 
 ## Not implemented
 
-No domain applications, custom database models, recruiter UI, candidate data,
-matching workflow, or AI business service has been implemented yet.
+No client company model, organization-scoped authorization services, recruiter
+UI, candidate data, matching workflow, or AI business service has been
+implemented yet.
 
 ## Next task
 
-`FOUND-002 — Add accounts, organizations, memberships, and roles.`
+`FOUND-003 — Add optional client companies and organization-scoped permissions.`

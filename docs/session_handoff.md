@@ -16,13 +16,14 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 Sprint 0 is complete. Sprint 1 is in progress.
 
-`FOUND-001` is complete. The project now has a Django 5.2.17 LTS foundation,
-exact runtime and development dependencies, `uv.lock`, pytest-django and Ruff
-configuration, environment-based settings, and import-isolation tests.
+`FOUND-001` and `FOUND-002` are complete. The project now has a Django 5.2.17
+LTS foundation, a custom user model, organizations, memberships, constrained
+administrator/recruiter roles, initial migrations, dependency locking,
+pytest-django and Ruff configuration, and import-isolation tests.
 
 The next roadmap item is:
 
-`FOUND-002 — Add accounts, organizations, memberships, and roles.`
+`FOUND-003 — Add optional client companies and organization-scoped permissions.`
 
 ## Required instructions
 
@@ -37,12 +38,12 @@ The next roadmap item is:
 9. Record suspected toolkit improvements in `docs/toolkit_feedback.md`; treat them as unverified until reproduced.
 10. Keep recruitment decisions human-controlled and exclude protected characteristics from matching.
 
-## `FOUND-001` verification
+## Current verification
 
 Verified on 2026-08-09 with Python 3.12.13:
 
 - Django system check passed.
-- 5 pytest tests passed.
+- 13 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 29 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -50,5 +51,5 @@ Verified on 2026-08-09 with Python 3.12.13:
 
 ## Immediate next action
 
-Design the models, role policy, organization scope, and acceptance criteria for
-`FOUND-002`, then implement only that roadmap item.
+Design the optional client-company ownership model and organization-scoped query
+and authorization policy for `FOUND-003`, then implement only that roadmap item.

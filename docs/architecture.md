@@ -55,6 +55,21 @@ Application-level interfaces around Python AI Toolkit. No views or models call t
 
 AI usage events, operational events, privacy-relevant access, and failures without raw sensitive content.
 
+## Identity and organization policy
+
+- `accounts.User` is the swappable Django user model. It keeps Django's standard
+  username-based authentication during the foundation sprint.
+- `organizations.Organization` is the ownership and data-isolation boundary.
+- `accounts.OrganizationMembership` links a user to an organization as either an
+  `admin` or `recruiter` and can be deactivated without deleting its history.
+- An organization `admin` role does not grant Django `is_staff` or `is_superuser`
+  status. Django administration access is managed separately.
+- The schema allows a user to belong to more than one organization so isolation
+  can be tested and the model does not require a destructive redesign later.
+  The MVP deployment and user interface still operate for one organization.
+- Organization-aware query helpers and object authorization are introduced in
+  `FOUND-003`; views must not infer access from a role name alone.
+
 ## Core data model
 
 - `Organization`
@@ -117,4 +132,3 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 - Security tests for cross-organization access and private documents.
 - A separate opt-in smoke test may make a live low-cost API request.
 - An anonymized/synthetic benchmark set measures ranking stability and explanation quality.
-

@@ -17,7 +17,7 @@ Status: Complete.
 Status: In progress.
 
 - `FOUND-001` Bootstrap the Django repository, dependency management, settings, and test tooling. **Complete — 2026-08-09.**
-- `FOUND-002` Add accounts, organizations, memberships, and roles.
+- `FOUND-002` Add accounts, organizations, memberships, and roles. **Complete — 2026-08-09.**
 - `FOUND-003` Add optional client companies and organization-scoped permissions.
 - `FOUND-004` Establish base templates, navigation, and a minimal dashboard.
 - `FOUND-005` Add CI-quality commands and security-conscious environment configuration.
