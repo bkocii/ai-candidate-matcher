@@ -12,7 +12,7 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 and Sprint 1 are complete.
+Sprint 0 and Sprint 1 are complete. Sprint 2 is in progress.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -20,11 +20,13 @@ optional client companies, organization-scoped queryset and authorization
 helpers, login and POST-only logout, responsive base templates, organization
 selection, a minimal tenant-safe dashboard, strict environment parsing,
 production-safe settings validation, reproducible dependency locking, a shared
-local/CI quality command, and a four-version CI matrix. It uses the published
+local/CI quality command, and a four-version CI matrix. Organization-owned
+candidate, provenance/consent, and private document metadata models are also
+available through Django admin. It uses the published
 `python-ai-toolkit==1.0.0` distribution.
 
-The next approved task is `DATA-001 — Add candidate, source/consent metadata,
-and candidate-document models`.
+The next approved task is `DATA-002 — Add vacancy and versioned
+vacancy-requirements models`.
 
 ## Local setup
 
@@ -43,6 +45,20 @@ Add it to `.env` only when a later opt-in AI request is intentionally run:
 ```env
 OPENAI_API_KEY=
 ```
+
+## Local admin test
+
+Create a Django superuser and start the development server:
+
+```powershell
+uv run python manage.py createsuperuser
+uv run python manage.py runserver
+```
+
+Open `http://127.0.0.1:8000/admin/` to create organizations, memberships,
+candidates, source/consent records, and document metadata. A Django superuser
+does not bypass organization membership on the normal dashboard. To test `/`,
+create an active organization membership for that same user in Django admin.
 
 ## Production configuration
 

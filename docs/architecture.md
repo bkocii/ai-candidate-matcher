@@ -117,6 +117,28 @@ AI usage events, operational events, privacy-relevant access, and failures witho
 - `AIUsageEvent`
 - `AuditEvent`
 
+### Candidate intake records
+
+- `Candidate` belongs to exactly one organization and holds only the minimum
+  identity/contact fields needed before structured profile extraction.
+- Candidate lifecycle metadata distinguishes active, inactive, deletion-requested,
+  and deleted records. Deletion states require their relevant audit timestamp.
+- `CandidateSource` belongs to a candidate and records source type/name/reference,
+  obtained date, stated lawful basis, consent status, contact permission, notes,
+  retention date, and the user who recorded it. These fields document the
+  organization's assertion; they do not certify legal compliance.
+- `CandidateDocument` belongs to a candidate and records document type, original
+  filename, opaque storage key, content type, byte size, SHA-256 hash, retention
+  date, uploader, and deletion timestamp.
+- Candidate, source, and document querysets all require explicit organization
+  scoping or an active user/membership path. Related objects expose their owning
+  organization for the shared object-permission helpers.
+- Stored document paths retain only the extension from the supplied filename and
+  use an opaque UUID. No public media URL or delivery route exists.
+- File validation, extraction, and hardened upload handling remain in `DATA-004`
+  and `PROD-001`. Retention/deletion services must remove underlying stored bytes;
+  deleting a Django database row alone does not guarantee storage deletion.
+
 Structured AI outputs should be stored with a schema version and the relevant source/document version so assessments can be reproduced or invalidated when input changes.
 
 ## Matching pipeline

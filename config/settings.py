@@ -95,6 +95,7 @@ X_FRAME_OPTIONS = "DENY"
 
 INSTALLED_APPS = [
     "accounts",
+    "candidates",
     "organizations",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -183,6 +184,10 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Candidate documents are private application data. No URL route serves this
+# directory; controlled delivery is introduced in PROD-001.
+MEDIA_ROOT = BASE_DIR / "media"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

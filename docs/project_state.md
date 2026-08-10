@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 2 — Candidate and vacancy intake.
 
-Status: Ready to start. Sprint 1 is complete; no Sprint 2 task is implemented.
+Status: In progress. `DATA-001` is complete.
 
 ## Decisions made
 
@@ -99,22 +99,39 @@ Status: Ready to start. Sprint 1 is complete; no Sprint 2 task is implemented.
 - Added GitHub Actions CI on pull requests and `main` pushes for Python 3.11,
   3.12, 3.13, and 3.14 using locked dependencies and read-only repository access.
 
+### `DATA-001 — Candidate, source/consent, and document models`
+
+- Added organization-owned candidates with minimal identity/contact fields,
+  lifecycle state, retention date, deletion timestamps, creator, and audit times.
+- Added candidate-source records for provenance, lawful-basis assertion, consent
+  status, contact permission, notes, source reference, and retention metadata.
+- Added private candidate-document metadata with an opaque UUID storage path,
+  original filename, document/content type, size, SHA-256, retention/deletion
+  fields, and uploader attribution.
+- Added organization-aware querysets for candidates and candidate-related rows,
+  with active membership required for user-visible reads.
+- Registered all three models in Django admin and added schema constraints for
+  controlled lifecycle, source, consent, permission, and document-type values.
+- Kept upload validation, document text extraction, and storage-byte deletion out
+  of this task for their explicit later roadmap items.
+
 ## Verification
 
 Verified on 2026-08-10 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 51 passed.
+- `pytest`: 66 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 29 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
 ## Not implemented
 
-No recruiter UI, candidate data, vacancy data, matching workflow, outreach
-workflow, or AI business service has been implemented yet.
+No recruiter-facing candidate intake UI, vacancy data, matching workflow,
+outreach workflow, or AI business service has been implemented yet. Candidate
+records can currently be inspected through Django admin by a Django staff user.
 
 ## Next task
 
-`DATA-001 — Add candidate, source/consent metadata, and candidate-document models.`
+`DATA-002 — Add vacancy and versioned vacancy-requirements models.`

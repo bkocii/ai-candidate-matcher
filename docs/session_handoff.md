@@ -16,7 +16,7 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 Sprint 0 and Sprint 1 are complete.
 
-`FOUND-001` through `FOUND-005` are complete. The project now has a Django
+`FOUND-001` through `FOUND-005` and `DATA-001` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
 constrained administrator/recruiter roles, optional organization-owned client
 companies, organization-scoped queryset and authorization helpers, login and
@@ -24,11 +24,15 @@ POST-only logout, responsive base templates, organization selection, and a
 minimal organization dashboard. It also has strict environment parsing,
 fail-closed production configuration, initial migrations, dependency locking,
 pytest-django and Ruff configuration, import-isolation tests, one local/CI
-quality command, and a Python 3.11–3.14 GitHub Actions matrix.
+quality command, and a Python 3.11–3.14 GitHub Actions matrix. It also has
+organization-owned candidate, source/consent, and private candidate-document
+models with tenant-scoped querysets, database constraints, retention/deletion
+metadata, and Django admin support. No recruiter-facing candidate intake UI or
+document extraction exists yet.
 
 The next roadmap item is:
 
-`DATA-001 — Add candidate, source/consent metadata, and candidate-document models.`
+`DATA-002 — Add vacancy and versioned vacancy-requirements models.`
 
 ## Required instructions
 
@@ -48,7 +52,7 @@ The next roadmap item is:
 Verified on 2026-08-10 with Python 3.12.13:
 
 - Django system check passed.
-- 51 pytest tests passed.
+- 66 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 29 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -58,6 +62,6 @@ Verified on 2026-08-10 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `DATA-001`: candidate, source/consent metadata, and
-candidate-document models, preserving organization isolation and deferring file
-extraction and upload hardening to their explicit roadmap items.
+Implement only `DATA-002`: vacancy and versioned vacancy-requirements models,
+preserving organization isolation and keeping AI extraction and recruiter-facing
+requirements editing in their explicit later roadmap items.
