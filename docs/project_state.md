@@ -12,9 +12,9 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 ## Current milestone
 
-Sprint 2 — Candidate and vacancy intake.
+Sprint 3 — Deterministic search and shortlist.
 
-Status: Complete. `DATA-001` through `DATA-005` are complete.
+Status: In progress. `MATCH-001` is complete; `MATCH-002` is next.
 
 ## Decisions made
 
@@ -199,21 +199,46 @@ Status: Complete. `DATA-001` through `DATA-005` are complete.
   document metadata, stored CV bytes, and extracted text while retaining only a
   minimal organization-owned deletion tombstone.
 
+### `MATCH-001 — Normalized skills and explicit hard-constraint rules`
+
+- Added an organization-owned skill vocabulary with conservative Unicode,
+  whitespace, and case normalization. Meaningful punctuation is preserved, so
+  identifiers such as `C`, `C#`, and `C++` remain distinct.
+- Added normalized requirement-skill links that retain must-have/nice-to-have
+  importance, recruiter source wording, and ordering for each requirements
+  version. Confirmation materializes the links, and a data migration backfills
+  existing versions without rewriting their original JSON fields.
+- Added candidate skill assertions with source wording, optional years of
+  experience, inspectable evidence, and an optional source-document reference.
+- Added typed hard-constraint rules for required skill, minimum experience,
+  location, work mode, language, education, certification, and employment type.
+- Constrained every rule to its valid operator and payload shape. Missing
+  candidate facts always remain `unknown / keep for recruiter review`; they
+  cannot be configured as an automatic failure.
+- Kept protected and sensitive characteristics outside the rule-type vocabulary.
+  Existing free-text hard-constraint notes are not silently interpreted as
+  executable rules.
+- Made confirmed requirement skill links and hard-constraint rules immutable.
+  Correction drafts copy both normalized skills and typed rules into a new
+  numbered version.
+- Added organization-scoped querysets, service-layer authorization, Django admin
+  support, database constraints, and candidate-deletion cleanup for skill evidence.
+
 ## Verification
 
 Verified on 2026-08-10 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 162 passed.
+- `pytest`: 188 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
 ## Not implemented
 
-No matching workflow, outreach workflow, or AI business service has been
-implemented yet. Candidate records can be manually created, imported, and given
+No candidate filtering, shortlist, outreach workflow, or AI business service has
+been implemented yet. Candidate records can be manually created, imported, and given
 validated PDF/DOCX CVs through the organization workspace. Recruiters can create
 vacancies, manually structure and confirm their requirements, and preserve
 corrections as immutable numbered history. Scanned-image CVs are not supported,
@@ -222,8 +247,9 @@ can manage vacancy status through the normal organization workspace after a
 requirements version is confirmed. Recruiters can also delete vacancies and
 candidates through explicit confirmation pages; scheduled retention enforcement,
 administrative deletion reports, and comprehensive audit views remain in
-`PROD-002`.
+`PROD-002`. Normalized skill and typed constraint definitions now exist, but they
+are not evaluated until `MATCH-002`.
 
 ## Next task
 
-`MATCH-001 — Define normalized skills and explicit hard-constraint rules.`
+`MATCH-002 — Implement inspectable deterministic candidate filtering.`

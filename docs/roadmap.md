@@ -38,7 +38,7 @@ Sprint acceptance: a recruiter can import an anonymized candidate set and create
 
 ## Sprint 3 — Deterministic search and shortlist
 
-- `MATCH-001` Define normalized skills and explicit hard-constraint rules.
+- `MATCH-001` Define normalized skills and explicit hard-constraint rules. **Complete — 2026-08-10.**
 - `MATCH-002` Implement inspectable deterministic candidate filtering.
 - `MATCH-003` Implement relevance scoring and a bounded shortlist.
 - `MATCH-004` Add stale-result invalidation when candidate or vacancy data changes.

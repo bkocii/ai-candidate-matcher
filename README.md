@@ -12,7 +12,8 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0, Sprint 1, and Sprint 2 are complete. Sprint 3 is next.
+Sprint 0, Sprint 1, and Sprint 2 are complete. Sprint 3 is in progress;
+`MATCH-001` is complete.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -29,11 +30,16 @@ recruiter-confirmed requirements snapshots are available. Recruiters can create
 vacancies from pasted descriptions, select an optional client company, manually
 edit structured requirements, explicitly confirm them, and create immutable
 numbered correction versions. Confirmed vacancies can then be opened, paused,
-closed, and reopened through recruiter-facing lifecycle controls. It uses the published
+closed, and reopened through recruiter-facing lifecycle controls. The matching
+foundation now includes an organization-owned normalized skill vocabulary,
+candidate skill evidence, version-specific must-have/nice-to-have skill links,
+and typed hard-constraint rules. Unknown candidate facts are fixed as `keep for
+recruiter review`, and protected characteristics are not supported rule types.
+These definitions are not evaluated yet. The app uses the published
 `python-ai-toolkit==1.0.0` distribution.
 
-The next approved task is `MATCH-001 — Define normalized skills and explicit
-hard-constraint rules`.
+The next approved task is `MATCH-002 — Implement inspectable deterministic
+candidate filtering`.
 
 ## Local setup
 
@@ -91,6 +97,9 @@ hides the vacancy while retaining its immutable requirements history.
 
 For a complete browser walkthrough and safe synthetic CSV, PDF, DOCX, rejection,
 and vacancy fixtures, follow `docs/manual_testing_guide.md`.
+
+The normalized skill and hard-constraint records can currently be inspected in
+Django admin. Recruiter-facing evaluation results arrive in `MATCH-002`.
 
 ## Production configuration
 

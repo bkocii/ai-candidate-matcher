@@ -147,6 +147,9 @@ def update_requirements_draft(
     for field_name in REQUIREMENTS_COPY_FIELDS:
         setattr(requirements, field_name, values[field_name])
     requirements.save()
+    from matching.services import sync_requirement_skills
+
+    sync_requirement_skills(requirements=requirements, user=user)
     return requirements
 
 
@@ -191,6 +194,10 @@ def confirm_requirements_draft(
         raise ValidationError(
             "Add at least one structured requirement before confirming this version."
         )
+
+    from matching.services import sync_requirement_skills
+
+    sync_requirement_skills(requirements=requirements, user=user)
 
     requirements.status = VacancyRequirements.Status.CONFIRMED
     requirements.confirmed_by = user
@@ -241,4 +248,9 @@ def create_next_requirements_draft(
         created_by=user,
         **values,
     )
+    from matching.services import copy_hard_constraint_rules, sync_requirement_skills
+
+    sync_requirement_skills(requirements=draft, user=user)
+    if base is not None:
+        copy_hard_constraint_rules(source=base, target=draft, user=user)
     return draft, True

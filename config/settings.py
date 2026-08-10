@@ -96,6 +96,7 @@ X_FRAME_OPTIONS = "DENY"
 INSTALLED_APPS = [
     "accounts",
     "candidates",
+    "matching",
     "organizations",
     "vacancies",
     "django.contrib.admin",

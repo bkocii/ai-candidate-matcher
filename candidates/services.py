@@ -231,6 +231,9 @@ def delete_candidate(*, candidate: Candidate, user: User) -> Candidate:
 
     CandidateDocument.objects.filter(candidate=candidate).delete()
     CandidateSource.objects.filter(candidate=candidate).delete()
+    from matching.models import CandidateSkill
+
+    CandidateSkill.objects.filter(candidate=candidate).delete()
 
     deleted_at = timezone.now()
     candidate.full_name = f"Deleted candidate #{candidate.pk}"

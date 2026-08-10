@@ -14,7 +14,7 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0, Sprint 1, and Sprint 2 are complete.
+Sprint 0, Sprint 1, and Sprint 2 are complete. Sprint 3 is in progress.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -52,9 +52,18 @@ Candidate deletion purges contact/provenance/document content and stored CV byte
 leaving a minimal tombstone. Vacancy deletion hides and closes the record while
 preserving requirement history with deletion actor/timestamp metadata.
 
+`MATCH-001` is also complete. It adds organization-owned normalized skills,
+candidate skill evidence, versioned must-have/nice-to-have requirement links,
+and typed hard-constraint rules with validated operator/payload combinations.
+Unknown candidate facts are forced to remain eligible for recruiter review;
+protected characteristics are not rule types. Existing requirements are
+backfilled through a data migration, confirmed definitions are immutable, and
+correction drafts copy the normalized links and typed rules. Filtering and rule
+evaluation have not been implemented yet.
+
 The next roadmap item is:
 
-`MATCH-001 — Define normalized skills and explicit hard-constraint rules.`
+`MATCH-002 — Implement inspectable deterministic candidate filtering.`
 
 ## Required instructions
 
@@ -74,7 +83,7 @@ The next roadmap item is:
 Verified on 2026-08-10 with Python 3.12.13:
 
 - Django system check passed.
-- 162 pytest tests passed.
+- 188 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -84,5 +93,6 @@ Verified on 2026-08-10 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `MATCH-001`: define normalized skills and explicit hard-constraint
-rules, preserving the inspectable deterministic-before-AI architecture.
+Implement only `MATCH-002`: evaluate explicit hard constraints against
+organization-visible candidates with inspectable pass/fail/unknown results,
+preserving the deterministic-before-AI architecture.

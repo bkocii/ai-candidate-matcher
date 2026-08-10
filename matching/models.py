@@ -1,0 +1,582 @@
+import re
+import unicodedata
+from decimal import Decimal
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
+from django.db import models
+
+from candidates.models import Candidate, CandidateDocument
+from organizations.models import (
+    Organization,
+    OrganizationScopedQuerySet,
+)
+from vacancies.models import VacancyRequirements
+
+_WHITESPACE_RE = re.compile(r"\s+")
+
+
+def normalize_taxonomy_value(value: str) -> str:
+    """Return a conservative identity key without merging meaningful punctuation."""
+    if not isinstance(value, str):
+        raise ValidationError("Enter a text value.")
+    normalized = _WHITESPACE_RE.sub(
+        " ", unicodedata.normalize("NFKC", value).strip()
+    ).casefold()
+    if not normalized:
+        raise ValidationError("Enter a non-blank value.")
+    return normalized
+
+
+def _user_can_query_matching_data(user: object) -> bool:
+    return bool(
+        getattr(user, "is_authenticated", False) and getattr(user, "is_active", False)
+    )
+
+
+def _requirements_are_confirmed(requirements_id: int | None) -> bool:
+    if requirements_id is None:
+        return False
+    return VacancyRequirements.objects.filter(
+        pk=requirements_id,
+        status=VacancyRequirements.Status.CONFIRMED,
+    ).exists()
+
+
+class CandidateOwnedQuerySet(models.QuerySet):
+    def for_organization(self, organization: Organization):
+        return self.filter(candidate__organization=organization)
+
+    def visible_to(self, user: object):
+        if not _user_can_query_matching_data(user):
+            return self.none()
+        return self.filter(
+            candidate__organization__is_active=True,
+            candidate__organization__memberships__user=user,
+            candidate__organization__memberships__is_active=True,
+        ).distinct()
+
+
+class RequirementsOwnedQuerySet(models.QuerySet):
+    def for_organization(self, organization: Organization):
+        return self.filter(requirements__vacancy__organization=organization)
+
+    def visible_to(self, user: object):
+        if not _user_can_query_matching_data(user):
+            return self.none()
+        return self.filter(
+            requirements__vacancy__organization__is_active=True,
+            requirements__vacancy__organization__memberships__user=user,
+            requirements__vacancy__organization__memberships__is_active=True,
+        ).distinct()
+
+    def _reject_confirmed_mutation(self) -> None:
+        if self.filter(
+            requirements__status=VacancyRequirements.Status.CONFIRMED
+        ).exists():
+            raise ValidationError(
+                "Confirmed matching definitions are immutable; create a new version."
+            )
+
+    def update(self, **kwargs):
+        self._reject_confirmed_mutation()
+        return super().update(**kwargs)
+
+    def delete(self):
+        self._reject_confirmed_mutation()
+        return super().delete()
+
+
+class Skill(models.Model):
+    """An organization-owned canonical skill identity."""
+
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="skills",
+    )
+    name = models.CharField(max_length=120)
+    normalized_name = models.CharField(max_length=120, editable=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_skills",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = OrganizationScopedQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("name", "id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("organization", "normalized_name"),
+                name="unique_normalized_skill_per_organization",
+            )
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        normalized = normalize_taxonomy_value(self.name)
+        if len(normalized) > 120:
+            raise ValidationError({"name": "The normalized skill is too long."})
+        self.name = _WHITESPACE_RE.sub(
+            " ", unicodedata.normalize("NFKC", self.name).strip()
+        )
+        self.normalized_name = normalized
+
+    def save(self, *args, **kwargs) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class CandidateSkill(models.Model):
+    """A candidate skill assertion with recruiter-inspectable evidence."""
+
+    candidate = models.ForeignKey(
+        Candidate,
+        on_delete=models.CASCADE,
+        related_name="skill_records",
+    )
+    skill = models.ForeignKey(
+        Skill,
+        on_delete=models.PROTECT,
+        related_name="candidate_records",
+    )
+    source_label = models.CharField(max_length=120)
+    evidence = models.TextField(blank=True)
+    years_experience = models.DecimalField(
+        max_digits=4,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0"))],
+    )
+    source_document = models.ForeignKey(
+        CandidateDocument,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="skill_records",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_candidate_skills",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = CandidateOwnedQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("skill__name", "id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("candidate", "skill"),
+                name="unique_skill_per_candidate",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(years_experience__isnull=True)
+                    | models.Q(years_experience__gte=0)
+                ),
+                name="candidate_skill_years_is_nonnegative",
+            ),
+        ]
+
+    @property
+    def organization(self) -> Organization:
+        return self.candidate.organization
+
+    def clean(self) -> None:
+        super().clean()
+        self.source_label = _WHITESPACE_RE.sub(" ", self.source_label.strip())
+        if not self.source_label:
+            raise ValidationError({"source_label": "Enter the source skill wording."})
+        if (
+            self.candidate_id
+            and self.skill_id
+            and self.candidate.organization_id != self.skill.organization_id
+        ):
+            raise ValidationError(
+                {"skill": "The skill must belong to the candidate organization."}
+            )
+        if (
+            self.candidate_id
+            and self.source_document_id
+            and self.source_document.candidate_id != self.candidate_id
+        ):
+            raise ValidationError(
+                {"source_document": "The document must belong to this candidate."}
+            )
+        if self.candidate_id and self.candidate.status == Candidate.Status.DELETED:
+            raise ValidationError("Deleted candidates cannot receive skill records.")
+
+    def save(self, *args, **kwargs) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.candidate} — {self.skill}"
+
+
+class RequirementSkill(models.Model):
+    """A normalized skill linked to one immutable requirements snapshot."""
+
+    class Importance(models.TextChoices):
+        MUST_HAVE = "must_have", "Must have"
+        NICE_TO_HAVE = "nice_to_have", "Nice to have"
+
+    requirements = models.ForeignKey(
+        VacancyRequirements,
+        on_delete=models.CASCADE,
+        related_name="skill_records",
+    )
+    skill = models.ForeignKey(
+        Skill,
+        on_delete=models.PROTECT,
+        related_name="requirement_records",
+    )
+    importance = models.CharField(max_length=20, choices=Importance.choices)
+    source_label = models.CharField(max_length=120)
+    position = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = RequirementsOwnedQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("importance", "position", "id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("requirements", "skill"),
+                name="unique_skill_per_requirements_version",
+            ),
+            models.UniqueConstraint(
+                fields=("requirements", "importance", "position"),
+                name="unique_skill_position_per_requirement_group",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(importance__in=["must_have", "nice_to_have"]),
+                name="requirement_skill_has_valid_importance",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(position__gte=1),
+                name="requirement_skill_position_is_positive",
+            ),
+        ]
+
+    @property
+    def organization(self) -> Organization:
+        return self.requirements.organization
+
+    def clean(self) -> None:
+        super().clean()
+        self.source_label = _WHITESPACE_RE.sub(" ", self.source_label.strip())
+        if not self.source_label:
+            raise ValidationError({"source_label": "Enter the source skill wording."})
+        if (
+            self.requirements_id
+            and self.skill_id
+            and self.requirements.vacancy.organization_id != self.skill.organization_id
+        ):
+            raise ValidationError(
+                {"skill": "The skill must belong to the vacancy organization."}
+            )
+        if _requirements_are_confirmed(self.requirements_id):
+            raise ValidationError(
+                "Confirmed requirements skill links are immutable; "
+                "create a new version."
+            )
+
+    def save(self, *args, **kwargs) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if _requirements_are_confirmed(self.requirements_id):
+            raise ValidationError(
+                "Confirmed requirements skill links are immutable; "
+                "create a new version."
+            )
+        return super().delete(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.requirements} — {self.skill}"
+
+
+class HardConstraintRule(models.Model):
+    """A typed, recruiter-confirmed rule for later deterministic evaluation."""
+
+    class RuleType(models.TextChoices):
+        REQUIRED_SKILL = "required_skill", "Required skill"
+        MINIMUM_EXPERIENCE = "minimum_experience", "Minimum years of experience"
+        LOCATION = "location", "Location"
+        WORK_MODE = "work_mode", "Work mode"
+        LANGUAGE = "language", "Language"
+        EDUCATION = "education", "Education"
+        CERTIFICATION = "certification", "Certification"
+        EMPLOYMENT_TYPE = "employment_type", "Employment type"
+
+    class Operator(models.TextChoices):
+        HAS_SKILL = "has_skill", "Has skill"
+        AT_LEAST = "at_least", "At least"
+        EQUALS = "equals", "Equals"
+
+    class UnknownOutcome(models.TextChoices):
+        KEEP_FOR_REVIEW = "keep_for_review", "Keep for recruiter review"
+
+    requirements = models.ForeignKey(
+        VacancyRequirements,
+        on_delete=models.CASCADE,
+        related_name="hard_constraint_rules",
+    )
+    rule_type = models.CharField(max_length=30, choices=RuleType.choices)
+    operator = models.CharField(max_length=20, choices=Operator.choices)
+    source_text = models.TextField()
+    skill = models.ForeignKey(
+        Skill,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="hard_constraint_rules",
+    )
+    expected_value = models.CharField(max_length=200, blank=True)
+    normalized_expected_value = models.CharField(
+        max_length=200,
+        blank=True,
+        editable=False,
+    )
+    numeric_value = models.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0"))],
+    )
+    unknown_outcome = models.CharField(
+        max_length=30,
+        choices=UnknownOutcome.choices,
+        default=UnknownOutcome.KEEP_FOR_REVIEW,
+        editable=False,
+    )
+    position = models.PositiveIntegerField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_hard_constraint_rules",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = RequirementsOwnedQuerySet.as_manager()
+
+    TEXT_RULE_TYPES = (
+        RuleType.LOCATION,
+        RuleType.WORK_MODE,
+        RuleType.LANGUAGE,
+        RuleType.EDUCATION,
+        RuleType.CERTIFICATION,
+        RuleType.EMPLOYMENT_TYPE,
+    )
+
+    class Meta:
+        ordering = ("position", "id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("requirements", "position"),
+                name="unique_hard_constraint_position_per_version",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(position__gte=1),
+                name="hard_constraint_position_is_positive",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    rule_type__in=[
+                        "required_skill",
+                        "minimum_experience",
+                        "location",
+                        "work_mode",
+                        "language",
+                        "education",
+                        "certification",
+                        "employment_type",
+                    ]
+                ),
+                name="hard_constraint_has_valid_type",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(operator__in=["has_skill", "at_least", "equals"]),
+                name="hard_constraint_has_valid_operator",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(unknown_outcome="keep_for_review"),
+                name="hard_constraint_unknown_keeps_candidate",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        rule_type="required_skill",
+                        operator="has_skill",
+                        skill__isnull=False,
+                        expected_value="",
+                        normalized_expected_value="",
+                        numeric_value__isnull=True,
+                    )
+                    | models.Q(
+                        rule_type="minimum_experience",
+                        operator="at_least",
+                        skill__isnull=True,
+                        expected_value="",
+                        normalized_expected_value="",
+                        numeric_value__isnull=False,
+                    )
+                    | (
+                        models.Q(
+                            rule_type__in=[
+                                "location",
+                                "work_mode",
+                                "language",
+                                "education",
+                                "certification",
+                                "employment_type",
+                            ],
+                            operator="equals",
+                            skill__isnull=True,
+                            numeric_value__isnull=True,
+                        )
+                        & ~models.Q(expected_value="")
+                        & ~models.Q(normalized_expected_value="")
+                    )
+                ),
+                name="hard_constraint_payload_matches_type",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(numeric_value__isnull=True)
+                    | models.Q(numeric_value__gte=0)
+                ),
+                name="hard_constraint_numeric_is_nonnegative",
+            ),
+        ]
+
+    @property
+    def organization(self) -> Organization:
+        return self.requirements.organization
+
+    def clean(self) -> None:
+        super().clean()
+        self.source_text = self.source_text.strip()
+        if not self.source_text:
+            raise ValidationError(
+                {"source_text": "Record the explicit source wording."}
+            )
+        if _requirements_are_confirmed(self.requirements_id):
+            raise ValidationError(
+                "Confirmed hard-constraint rules are immutable; create a new version."
+            )
+        if (
+            self.requirements_id
+            and self.skill_id
+            and self.requirements.vacancy.organization_id != self.skill.organization_id
+        ):
+            raise ValidationError(
+                {"skill": "The skill must belong to the vacancy organization."}
+            )
+
+        if self.rule_type == self.RuleType.REQUIRED_SKILL:
+            if self.operator != self.Operator.HAS_SKILL or not self.skill_id:
+                raise ValidationError(
+                    "A required-skill rule must use the has-skill operator and a skill."
+                )
+            if self.expected_value or self.numeric_value is not None:
+                raise ValidationError("A required-skill rule accepts only a skill.")
+            self.normalized_expected_value = ""
+        elif self.rule_type == self.RuleType.MINIMUM_EXPERIENCE:
+            if self.operator != self.Operator.AT_LEAST or self.numeric_value is None:
+                raise ValidationError(
+                    "A minimum-experience rule must use at-least and a number."
+                )
+            if self.skill_id or self.expected_value:
+                raise ValidationError(
+                    "A minimum-experience rule accepts only a numeric value."
+                )
+            self.normalized_expected_value = ""
+        elif self.rule_type in self.TEXT_RULE_TYPES:
+            if self.operator != self.Operator.EQUALS or not self.expected_value.strip():
+                raise ValidationError(
+                    "This rule must use equals and a non-blank expected value."
+                )
+            if self.skill_id or self.numeric_value is not None:
+                raise ValidationError("This rule accepts only a text value.")
+            self.expected_value = _WHITESPACE_RE.sub(
+                " ", unicodedata.normalize("NFKC", self.expected_value).strip()
+            )
+            self.normalized_expected_value = normalize_taxonomy_value(
+                self.expected_value
+            )
+            if len(self.normalized_expected_value) > 200:
+                raise ValidationError(
+                    {"expected_value": "The normalized expected value is too long."}
+                )
+            if (
+                self.rule_type == self.RuleType.WORK_MODE
+                and self.normalized_expected_value
+                not in VacancyRequirements.WorkMode.values
+            ):
+                raise ValidationError(
+                    {"expected_value": "Select a supported work-mode value."}
+                )
+            if (
+                self.rule_type == self.RuleType.EMPLOYMENT_TYPE
+                and self.normalized_expected_value
+                not in VacancyRequirements.EmploymentType.values
+            ):
+                raise ValidationError(
+                    {"expected_value": "Select a supported employment-type value."}
+                )
+        else:
+            raise ValidationError({"rule_type": "Select a supported rule type."})
+
+        if self.unknown_outcome != self.UnknownOutcome.KEEP_FOR_REVIEW:
+            raise ValidationError(
+                {"unknown_outcome": "Unknown facts must stay eligible for review."}
+            )
+        if (
+            self.rule_type == self.RuleType.REQUIRED_SKILL
+            and self.requirements_id
+            and self.skill_id
+            and not RequirementSkill.objects.filter(
+                requirements_id=self.requirements_id,
+                skill_id=self.skill_id,
+                importance=RequirementSkill.Importance.MUST_HAVE,
+            ).exists()
+        ):
+            raise ValidationError(
+                {"skill": "A required-skill rule must reference a must-have skill."}
+            )
+
+    def save(self, *args, **kwargs) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if _requirements_are_confirmed(self.requirements_id):
+            raise ValidationError(
+                "Confirmed hard-constraint rules are immutable; create a new version."
+            )
+        return super().delete(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.requirements} — rule {self.position}"

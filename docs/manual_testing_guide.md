@@ -293,7 +293,58 @@ Expected result:
 - Django admin still contains the closed vacancy, its requirements history, and
   the deletion actor/timestamp.
 
-## 11. Test organization isolation
+## 11. Inspect normalized skills and typed hard constraints
+
+This milestone defines matching data but does not evaluate candidates yet. Use
+only synthetic evidence and Django admin for this model-level check.
+
+1. Create or open an unconfirmed vacancy requirements draft in the normal app.
+2. Enter `Python` and `Django` as must-have skills and `PostgreSQL` as a
+   nice-to-have skill, then select **Save draft**.
+3. Open Django admin and inspect **Matching → Requirement skills**.
+
+Expected result: the version has three ordered links. `Python` and `Django` are
+must-have; `PostgreSQL` is nice-to-have. **Matching → Skills** contains one
+organization-owned canonical record for each name. Changing case or surrounding
+spaces in the draft does not create another skill, while `C`, `C#`, and `C++`
+remain different skills.
+
+To record synthetic candidate evidence, open **Matching → Candidate skills** and
+add:
+
+- Candidate: a synthetic candidate in the same organization
+- Skill: the organization’s `Python` skill
+- Source label: `Python`
+- Evidence: `Built a synthetic Django API project.`
+- Years experience: `3.0`
+
+Cross-organization candidate, document, and skill combinations must be rejected.
+
+To inspect a typed rule while the requirements version is still a draft, open
+**Matching → Hard constraint rules** and add:
+
+- Requirements: the draft version above
+- Rule type: `Required skill`
+- Operator: `Has skill`
+- Source text: `Python is explicitly required.`
+- Skill: the same organization’s `Python` skill
+- Position: `1`
+- Expected value and numeric value: blank
+
+You may add a location rule at position `2` using rule type `Location`, operator
+`Equals`, source text `Candidate must be based in Prishtina`, and expected value
+`Prishtina`. The unknown outcome is read-only and remains **Keep for recruiter
+review**.
+
+Confirm the requirements in the normal app, then try to edit either normalized
+skill links or typed rules in admin. Expected result: confirmed definitions are
+immutable. Create a correction draft and inspect admin again; the normalized
+links and typed rules are copied to the new version instead of changing history.
+
+Free-text values previously entered in the vacancy’s **Hard constraints** box
+remain recruiter notes. They are not silently converted into executable rules.
+
+## 12. Test organization isolation
 
 In Django admin:
 
@@ -314,18 +365,20 @@ Expected result:
 - Django staff/superuser status alone still does not bypass the normal app's
   membership requirement.
 
-## 12. What is intentionally unavailable
+## 13. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
 - No AI extraction or AI matching request.
-- No deterministic shortlist yet.
+- No hard-constraint evaluation or deterministic shortlist yet.
+- No recruiter-facing typed-rule or candidate-skill editor yet; `MATCH-001`
+  exposes the data contract and Django admin inspection only.
 - No candidate-profile extraction from CV text yet.
 - No private CV download route.
 - No OCR for scanned PDFs.
 - No outreach workflow.
 
-## 13. Final acceptance checklist
+## 14. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -339,10 +392,13 @@ The current milestone is behaving correctly when all of these are true:
   documented lifecycle transitions.
 - Candidate deletion removes private candidate content and CV files; vacancy
   deletion hides the vacancy without destroying requirements history.
+- Requirement skills normalize case and spacing without merging meaningful
+  punctuation, and typed rules keep unknown candidate facts eligible for review.
+- Confirmed matching definitions cannot be edited; correction drafts copy them.
 - Cross-organization URLs do not disclose data.
 - No AI key or live AI request is required.
 
-## 14. Reset disposable local test data
+## 15. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

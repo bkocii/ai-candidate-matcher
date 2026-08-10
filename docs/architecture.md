@@ -203,8 +203,9 @@ AI usage events, operational events, privacy-relevant access, and failures witho
   and timestamp; a confirmed snapshot is immutable and corrections create a new
   version. The latest confirmed version is the vacancy's current requirements;
   a newer unconfirmed draft does not silently replace it.
-- Requirement list fields validate as lists of non-blank strings. Normalized
-  skill entities and executable hard-constraint rules remain owned by Sprint 3.
+- Requirement list fields validate as lists of non-blank strings. Their original
+  wording remains part of the immutable snapshot while matching-owned normalized
+  skill links and typed constraint rules provide deterministic identities.
 - Vacancy and requirement querysets provide explicit organization scoping and
   active-membership visibility. Requirement rows expose their vacancy's
   organization for the shared object-permission helpers.
@@ -237,6 +238,44 @@ AI usage events, operational events, privacy-relevant access, and failures witho
   application gateway in `AI-002`.
 
 Structured AI outputs should be stored with a schema version and the relevant source/document version so assessments can be reproduced or invalidated when input changes.
+
+### Deterministic matching definitions
+
+- `matching.Skill` is an organization-owned canonical identity. Its key uses
+  Unicode NFKC, collapsed whitespace, and case folding while preserving
+  punctuation. This removes formatting duplicates without claiming that
+  organization-specific synonyms such as `Postgres` and `PostgreSQL` are equal.
+- `RequirementSkill` links a skill to one vacancy-requirements version as either
+  must-have or nice-to-have, retaining the recruiter/source label and list order.
+  The same canonical skill cannot appear twice in one version; must-have wins if
+  duplicate raw values occur across both legacy list fields.
+- Saving through the recruiter requirements service synchronizes normalized
+  skill links. Confirmation rechecks them, and the initial matching migration
+  backfills existing versions without changing original recruiter input.
+- `CandidateSkill` records a candidate skill assertion with its source label,
+  optional years, evidence, and optional source document. Evidence remains
+  inspectable application data and is removed when the candidate is deleted.
+- `HardConstraintRule` belongs to exactly one requirements snapshot. Supported
+  types are required skill, minimum years of experience, location, work mode,
+  language, education, certification, and employment type. Each type has one
+  explicit operator and one validated payload shape; arbitrary free-text notes
+  are not silently promoted into executable rules.
+- A required-skill rule must reference a normalized must-have skill in the same
+  requirements version. Work-mode and employment-type rules use the existing
+  controlled vocabularies. Numeric thresholds cannot be negative.
+- Missing candidate information has one enforced result: keep the candidate for
+  recruiter review as unknown. No rule type represents a protected or sensitive
+  personal characteristic, and rules do not make hiring decisions.
+- All matching-definition querysets support explicit organization scoping and
+  active-membership visibility. Creation services repeat authorization checks,
+  and cross-organization candidate, document, skill, and requirement links fail
+  model validation.
+- Normalized links and typed rules are editable only while their requirements
+  version is a draft. They become immutable with confirmation and are copied,
+  rather than changed, when a recruiter creates a correction version.
+- `MATCH-001` defines the data contract only. Rule evaluation and inspectable
+  pass/fail/unknown results belong to `MATCH-002`; relevance scoring and shortlist
+  bounds belong to `MATCH-003`.
 
 ## Matching pipeline
 
