@@ -6,8 +6,10 @@ from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
+from candidates.documents import CandidateDocumentUploadError, upload_candidate_cv
 from candidates.forms import (
     CandidateCSVImportForm,
+    CandidateCVUploadForm,
     CandidateManualEntryForm,
     candidate_values_from_manual_form,
     source_values_from_import_form,
@@ -42,6 +44,66 @@ def candidate_list(request, organization_slug: str):
         request,
         "candidates/candidate_list.html",
         {"organization": organization, "page": page},
+    )
+
+
+@login_required
+def candidate_detail(request, organization_slug: str, candidate_id: int):
+    organization = _visible_organization(request, organization_slug)
+    candidate = get_object_or_404(
+        Candidate.objects.for_organization(organization),
+        pk=candidate_id,
+    )
+    documents = candidate.documents.filter(deleted_at__isnull=True)
+    return render(
+        request,
+        "candidates/candidate_detail.html",
+        {
+            "organization": organization,
+            "candidate": candidate,
+            "documents": documents,
+        },
+    )
+
+
+@login_required
+def candidate_cv_upload(request, organization_slug: str, candidate_id: int):
+    organization = _visible_organization(request, organization_slug)
+    candidate = get_object_or_404(
+        Candidate.objects.for_organization(organization),
+        pk=candidate_id,
+    )
+    form = CandidateCVUploadForm(request.POST or None, request.FILES or None)
+
+    if request.method == "POST" and form.is_valid():
+        try:
+            document = upload_candidate_cv(
+                candidate=candidate,
+                user=request.user,
+                uploaded_file=form.cleaned_data["cv_file"],
+                retention_until=form.cleaned_data["retention_until"],
+            )
+        except CandidateDocumentUploadError as error:
+            form.add_error("cv_file", error.public_message)
+        else:
+            messages.success(
+                request,
+                f"Uploaded and extracted {document.original_filename}.",
+            )
+            return redirect(
+                "candidates:candidate-detail",
+                organization_slug=organization.slug,
+                candidate_id=candidate.pk,
+            )
+
+    return render(
+        request,
+        "candidates/candidate_cv_upload.html",
+        {
+            "organization": organization,
+            "candidate": candidate,
+            "form": form,
+        },
     )
 
 

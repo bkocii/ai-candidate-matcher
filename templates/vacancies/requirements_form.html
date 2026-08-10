@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Requirements v{{ requirements.version }} | {{ vacancy.title }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">Editable requirements version {{ requirements.version }}</p>
+    <h1>{{ vacancy.title }}</h1>
+    <p class="lede">Translate the source description into explicit requirements. Enter list items one per line and leave unknown information blank or Unknown.</p>
+</section>
+
+<details class="source-panel">
+    <summary>View source vacancy description</summary>
+    <div class="source-description">{{ requirements.source_description|linebreaks }}</div>
+</details>
+
+<form class="form-panel requirements-form stacked-form" method="post">
+    {% csrf_token %}
+    {% include "vacancies/_form_fields.html" %}
+    <div class="button-row">
+        <button class="primary-button" type="submit">Save draft</button>
+        <a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Cancel</a>
+    </div>
+</form>
+{% endblock %}

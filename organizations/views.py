@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from accounts.models import OrganizationMembership
 from candidates.models import Candidate
 from organizations.models import ClientCompany, Organization
+from vacancies.models import Vacancy
 
 
 @login_required
@@ -46,6 +47,9 @@ def organization_dashboard(request, organization_slug: str):
     active_candidates = Candidate.objects.for_organization(organization).filter(
         status=Candidate.Status.ACTIVE
     )
+    open_vacancies = Vacancy.objects.for_organization(organization).filter(
+        status=Vacancy.Status.OPEN
+    )
 
     return render(
         request,
@@ -55,5 +59,6 @@ def organization_dashboard(request, organization_slug: str):
             "membership": membership,
             "active_client_count": active_clients.count(),
             "active_candidate_count": active_candidates.count(),
+            "open_vacancy_count": open_vacancies.count(),
         },
     )

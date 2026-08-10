@@ -24,6 +24,11 @@
         <span class="metric-detail">Agency clients in this organization</span>
     </article>
     <article class="metric-card">
+        <span class="metric-label">Open vacancies</span>
+        <strong class="metric-value">{{ open_vacancy_count }}</strong>
+        <a class="metric-link" href="{% url 'vacancies:vacancy-list' organization.slug %}">Open vacancy workspace</a>
+    </article>
+    <article class="metric-card">
         <span class="metric-label">Your role</span>
         <strong class="metric-value metric-value-text">{{ membership.get_role_display }}</strong>
         <span class="metric-detail">Organization-scoped access</span>
@@ -35,6 +40,6 @@
         <p class="eyebrow">Workspace status</p>
         <h2 id="workspace-title">Secure workspace</h2>
     </div>
-    <p>Manual candidate entry and validated CSV import are available. Vacancy intake will appear in the next data milestone.</p>
+    <p>Candidate intake, private CV extraction, and recruiter-confirmed vacancy requirements are available. Matching starts in the next sprint.</p>
 </section>
 {% endblock %}

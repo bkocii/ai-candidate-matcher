@@ -3,6 +3,27 @@ from django import forms
 from candidates.models import CandidateSource
 
 
+class CandidateCVUploadForm(forms.Form):
+    cv_file = forms.FileField(
+        label="CV file",
+        help_text="PDF or DOCX, up to 10 MB. Scanned-image PDFs are not supported.",
+        widget=forms.ClearableFileInput(
+            attrs={
+                "accept": (
+                    ".pdf,.docx,application/pdf,"
+                    "application/vnd.openxmlformats-officedocument."
+                    "wordprocessingml.document"
+                )
+            }
+        ),
+    )
+    retention_until = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text="Optional date for reviewing or removing this stored document.",
+    )
+
+
 class CandidateManualEntryForm(forms.Form):
     full_name = forms.CharField(max_length=200)
     email = forms.EmailField(required=False)

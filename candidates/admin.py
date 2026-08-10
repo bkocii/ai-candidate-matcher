@@ -70,4 +70,20 @@ class CandidateDocumentAdmin(admin.ModelAdmin):
     list_filter = ("document_type", "content_type")
     search_fields = ("original_filename", "candidate__full_name", "sha256")
     autocomplete_fields = ("candidate", "uploaded_by")
-    readonly_fields = ("storage_key", "created_at", "updated_at")
+    exclude = ("file",)
+    readonly_fields = (
+        "storage_key",
+        "content_type",
+        "size_bytes",
+        "sha256",
+        "extraction_status",
+        "extracted_text",
+        "extracted_at",
+        "extraction_error_code",
+        "created_at",
+        "updated_at",
+    )
+
+    def has_add_permission(self, request):
+        """Require the validated recruiter upload service for new documents."""
+        return False

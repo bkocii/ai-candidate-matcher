@@ -135,9 +135,22 @@ AI usage events, operational events, privacy-relevant access, and failures witho
   organization for the shared object-permission helpers.
 - Stored document paths retain only the extension from the supplied filename and
   use an opaque UUID. No public media URL or delivery route exists.
-- File validation, extraction, and hardened upload handling remain in `DATA-004`
-  and `PROD-001`. Retention/deletion services must remove underlying stored bytes;
-  deleting a Django database row alone does not guarantee storage deletion.
+- PDF and DOCX CV uploads are validated and synchronously extracted before their
+  metadata is committed. The service enforces a 10 MB file limit plus bounded
+  page, archive-entry, expanded-byte, compression-ratio, and extracted-text limits.
+- Successful extraction stores normalized content type, size, SHA-256, text,
+  status, timestamp, retention date, and uploader. Failed validation or extraction
+  stores neither a document row nor file bytes and returns a bounded public error.
+- SHA-256 duplicate checks are organization-local and advisory. The same bytes in
+  another organization neither disclose nor block that organization's upload;
+  concurrency hardening remains part of the production workflow.
+- Recruiter HTML shows safe document metadata only. It exposes neither storage
+  paths nor extracted CV text, and no application route serves document bytes.
+  Hardened private delivery remains in `PROD-001`.
+- Textless/scanned PDFs are rejected rather than silently stored as usable CV
+  text. OCR is a separately approved future capability.
+- Retention/deletion services must remove underlying stored bytes; deleting a
+  Django database row alone does not guarantee storage deletion.
 
 ### Candidate intake workflow
 
@@ -186,8 +199,22 @@ AI usage events, operational events, privacy-relevant access, and failures witho
 - Vacancy and requirement querysets provide explicit organization scoping and
   active-membership visibility. Requirement rows expose their vacancy's
   organization for the shared object-permission helpers.
-- Recruiter-facing vacancy creation and requirements editing remain in `DATA-005`;
-  AI-assisted extraction remains behind the application gateway in `AI-002`.
+- Recruiter-facing vacancy routes let active organization members list vacancies,
+  create a direct-employer or same-organization-client vacancy from pasted text,
+  and immediately review the first manual requirements draft. Authorization is
+  repeated at both view and service boundaries.
+- Requirements list fields use recruiter-friendly one-item-per-line inputs that
+  trim blanks and case-insensitive duplicates before persisting validated JSON
+  lists. Unknown values remain explicitly blank or `unknown` rather than inferred.
+- A recruiter can save a draft repeatedly and explicitly confirm it only after at
+  least one meaningful structured requirement is recorded. Confirmation is a
+  POST-only action that records the actor and timestamp.
+- Confirmed requirements remain immutable. A correction action copies the current
+  confirmed snapshot into the next numbered manual draft; if a draft already
+  exists, the app reopens it instead of silently creating parallel drafts.
+- The vacancy description and each requirement version's source-description
+  snapshot remain application input. AI-assisted extraction remains behind the
+  application gateway in `AI-002`.
 
 Structured AI outputs should be stored with a schema version and the relevant source/document version so assessments can be reproduced or invalidated when input changes.
 

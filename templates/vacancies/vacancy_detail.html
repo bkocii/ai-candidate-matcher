@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}{{ vacancy.title }} | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading" aria-labelledby="vacancy-title">
+    <div>
+        <p class="eyebrow">Vacancy</p>
+        <h1 id="vacancy-title">{{ vacancy.title }}</h1>
+        <p class="lede">{{ vacancy.client_company|default:"Direct employer" }} · {{ vacancy.get_status_display }}</p>
+    </div>
+    <div class="button-row">
+        <a class="secondary-button" href="{% url 'vacancies:vacancy-list' organization.slug %}">All vacancies</a>
+        {% if draft %}
+            <a class="primary-button button-link" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk draft.pk %}">Edit draft v{{ draft.version }}</a>
+        {% else %}
+            <form method="post" action="{% url 'vacancies:requirements-new-draft' organization.slug vacancy.pk %}">
+                {% csrf_token %}
+                <button class="primary-button" type="submit">Create correction draft</button>
+            </form>
+        {% endif %}
+    </div>
+</section>
+
+{% if draft %}
+<section class="review-callout" aria-labelledby="draft-title">
+    <div>
+        <p class="eyebrow">Recruiter review required</p>
+        <h2 id="draft-title">Requirements version {{ draft.version }} is still a draft</h2>
+        <p>Save any corrections first. Confirm only when the structured requirements accurately represent the role.</p>
+    </div>
+    <form method="post" action="{% url 'vacancies:requirements-confirm' organization.slug vacancy.pk draft.pk %}">
+        {% csrf_token %}
+        <button class="primary-button" type="submit">Confirm version {{ draft.version }}</button>
+    </form>
+</section>
+{% endif %}
+
+<section class="detail-grid" aria-label="Vacancy details">
+    <article class="detail-panel">
+        <p class="eyebrow">Original input</p>
+        <h2>Vacancy description</h2>
+        <div class="source-description">{{ vacancy.description|linebreaks }}</div>
+    </article>
+
+    <article class="detail-panel">
+        <p class="eyebrow">Matching input</p>
+        <h2>Current confirmed requirements</h2>
+        {% if current_requirements %}
+            <dl class="requirement-list">
+                <div><dt>Version</dt><dd>{{ current_requirements.version }}</dd></div>
+                <div><dt>Summary</dt><dd>{{ current_requirements.summary|default:"Not recorded" }}</dd></div>
+                <div><dt>Must-have skills</dt><dd>{{ current_requirements.must_have_skills|join:", "|default:"Not recorded" }}</dd></div>
+                <div><dt>Nice-to-have skills</dt><dd>{{ current_requirements.nice_to_have_skills|join:", "|default:"Not recorded" }}</dd></div>
+                <div><dt>Minimum experience</dt><dd>{% if current_requirements.minimum_years_experience is not None %}{{ current_requirements.minimum_years_experience }} years{% else %}Not recorded{% endif %}</dd></div>
+                <div><dt>Location / mode</dt><dd>{{ current_requirements.location_requirement|default:"Not recorded" }} · {{ current_requirements.get_work_mode_display }}</dd></div>
+                <div><dt>Languages</dt><dd>{{ current_requirements.language_requirements|join:", "|default:"Not recorded" }}</dd></div>
+                <div><dt>Education</dt><dd>{{ current_requirements.education_requirements|join:", "|default:"Not recorded" }}</dd></div>
+                <div><dt>Certifications</dt><dd>{{ current_requirements.certification_requirements|join:", "|default:"Not recorded" }}</dd></div>
+                <div><dt>Employment type</dt><dd>{{ current_requirements.get_employment_type_display }}</dd></div>
+                <div><dt>Hard constraints</dt><dd>{{ current_requirements.hard_constraints|join:", "|default:"Not recorded" }}</dd></div>
+                <div><dt>Ambiguities</dt><dd>{{ current_requirements.ambiguities|join:", "|default:"None recorded" }}</dd></div>
+            </dl>
+        {% else %}
+            <p class="section-note">No version is confirmed yet. Draft requirements do not become matching input until a recruiter confirms them.</p>
+        {% endif %}
+    </article>
+</section>
+
+<section class="version-history" aria-labelledby="history-title">
+    <h2 id="history-title">Requirements history</h2>
+    <p class="section-note">Confirmed versions are immutable. Corrections create a new numbered draft.</p>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Version</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Method</th>
+                    <th scope="col">Created by</th>
+                    <th scope="col">Confirmed by</th>
+                    <th scope="col">Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for version in versions %}
+                    <tr>
+                        <th scope="row">v{{ version.version }}</th>
+                        <td><span class="status-pill requirements-{{ version.status }}">{{ version.get_status_display }}</span></td>
+                        <td>{{ version.get_creation_method_display }}</td>
+                        <td>{{ version.created_by|default:"Unknown" }}</td>
+                        <td>{{ version.confirmed_by|default:"—" }}</td>
+                        <td>{{ version.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -30,7 +30,9 @@
             <tbody>
                 {% for candidate in page.object_list %}
                     <tr>
-                        <th scope="row">{{ candidate.full_name }}</th>
+                        <th scope="row">
+                            <a href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">{{ candidate.full_name }}</a>
+                        </th>
                         <td>{{ candidate.email|default:"—" }}</td>
                         <td>{{ candidate.phone|default:"—" }}</td>
                         <td>{{ candidate.location|default:"—" }}</td>

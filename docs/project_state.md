@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 2 — Candidate and vacancy intake.
 
-Status: In progress. `DATA-001` through `DATA-003` are complete.
+Status: Complete. `DATA-001` through `DATA-005` are complete.
 
 ## Decisions made
 
@@ -150,24 +150,69 @@ Status: In progress. `DATA-001` through `DATA-003` are complete.
 - Repeated membership authorization at both view and intake-service boundaries,
   and added candidate navigation plus an active-candidate dashboard count.
 
+### `DATA-004 — Private CV upload and safe text extraction`
+
+- Added organization-scoped candidate detail and CV upload screens for existing
+  candidates, with authorization repeated at the view and document-service layers.
+- Accepted only PDF and DOCX CV files up to 10 MB after filename, extension,
+  declared content type, and binary/package signature validation.
+- Added bounded PDF parsing with encrypted-file, page-count, extracted-text, and
+  textless/scanned-document rejection.
+- Added bounded DOCX parsing with package structure, entry count, individual and
+  total expanded size, compression ratio, internal path, encryption, corruption,
+  and macro-content checks before text extraction.
+- Stored successful documents under opaque private paths with normalized content
+  type, byte size, SHA-256, extracted text, extraction status/timestamp, retention
+  date, and uploader attribution.
+- Added organization-local duplicate-document reporting through SHA-256 without
+  revealing or blocking identical files belonging to another organization.
+- Kept stored bytes and extracted CV text out of recruiter-facing HTML and added
+  no file-delivery route; hardened private delivery remains owned by `PROD-001`.
+- Added `pypdf==6.1.1` and `python-docx==1.2.0` as application dependencies. The
+  toolkit loader hypothesis was evaluated as app-owned rather than a toolkit gap.
+
+### `DATA-005 — Vacancy-description entry and recruiter-editable requirements`
+
+- Added organization-scoped vacancy list, creation, detail, requirements-edit,
+  confirmation, and correction-version routes.
+- Added direct-employer vacancy entry and optional selection from active client
+  companies belonging to the current organization.
+- Created a first manual requirements draft atomically with every pasted vacancy
+  description and redirected the recruiter directly into review.
+- Added recruiter-friendly one-item-per-line fields for skills, languages,
+  education, certifications, hard constraints, and ambiguities, with whitespace
+  and case-insensitive duplicate normalization.
+- Repeated organization membership checks at service boundaries for vacancy
+  creation, requirements editing, confirmation, and correction-version creation.
+- Made confirmation POST-only, required meaningful structured content, and
+  recorded the confirming recruiter and timestamp.
+- Preserved immutable confirmed history by copying the current confirmed snapshot
+  into the next numbered draft rather than editing it in place.
+- Added vacancy navigation, dashboard open-vacancy counts, synthetic manual test
+  fixtures, and a detailed end-to-end testing guide.
+
 ## Verification
 
 Verified on 2026-08-10 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 106 passed.
+- `pytest`: 150 passed.
 - Ruff lint and formatting: passed.
-- Dependency compatibility check: passed for 29 installed packages.
+- Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
 ## Not implemented
 
-No recruiter-facing document upload, vacancy intake UI, matching workflow,
-outreach workflow, or AI business service has been implemented yet. Candidate
-records can be manually created or imported through the organization workspace;
-vacancy records remain Django-admin only.
+No matching workflow, outreach workflow, or AI business service has been
+implemented yet. Candidate records can be manually created, imported, and given
+validated PDF/DOCX CVs through the organization workspace. Recruiters can create
+vacancies, manually structure and confirm their requirements, and preserve
+corrections as immutable numbered history. Scanned-image CVs are not supported,
+and stored document bytes have no delivery route before `PROD-001`. Vacancy
+lifecycle changes remain available through Django admin until a later workflow
+requires a recruiter-facing control.
 
 ## Next task
 
-`DATA-004 — Add private CV upload and safe PDF/DOCX text extraction.`
+`MATCH-001 — Define normalized skills and explicit hard-constraint rules.`

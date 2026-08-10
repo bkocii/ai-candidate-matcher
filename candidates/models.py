@@ -255,6 +255,11 @@ class CandidateDocument(models.Model):
         PORTFOLIO = "portfolio", "Portfolio"
         OTHER = "other", "Other"
 
+    class ExtractionStatus(models.TextChoices):
+        PENDING = "pending", "Pending"
+        SUCCEEDED = "succeeded", "Succeeded"
+        FAILED = "failed", "Failed"
+
     candidate = models.ForeignKey(
         Candidate,
         on_delete=models.CASCADE,
@@ -280,6 +285,14 @@ class CandidateDocument(models.Model):
             )
         ],
     )
+    extraction_status = models.CharField(
+        max_length=20,
+        choices=ExtractionStatus.choices,
+        default=ExtractionStatus.PENDING,
+    )
+    extracted_text = models.TextField(blank=True)
+    extracted_at = models.DateTimeField(null=True, blank=True)
+    extraction_error_code = models.CharField(max_length=50, blank=True)
     retention_until = models.DateField(null=True, blank=True)
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -302,7 +315,49 @@ class CandidateDocument(models.Model):
                     document_type__in=["cv", "cover_letter", "portfolio", "other"]
                 ),
                 name="candidate_document_has_valid_type",
-            )
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    extraction_status__in=["pending", "succeeded", "failed"]
+                ),
+                name="candidate_document_has_valid_extraction_status",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    ~models.Q(extraction_status="succeeded")
+                    | (
+                        ~models.Q(extracted_text="")
+                        & models.Q(extracted_at__isnull=False)
+                        & models.Q(extraction_error_code="")
+                    )
+                ),
+                name="candidate_document_success_has_text",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    ~models.Q(extraction_status="failed")
+                    | (
+                        models.Q(extracted_text="")
+                        & models.Q(extracted_at__isnull=False)
+                        & ~models.Q(extraction_error_code="")
+                    )
+                ),
+                name="candidate_document_failure_has_code",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    ~models.Q(extraction_status="pending")
+                    | (
+                        models.Q(extracted_text="")
+                        & models.Q(extracted_at__isnull=True)
+                        & models.Q(extraction_error_code="")
+                    )
+                ),
+                name="candidate_document_pending_is_empty",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=("sha256",), name="candidate_doc_sha256_idx"),
         ]
 
     @property

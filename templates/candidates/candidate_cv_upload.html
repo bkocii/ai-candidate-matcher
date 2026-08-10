@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Upload CV | {{ candidate.full_name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">Private candidate document</p>
+    <h1>Upload CV</h1>
+    <p class="lede">Upload a PDF or DOCX CV for {{ candidate.full_name }}. The file is validated and its text is extracted before it is stored.</p>
+</section>
+
+<section class="import-guidance" aria-labelledby="upload-rules-title">
+    <h2 id="upload-rules-title">Upload rules</h2>
+    <p>Maximum 10 MB. Password-protected files, old DOC files, macro-enabled files, malformed packages, scanned-image PDFs, and documents that exceed safety limits are rejected.</p>
+</section>
+
+<form class="form-panel stacked-form" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% include "candidates/_form_fields.html" %}
+    <div class="button-row">
+        <button class="primary-button" type="submit">Upload and extract</button>
+        <a class="secondary-button" href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">Cancel</a>
+    </div>
+</form>
+{% endblock %}

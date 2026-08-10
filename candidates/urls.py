@@ -16,6 +16,17 @@ urlpatterns = [
         name="candidate-create",
     ),
     path(
+        "organizations/<slug:organization_slug>/candidates/<int:candidate_id>/",
+        views.candidate_detail,
+        name="candidate-detail",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/"
+        "<int:candidate_id>/documents/upload/",
+        views.candidate_cv_upload,
+        name="candidate-cv-upload",
+    ),
+    path(
         "organizations/<slug:organization_slug>/candidates/import/",
         views.candidate_import,
         name="candidate-import",

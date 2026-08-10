@@ -14,9 +14,9 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 and Sprint 1 are complete.
+Sprint 0, Sprint 1, and Sprint 2 are complete.
 
-`FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-003` are complete. The project now has a Django
+`FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
 constrained administrator/recruiter roles, optional organization-owned client
 companies, organization-scoped queryset and authorization helpers, login and
@@ -33,12 +33,19 @@ source/schema provenance, structured requirement fields, confirmation metadata,
 and immutable confirmed history. Recruiters now have organization-scoped candidate
 lists, manual candidate/provenance entry, and validated CSV import with a template,
 per-row created/duplicate/invalid reporting, and tenant-local stable-identity
-checks. No document upload/extraction, recruiter-facing vacancy intake, or AI
-extraction exists yet.
+checks. Recruiters can also upload PDF/DOCX CVs through a tenant-safe service that
+validates content, applies bounded parsing and archive limits, extracts text,
+stores private opaque-path files and hashes, and shows no raw text or storage path
+in recruiter HTML. Recruiters can now list and create vacancies from pasted
+descriptions, choose an optional organization-owned client, edit normalized
+structured requirements, confirm meaningful versions through POST-only human
+review, and create numbered correction drafts without changing confirmed
+history. A detailed manual test guide and validated synthetic CSV/PDF/DOCX/job
+fixtures are included. No AI extraction or matching workflow exists yet.
 
 The next roadmap item is:
 
-`DATA-004 — Add private CV upload and safe PDF/DOCX text extraction.`
+`MATCH-001 — Define normalized skills and explicit hard-constraint rules.`
 
 ## Required instructions
 
@@ -58,9 +65,9 @@ The next roadmap item is:
 Verified on 2026-08-10 with Python 3.12.13:
 
 - Django system check passed.
-- 106 pytest tests passed.
+- 150 pytest tests passed.
 - Ruff lint and format checks passed.
-- All 29 installed packages passed dependency compatibility checks.
+- All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
 - The application repository contains no local `ai` toolkit source package.
 - The normal and warning-strict production Django checks passed.
@@ -68,6 +75,5 @@ Verified on 2026-08-10 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `DATA-004`: private CV upload plus safe PDF/DOCX validation and
-text extraction, preserving organization isolation and keeping hardened file
-delivery and production upload controls in their later roadmap tasks.
+Implement only `MATCH-001`: define normalized skills and explicit hard-constraint
+rules, preserving the inspectable deterministic-before-AI architecture.
