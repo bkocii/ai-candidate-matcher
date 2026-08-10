@@ -26,11 +26,18 @@ class VacancyAdmin(admin.ModelAdmin):
         "organization",
         "client_company",
         "status",
+        "deleted_at",
         "created_at",
     )
-    list_filter = ("status", "organization")
+    list_filter = ("status", "deleted_at", "organization")
     search_fields = ("title", "description", "client_company__name")
-    autocomplete_fields = ("organization", "client_company", "created_by")
+    autocomplete_fields = (
+        "organization",
+        "client_company",
+        "created_by",
+        "deleted_by",
+    )
+    readonly_fields = ("deleted_at", "deleted_by", "created_at", "updated_at")
     inlines = (VacancyRequirementsInline,)
 
 

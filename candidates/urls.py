@@ -21,6 +21,11 @@ urlpatterns = [
         name="candidate-detail",
     ),
     path(
+        "organizations/<slug:organization_slug>/candidates/<int:candidate_id>/delete/",
+        views.candidate_delete,
+        name="candidate-delete",
+    ),
+    path(
         "organizations/<slug:organization_slug>/candidates/"
         "<int:candidate_id>/documents/upload/",
         views.candidate_cv_upload,

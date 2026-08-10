@@ -30,7 +30,7 @@ Sprint acceptance: two organizations in tests cannot access each other's objects
 - `DATA-002` Add vacancy and versioned vacancy-requirements models. **Complete — 2026-08-10.**
 - `DATA-003` Add manual candidate entry and CSV import with validation and duplicate reporting. **Complete — 2026-08-10.**
 - `DATA-004` Add private CV upload and safe PDF/DOCX text extraction. **Complete — 2026-08-10.**
-- `DATA-005` Add vacancy-description entry and recruiter-editable requirements. **Complete — 2026-08-10; corrective workflow pass complete.**
+- `DATA-005` Add vacancy-description entry and recruiter-editable requirements. **Complete — 2026-08-10; corrective workflow and deletion passes complete.**
 
 Status: Complete.
 

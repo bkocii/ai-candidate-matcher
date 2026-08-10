@@ -84,7 +84,10 @@ editable requirements version 1. Recruiters enter list values one per line, save
 the draft, and explicitly confirm it. Confirmed versions are read-only; **Create
 correction draft** copies the current snapshot into the next numbered version.
 After confirmation, use the vacancy detail page to open, pause, close, or reopen
-the vacancy through the available validated lifecycle transitions.
+the vacancy through the available validated lifecycle transitions. Candidate and
+vacancy detail pages also provide confirmation-based deletion. Candidate deletion
+purges current private candidate content and stored CV files; vacancy deletion
+hides the vacancy while retaining its immutable requirements history.
 
 For a complete browser walkthrough and safe synthetic CSV, PDF, DOCX, rejection,
 and vacancy fixtures, follow `docs/manual_testing_guide.md`.

@@ -18,9 +18,11 @@ from candidates.forms import (
 from candidates.models import Candidate
 from candidates.services import (
     CSV_HEADERS,
+    CandidateDeletionError,
     CandidateDuplicateFinder,
     CandidateImportFileError,
     create_candidate_with_source,
+    delete_candidate,
     import_candidate_csv,
 )
 from organizations.models import Organization
@@ -36,8 +38,10 @@ def _visible_organization(request, organization_slug: str) -> Organization:
 @login_required
 def candidate_list(request, organization_slug: str):
     organization = _visible_organization(request, organization_slug)
-    candidates = Candidate.objects.for_organization(organization).order_by(
-        "full_name", "id"
+    candidates = (
+        Candidate.objects.for_organization(organization)
+        .not_deleted()
+        .order_by("full_name", "id")
     )
     page = Paginator(candidates, 25).get_page(request.GET.get("page"))
     return render(
@@ -51,7 +55,7 @@ def candidate_list(request, organization_slug: str):
 def candidate_detail(request, organization_slug: str, candidate_id: int):
     organization = _visible_organization(request, organization_slug)
     candidate = get_object_or_404(
-        Candidate.objects.for_organization(organization),
+        Candidate.objects.for_organization(organization).not_deleted(),
         pk=candidate_id,
     )
     documents = candidate.documents.filter(deleted_at__isnull=True)
@@ -70,7 +74,7 @@ def candidate_detail(request, organization_slug: str, candidate_id: int):
 def candidate_cv_upload(request, organization_slug: str, candidate_id: int):
     organization = _visible_organization(request, organization_slug)
     candidate = get_object_or_404(
-        Candidate.objects.for_organization(organization),
+        Candidate.objects.for_organization(organization).not_deleted(),
         pk=candidate_id,
     )
     form = CandidateCVUploadForm(request.POST or None, request.FILES or None)
@@ -144,6 +148,33 @@ def candidate_create(request, organization_slug: str):
         request,
         "candidates/candidate_form.html",
         {"organization": organization, "form": form},
+    )
+
+
+@login_required
+def candidate_delete(request, organization_slug: str, candidate_id: int):
+    organization = _visible_organization(request, organization_slug)
+    candidate = get_object_or_404(
+        Candidate.objects.for_organization(organization).not_deleted(),
+        pk=candidate_id,
+    )
+    if request.method == "POST":
+        candidate_name = candidate.full_name
+        try:
+            delete_candidate(candidate=candidate, user=request.user)
+        except CandidateDeletionError as error:
+            messages.error(request, str(error))
+        else:
+            messages.success(request, f'Deleted candidate "{candidate_name}".')
+            return redirect(
+                "candidates:candidate-list",
+                organization_slug=organization.slug,
+            )
+
+    return render(
+        request,
+        "candidates/candidate_confirm_delete.html",
+        {"organization": organization, "candidate": candidate},
     )
 
 

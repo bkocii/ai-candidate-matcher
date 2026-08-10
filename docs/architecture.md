@@ -151,6 +151,12 @@ AI usage events, operational events, privacy-relevant access, and failures witho
   text. OCR is a separately approved future capability.
 - Retention/deletion services must remove underlying stored bytes; deleting a
   Django database row alone does not guarantee storage deletion.
+- Recruiter-confirmed candidate deletion removes candidate contact fields,
+  provenance rows, document database rows, stored document bytes, and extracted
+  text. It retains only the candidate primary key, organization ownership,
+  creator attribution, a non-identifying placeholder name, and deletion
+  timestamps as a minimal tombstone. Deleted candidates are excluded from
+  recruiter lists, detail routes, and uploads.
 
 ### Candidate intake workflow
 
@@ -220,6 +226,12 @@ AI usage events, operational events, privacy-relevant access, and failures witho
   or closed, and closed to open. Opening always requires a confirmed requirements
   version. The service repeats tenant authorization, validates the transition,
   and serializes concurrent updates before changing the status.
+- Recruiters can delete a vacancy through a separate confirmation page. This is
+  a soft deletion: the vacancy is closed and excluded from recruiter lists and
+  normal object routes, while its description, immutable requirements history,
+  deletion actor, and deletion timestamp remain available for future match
+  integrity and administrative audit. Service calls reject later lifecycle or
+  requirements mutations on a deleted vacancy.
 - The vacancy description and each requirement version's source-description
   snapshot remain application input. AI-assisted extraction remains behind the
   application gateway in `AI-002`.

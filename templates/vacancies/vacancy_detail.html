@@ -19,6 +19,7 @@
                 <button class="primary-button" type="submit">Create correction draft</button>
             </form>
         {% endif %}
+        <a class="danger-button button-link" href="{% url 'vacancies:vacancy-delete' organization.slug vacancy.pk %}">Delete vacancy</a>
     </div>
 </section>
 

@@ -534,6 +534,29 @@ tbody tr:last-child td {
     background: var(--primary-dark);
 }
 
+.danger-button {
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--danger);
+    border-radius: 10px;
+    color: var(--danger);
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-weight: 750;
+    justify-content: center;
+    padding: 12px 18px;
+    text-decoration: none;
+}
+
+.danger-button:hover {
+    background: #fbeaea;
+}
+
+.danger-panel {
+    border-color: #efaaa4;
+}
+
 .form-error {
     margin: 24px 0 0;
     padding: 12px 14px;

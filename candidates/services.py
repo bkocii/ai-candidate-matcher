@@ -6,12 +6,16 @@ from typing import BinaryIO
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils import timezone
 
 from accounts.models import User
 from candidates.forms import CandidateCSVRowForm
-from candidates.models import Candidate, CandidateSource
+from candidates.models import Candidate, CandidateDocument, CandidateSource
 from organizations.models import Organization
-from organizations.permissions import require_organization_access
+from organizations.permissions import (
+    require_organization_access,
+    require_organization_object_access,
+)
 
 CSV_HEADERS = (
     "full_name",
@@ -28,6 +32,10 @@ DEFAULT_MAX_CSV_ROWS = 2_000
 
 class CandidateImportFileError(ValueError):
     """The CSV cannot be processed as an import file."""
+
+
+class CandidateDeletionError(RuntimeError):
+    """Private candidate content could not be safely removed."""
 
 
 @dataclass(frozen=True)
@@ -196,6 +204,56 @@ def create_candidate_with_source(
         source.full_clean()
         source.save()
 
+    return candidate
+
+
+@transaction.atomic
+def delete_candidate(*, candidate: Candidate, user: User) -> Candidate:
+    """Erase candidate content while retaining a minimal organization tombstone."""
+    require_organization_object_access(user, candidate)
+    candidate = Candidate.objects.select_for_update().get(pk=candidate.pk)
+    if candidate.status == Candidate.Status.DELETED:
+        raise ValidationError("This candidate has already been deleted.")
+
+    documents = list(
+        CandidateDocument.objects.select_for_update().filter(candidate=candidate)
+    )
+    try:
+        for document in documents:
+            stored_name = document.file.name
+            if stored_name:
+                document.file.storage.delete(stored_name)
+    except Exception as error:
+        raise CandidateDeletionError(
+            "The private documents could not be removed. "
+            "No candidate record was deleted."
+        ) from error
+
+    CandidateDocument.objects.filter(candidate=candidate).delete()
+    CandidateSource.objects.filter(candidate=candidate).delete()
+
+    deleted_at = timezone.now()
+    candidate.full_name = f"Deleted candidate #{candidate.pk}"
+    candidate.email = ""
+    candidate.phone = ""
+    candidate.location = ""
+    candidate.status = Candidate.Status.DELETED
+    candidate.retention_until = None
+    candidate.deletion_requested_at = candidate.deletion_requested_at or deleted_at
+    candidate.deleted_at = deleted_at
+    candidate.save(
+        update_fields=(
+            "full_name",
+            "email",
+            "phone",
+            "location",
+            "status",
+            "retention_until",
+            "deletion_requested_at",
+            "deleted_at",
+            "updated_at",
+        )
+    )
     return candidate
 
 

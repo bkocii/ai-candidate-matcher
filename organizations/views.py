@@ -47,8 +47,10 @@ def organization_dashboard(request, organization_slug: str):
     active_candidates = Candidate.objects.for_organization(organization).filter(
         status=Candidate.Status.ACTIVE
     )
-    open_vacancies = Vacancy.objects.for_organization(organization).filter(
-        status=Vacancy.Status.OPEN
+    open_vacancies = (
+        Vacancy.objects.for_organization(organization)
+        .active()
+        .filter(status=Vacancy.Status.OPEN)
     )
 
     return render(

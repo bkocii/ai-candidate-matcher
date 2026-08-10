@@ -15,7 +15,9 @@ def _user_can_query_candidates(user: object) -> bool:
 
 
 class CandidateQuerySet(OrganizationScopedQuerySet):
-    pass
+    def not_deleted(self):
+        """Candidates still available in the ordinary recruiter workspace."""
+        return self.exclude(status=Candidate.Status.DELETED)
 
 
 class CandidateRelatedQuerySet(models.QuerySet):

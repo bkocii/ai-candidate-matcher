@@ -38,6 +38,8 @@ def available_vacancy_status_transitions(
     vacancy: Vacancy,
 ) -> tuple[tuple[str, str], ...]:
     """Return currently valid recruiter-facing status choices and labels."""
+    if vacancy.deleted_at is not None:
+        return ()
     statuses = VACANCY_STATUS_TRANSITIONS.get(vacancy.status, ())
     if Vacancy.Status.OPEN in statuses and vacancy.current_requirements is None:
         statuses = tuple(status for status in statuses if status != Vacancy.Status.OPEN)
@@ -85,6 +87,9 @@ def change_vacancy_status(
     require_organization_object_access(user, vacancy)
     vacancy = Vacancy.objects.select_for_update().get(pk=vacancy.pk)
 
+    if vacancy.deleted_at is not None:
+        raise ValidationError("This vacancy has been deleted from the workspace.")
+
     if new_status not in Vacancy.Status.values:
         raise ValidationError("Select a valid vacancy status.")
     if new_status == vacancy.status:
@@ -107,6 +112,21 @@ def change_vacancy_status(
 
 
 @transaction.atomic
+def delete_vacancy(*, vacancy: Vacancy, user: User) -> Vacancy:
+    """Soft-delete a vacancy while preserving its requirements history."""
+    require_organization_object_access(user, vacancy)
+    vacancy = Vacancy.objects.select_for_update().get(pk=vacancy.pk)
+    if vacancy.deleted_at is not None:
+        raise ValidationError("This vacancy has already been deleted.")
+
+    vacancy.deleted_at = timezone.now()
+    vacancy.deleted_by = user
+    vacancy.status = Vacancy.Status.CLOSED
+    vacancy.save(update_fields=("deleted_at", "deleted_by", "status", "updated_at"))
+    return vacancy
+
+
+@transaction.atomic
 def update_requirements_draft(
     *,
     requirements: VacancyRequirements,
@@ -117,6 +137,8 @@ def update_requirements_draft(
     requirements = VacancyRequirements.objects.select_for_update().get(
         pk=requirements.pk
     )
+    if requirements.vacancy.deleted_at is not None:
+        raise ValidationError("This vacancy has been deleted from the workspace.")
     if requirements.status != VacancyRequirements.Status.DRAFT:
         raise ValidationError(
             "Confirmed requirements cannot be edited; create a new version."
@@ -161,6 +183,8 @@ def confirm_requirements_draft(
     requirements = VacancyRequirements.objects.select_for_update().get(
         pk=requirements.pk
     )
+    if requirements.vacancy.deleted_at is not None:
+        raise ValidationError("This vacancy has been deleted from the workspace.")
     if requirements.status != VacancyRequirements.Status.DRAFT:
         raise ValidationError("This requirements version is already confirmed.")
     if not _has_meaningful_requirements(requirements):
@@ -184,6 +208,8 @@ def create_next_requirements_draft(
     """Return an existing draft or copy the current snapshot into a new draft."""
     require_organization_object_access(user, vacancy)
     vacancy = Vacancy.objects.select_for_update().get(pk=vacancy.pk)
+    if vacancy.deleted_at is not None:
+        raise ValidationError("This vacancy has been deleted from the workspace.")
     existing_draft = vacancy.requirement_versions.filter(
         status=VacancyRequirements.Status.DRAFT
     ).first()

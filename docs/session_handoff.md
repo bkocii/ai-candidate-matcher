@@ -47,6 +47,10 @@ A corrective `DATA-005` pass also makes completed CSV imports target the visible
 report section and adds recruiter-facing, POST-only vacancy lifecycle controls.
 Opening requires confirmed requirements; only draft-to-open, open-to-paused or
 closed, paused-to-open or closed, and closed-to-open transitions are accepted.
+The follow-up deletion pass adds confirmation pages for candidates and vacancies.
+Candidate deletion purges contact/provenance/document content and stored CV bytes,
+leaving a minimal tombstone. Vacancy deletion hides and closes the record while
+preserving requirement history with deletion actor/timestamp metadata.
 
 The next roadmap item is:
 
@@ -70,7 +74,7 @@ The next roadmap item is:
 Verified on 2026-08-10 with Python 3.12.13:
 
 - Django system check passed.
-- 156 pytest tests passed.
+- 162 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.

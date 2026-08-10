@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Delete {{ vacancy.title }} | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading" aria-labelledby="delete-vacancy-title">
+    <p class="eyebrow">Vacancy deletion</p>
+    <h1 id="delete-vacancy-title">Delete {{ vacancy.title }}?</h1>
+    <p class="lede">The vacancy will disappear from recruiter lists and cannot be reopened from the application.</p>
+</section>
+
+<section class="detail-panel danger-panel" aria-labelledby="vacancy-warning-title">
+    <h2 id="vacancy-warning-title">Requirement history will be preserved</h2>
+    <p>The database retains this vacancy and its immutable requirement versions for future matching and audit integrity. Django administrators can still inspect the deleted record.</p>
+    <div class="button-row">
+        <a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Cancel</a>
+        <form method="post">
+            {% csrf_token %}
+            <button class="danger-button" type="submit">Delete vacancy</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

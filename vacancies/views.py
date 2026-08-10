@@ -19,6 +19,7 @@ from vacancies.services import (
     confirm_requirements_draft,
     create_next_requirements_draft,
     create_vacancy_with_requirements,
+    delete_vacancy,
     update_requirements_draft,
 )
 
@@ -32,7 +33,7 @@ def _visible_organization(request, organization_slug: str) -> Organization:
 
 def _visible_vacancy(organization: Organization, vacancy_id: int) -> Vacancy:
     return get_object_or_404(
-        Vacancy.objects.for_organization(organization),
+        Vacancy.objects.for_organization(organization).active(),
         pk=vacancy_id,
     )
 
@@ -54,6 +55,7 @@ def vacancy_list(request, organization_slug: str):
     organization = _visible_organization(request, organization_slug)
     vacancies = (
         Vacancy.objects.for_organization(organization)
+        .active()
         .select_related("client_company")
         .order_by("-created_at", "id")
     )
@@ -139,6 +141,28 @@ def vacancy_status_change(request, organization_slug: str, vacancy_id: int):
         "vacancies:vacancy-detail",
         organization_slug=organization.slug,
         vacancy_id=vacancy.pk,
+    )
+
+
+@login_required
+def vacancy_delete(request, organization_slug: str, vacancy_id: int):
+    organization = _visible_organization(request, organization_slug)
+    vacancy = _visible_vacancy(organization, vacancy_id)
+    if request.method == "POST":
+        delete_vacancy(vacancy=vacancy, user=request.user)
+        messages.success(
+            request,
+            f'Deleted vacancy "{vacancy.title}" from the recruiter workspace.',
+        )
+        return redirect(
+            "vacancies:vacancy-list",
+            organization_slug=organization.slug,
+        )
+
+    return render(
+        request,
+        "vacancies/vacancy_confirm_delete.html",
+        {"organization": organization, "vacancy": vacancy},
     )
 
 

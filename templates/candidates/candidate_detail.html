@@ -15,6 +15,7 @@
     <div class="button-row">
         <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">All candidates</a>
         <a class="primary-button button-link" href="{% url 'candidates:candidate-cv-upload' organization.slug candidate.pk %}">Upload CV</a>
+        <a class="danger-button button-link" href="{% url 'candidates:candidate-delete' organization.slug candidate.pk %}">Delete candidate</a>
     </div>
 </section>
 

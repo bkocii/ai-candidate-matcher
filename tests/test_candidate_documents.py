@@ -18,7 +18,8 @@ from candidates.documents import (
     extract_cv_text,
     upload_candidate_cv,
 )
-from candidates.models import Candidate, CandidateDocument
+from candidates.models import Candidate, CandidateDocument, CandidateSource
+from candidates.services import delete_candidate
 from organizations.models import Organization
 
 pytestmark = pytest.mark.django_db
@@ -456,3 +457,109 @@ def test_django_admin_cannot_bypass_validated_document_creation(client) -> None:
     response = client.get(reverse("admin:candidates_candidatedocument_add"))
 
     assert response.status_code == 403
+
+
+def test_recruiter_permanently_deletes_candidate_content(
+    client, settings, tmp_path
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    user = User.objects.create_user(username="recruiter")
+    organization = Organization.objects.create(name="Northstar", slug="northstar")
+    add_member(user, organization)
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Arta Krasniqi",
+        email="arta@example.test",
+        phone="+383 44 111 222",
+        location="Prishtina",
+        created_by=user,
+    )
+    CandidateSource.objects.create(
+        candidate=candidate,
+        source_type=CandidateSource.SourceType.MANUAL_ENTRY,
+        source_name="Synthetic source",
+        source_reference="PRIVATE-REF",
+        permission_notes="Private candidate notes",
+        recorded_by=user,
+    )
+    document = upload_candidate_cv(
+        candidate=candidate,
+        user=user,
+        uploaded_file=pdf_upload(),
+    )
+    stored_name = document.file.name
+    storage = document.file.storage
+    client.force_login(user)
+    route = reverse(
+        "candidates:candidate-delete",
+        args=[organization.slug, candidate.pk],
+    )
+
+    confirmation = client.get(route)
+    response = client.post(route)
+
+    candidate.refresh_from_db()
+    assert confirmation.status_code == 200
+    assert "This cannot be undone" in confirmation.content.decode()
+    assert response.status_code == 302
+    assert candidate.status == Candidate.Status.DELETED
+    assert candidate.full_name == f"Deleted candidate #{candidate.pk}"
+    assert candidate.email == ""
+    assert candidate.phone == ""
+    assert candidate.location == ""
+    assert candidate.deletion_requested_at is not None
+    assert candidate.deleted_at is not None
+    assert not CandidateSource.objects.filter(candidate=candidate).exists()
+    assert not CandidateDocument.objects.filter(candidate=candidate).exists()
+    assert not storage.exists(stored_name)
+
+    listing = client.get(reverse("candidates:candidate-list", args=[organization.slug]))
+    detail = client.get(
+        reverse("candidates:candidate-detail", args=[organization.slug, candidate.pk])
+    )
+    assert list(listing.context["page"].object_list) == []
+    assert detail.status_code == 404
+    dashboard = client.get(
+        reverse("organizations:organization-dashboard", args=[organization.slug])
+    )
+    assert dashboard.context["active_candidate_count"] == 0
+
+
+def test_candidate_delete_service_repeats_permission_check() -> None:
+    owner = User.objects.create_user(username="owner")
+    outsider = User.objects.create_user(username="outsider")
+    organization = Organization.objects.create(name="Northstar", slug="northstar")
+    add_member(owner, organization)
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Protected Candidate",
+    )
+
+    with pytest.raises(PermissionDenied):
+        delete_candidate(candidate=candidate, user=outsider)
+
+    candidate.refresh_from_db()
+    assert candidate.status == Candidate.Status.ACTIVE
+
+
+def test_candidate_delete_route_hides_cross_organization_candidate(client) -> None:
+    user = User.objects.create_user(username="recruiter")
+    visible = Organization.objects.create(name="Visible", slug="visible")
+    hidden = Organization.objects.create(name="Hidden", slug="hidden")
+    add_member(user, visible)
+    candidate = Candidate.objects.create(
+        organization=hidden,
+        full_name="Hidden Candidate",
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse(
+            "candidates:candidate-delete",
+            args=[visible.slug, candidate.pk],
+        )
+    )
+
+    assert response.status_code == 404
+    candidate.refresh_from_db()
+    assert candidate.status == Candidate.Status.ACTIVE

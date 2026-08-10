@@ -193,6 +193,11 @@ Status: Complete. `DATA-001` through `DATA-005` are complete.
 - Corrected the completed intake workflow so successful CSV submissions bring
   the in-page report into view and recruiters can manage vacancy lifecycle through
   tenant-safe, POST-only, validated status transitions.
+- Added confirmation-based deletion controls. Vacancy deletion closes and hides
+  the vacancy while preserving its immutable requirements history and deletion
+  actor/timestamp. Candidate deletion removes contact data, provenance rows,
+  document metadata, stored CV bytes, and extracted text while retaining only a
+  minimal organization-owned deletion tombstone.
 
 ## Verification
 
@@ -200,7 +205,7 @@ Verified on 2026-08-10 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 156 passed.
+- `pytest`: 162 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
@@ -214,7 +219,10 @@ vacancies, manually structure and confirm their requirements, and preserve
 corrections as immutable numbered history. Scanned-image CVs are not supported,
 and stored document bytes have no delivery route before `PROD-001`. Recruiters
 can manage vacancy status through the normal organization workspace after a
-requirements version is confirmed.
+requirements version is confirmed. Recruiters can also delete vacancies and
+candidates through explicit confirmation pages; scheduled retention enforcement,
+administrative deletion reports, and comprehensive audit views remain in
+`PROD-002`.
 
 ## Next task
 

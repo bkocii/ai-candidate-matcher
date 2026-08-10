@@ -173,6 +173,22 @@ Now test rejection cases:
 Failed uploads must create neither a document database row nor stored file
 bytes. Use a retention date if you also want to verify that optional metadata.
 
+### Candidate deletion
+
+Create a disposable synthetic candidate, add a provenance record, and upload one
+of the synthetic CVs. Open the candidate and select **Delete candidate**.
+
+Expected result:
+
+- A separate confirmation page explains that deletion cannot be undone.
+- Cancel returns to the unchanged candidate.
+- Confirming deletion returns to the candidate list.
+- The candidate no longer appears and its former detail URL returns `404`.
+- Contact fields, provenance records, document rows, stored CV bytes, and
+  extracted text are removed.
+- Django admin retains only a non-identifying candidate tombstone and deletion
+  timestamps for minimal audit integrity.
+
 ## 7. Test vacancy creation and requirements version 1
 
 Open **Vacancies** and select **Add vacancy**. Use:
@@ -262,6 +278,21 @@ Only these transitions are available:
 All changes are POST-only and organization-scoped. Requirement confirmation and
 vacancy lifecycle remain separate recruiter decisions.
 
+### Vacancy deletion
+
+Create a disposable vacancy and at least one requirements version. Open the
+vacancy and select **Delete vacancy**.
+
+Expected result:
+
+- A separate confirmation page explains that requirements history is preserved.
+- Cancel returns to the unchanged vacancy.
+- Confirming deletion returns to the vacancy list.
+- The vacancy disappears from the list and its former detail URL returns `404`.
+- If it was open, the dashboard's open-vacancy count decreases.
+- Django admin still contains the closed vacancy, its requirements history, and
+  the deletion actor/timestamp.
+
 ## 11. Test organization isolation
 
 In Django admin:
@@ -306,6 +337,8 @@ The current milestone is behaving correctly when all of these are true:
   again without mutating history.
 - Recruiters can open, pause, close, and reopen vacancies only through the
   documented lifecycle transitions.
+- Candidate deletion removes private candidate content and CV files; vacancy
+  deletion hides the vacancy without destroying requirements history.
 - Cross-organization URLs do not disclose data.
 - No AI key or live AI request is required.
 

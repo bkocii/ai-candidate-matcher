@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 import pytest
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.urls import reverse
 from django.utils import timezone
 
@@ -15,6 +15,7 @@ from vacancies.services import (
     confirm_requirements_draft,
     create_next_requirements_draft,
     create_vacancy_with_requirements,
+    delete_vacancy,
     update_requirements_draft,
 )
 
@@ -639,3 +640,75 @@ def test_detail_shows_only_currently_valid_status_controls(client) -> None:
     )
     assert "Change to Open" in confirmed_response.content.decode()
     assert "Change to Paused" not in confirmed_response.content.decode()
+
+
+def test_recruiter_soft_deletes_vacancy_after_confirmation(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    requirements.summary = "Preserved requirement history"
+    requirements.save()
+    confirm_requirements_draft(requirements=requirements, user=user)
+    change_vacancy_status(
+        vacancy=vacancy,
+        user=user,
+        new_status=Vacancy.Status.OPEN,
+    )
+    client.force_login(user)
+    route = reverse(
+        "vacancies:vacancy-delete",
+        args=[organization.slug, vacancy.pk],
+    )
+
+    confirmation = client.get(route)
+    response = client.post(route)
+
+    vacancy.refresh_from_db()
+    assert confirmation.status_code == 200
+    assert "Requirement history will be preserved" in confirmation.content.decode()
+    assert response.status_code == 302
+    assert response.url == reverse("vacancies:vacancy-list", args=[organization.slug])
+    assert vacancy.deleted_at is not None
+    assert vacancy.deleted_by == user
+    assert vacancy.status == Vacancy.Status.CLOSED
+    assert vacancy.requirement_versions.get() == requirements
+
+    listing = client.get(response.url)
+    detail = client.get(
+        reverse("vacancies:vacancy-detail", args=[organization.slug, vacancy.pk])
+    )
+    assert list(listing.context["page"].object_list) == []
+    assert detail.status_code == 404
+    dashboard = client.get(
+        reverse("organizations:organization-dashboard", args=[organization.slug])
+    )
+    assert dashboard.context["open_vacancy_count"] == 0
+
+
+def test_vacancy_delete_service_repeats_permission_check() -> None:
+    owner, organization = make_workspace(username="owner")
+    outsider = User.objects.create_user(username="outsider")
+    vacancy, _ = make_vacancy(organization, user=owner)
+
+    with pytest.raises(PermissionDenied):
+        delete_vacancy(vacancy=vacancy, user=outsider)
+
+    vacancy.refresh_from_db()
+    assert vacancy.deleted_at is None
+
+
+def test_deleted_vacancy_cannot_change_status_through_service() -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    confirm_requirements_for_status(
+        vacancy=vacancy,
+        requirements=requirements,
+        user=user,
+    )
+    delete_vacancy(vacancy=vacancy, user=user)
+
+    with pytest.raises(ValidationError, match="has been deleted"):
+        change_vacancy_status(
+            vacancy=vacancy,
+            user=user,
+            new_status=Vacancy.Status.OPEN,
+        )

@@ -21,7 +21,9 @@ def validate_string_list(value: object) -> None:
 
 
 class VacancyQuerySet(OrganizationScopedQuerySet):
-    pass
+    def active(self):
+        """Vacancies available in the ordinary recruiter workspace."""
+        return self.filter(deleted_at__isnull=True)
 
 
 class VacancyRequirementsQuerySet(models.QuerySet):
@@ -76,6 +78,14 @@ class Vacancy(models.Model):
         null=True,
         blank=True,
         related_name="created_vacancies",
+    )
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="deleted_vacancies",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
