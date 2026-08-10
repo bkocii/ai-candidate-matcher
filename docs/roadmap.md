@@ -14,13 +14,13 @@ Status: Complete.
 
 ## Sprint 1 — Django foundation
 
-Status: In progress.
+Status: Complete.
 
 - `FOUND-001` Bootstrap the Django repository, dependency management, settings, and test tooling. **Complete — 2026-08-09.**
 - `FOUND-002` Add accounts, organizations, memberships, and roles. **Complete — 2026-08-09.**
 - `FOUND-003` Add optional client companies and organization-scoped permissions. **Complete — 2026-08-09.**
-- `FOUND-004` Establish base templates, navigation, and a minimal dashboard.
-- `FOUND-005` Add CI-quality commands and security-conscious environment configuration.
+- `FOUND-004` Establish base templates, navigation, and a minimal dashboard. **Complete — 2026-08-10.**
+- `FOUND-005` Add CI-quality commands and security-conscious environment configuration. **Complete — 2026-08-10.**
 
 Sprint acceptance: two organizations in tests cannot access each other's objects, project checks pass, and the published toolkit package is installed without importing local toolkit code.
 

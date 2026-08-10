@@ -12,17 +12,19 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 is complete. Sprint 1 is in progress, and `FOUND-001` through
-`FOUND-003` are complete.
+Sprint 0 and Sprint 1 are complete.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
 optional client companies, organization-scoped queryset and authorization
-helpers, reproducible dependency locking, tests, and Ruff checks. It uses the
-verified published `python-ai-toolkit==1.0.0` distribution.
+helpers, login and POST-only logout, responsive base templates, organization
+selection, a minimal tenant-safe dashboard, strict environment parsing,
+production-safe settings validation, reproducible dependency locking, a shared
+local/CI quality command, and a four-version CI matrix. It uses the published
+`python-ai-toolkit==1.0.0` distribution.
 
-The next approved task is `FOUND-004 — Establish base templates, navigation,
-and a minimal dashboard`.
+The next approved task is `DATA-001 — Add candidate, source/consent metadata,
+and candidate-document models`.
 
 ## Local setup
 
@@ -32,10 +34,7 @@ Python 3.11 through 3.14 and [uv](https://docs.astral.sh/uv/) are supported.
 uv sync --extra dev
 Copy-Item .env.example .env
 uv run python manage.py migrate
-uv run python manage.py check
-uv run pytest
-uv run ruff check .
-uv run ruff format --check .
+uv run python scripts/check.py
 ```
 
 An OpenAI API key is not needed for Django startup or the ordinary test suite.
@@ -44,6 +43,29 @@ Add it to `.env` only when a later opt-in AI request is intentionally run:
 ```env
 OPENAI_API_KEY=
 ```
+
+## Production configuration
+
+Set `DJANGO_ENVIRONMENT=production` to disable development defaults. Production
+startup then requires an explicit secret key and allowed hosts, rejects debug
+mode and wildcard hosts, requires HTTPS redirect plus secure cookies, and
+accepts only HTTPS CSRF trusted origins.
+
+Use `.env.example` as the complete variable reference. Enable
+`DJANGO_TRUST_X_FORWARDED_PROTO` only when a trusted reverse proxy overwrites
+that header. HSTS remains explicit because enabling it before HTTPS is stable
+can make a deployment unreachable.
+
+## Quality gate
+
+The single local and CI command is:
+
+```powershell
+uv run python scripts/check.py
+```
+
+It runs Django checks, the production deployment check, migration-drift check,
+tests, Ruff lint/format checks, and dependency compatibility verification.
 
 ## Source of truth
 

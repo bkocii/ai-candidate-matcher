@@ -47,11 +47,9 @@ Run from the repository root:
 
 ```text
 uv sync --extra dev
-uv run python manage.py check
-uv run pytest
-uv run ruff check .
-uv run ruff format --check .
-uv pip check --python .venv/bin/python
+uv run python scripts/check.py
 ```
 
-On Windows, use `.venv\Scripts\python.exe` for the final dependency check.
+The quality script runs Django checks, the production deployment check,
+migration-drift detection, pytest, Ruff, and dependency compatibility checks.
+CI must call this same script rather than maintain a second command list.

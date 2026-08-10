@@ -14,18 +14,21 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 is complete. Sprint 1 is in progress.
+Sprint 0 and Sprint 1 are complete.
 
-`FOUND-001` through `FOUND-003` are complete. The project now has a Django
+`FOUND-001` through `FOUND-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
 constrained administrator/recruiter roles, optional organization-owned client
-companies, organization-scoped queryset and authorization helpers, initial
-migrations, dependency locking, pytest-django and Ruff configuration, and
-import-isolation tests.
+companies, organization-scoped queryset and authorization helpers, login and
+POST-only logout, responsive base templates, organization selection, and a
+minimal organization dashboard. It also has strict environment parsing,
+fail-closed production configuration, initial migrations, dependency locking,
+pytest-django and Ruff configuration, import-isolation tests, one local/CI
+quality command, and a Python 3.11–3.14 GitHub Actions matrix.
 
 The next roadmap item is:
 
-`FOUND-004 — Establish base templates, navigation, and a minimal dashboard.`
+`DATA-001 — Add candidate, source/consent metadata, and candidate-document models.`
 
 ## Required instructions
 
@@ -42,16 +45,19 @@ The next roadmap item is:
 
 ## Current verification
 
-Verified on 2026-08-09 with Python 3.12.13:
+Verified on 2026-08-10 with Python 3.12.13:
 
 - Django system check passed.
-- 24 pytest tests passed.
+- 51 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 29 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
 - The application repository contains no local `ai` toolkit source package.
+- The normal and warning-strict production Django checks passed.
+- No migration drift was detected.
 
 ## Immediate next action
 
-Establish base templates, navigation, and a minimal organization-aware dashboard
-for `FOUND-004`, using the existing queryset and authorization helpers.
+Implement only `DATA-001`: candidate, source/consent metadata, and
+candidate-document models, preserving organization isolation and deferring file
+extraction and upload hardening to their explicit roadmap items.

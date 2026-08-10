@@ -12,9 +12,9 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 ## Current milestone
 
-Sprint 1 — Django foundation.
+Sprint 2 — Candidate and vacancy intake.
 
-Status: In progress. `FOUND-001` through `FOUND-003` are complete.
+Status: Ready to start. Sprint 1 is complete; no Sprint 2 task is implemented.
 
 ## Decisions made
 
@@ -71,14 +71,42 @@ Status: In progress. `FOUND-001` through `FOUND-003` are complete.
 - Registered client companies in Django admin and added cross-organization,
   inactive-state, role, object-access, and database-constraint tests.
 
+### `FOUND-004 — Base templates, navigation, and minimal dashboard`
+
+- Added responsive project-owned base, authentication, organization-selection,
+  no-access, and dashboard templates with a small static CSS layer.
+- Added Django login and POST-only logout routes with safe redirect settings.
+- Added a membership-aware dashboard entry point that redirects a single active
+  organization or presents an explicit selection when several are available.
+- Added an organization dashboard showing the active-client count and current
+  membership role without introducing future candidate or vacancy features.
+- Resolved organization dashboard access through `visible_to()` so inactive or
+  cross-organization targets return `404` without disclosing tenant details.
+- Kept Django admin navigation limited to Django staff, independently of the
+  organization administrator role.
+
+### `FOUND-005 — CI quality and secure environment configuration`
+
+- Added strict environment parsing that rejects invalid boolean, integer, and
+  runtime-mode values instead of silently weakening settings.
+- Preserved a safe development-only secret fallback when `.env` contains a
+  blank key, while requiring an explicit non-placeholder key in production.
+- Made production fail closed for debug mode, missing or wildcard hosts,
+  non-HTTPS trusted origins, disabled HTTPS redirect, and insecure cookies.
+- Added explicit HSTS and trusted-proxy settings with safe operational guidance.
+- Added one cross-platform `scripts/check.py` quality gate for Django checks,
+  deployment checks, migration drift, tests, Ruff, and dependency compatibility.
+- Added GitHub Actions CI on pull requests and `main` pushes for Python 3.11,
+  3.12, 3.13, and 3.14 using locked dependencies and read-only repository access.
+
 ## Verification
 
-Verified on 2026-08-09 with Python 3.12.13:
+Verified on 2026-08-10 with Python 3.12.13:
 
-- `python manage.py check`: passed.
-- `pytest`: 24 passed.
-- `ruff check .`: passed.
-- `ruff format --check .`: passed.
+- Normal and warning-strict production Django checks: passed.
+- Migration drift check: passed.
+- `pytest`: 51 passed.
+- Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 29 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
@@ -89,4 +117,4 @@ workflow, or AI business service has been implemented yet.
 
 ## Next task
 
-`FOUND-004 — Establish base templates, navigation, and a minimal dashboard.`
+`DATA-001 — Add candidate, source/consent metadata, and candidate-document models.`

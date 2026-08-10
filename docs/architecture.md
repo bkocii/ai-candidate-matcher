@@ -81,6 +81,25 @@ AI usage events, operational events, privacy-relevant access, and failures witho
   and organization-owned-object checks. Service and view boundaries must still
   call the appropriate helper even after filtering a queryset.
 
+## Foundation user interface
+
+- The MVP uses server-rendered Django templates and a small project-owned CSS
+  layer without a JavaScript framework.
+- Authentication uses Django's built-in login and logout views. Logout is a
+  CSRF-protected POST action rather than a state-changing link.
+- The dashboard entry point redirects users with one active membership directly
+  to that organization and asks users with several memberships to select one.
+- Users without an active membership receive a safe access message that does
+  not disclose organization names.
+- Organization dashboard URLs resolve through `Organization.objects.visible_to()`;
+  inaccessible or inactive organizations return `404` to avoid disclosing their
+  existence.
+- Navigation exposes Django administration only to Django staff. Organization
+  administrator membership alone does not grant Django admin access.
+- The foundation dashboard displays only implemented organization data. Future
+  candidate, vacancy, matching, and outreach navigation is added with the
+  corresponding roadmap items.
+
 ## Core data model
 
 - `Organization`
@@ -124,6 +143,14 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 - Deleting a candidate invalidates or removes derived profiles and assessments according to the approved retention policy.
 - Secrets come from environment variables or a secret manager and never from committed files.
 - AI failures must not expose provider details or sensitive prompts to ordinary users.
+- `DJANGO_ENVIRONMENT=production` disables development fallbacks and requires an
+  explicit non-placeholder secret, explicit hosts, debug mode off, HTTPS
+  redirects, and secure session and CSRF cookies.
+- Production rejects wildcard hosts and non-HTTPS CSRF trusted origins.
+- `X-Forwarded-Proto` is trusted only through an explicit setting for a known
+  reverse proxy that overwrites the header.
+- HSTS is explicit rather than silently enabled; deployment owners must confirm
+  stable HTTPS before setting its duration, subdomain, or preload options.
 
 ## Reliability
 
@@ -143,3 +170,8 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 - Security tests for cross-organization access and private documents.
 - A separate opt-in smoke test may make a live low-cost API request.
 - An anonymized/synthetic benchmark set measures ranking stability and explanation quality.
+- `scripts/check.py` is the single local and CI quality gate. It includes normal
+  and warning-strict deployment checks, migration-drift detection, tests, lint,
+  formatting, and dependency compatibility.
+- GitHub Actions runs the locked environment and shared quality gate on every
+  pull request and push to `main` across Python 3.11 through 3.14.

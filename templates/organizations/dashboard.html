@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}{{ organization.name }} | AI Candidate Matcher{% endblock %}
+
+{% block content %}
+<section class="page-heading dashboard-heading" aria-labelledby="dashboard-title">
+    <div>
+        <p class="eyebrow">Organization workspace</p>
+        <h1 id="dashboard-title">{{ organization.name }}</h1>
+        <p class="lede">Your private workspace for candidate rediscovery and recruiter-reviewed shortlists.</p>
+    </div>
+    <span class="role-badge">{{ membership.get_role_display }}</span>
+</section>
+
+<section class="metric-grid" aria-label="Organization summary">
+    <article class="metric-card">
+        <span class="metric-label">Active client companies</span>
+        <strong class="metric-value">{{ active_client_count }}</strong>
+        <span class="metric-detail">Agency clients in this organization</span>
+    </article>
+    <article class="metric-card">
+        <span class="metric-label">Your role</span>
+        <strong class="metric-value metric-value-text">{{ membership.get_role_display }}</strong>
+        <span class="metric-detail">Organization-scoped access</span>
+    </article>
+</section>
+
+<section class="workspace-panel" aria-labelledby="workspace-title">
+    <div>
+        <p class="eyebrow">Workspace status</p>
+        <h2 id="workspace-title">Secure workspace</h2>
+    </div>
+    <p>Organization-scoped access is active. Candidate and vacancy tools will appear here when they become available.</p>
+</section>
+{% endblock %}
