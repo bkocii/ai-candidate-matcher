@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 1 — Django foundation.
 
-Status: In progress. `FOUND-001` and `FOUND-002` are complete.
+Status: In progress. `FOUND-001` through `FOUND-003` are complete.
 
 ## Decisions made
 
@@ -58,12 +58,25 @@ Status: In progress. `FOUND-001` and `FOUND-002` are complete.
 - Added initial migrations and model tests for roles, inactive membership,
   multi-organization membership, uniqueness, and invalid-role rejection.
 
+### `FOUND-003 — Optional client companies and organization-scoped permissions`
+
+- Added organization-owned client companies with optional website metadata,
+  active state, and per-organization slug uniqueness.
+- Added explicit organization and organization-owned queryset scoping through
+  `visible_to()` and `for_organization()`.
+- Added reusable checks for active organization membership, organization-admin
+  capability, and organization-owned object access.
+- Required active user, organization, and membership state for application
+  access; Django staff and superuser flags do not implicitly bypass tenant scope.
+- Registered client companies in Django admin and added cross-organization,
+  inactive-state, role, object-access, and database-constraint tests.
+
 ## Verification
 
 Verified on 2026-08-09 with Python 3.12.13:
 
 - `python manage.py check`: passed.
-- `pytest`: 13 passed.
+- `pytest`: 24 passed.
 - `ruff check .`: passed.
 - `ruff format --check .`: passed.
 - Dependency compatibility check: passed for 29 installed packages.
@@ -71,10 +84,9 @@ Verified on 2026-08-09 with Python 3.12.13:
 
 ## Not implemented
 
-No client company model, organization-scoped authorization services, recruiter
-UI, candidate data, matching workflow, or AI business service has been
-implemented yet.
+No recruiter UI, candidate data, vacancy data, matching workflow, outreach
+workflow, or AI business service has been implemented yet.
 
 ## Next task
 
-`FOUND-003 — Add optional client companies and organization-scoped permissions.`
+`FOUND-004 — Establish base templates, navigation, and a minimal dashboard.`

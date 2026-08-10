@@ -16,14 +16,16 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 Sprint 0 is complete. Sprint 1 is in progress.
 
-`FOUND-001` and `FOUND-002` are complete. The project now has a Django 5.2.17
-LTS foundation, a custom user model, organizations, memberships, constrained
-administrator/recruiter roles, initial migrations, dependency locking,
-pytest-django and Ruff configuration, and import-isolation tests.
+`FOUND-001` through `FOUND-003` are complete. The project now has a Django
+5.2.17 LTS foundation, a custom user model, organizations, memberships,
+constrained administrator/recruiter roles, optional organization-owned client
+companies, organization-scoped queryset and authorization helpers, initial
+migrations, dependency locking, pytest-django and Ruff configuration, and
+import-isolation tests.
 
 The next roadmap item is:
 
-`FOUND-003 — Add optional client companies and organization-scoped permissions.`
+`FOUND-004 — Establish base templates, navigation, and a minimal dashboard.`
 
 ## Required instructions
 
@@ -43,7 +45,7 @@ The next roadmap item is:
 Verified on 2026-08-09 with Python 3.12.13:
 
 - Django system check passed.
-- 13 pytest tests passed.
+- 24 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 29 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -51,5 +53,5 @@ Verified on 2026-08-09 with Python 3.12.13:
 
 ## Immediate next action
 
-Design the optional client-company ownership model and organization-scoped query
-and authorization policy for `FOUND-003`, then implement only that roadmap item.
+Establish base templates, navigation, and a minimal organization-aware dashboard
+for `FOUND-004`, using the existing queryset and authorization helpers.

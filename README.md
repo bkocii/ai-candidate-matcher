@@ -13,15 +13,16 @@ python-ai-toolkit[django]==1.0.0
 ## Current status
 
 Sprint 0 is complete. Sprint 1 is in progress, and `FOUND-001` through
-`FOUND-002` are complete.
+`FOUND-003` are complete.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
-reproducible dependency locking, tests, and Ruff checks. It uses the verified
-published `python-ai-toolkit==1.0.0` distribution.
+optional client companies, organization-scoped queryset and authorization
+helpers, reproducible dependency locking, tests, and Ruff checks. It uses the
+verified published `python-ai-toolkit==1.0.0` distribution.
 
-The next approved task is `FOUND-003 — Add optional client companies and
-organization-scoped permissions`.
+The next approved task is `FOUND-004 — Establish base templates, navigation,
+and a minimal dashboard`.
 
 ## Local setup
 

@@ -68,7 +68,18 @@ AI usage events, operational events, privacy-relevant access, and failures witho
   can be tested and the model does not require a destructive redesign later.
   The MVP deployment and user interface still operate for one organization.
 - Organization-aware query helpers and object authorization are introduced in
-  `FOUND-003`; views must not infer access from a role name alone.
+  `FOUND-003`; views must use them rather than infer access from a role name.
+- `organizations.ClientCompany` belongs to exactly one organization. Creating no
+  client companies is the supported direct-employer mode; agency vacancies may
+  reference one later, but that relationship will remain optional.
+- Active user, organization, and membership state are all required for
+  organization-scoped application access. Django staff or superuser status does
+  not bypass this rule outside the separate Django admin surface.
+- Organization-owned querysets expose `for_organization()` for an explicit
+  tenant boundary and `visible_to()` for membership-filtered application reads.
+- Authorization helpers provide ordinary-member, organization-administrator,
+  and organization-owned-object checks. Service and view boundaries must still
+  call the appropriate helper even after filtering a queryset.
 
 ## Core data model
 
