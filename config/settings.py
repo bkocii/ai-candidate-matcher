@@ -97,6 +97,7 @@ INSTALLED_APPS = [
     "accounts",
     "candidates",
     "organizations",
+    "vacancies",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",

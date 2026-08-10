@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 2 — Candidate and vacancy intake.
 
-Status: In progress. `DATA-001` is complete.
+Status: In progress. `DATA-001` and `DATA-002` are complete.
 
 ## Decisions made
 
@@ -115,23 +115,42 @@ Status: In progress. `DATA-001` is complete.
 - Kept upload validation, document text extraction, and storage-byte deletion out
   of this task for their explicit later roadmap items.
 
+### `DATA-002 — Vacancy and versioned vacancy-requirements models`
+
+- Added organization-owned vacancies with draft/open/paused/closed lifecycle,
+  recruiter attribution, and optional same-organization client companies.
+- Preserved direct-employer mode by allowing vacancies without a client company;
+  deleting a client retains its vacancies and clears only that optional link.
+- Added organization-scoped vacancy and requirements querysets with active
+  membership filtering and reusable object-permission compatibility.
+- Added numbered requirements snapshots containing the source job description,
+  schema version, provenance method, skills, experience, location/work mode,
+  languages, education, certifications, employment type, explicit hard
+  constraints, and recruiter-visible ambiguities.
+- Added draft and recruiter-confirmed requirements states, confirmation actor and
+  timestamp integrity, unique positive version numbers, and choice constraints.
+- Kept draft requirements editable while making confirmed snapshots immutable;
+  corrections to confirmed requirements must create a new version.
+- Added Django admin support and kept vacancy entry forms and AI extraction in
+  their explicit later roadmap tasks.
+
 ## Verification
 
 Verified on 2026-08-10 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 66 passed.
+- `pytest`: 83 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 29 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
 ## Not implemented
 
-No recruiter-facing candidate intake UI, vacancy data, matching workflow,
-outreach workflow, or AI business service has been implemented yet. Candidate
+No recruiter-facing candidate/vacancy intake UI, matching workflow, outreach
+workflow, or AI business service has been implemented yet. Candidate and vacancy
 records can currently be inspected through Django admin by a Django staff user.
 
 ## Next task
 
-`DATA-002 — Add vacancy and versioned vacancy-requirements models.`
+`DATA-003 — Add manual candidate entry and CSV import with validation and duplicate reporting.`

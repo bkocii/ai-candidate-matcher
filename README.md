@@ -22,11 +22,12 @@ selection, a minimal tenant-safe dashboard, strict environment parsing,
 production-safe settings validation, reproducible dependency locking, a shared
 local/CI quality command, and a four-version CI matrix. Organization-owned
 candidate, provenance/consent, and private document metadata models are also
-available through Django admin. It uses the published
+available through Django admin. Organization-owned vacancies and immutable,
+versioned recruiter-confirmed requirements snapshots are also available. It uses the published
 `python-ai-toolkit==1.0.0` distribution.
 
-The next approved task is `DATA-002 — Add vacancy and versioned
-vacancy-requirements models`.
+The next approved task is `DATA-003 — Add manual candidate entry and CSV import
+with validation and duplicate reporting`.
 
 ## Local setup
 
@@ -56,9 +57,10 @@ uv run python manage.py runserver
 ```
 
 Open `http://127.0.0.1:8000/admin/` to create organizations, memberships,
-candidates, source/consent records, and document metadata. A Django superuser
-does not bypass organization membership on the normal dashboard. To test `/`,
-create an active organization membership for that same user in Django admin.
+candidates, source/consent records, document metadata, vacancies, and versioned
+vacancy requirements. A Django superuser does not bypass organization membership
+on the normal dashboard. To test `/`, create an active organization membership
+for that same user in Django admin.
 
 ## Production configuration
 

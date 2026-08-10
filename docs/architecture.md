@@ -139,6 +139,32 @@ AI usage events, operational events, privacy-relevant access, and failures witho
   and `PROD-001`. Retention/deletion services must remove underlying stored bytes;
   deleting a Django database row alone does not guarantee storage deletion.
 
+### Vacancy intake records
+
+- `Vacancy` belongs to exactly one organization and may reference an optional
+  client company for agency use. The model rejects client companies owned by a
+  different organization; direct-employer vacancies leave the field empty.
+- A client-company deletion does not delete a vacancy. It clears the optional
+  relationship so the vacancy and its requirement history remain available.
+- Vacancy lifecycle state is limited to draft, open, paused, or closed. Vacancy
+  description text remains application-owned input and is not sent to an AI
+  provider by the model layer.
+- `VacancyRequirements` rows are numbered snapshots unique within a vacancy.
+  Each records its schema version, creation method, source-description snapshot,
+  structured requirements, recruiter-visible ambiguities, author, and creation
+  time so later matching results can identify the exact input version.
+- Requirements are editable while draft. Confirmation requires a recruiter actor
+  and timestamp; a confirmed snapshot is immutable and corrections create a new
+  version. The latest confirmed version is the vacancy's current requirements;
+  a newer unconfirmed draft does not silently replace it.
+- Requirement list fields validate as lists of non-blank strings. Normalized
+  skill entities and executable hard-constraint rules remain owned by Sprint 3.
+- Vacancy and requirement querysets provide explicit organization scoping and
+  active-membership visibility. Requirement rows expose their vacancy's
+  organization for the shared object-permission helpers.
+- Recruiter-facing vacancy creation and requirements editing remain in `DATA-005`;
+  AI-assisted extraction remains behind the application gateway in `AI-002`.
+
 Structured AI outputs should be stored with a schema version and the relevant source/document version so assessments can be reproduced or invalidated when input changes.
 
 ## Matching pipeline
