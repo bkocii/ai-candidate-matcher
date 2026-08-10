@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.models import OrganizationMembership
+from candidates.models import Candidate
 from organizations.models import ClientCompany, Organization
 
 
@@ -42,6 +43,9 @@ def organization_dashboard(request, organization_slug: str):
     active_clients = ClientCompany.objects.for_organization(organization).filter(
         is_active=True
     )
+    active_candidates = Candidate.objects.for_organization(organization).filter(
+        status=Candidate.Status.ACTIVE
+    )
 
     return render(
         request,
@@ -50,5 +54,6 @@ def organization_dashboard(request, organization_slug: str):
             "organization": organization,
             "membership": membership,
             "active_client_count": active_clients.count(),
+            "active_candidate_count": active_candidates.count(),
         },
     )

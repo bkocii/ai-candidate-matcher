@@ -19,6 +19,7 @@
                 <div class="nav-links">
                     {% if organization %}
                         <a href="{% url 'organizations:organization-dashboard' organization.slug %}">Dashboard</a>
+                        <a href="{% url 'candidates:candidate-list' organization.slug %}">Candidates</a>
                     {% else %}
                         <a href="{% url 'organizations:dashboard' %}">Organizations</a>
                     {% endif %}

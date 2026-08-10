@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Add candidate | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">Candidate pool</p>
+    <h1>Add candidate</h1>
+    <p class="lede">Create the candidate and record where the information came from. Unknown permission or consent is preserved as unknown.</p>
+</section>
+
+<form class="form-panel stacked-form" method="post">
+    {% csrf_token %}
+    {% include "candidates/_form_fields.html" %}
+    <div class="button-row">
+        <button class="primary-button" type="submit">Create candidate</button>
+        <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Cancel</a>
+    </div>
+</form>
+{% endblock %}

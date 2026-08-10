@@ -14,6 +14,11 @@
 
 <section class="metric-grid" aria-label="Organization summary">
     <article class="metric-card">
+        <span class="metric-label">Active candidates</span>
+        <strong class="metric-value">{{ active_candidate_count }}</strong>
+        <a class="metric-link" href="{% url 'candidates:candidate-list' organization.slug %}">Open candidate pool</a>
+    </article>
+    <article class="metric-card">
         <span class="metric-label">Active client companies</span>
         <strong class="metric-value">{{ active_client_count }}</strong>
         <span class="metric-detail">Agency clients in this organization</span>
@@ -30,6 +35,6 @@
         <p class="eyebrow">Workspace status</p>
         <h2 id="workspace-title">Secure workspace</h2>
     </div>
-    <p>Organization-scoped access is active. Candidate and vacancy tools will appear here when they become available.</p>
+    <p>Manual candidate entry and validated CSV import are available. Vacancy intake will appear in the next data milestone.</p>
 </section>
 {% endblock %}

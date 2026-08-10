@@ -16,7 +16,7 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 Sprint 0 and Sprint 1 are complete.
 
-`FOUND-001` through `FOUND-005`, `DATA-001`, and `DATA-002` are complete. The project now has a Django
+`FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-003` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
 constrained administrator/recruiter roles, optional organization-owned client
 companies, organization-scoped queryset and authorization helpers, login and
@@ -30,12 +30,15 @@ models with tenant-scoped querysets, database constraints, retention/deletion
 metadata, and Django admin support. Organization-owned vacancies now support an
 optional same-organization client and versioned requirement snapshots with
 source/schema provenance, structured requirement fields, confirmation metadata,
-and immutable confirmed history. No recruiter-facing candidate or vacancy intake
-UI and no document or AI extraction exists yet.
+and immutable confirmed history. Recruiters now have organization-scoped candidate
+lists, manual candidate/provenance entry, and validated CSV import with a template,
+per-row created/duplicate/invalid reporting, and tenant-local stable-identity
+checks. No document upload/extraction, recruiter-facing vacancy intake, or AI
+extraction exists yet.
 
 The next roadmap item is:
 
-`DATA-003 — Add manual candidate entry and CSV import with validation and duplicate reporting.`
+`DATA-004 — Add private CV upload and safe PDF/DOCX text extraction.`
 
 ## Required instructions
 
@@ -55,7 +58,7 @@ The next roadmap item is:
 Verified on 2026-08-10 with Python 3.12.13:
 
 - Django system check passed.
-- 83 pytest tests passed.
+- 106 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 29 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -65,6 +68,6 @@ Verified on 2026-08-10 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `DATA-003`: recruiter-facing manual candidate entry and CSV import
-with validation and duplicate reporting, preserving organization isolation and
-keeping document upload/extraction in `DATA-004`.
+Implement only `DATA-004`: private CV upload plus safe PDF/DOCX validation and
+text extraction, preserving organization isolation and keeping hardened file
+delivery and production upload controls in their later roadmap tasks.

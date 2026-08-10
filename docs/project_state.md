@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 2 — Candidate and vacancy intake.
 
-Status: In progress. `DATA-001` and `DATA-002` are complete.
+Status: In progress. `DATA-001` through `DATA-003` are complete.
 
 ## Decisions made
 
@@ -134,23 +134,40 @@ Status: In progress. `DATA-001` and `DATA-002` are complete.
 - Added Django admin support and kept vacancy entry forms and AI extraction in
   their explicit later roadmap tasks.
 
+### `DATA-003 — Manual candidate entry and CSV import`
+
+- Added recruiter-facing, organization-scoped candidate lists and manual entry.
+- Manual entry creates candidate identity and provenance/permission metadata in
+  one transaction and reports stable-identifier duplicates without overwriting.
+- Added a downloadable CSV template and documented the required/optional columns.
+- Added UTF-8, comma-separated CSV parsing with 2 MB and 2,000-row limits,
+  header/schema checks, field validation, and pre-write file-structure validation.
+- Added per-row created, duplicate, and invalid results while allowing independent
+  valid rows to succeed.
+- Scoped duplicate detection to the organization using case-insensitive email,
+  normalized phone digits, and exact source references; names are not treated as
+  identity.
+- Repeated membership authorization at both view and intake-service boundaries,
+  and added candidate navigation plus an active-candidate dashboard count.
+
 ## Verification
 
 Verified on 2026-08-10 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 83 passed.
+- `pytest`: 106 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 29 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
 ## Not implemented
 
-No recruiter-facing candidate/vacancy intake UI, matching workflow, outreach
-workflow, or AI business service has been implemented yet. Candidate and vacancy
-records can currently be inspected through Django admin by a Django staff user.
+No recruiter-facing document upload, vacancy intake UI, matching workflow,
+outreach workflow, or AI business service has been implemented yet. Candidate
+records can be manually created or imported through the organization workspace;
+vacancy records remain Django-admin only.
 
 ## Next task
 
-`DATA-003 — Add manual candidate entry and CSV import with validation and duplicate reporting.`
+`DATA-004 — Add private CV upload and safe PDF/DOCX text extraction.`

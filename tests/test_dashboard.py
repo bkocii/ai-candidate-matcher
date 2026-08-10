@@ -2,6 +2,7 @@ import pytest
 from django.urls import reverse
 
 from accounts.models import OrganizationMembership, User
+from candidates.models import Candidate
 from organizations.models import ClientCompany, Organization
 
 pytestmark = pytest.mark.django_db
@@ -96,6 +97,19 @@ def test_dashboard_is_scoped_to_the_requested_organization(client) -> None:
         name="Other Client",
         slug="other-client",
     )
+    Candidate.objects.create(
+        organization=organization,
+        full_name="Active Candidate",
+    )
+    Candidate.objects.create(
+        organization=organization,
+        full_name="Inactive Candidate",
+        status=Candidate.Status.INACTIVE,
+    )
+    Candidate.objects.create(
+        organization=other,
+        full_name="Other Candidate",
+    )
     client.force_login(user)
 
     response = client.get(
@@ -108,9 +122,17 @@ def test_dashboard_is_scoped_to_the_requested_organization(client) -> None:
     assert response.status_code == 200
     assert response.context["organization"] == organization
     assert response.context["active_client_count"] == 1
+    assert response.context["active_candidate_count"] == 1
     assert response.context["membership"].role == OrganizationMembership.Role.ADMIN
     assert "Northstar" in response.content.decode()
     assert "Administrator" in response.content.decode()
+    assert (
+        reverse(
+            "candidates:candidate-list",
+            kwargs={"organization_slug": organization.slug},
+        )
+        in response.content.decode()
+    )
 
 
 def test_dashboard_hides_another_organizations_existence(client) -> None:

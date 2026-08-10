@@ -22,12 +22,14 @@ selection, a minimal tenant-safe dashboard, strict environment parsing,
 production-safe settings validation, reproducible dependency locking, a shared
 local/CI quality command, and a four-version CI matrix. Organization-owned
 candidate, provenance/consent, and private document metadata models are also
-available through Django admin. Organization-owned vacancies and immutable,
-versioned recruiter-confirmed requirements snapshots are also available. It uses the published
-`python-ai-toolkit==1.0.0` distribution.
+available. Recruiters can list and manually create candidates, or import a
+validated UTF-8 CSV with per-row duplicate and error reporting. Organization-owned
+vacancies and immutable, versioned recruiter-confirmed requirements snapshots are
+available through Django admin. It uses the published `python-ai-toolkit==1.0.0`
+distribution.
 
-The next approved task is `DATA-003 — Add manual candidate entry and CSV import
-with validation and duplicate reporting`.
+The next approved task is `DATA-004 — Add private CV upload and safe PDF/DOCX
+text extraction`.
 
 ## Local setup
 
@@ -61,6 +63,12 @@ candidates, source/consent records, document metadata, vacancies, and versioned
 vacancy requirements. A Django superuser does not bypass organization membership
 on the normal dashboard. To test `/`, create an active organization membership
 for that same user in Django admin.
+
+After signing in to the normal application, open the organization workspace and
+select **Candidates**. You can create a candidate manually or download the CSV
+header template from **Import CSV**. Imports accept up to 2 MB and 2,000 rows;
+`full_name` is required, while `email`, `phone`, `location`, `source_reference`,
+and ISO `retention_until` are optional.
 
 ## Production configuration
 

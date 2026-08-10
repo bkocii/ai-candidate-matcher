@@ -96,9 +96,9 @@ AI usage events, operational events, privacy-relevant access, and failures witho
   existence.
 - Navigation exposes Django administration only to Django staff. Organization
   administrator membership alone does not grant Django admin access.
-- The foundation dashboard displays only implemented organization data. Future
-  candidate, vacancy, matching, and outreach navigation is added with the
-  corresponding roadmap items.
+- The dashboard displays only implemented organization data. Candidate navigation
+  and active-candidate counts are available from `DATA-003`; vacancy, matching,
+  and outreach navigation is added with the corresponding roadmap items.
 
 ## Core data model
 
@@ -138,6 +138,30 @@ AI usage events, operational events, privacy-relevant access, and failures witho
 - File validation, extraction, and hardened upload handling remain in `DATA-004`
   and `PROD-001`. Retention/deletion services must remove underlying stored bytes;
   deleting a Django database row alone does not guarantee storage deletion.
+
+### Candidate intake workflow
+
+- Recruiter-facing candidate routes resolve the organization through active
+  membership and return `404` for inaccessible organizations. Intake services
+  repeat the membership check so non-view callers cannot cross the tenant boundary.
+- Manual entry creates the candidate and its source/provenance row in one database
+  transaction. Consent, lawful-basis, and contact-permission values default to
+  explicit unknown/not-recorded states rather than inferred permission.
+- CSV import accepts UTF-8 comma-separated data with a required `full_name` column
+  and optional `email`, `phone`, `location`, `source_reference`, and
+  `retention_until` columns. A project-provided header template and on-page format
+  guidance let a recruiter prepare the file without developer help.
+- File-level structure, encoding, size, and row limits are checked before any row
+  is created. Valid rows can still be created when other data rows fail field
+  validation, and the authorized recruiter receives an in-memory per-row report.
+- Duplicate detection is limited to the current organization. It uses
+  case-insensitive email, normalized phone digits, and exact stable source
+  references. Names alone are never treated as identity, existing rows are never
+  overwritten or merged, and deleted/inactive records still prevent accidental
+  silent recreation when a stable identity matches.
+- Duplicate reporting is an intake safety aid rather than a universal identity
+  guarantee. Concurrency hardening and durable import/audit events remain part of
+  the later production workflow.
 
 ### Vacancy intake records
 
