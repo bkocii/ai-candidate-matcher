@@ -14,6 +14,8 @@ from vacancies.forms import (
 )
 from vacancies.models import Vacancy, VacancyRequirements
 from vacancies.services import (
+    available_vacancy_status_transitions,
+    change_vacancy_status,
     confirm_requirements_draft,
     create_next_requirements_draft,
     create_vacancy_with_requirements,
@@ -110,7 +112,33 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
             "current_requirements": vacancy.current_requirements,
             "draft": draft,
             "versions": versions,
+            "status_transitions": available_vacancy_status_transitions(vacancy),
         },
+    )
+
+
+@login_required
+@require_POST
+def vacancy_status_change(request, organization_slug: str, vacancy_id: int):
+    organization = _visible_organization(request, organization_slug)
+    vacancy = _visible_vacancy(organization, vacancy_id)
+    try:
+        vacancy = change_vacancy_status(
+            vacancy=vacancy,
+            user=request.user,
+            new_status=request.POST.get("status", ""),
+        )
+    except ValidationError as error:
+        messages.error(request, "; ".join(error.messages))
+    else:
+        messages.success(
+            request,
+            f"Vacancy status changed to {vacancy.get_status_display()}.",
+        )
+    return redirect(
+        "vacancies:vacancy-detail",
+        organization_slug=organization.slug,
+        vacancy_id=vacancy.pk,
     )
 
 

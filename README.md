@@ -28,7 +28,8 @@ safe text extraction. Organization-owned vacancies and immutable, versioned
 recruiter-confirmed requirements snapshots are available. Recruiters can create
 vacancies from pasted descriptions, select an optional client company, manually
 edit structured requirements, explicitly confirm them, and create immutable
-numbered correction versions. It uses the published
+numbered correction versions. Confirmed vacancies can then be opened, paused,
+closed, and reopened through recruiter-facing lifecycle controls. It uses the published
 `python-ai-toolkit==1.0.0` distribution.
 
 The next approved task is `MATCH-001 — Define normalized skills and explicit
@@ -82,6 +83,8 @@ Open **Vacancies** to paste a job description. Every new vacancy receives an
 editable requirements version 1. Recruiters enter list values one per line, save
 the draft, and explicitly confirm it. Confirmed versions are read-only; **Create
 correction draft** copies the current snapshot into the next numbered version.
+After confirmation, use the vacancy detail page to open, pause, close, or reopen
+the vacancy through the available validated lifecycle transitions.
 
 For a complete browser walkthrough and safe synthetic CSV, PDF, DOCX, rejection,
 and vacancy fixtures, follow `docs/manual_testing_guide.md`.

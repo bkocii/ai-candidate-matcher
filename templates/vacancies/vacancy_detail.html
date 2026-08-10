@@ -22,6 +22,31 @@
     </div>
 </section>
 
+<section class="status-actions" aria-labelledby="vacancy-status-title">
+    <div>
+        <p class="eyebrow">Lifecycle</p>
+        <h2 id="vacancy-status-title">Vacancy status: {{ vacancy.get_status_display }}</h2>
+        {% if vacancy.status == "draft" and not current_requirements %}
+            <p>Confirm a requirements version before opening this vacancy.</p>
+        {% elif status_transitions %}
+            <p>Choose the next valid lifecycle state. Status changes do not alter confirmed requirements.</p>
+        {% else %}
+            <p>No recruiter status change is currently available.</p>
+        {% endif %}
+    </div>
+    {% if status_transitions %}
+        <div class="button-row" aria-label="Available status changes">
+            {% for status_value, status_label in status_transitions %}
+                <form method="post" action="{% url 'vacancies:vacancy-status-change' organization.slug vacancy.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="{{ status_value }}">
+                    <button class="{% if status_value == 'open' %}primary-button{% else %}secondary-button{% endif %}" type="submit">Change to {{ status_label }}</button>
+                </form>
+            {% endfor %}
+        </div>
+    {% endif %}
+</section>
+
 {% if draft %}
 <section class="review-callout" aria-labelledby="draft-title">
     <div>

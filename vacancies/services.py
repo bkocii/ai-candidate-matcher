@@ -26,6 +26,23 @@ REQUIREMENTS_COPY_FIELDS = (
     "ambiguities",
 )
 
+VACANCY_STATUS_TRANSITIONS = {
+    Vacancy.Status.DRAFT: (Vacancy.Status.OPEN,),
+    Vacancy.Status.OPEN: (Vacancy.Status.PAUSED, Vacancy.Status.CLOSED),
+    Vacancy.Status.PAUSED: (Vacancy.Status.OPEN, Vacancy.Status.CLOSED),
+    Vacancy.Status.CLOSED: (Vacancy.Status.OPEN,),
+}
+
+
+def available_vacancy_status_transitions(
+    vacancy: Vacancy,
+) -> tuple[tuple[str, str], ...]:
+    """Return currently valid recruiter-facing status choices and labels."""
+    statuses = VACANCY_STATUS_TRANSITIONS.get(vacancy.status, ())
+    if Vacancy.Status.OPEN in statuses and vacancy.current_requirements is None:
+        statuses = tuple(status for status in statuses if status != Vacancy.Status.OPEN)
+    return tuple((status, Vacancy.Status(status).label) for status in statuses)
+
 
 @transaction.atomic
 def create_vacancy_with_requirements(
@@ -54,6 +71,38 @@ def create_vacancy_with_requirements(
         creation_method=VacancyRequirements.CreationMethod.MANUAL,
         created_by=user,
     )
+    return vacancy
+
+
+@transaction.atomic
+def change_vacancy_status(
+    *,
+    vacancy: Vacancy,
+    user: User,
+    new_status: str,
+) -> Vacancy:
+    """Apply an explicit recruiter lifecycle transition inside the tenant boundary."""
+    require_organization_object_access(user, vacancy)
+    vacancy = Vacancy.objects.select_for_update().get(pk=vacancy.pk)
+
+    if new_status not in Vacancy.Status.values:
+        raise ValidationError("Select a valid vacancy status.")
+    if new_status == vacancy.status:
+        raise ValidationError(
+            f"This vacancy is already {vacancy.get_status_display().lower()}."
+        )
+    if new_status not in VACANCY_STATUS_TRANSITIONS.get(vacancy.status, ()):
+        raise ValidationError(
+            "This vacancy cannot move directly from "
+            f"{vacancy.get_status_display()} to {Vacancy.Status(new_status).label}."
+        )
+    if new_status == Vacancy.Status.OPEN and vacancy.current_requirements is None:
+        raise ValidationError(
+            "Confirm a requirements version before opening this vacancy."
+        )
+
+    vacancy.status = new_status
+    vacancy.save(update_fields=("status", "updated_at"))
     return vacancy
 
 

@@ -566,7 +566,8 @@ tbody tr:last-child td {
 
 .source-panel,
 .detail-panel,
-.review-callout {
+.review-callout,
+.status-actions {
     border: 1px solid var(--border);
     border-radius: 18px;
     background: var(--surface);
@@ -607,6 +608,29 @@ tbody tr:last-child td {
     margin-bottom: 24px;
     padding: 26px 30px;
     background: #fffaf0;
+}
+
+.status-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+    margin-bottom: 24px;
+    padding: 24px 30px;
+}
+
+.status-actions h2,
+.status-actions p:last-child {
+    margin-bottom: 0;
+}
+
+.status-actions p:last-child {
+    color: var(--muted);
+    line-height: 1.55;
+}
+
+.status-actions form {
+    margin: 0;
 }
 
 .review-callout h2,
@@ -665,7 +689,8 @@ tbody tr:last-child td {
     .action-heading,
     .result-summary,
     .workspace-panel,
-    .review-callout {
+    .review-callout,
+    .status-actions {
         align-items: flex-start;
         flex-direction: column;
     }

@@ -167,6 +167,9 @@ AI usage events, operational events, privacy-relevant access, and failures witho
 - File-level structure, encoding, size, and row limits are checked before any row
   is created. Valid rows can still be created when other data rows fail field
   validation, and the authorized recruiter receives an in-memory per-row report.
+- A completed import targets the report section on the returned page so the
+  browser brings the created/duplicate/invalid summary into view without a
+  client-side application or persistent import record.
 - Duplicate detection is limited to the current organization. It uses
   case-insensitive email, normalized phone digits, and exact stable source
   references. Names alone are never treated as identity, existing rows are never
@@ -212,6 +215,11 @@ AI usage events, operational events, privacy-relevant access, and failures witho
 - Confirmed requirements remain immutable. A correction action copies the current
   confirmed snapshot into the next numbered manual draft; if a draft already
   exists, the app reopens it instead of silently creating parallel drafts.
+- Recruiters manage vacancy lifecycle from the vacancy detail page through
+  POST-only transitions: draft to open, open to paused or closed, paused to open
+  or closed, and closed to open. Opening always requires a confirmed requirements
+  version. The service repeats tenant authorization, validates the transition,
+  and serializes concurrent updates before changing the status.
 - The vacancy description and each requirement version's source-description
   snapshot remain application input. AI-assisted extraction remains behind the
   application gateway in `AI-002`.

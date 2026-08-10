@@ -21,6 +21,11 @@ urlpatterns = [
         name="vacancy-detail",
     ),
     path(
+        "organizations/<slug:organization_slug>/vacancies/<int:vacancy_id>/status/",
+        views.vacancy_status_change,
+        name="vacancy-status-change",
+    ),
+    path(
         "organizations/<slug:organization_slug>/vacancies/<int:vacancy_id>/"
         "requirements/<int:requirements_id>/edit/",
         views.requirements_edit,

@@ -17,7 +17,7 @@
     <p><code>full_name</code> is required. Supported optional columns are <code>email</code>, <code>phone</code>, <code>location</code>, <code>source_reference</code>, and <code>retention_until</code> in <code>YYYY-MM-DD</code> format.</p>
 </section>
 
-<form class="form-panel stacked-form" method="post" enctype="multipart/form-data">
+<form class="form-panel stacked-form" method="post" enctype="multipart/form-data" action="{% url 'candidates:candidate-import' organization.slug %}#import-results">
     {% csrf_token %}
     {% include "candidates/_form_fields.html" %}
     <div class="button-row">
@@ -27,7 +27,7 @@
 </form>
 
 {% if result %}
-<section class="import-results" aria-labelledby="import-results-title">
+<section id="import-results" class="import-results" aria-labelledby="import-results-title" tabindex="-1">
     <div class="result-summary">
         <div>
             <p class="eyebrow">Import report</p>

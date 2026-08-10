@@ -409,10 +409,17 @@ def test_import_view_displays_created_duplicate_and_invalid_report(client) -> No
     assert result.duplicate_count == 1
     assert result.invalid_count == 1
     content = response.content.decode()
+    import_url = reverse(
+        "candidates:candidate-import",
+        kwargs={"organization_slug": organization.slug},
+    )
     assert "3 processed rows" in content
     assert "New Candidate" in content
     assert "Duplicate Candidate" in content
     assert "Unnamed row" in content
+    assert f'action="{import_url}#import-results"' in content
+    assert 'id="import-results"' in content
+    assert 'tabindex="-1"' in content
 
 
 def test_csv_template_is_available_only_to_organization_members(client) -> None:

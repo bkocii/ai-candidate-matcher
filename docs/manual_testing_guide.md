@@ -116,6 +116,10 @@ Upload `manual_testing/fixtures/candidate-import-valid.csv` and set:
 
 Expected report: `3 created`, `0 duplicates`, `0 invalid`.
 
+After submission, the browser should move directly to the import report below
+the form. Keyboard focus can be moved to the report container, and the complete
+row table remains horizontally scrollable on narrow screens.
+
 ### Mixed-result import
 
 Then upload `manual_testing/fixtures/candidate-import-mixed.csv` with source name
@@ -130,6 +134,16 @@ Expected report, assuming the valid file was imported first:
 
 The valid rows must still be created even though other rows fail. Existing
 records must not be overwritten.
+
+### Phone duplicate normalization
+
+Create or import a synthetic candidate with phone `+383 44 123 456`, then try
+another row in the same organization with `+383-44-123-456`.
+
+Expected result: the second row is reported as a phone duplicate. Formatting
+characters are ignored. A local number such as `044 123 456` is not yet assumed
+to be the same as `+383 44 123 456`; country-aware normalization requires a
+future organization-country setting.
 
 ## 6. Test private CV upload and extraction
 
@@ -223,15 +237,30 @@ detail page, and select **Confirm version 1**.
 Expected result: confirmation is refused with a message asking for at least one
 structured requirement. The version remains a draft.
 
-## 10. Test dashboard vacancy count
+## 10. Test vacancy lifecycle and dashboard count
 
-New vacancies remain `Draft`; therefore, confirming requirements alone does not
-make the dashboard's **Open vacancies** count increase. In Django admin, change
-one test vacancy's lifecycle status to `Open`, return to the dashboard, and
-confirm the count increases by one.
+New vacancies remain `Draft`; confirming requirements alone does not make the
+dashboard's **Open vacancies** count increase.
 
-This separation is intentional: requirement confirmation and vacancy lifecycle
-are different decisions.
+1. Before confirming requirements, confirm that **Change to Open** is unavailable
+   and the page explains that a confirmed version is required.
+2. After confirming requirements, select **Change to Open**.
+3. Return to the dashboard and confirm **Open vacancies** increases by one.
+4. Return to the vacancy and select **Change to Paused**. Confirm the dashboard
+   count decreases.
+5. Change the vacancy from `Paused` back to `Open`, then from `Open` to `Closed`.
+6. Confirm a closed vacancy can be reopened when it still has confirmed
+   requirements.
+
+Only these transitions are available:
+
+- `Draft → Open`
+- `Open → Paused` or `Closed`
+- `Paused → Open` or `Closed`
+- `Closed → Open`
+
+All changes are POST-only and organization-scoped. Requirement confirmation and
+vacancy lifecycle remain separate recruiter decisions.
 
 ## 11. Test organization isolation
 
@@ -264,8 +293,6 @@ The following are not defects at this milestone:
 - No private CV download route.
 - No OCR for scanned PDFs.
 - No outreach workflow.
-- No normal recruiter screen for changing vacancy lifecycle status yet; Django
-  admin can be used for this development test.
 
 ## 13. Final acceptance checklist
 
@@ -277,6 +304,8 @@ The current milestone is behaving correctly when all of these are true:
 - Recruiters can create direct-employer and client-associated vacancies.
 - Requirements can be saved, confirmed, copied to a new version, and confirmed
   again without mutating history.
+- Recruiters can open, pause, close, and reopen vacancies only through the
+  documented lifecycle transitions.
 - Cross-organization URLs do not disclose data.
 - No AI key or live AI request is required.
 

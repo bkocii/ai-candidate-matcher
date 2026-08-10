@@ -10,6 +10,8 @@ from organizations.models import ClientCompany, Organization
 from vacancies.forms import VacancyCreateForm, VacancyRequirementsForm
 from vacancies.models import Vacancy, VacancyRequirements
 from vacancies.services import (
+    available_vacancy_status_transitions,
+    change_vacancy_status,
     confirm_requirements_draft,
     create_next_requirements_draft,
     create_vacancy_with_requirements,
@@ -482,3 +484,158 @@ def test_vacancy_detail_never_renders_another_organizations_data(client) -> None
     assert "Visible requirement" not in content  # Drafts are not matching input.
     assert "Secret vacancy description" not in content
     assert "Secret requirements" not in content
+
+
+def confirm_requirements_for_status(
+    *,
+    vacancy: Vacancy,
+    requirements: VacancyRequirements,
+    user: User,
+) -> None:
+    requirements.summary = "Confirmed requirements"
+    requirements.save()
+    confirm_requirements_draft(requirements=requirements, user=user)
+    vacancy.refresh_from_db()
+
+
+def test_draft_vacancy_cannot_open_without_confirmed_requirements(client) -> None:
+    user, organization = make_workspace()
+    vacancy, _ = make_vacancy(organization, user=user)
+    client.force_login(user)
+
+    response = client.post(
+        reverse(
+            "vacancies:vacancy-status-change",
+            args=[organization.slug, vacancy.pk],
+        ),
+        {"status": Vacancy.Status.OPEN},
+        follow=True,
+    )
+
+    vacancy.refresh_from_db()
+    assert response.status_code == 200
+    assert vacancy.status == Vacancy.Status.DRAFT
+    assert "Confirm a requirements version before opening" in response.content.decode()
+
+
+def test_recruiter_can_open_pause_resume_and_close_vacancy(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    confirm_requirements_for_status(
+        vacancy=vacancy,
+        requirements=requirements,
+        user=user,
+    )
+    client.force_login(user)
+    route = reverse(
+        "vacancies:vacancy-status-change",
+        args=[organization.slug, vacancy.pk],
+    )
+
+    for new_status in (
+        Vacancy.Status.OPEN,
+        Vacancy.Status.PAUSED,
+        Vacancy.Status.OPEN,
+        Vacancy.Status.CLOSED,
+        Vacancy.Status.OPEN,
+    ):
+        response = client.post(route, {"status": new_status})
+        vacancy.refresh_from_db()
+        assert response.status_code == 302
+        assert vacancy.status == new_status
+
+
+def test_status_route_is_post_only_and_rejects_invalid_transition(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    confirm_requirements_for_status(
+        vacancy=vacancy,
+        requirements=requirements,
+        user=user,
+    )
+    client.force_login(user)
+    route = reverse(
+        "vacancies:vacancy-status-change",
+        args=[organization.slug, vacancy.pk],
+    )
+
+    get_response = client.get(route)
+    post_response = client.post(
+        route,
+        {"status": Vacancy.Status.PAUSED},
+        follow=True,
+    )
+
+    vacancy.refresh_from_db()
+    assert get_response.status_code == 405
+    assert post_response.status_code == 200
+    assert vacancy.status == Vacancy.Status.DRAFT
+    assert "cannot move directly from Draft to Paused" in post_response.content.decode()
+
+
+def test_status_service_repeats_object_permission_check() -> None:
+    owner, organization = make_workspace(username="owner")
+    outsider = User.objects.create_user(username="outsider")
+    vacancy, requirements = make_vacancy(organization, user=owner)
+    confirm_requirements_for_status(
+        vacancy=vacancy,
+        requirements=requirements,
+        user=owner,
+    )
+
+    with pytest.raises(PermissionDenied):
+        change_vacancy_status(
+            vacancy=vacancy,
+            user=outsider,
+            new_status=Vacancy.Status.OPEN,
+        )
+
+    vacancy.refresh_from_db()
+    assert vacancy.status == Vacancy.Status.DRAFT
+
+
+def test_status_route_hides_cross_organization_vacancy(client) -> None:
+    user, organization = make_workspace()
+    other = Organization.objects.create(name="Other", slug="other")
+    hidden, _ = make_vacancy(other)
+    client.force_login(user)
+
+    response = client.post(
+        reverse(
+            "vacancies:vacancy-status-change",
+            args=[organization.slug, hidden.pk],
+        ),
+        {"status": Vacancy.Status.OPEN},
+    )
+
+    assert response.status_code == 404
+
+
+def test_detail_shows_only_currently_valid_status_controls(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    client.force_login(user)
+    detail_route = reverse(
+        "vacancies:vacancy-detail",
+        args=[organization.slug, vacancy.pk],
+    )
+
+    draft_response = client.get(detail_route)
+    assert available_vacancy_status_transitions(vacancy) == ()
+    assert "Confirm a requirements version before opening" in (
+        draft_response.content.decode()
+    )
+    assert "Change to Open" not in draft_response.content.decode()
+
+    confirm_requirements_for_status(
+        vacancy=vacancy,
+        requirements=requirements,
+        user=user,
+    )
+    confirmed_response = client.get(detail_route)
+
+    assert available_vacancy_status_transitions(vacancy) == (
+        (Vacancy.Status.OPEN, "Open"),
+    )
+    assert "Change to Open" in confirmed_response.content.decode()
+    assert "Change to Paused" not in confirmed_response.content.decode()

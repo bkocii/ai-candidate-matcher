@@ -190,6 +190,9 @@ Status: Complete. `DATA-001` through `DATA-005` are complete.
   into the next numbered draft rather than editing it in place.
 - Added vacancy navigation, dashboard open-vacancy counts, synthetic manual test
   fixtures, and a detailed end-to-end testing guide.
+- Corrected the completed intake workflow so successful CSV submissions bring
+  the in-page report into view and recruiters can manage vacancy lifecycle through
+  tenant-safe, POST-only, validated status transitions.
 
 ## Verification
 
@@ -197,7 +200,7 @@ Verified on 2026-08-10 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 150 passed.
+- `pytest`: 156 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
@@ -209,9 +212,9 @@ implemented yet. Candidate records can be manually created, imported, and given
 validated PDF/DOCX CVs through the organization workspace. Recruiters can create
 vacancies, manually structure and confirm their requirements, and preserve
 corrections as immutable numbered history. Scanned-image CVs are not supported,
-and stored document bytes have no delivery route before `PROD-001`. Vacancy
-lifecycle changes remain available through Django admin until a later workflow
-requires a recruiter-facing control.
+and stored document bytes have no delivery route before `PROD-001`. Recruiters
+can manage vacancy status through the normal organization workspace after a
+requirements version is confirmed.
 
 ## Next task
 

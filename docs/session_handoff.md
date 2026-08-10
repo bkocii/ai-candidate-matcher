@@ -43,6 +43,11 @@ review, and create numbered correction drafts without changing confirmed
 history. A detailed manual test guide and validated synthetic CSV/PDF/DOCX/job
 fixtures are included. No AI extraction or matching workflow exists yet.
 
+A corrective `DATA-005` pass also makes completed CSV imports target the visible
+report section and adds recruiter-facing, POST-only vacancy lifecycle controls.
+Opening requires confirmed requirements; only draft-to-open, open-to-paused or
+closed, paused-to-open or closed, and closed-to-open transitions are accepted.
+
 The next roadmap item is:
 
 `MATCH-001 — Define normalized skills and explicit hard-constraint rules.`
@@ -65,7 +70,7 @@ The next roadmap item is:
 Verified on 2026-08-10 with Python 3.12.13:
 
 - Django system check passed.
-- 150 pytest tests passed.
+- 156 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
