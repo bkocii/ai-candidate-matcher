@@ -706,6 +706,127 @@ tbody tr:last-child td {
     margin-top: 32px;
 }
 
+.filter-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.filter-summary article,
+.filter-candidate {
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.filter-summary article {
+    padding: 20px;
+}
+
+.filter-summary span,
+.filter-summary strong {
+    display: block;
+}
+
+.filter-summary span {
+    color: var(--muted);
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.filter-summary strong {
+    margin-top: 8px;
+    font-size: 2rem;
+}
+
+.filter-results {
+    display: grid;
+    gap: 20px;
+}
+
+.filter-candidate {
+    overflow: hidden;
+}
+
+.filter-candidate > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 22px 24px;
+}
+
+.filter-candidate h2,
+.filter-candidate .eyebrow {
+    margin-bottom: 0;
+}
+
+.filter-outcome,
+.rule-outcome {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.filter-outcome {
+    padding: 8px 12px;
+}
+
+.rule-outcome {
+    min-width: 70px;
+    padding: 6px 9px;
+}
+
+.filter-outcome-passed,
+.rule-outcome-passed {
+    background: #e2f4e9;
+    color: #17603a;
+}
+
+.filter-outcome-review,
+.rule-outcome-unknown {
+    background: #fff1c7;
+    color: #765500;
+}
+
+.filter-outcome-failed,
+.rule-outcome-failed {
+    background: #fbeaea;
+    color: var(--danger);
+}
+
+.filter-candidate-failed {
+    border-color: #efaaa4;
+}
+
+.filter-rule-table small {
+    display: block;
+    max-width: 260px;
+    margin-top: 5px;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 28px;
+    color: var(--muted);
+}
+
+.pagination a {
+    color: var(--primary);
+    font-weight: 750;
+}
+
 @media (max-width: 700px) {
     .site-nav,
     .dashboard-heading,
@@ -736,8 +857,14 @@ tbody tr:last-child td {
 
     .metric-grid,
     .card-grid,
-    .detail-grid {
+    .detail-grid,
+    .filter-summary {
         grid-template-columns: 1fr;
+    }
+
+    .filter-candidate > header {
+        align-items: flex-start;
+        flex-direction: column;
     }
 
     .requirement-list div {

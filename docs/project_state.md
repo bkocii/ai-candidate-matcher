@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 3 — Deterministic search and shortlist.
 
-Status: In progress. `MATCH-001` is complete; `MATCH-002` is next.
+Status: In progress. `MATCH-001` and `MATCH-002` are complete; `MATCH-003` is next.
 
 ## Decisions made
 
@@ -224,21 +224,41 @@ Status: In progress. `MATCH-001` is complete; `MATCH-002` is next.
 - Added organization-scoped querysets, service-layer authorization, Django admin
   support, database constraints, and candidate-deletion cleanup for skill evidence.
 
+### `MATCH-002 — Inspectable deterministic candidate filtering`
+
+- Added a deterministic evaluation service that accepts only confirmed
+  requirements and active same-organization candidates after repeating tenant
+  authorization at the service boundary.
+- Added explicit per-rule `pass`, `fail`, and `unknown` results containing the
+  rule source wording, expected value, observed candidate fact, available
+  evidence, and a recruiter-readable explanation.
+- Aggregated candidate outcomes as passed when all rules pass, failed when any
+  rule fails, and review when no rule fails but at least one fact is unknown.
+  Unknown candidates remain eligible and are never silently rejected.
+- Evaluated normalized skill evidence, evidence-backed minimum experience, and
+  explicit candidate location without searching raw CV text. Partial or missing
+  facts remain unknown; unsupported profile fields are not inferred.
+- Added a recruiter-facing, version-labelled candidate filtering report with
+  summary counts, paginated candidate results, tenant-safe candidate links, and
+  no contact details or private CV text.
+- Kept results computed on request and intentionally excluded ranking, shortlist
+  bounds, persisted match runs, AI calls, and hiring decisions from this task.
+
 ## Verification
 
-Verified on 2026-08-10 with Python 3.12.13:
+Verified on 2026-08-11 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 188 passed.
+- `pytest`: 211 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
 ## Not implemented
 
-No candidate filtering, shortlist, outreach workflow, or AI business service has
-been implemented yet. Candidate records can be manually created, imported, and given
+No relevance scoring, bounded shortlist, outreach workflow, or AI business service
+have been implemented yet. Candidate records can be manually created, imported, and given
 validated PDF/DOCX CVs through the organization workspace. Recruiters can create
 vacancies, manually structure and confirm their requirements, and preserve
 corrections as immutable numbered history. Scanned-image CVs are not supported,
@@ -247,9 +267,10 @@ can manage vacancy status through the normal organization workspace after a
 requirements version is confirmed. Recruiters can also delete vacancies and
 candidates through explicit confirmation pages; scheduled retention enforcement,
 administrative deletion reports, and comprehensive audit views remain in
-`PROD-002`. Normalized skill and typed constraint definitions now exist, but they
-are not evaluated until `MATCH-002`.
+`PROD-002`. Recruiters can inspect deterministic rule outcomes for active
+candidates using the current confirmed requirements. These results are computed
+on request and are not yet persisted, ranked, or bounded into a shortlist.
 
 ## Next task
 
-`MATCH-002 — Implement inspectable deterministic candidate filtering.`
+`MATCH-003 — Implement relevance scoring and a bounded shortlist.`

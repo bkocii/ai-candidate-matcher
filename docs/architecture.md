@@ -273,9 +273,28 @@ Structured AI outputs should be stored with a schema version and the relevant so
 - Normalized links and typed rules are editable only while their requirements
   version is a draft. They become immutable with confirmation and are copied,
   rather than changed, when a recruiter creates a correction version.
-- `MATCH-001` defines the data contract only. Rule evaluation and inspectable
-  pass/fail/unknown results belong to `MATCH-002`; relevance scoring and shortlist
-  bounds belong to `MATCH-003`.
+- Deterministic evaluation uses only the current confirmed requirements version
+  and active candidates owned by the same authorized organization. Draft,
+  deleted-vacancy, inactive-candidate, and cross-organization inputs are rejected.
+- Every typed rule produces an inspectable result containing its recruiter source
+  wording, expected value, observed candidate fact, available evidence,
+  explanation, and `pass`, `fail`, or `unknown` outcome. Any failure makes the
+  candidate ineligible at this stage; no failures plus an unknown keeps the
+  candidate for review; all passes produce a passed result.
+- A recorded normalized candidate skill proves a required-skill pass. Absence of
+  a skill assertion stays unknown. Recorded skill-years can prove that a minimum
+  duration is met, but lower partial evidence cannot prove total experience is
+  insufficient. An explicit candidate location is compared using the rule's
+  conservative normalized equality and can pass or fail.
+- Work mode, language, education, certification, and employment type remain
+  unknown until a structured candidate profile supplies those facts. Evaluation
+  never keyword-searches raw CV text or infers facts from missing records.
+- Recruiters open a vacancy's **Evaluate candidates** page to inspect summary
+  counts and per-candidate rule tables. Results are computed on request for the
+  identified confirmed version and are not a ranking or hiring decision.
+- `MATCH-002` does not persist a match run. Relevance scoring and a bounded,
+  versioned shortlist belong to `MATCH-003`; stale-result invalidation belongs to
+  `MATCH-004`.
 
 ## Matching pipeline
 

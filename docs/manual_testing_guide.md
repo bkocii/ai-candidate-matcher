@@ -293,10 +293,11 @@ Expected result:
 - Django admin still contains the closed vacancy, its requirements history, and
   the deletion actor/timestamp.
 
-## 11. Inspect normalized skills and typed hard constraints
+## 11. Inspect skills, typed rules, and deterministic filtering
 
-This milestone defines matching data but does not evaluate candidates yet. Use
-only synthetic evidence and Django admin for this model-level check.
+Use only synthetic evidence. Django admin is still needed to create the typed
+candidate-skill and hard-constraint records; the evaluation report itself is in
+the normal recruiter application.
 
 1. Create or open an unconfirmed vacancy requirements draft in the normal app.
 2. Enter `Python` and `Django` as must-have skills and `PostgreSQL` as a
@@ -344,6 +345,36 @@ links and typed rules are copied to the new version instead of changing history.
 Free-text values previously entered in the vacancy’s **Hard constraints** box
 remain recruiter notes. They are not silently converted into executable rules.
 
+Before confirming, create three active synthetic candidates in the same
+organization:
+
+- `Synthetic Pass`: location `Prishtina`, with the recorded `Python` skill.
+- `Synthetic Review`: blank location and no recorded `Python` skill.
+- `Synthetic Fail`: location `Peja`, with or without the `Python` skill.
+
+Confirm the requirements, return to the vacancy detail page, and select
+**Evaluate candidates**.
+
+Expected result:
+
+- The page identifies confirmed requirements version 1.
+- `Synthetic Pass` passes both rules.
+- `Synthetic Review` has unknown results and remains in **Needs review**. A
+  missing skill or location is never treated as proof of failure.
+- `Synthetic Fail` fails the explicit location equality rule.
+- Every rule row shows the recruiter source wording, expected value, candidate
+  fact, evidence when present, and explanation.
+- Summary counts distinguish passed, needs-review, failed, and total evaluated.
+- Inactive, deletion-requested, and deleted candidates are not evaluated.
+- Candidate email, phone, raw extracted CV text, and private storage paths are
+  not displayed on the report.
+
+A minimum-experience rule can pass when a recorded candidate skill contains at
+least that many years. A lower skill-specific value remains unknown because it
+does not prove the candidate's total experience is lower. Work mode, language,
+education, certification, and employment-type rules also remain unknown until a
+later structured candidate profile records those facts.
+
 ## 12. Test organization isolation
 
 In Django admin:
@@ -370,7 +401,7 @@ Expected result:
 The following are not defects at this milestone:
 
 - No AI extraction or AI matching request.
-- No hard-constraint evaluation or deterministic shortlist yet.
+- No relevance score, rank, bounded shortlist, or persisted match run yet.
 - No recruiter-facing typed-rule or candidate-skill editor yet; `MATCH-001`
   exposes the data contract and Django admin inspection only.
 - No candidate-profile extraction from CV text yet.
@@ -394,6 +425,8 @@ The current milestone is behaving correctly when all of these are true:
   deletion hides the vacancy without destroying requirements history.
 - Requirement skills normalize case and spacing without merging meaningful
   punctuation, and typed rules keep unknown candidate facts eligible for review.
+- Deterministic filtering shows inspectable pass/fail/unknown rule outcomes and
+  excludes only candidates with an explicit failed fact.
 - Confirmed matching definitions cannot be edited; correction drafts copy them.
 - Cross-organization URLs do not disclose data.
 - No AI key or live AI request is required.

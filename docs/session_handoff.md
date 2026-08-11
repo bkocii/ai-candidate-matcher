@@ -41,7 +41,7 @@ descriptions, choose an optional organization-owned client, edit normalized
 structured requirements, confirm meaningful versions through POST-only human
 review, and create numbered correction drafts without changing confirmed
 history. A detailed manual test guide and validated synthetic CSV/PDF/DOCX/job
-fixtures are included. No AI extraction or matching workflow exists yet.
+fixtures are included. No AI extraction workflow exists yet.
 
 A corrective `DATA-005` pass also makes completed CSV imports target the visible
 report section and adds recruiter-facing, POST-only vacancy lifecycle controls.
@@ -59,11 +59,20 @@ Unknown candidate facts are forced to remain eligible for recruiter review;
 protected characteristics are not rule types. Existing requirements are
 backfilled through a data migration, confirmed definitions are immutable, and
 correction drafts copy the normalized links and typed rules. Filtering and rule
-evaluation have not been implemented yet.
+evaluation are implemented in `MATCH-002`.
+
+`MATCH-002` evaluates only the current confirmed requirements against active
+same-organization candidates. It returns inspectable pass/fail/unknown results
+with recruiter source wording, expected and observed values, evidence, and an
+explanation. Any explicit failure makes the candidate ineligible; missing or
+partial evidence remains unknown and eligible for review. A recruiter opens the
+vacancy and selects **Evaluate candidates** to see summary counts and paginated
+per-candidate rule details. The evaluation does not inspect raw CV text, make an
+AI request, persist a run, rank candidates, or make a hiring decision.
 
 The next roadmap item is:
 
-`MATCH-002 — Implement inspectable deterministic candidate filtering.`
+`MATCH-003 — Implement relevance scoring and a bounded shortlist.`
 
 ## Required instructions
 
@@ -80,10 +89,10 @@ The next roadmap item is:
 
 ## Current verification
 
-Verified on 2026-08-10 with Python 3.12.13:
+Verified on 2026-08-11 with Python 3.12.13:
 
 - Django system check passed.
-- 188 pytest tests passed.
+- 211 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -93,6 +102,6 @@ Verified on 2026-08-10 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `MATCH-002`: evaluate explicit hard constraints against
-organization-visible candidates with inspectable pass/fail/unknown results,
-preserving the deterministic-before-AI architecture.
+Implement only `MATCH-003`: add deterministic relevance scoring and a bounded
+shortlist for candidates that passed or remain eligible for review, preserving
+the inspectable deterministic-before-AI architecture.
