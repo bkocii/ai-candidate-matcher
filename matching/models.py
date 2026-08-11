@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from candidates.models import Candidate, CandidateDocument
@@ -86,6 +86,34 @@ class RequirementsOwnedQuerySet(models.QuerySet):
     def delete(self):
         self._reject_confirmed_mutation()
         return super().delete()
+
+
+class MatchRunQuerySet(models.QuerySet):
+    def for_organization(self, organization: Organization):
+        return self.filter(requirements__vacancy__organization=organization)
+
+    def visible_to(self, user: object):
+        if not _user_can_query_matching_data(user):
+            return self.none()
+        return self.filter(
+            requirements__vacancy__organization__is_active=True,
+            requirements__vacancy__organization__memberships__user=user,
+            requirements__vacancy__organization__memberships__is_active=True,
+        ).distinct()
+
+
+class ShortlistEntryQuerySet(models.QuerySet):
+    def for_organization(self, organization: Organization):
+        return self.filter(match_run__requirements__vacancy__organization=organization)
+
+    def visible_to(self, user: object):
+        if not _user_can_query_matching_data(user):
+            return self.none()
+        return self.filter(
+            match_run__requirements__vacancy__organization__is_active=True,
+            match_run__requirements__vacancy__organization__memberships__user=user,
+            match_run__requirements__vacancy__organization__memberships__is_active=True,
+        ).distinct()
 
 
 class Skill(models.Model):
@@ -580,3 +608,203 @@ class HardConstraintRule(models.Model):
 
     def __str__(self) -> str:
         return f"{self.requirements} — rule {self.position}"
+
+
+class MatchRun(models.Model):
+    """One version-labelled deterministic shortlist generation event."""
+
+    requirements = models.ForeignKey(
+        VacancyRequirements,
+        on_delete=models.PROTECT,
+        related_name="match_runs",
+    )
+    algorithm_version = models.CharField(max_length=50)
+    shortlist_limit = models.PositiveIntegerField()
+    evaluated_count = models.PositiveIntegerField()
+    eligible_count = models.PositiveIntegerField()
+    shortlisted_count = models.PositiveIntegerField(default=0)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_match_runs",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = MatchRunQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-created_at", "-id")
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(shortlist_limit__gte=1),
+                name="match_run_limit_is_positive",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(eligible_count__lte=models.F("evaluated_count")),
+                name="match_run_eligible_not_above_evaluated",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(shortlisted_count__lte=models.F("eligible_count")),
+                name="match_run_shortlisted_not_above_eligible",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(shortlisted_count__lte=models.F("shortlist_limit")),
+                name="match_run_shortlisted_not_above_limit",
+            ),
+        ]
+
+    @property
+    def organization(self) -> Organization:
+        return self.requirements.organization
+
+    @property
+    def vacancy(self):
+        return self.requirements.vacancy
+
+    def clean(self) -> None:
+        super().clean()
+        if self.requirements_id and not _requirements_are_confirmed(
+            self.requirements_id
+        ):
+            raise ValidationError(
+                {"requirements": "A match run requires confirmed requirements."}
+            )
+        if (
+            self.eligible_count is not None
+            and self.evaluated_count is not None
+            and self.eligible_count > self.evaluated_count
+        ):
+            raise ValidationError(
+                {"eligible_count": "Eligible count cannot exceed evaluated count."}
+            )
+        if (
+            self.shortlisted_count is not None
+            and self.eligible_count is not None
+            and self.shortlisted_count > self.eligible_count
+        ):
+            raise ValidationError(
+                {"shortlisted_count": "Shortlisted count cannot exceed eligible count."}
+            )
+        if (
+            self.shortlisted_count is not None
+            and self.shortlist_limit is not None
+            and self.shortlisted_count > self.shortlist_limit
+        ):
+            raise ValidationError(
+                {"shortlisted_count": "Shortlisted count cannot exceed the limit."}
+            )
+
+    def save(self, *args, **kwargs) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return (
+            f"{self.requirements.vacancy} — shortlist run {self.pk or 'new'} "
+            f"(requirements v{self.requirements.version})"
+        )
+
+
+class ShortlistEntry(models.Model):
+    """A ranked candidate and its inspectable deterministic skill score."""
+
+    class FilterOutcome(models.TextChoices):
+        PASSED = "passed", "Passed"
+        REVIEW = "review", "Needs review"
+
+    match_run = models.ForeignKey(
+        MatchRun,
+        on_delete=models.CASCADE,
+        related_name="entries",
+    )
+    candidate = models.ForeignKey(
+        Candidate,
+        on_delete=models.PROTECT,
+        related_name="shortlist_entries",
+    )
+    rank = models.PositiveIntegerField()
+    score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("100"))],
+    )
+    filter_outcome = models.CharField(max_length=20, choices=FilterOutcome.choices)
+    matched_must_have = models.PositiveIntegerField(default=0)
+    total_must_have = models.PositiveIntegerField(default=0)
+    matched_nice_to_have = models.PositiveIntegerField(default=0)
+    total_nice_to_have = models.PositiveIntegerField(default=0)
+    score_breakdown = models.JSONField(default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = ShortlistEntryQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("rank", "id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("match_run", "candidate"),
+                name="unique_candidate_per_match_run",
+            ),
+            models.UniqueConstraint(
+                fields=("match_run", "rank"),
+                name="unique_rank_per_match_run",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(rank__gte=1),
+                name="shortlist_entry_rank_is_positive",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(score__gte=0) & models.Q(score__lte=100),
+                name="shortlist_entry_score_in_range",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(filter_outcome__in=["passed", "review"]),
+                name="shortlist_entry_has_eligible_filter_outcome",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(matched_must_have__lte=models.F("total_must_have")),
+                name="shortlist_must_match_not_above_total",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    matched_nice_to_have__lte=models.F("total_nice_to_have")
+                ),
+                name="shortlist_nice_match_not_above_total",
+            ),
+        ]
+
+    @property
+    def organization(self) -> Organization:
+        return self.match_run.organization
+
+    def clean(self) -> None:
+        super().clean()
+        if (
+            self.match_run_id
+            and self.candidate_id
+            and self.match_run.organization.pk != self.candidate.organization_id
+        ):
+            raise ValidationError(
+                {
+                    "candidate": (
+                        "The candidate must belong to the match-run organization."
+                    )
+                }
+            )
+        if self.matched_must_have > self.total_must_have:
+            raise ValidationError("Matched must-have skills cannot exceed the total.")
+        if self.matched_nice_to_have > self.total_nice_to_have:
+            raise ValidationError(
+                "Matched nice-to-have skills cannot exceed the total."
+            )
+        if not isinstance(self.score_breakdown, list):
+            raise ValidationError({"score_breakdown": "Enter a list."})
+
+    def save(self, *args, **kwargs) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"#{self.rank} {self.candidate} — {self.score}"

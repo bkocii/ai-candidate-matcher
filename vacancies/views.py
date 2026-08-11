@@ -105,13 +105,18 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
     vacancy = _visible_vacancy(organization, vacancy_id)
     versions = vacancy.requirement_versions.select_related("created_by", "confirmed_by")
     draft = versions.filter(status=VacancyRequirements.Status.DRAFT).first()
+    current_requirements = vacancy.current_requirements
+    latest_match_run = (
+        current_requirements.match_runs.first() if current_requirements else None
+    )
     return render(
         request,
         "vacancies/vacancy_detail.html",
         {
             "organization": organization,
             "vacancy": vacancy,
-            "current_requirements": vacancy.current_requirements,
+            "current_requirements": current_requirements,
+            "latest_match_run": latest_match_run,
             "draft": draft,
             "versions": versions,
             "status_transitions": available_vacancy_status_transitions(vacancy),

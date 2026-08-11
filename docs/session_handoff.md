@@ -68,11 +68,21 @@ explanation. Any explicit failure makes the candidate ineligible; missing or
 partial evidence remains unknown and eligible for review. A recruiter opens the
 vacancy and selects **Evaluate candidates** to see summary counts and paginated
 per-candidate rule details. The evaluation does not inspect raw CV text, make an
-AI request, persist a run, rank candidates, or make a hiring decision.
+AI request, or make a hiring decision.
+
+`MATCH-003` is complete. After hard filtering, a recruiter can generate a
+persistent, version-labelled shortlist containing at most 20 eligible candidates.
+Explicit failures are excluded first. Recorded must-have skills contribute 70%
+and nice-to-have skills 30% when both groups exist; each visible score row shows
+the requirement, recorded candidate skill, evidence, and awarded points. Missing
+skill evidence earns no points but is not treated as proof of absence. Runs retain
+their requirements and algorithm versions, actor, counts, ranking, and score
+breakdown. Generation is POST-only, tenant-scoped, and never makes an AI request
+or hiring decision. Existing runs are not yet labelled stale when inputs change.
 
 The next roadmap item is:
 
-`MATCH-003 — Implement relevance scoring and a bounded shortlist.`
+`MATCH-004 — Add stale-result invalidation when candidate or vacancy data changes.`
 
 ## Required instructions
 
@@ -92,7 +102,7 @@ The next roadmap item is:
 Verified on 2026-08-11 with Python 3.12.13:
 
 - Django system check passed.
-- 211 pytest tests passed.
+- 226 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -102,6 +112,6 @@ Verified on 2026-08-11 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `MATCH-003`: add deterministic relevance scoring and a bounded
-shortlist for candidates that passed or remain eligible for review, preserving
-the inspectable deterministic-before-AI architecture.
+Implement only `MATCH-004`: detect and clearly mark persisted shortlist runs as
+stale when relevant candidate or vacancy matching inputs change, without
+silently recomputing history or starting AI assessment early.

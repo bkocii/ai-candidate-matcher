@@ -292,9 +292,34 @@ Structured AI outputs should be stored with a schema version and the relevant so
 - Recruiters open a vacancy's **Evaluate candidates** page to inspect summary
   counts and per-candidate rule tables. Results are computed on request for the
   identified confirmed version and are not a ranking or hiring decision.
-- `MATCH-002` does not persist a match run. Relevance scoring and a bounded,
-  versioned shortlist belong to `MATCH-003`; stale-result invalidation belongs to
-  `MATCH-004`.
+- A shortlist generation request repeats tenant authorization and accepts only
+  the vacancy's current confirmed requirements. It runs the hard-filter stage
+  first and excludes every candidate with an explicit failure. Passed and
+  needs-review candidates remain eligible for scoring.
+- Relevance scoring uses only normalized requirement-skill links and recorded
+  candidate-skill assertions. When must-have and nice-to-have groups both exist,
+  they contribute 70 and 30 points respectively. A lone group contributes the
+  full 100 points, and each skill inside a group has equal weight. Missing skill
+  evidence earns zero points but is never converted into a hard-filter failure.
+- Ranking sorts by score descending, uses passed-before-review only as an equal-
+  score tie-break, and finally uses the stable candidate record ID. Candidate
+  names, contact data, raw CV text, and protected characteristics do not affect
+  the order.
+- `MatchRun` persists the confirmed requirements version, scoring algorithm
+  version, recruiter actor, generation time, fixed limit of 20, and evaluated and
+  eligible counts. Each `ShortlistEntry` persists rank, score, hard-filter
+  outcome, group match counts, and a JSON score breakdown containing only the
+  relevant skill wording, evidence, match state, and points.
+- Candidate deletion removes that candidate's shortlist entries and their
+  evidence snapshots. The non-identifying run-level version, algorithm, limit,
+  and aggregate counts remain, including the number originally shortlisted.
+- Recruiters generate a run through a POST-only action and can inspect the latest
+  or earlier version-labelled report. Generating again creates history rather
+  than overwriting a previous run. Explicit failures never enter the shortlist,
+  regardless of their possible skill score.
+- `MATCH-003` intentionally does not decide that an existing result is stale.
+  Candidate or vacancy input changes are detected and surfaced by `MATCH-004`.
+  AI assessment and recruiter decisions remain later, separate stages.
 
 ## Matching pipeline
 

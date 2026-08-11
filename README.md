@@ -13,7 +13,7 @@ python-ai-toolkit[django]==1.0.0
 ## Current status
 
 Sprint 0, Sprint 1, and Sprint 2 are complete. Sprint 3 is in progress;
-`MATCH-001` and `MATCH-002` are complete.
+`MATCH-001` through `MATCH-003` are complete.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -38,11 +38,15 @@ recruiter review`, and protected characteristics are not supported rule types.
 Recruiters can evaluate the active organization candidate pool against a
 vacancy's current confirmed rules and inspect pass, fail, or unknown results,
 expected values, candidate facts, evidence, and explanations. Unknown facts
-remain eligible for review. The app uses the published
+remain eligible for review. Recruiters can generate a persistent shortlist of
+up to 20 eligible candidates ranked by an inspectable deterministic skill score.
+Must-have skills contribute 70% and nice-to-have skills 30% when both groups
+exist; every recorded match, missing fact, evidence item, and point contribution
+is visible. The app uses the published
 `python-ai-toolkit==1.0.0` distribution.
 
-The next approved task is `MATCH-003 — Implement relevance scoring and a bounded
-shortlist`.
+The next approved task is `MATCH-004 — Add stale-result invalidation when
+candidate or vacancy data changes`.
 
 ## Local setup
 
@@ -104,7 +108,8 @@ and vacancy fixtures, follow `docs/manual_testing_guide.md`.
 The normalized skill and hard-constraint records can be inspected in Django
 admin. After confirming a requirements version, open the vacancy and select
 **Evaluate candidates** for recruiter-facing deterministic results. This stage
-does not rank candidates or call an AI provider.
+does not call an AI provider. From that report, select **Generate shortlist** to
+persist and inspect a version-labelled ranking of up to 20 eligible candidates.
 
 ## Production configuration
 

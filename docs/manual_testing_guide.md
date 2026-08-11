@@ -375,7 +375,45 @@ does not prove the candidate's total experience is lower. Work mode, language,
 education, certification, and employment-type rules also remain unknown until a
 later structured candidate profile records those facts.
 
-## 12. Test organization isolation
+## 12. Test deterministic scoring and bounded shortlist
+
+Continue with the confirmed vacancy and synthetic candidates from the previous
+section. In Django admin, add the following normalized requirement skills before
+confirmation if they are not already present:
+
+- Must-have: `Python`, `Django`
+- Nice-to-have: `PostgreSQL`, `Redis`
+
+Record different candidate-skill combinations with synthetic evidence. Return to
+**Evaluate candidates** and select **Generate shortlist**.
+
+Expected result:
+
+- The generated run identifies the exact confirmed requirements version,
+  generation time, algorithm version, evaluated count, eligible count, shortlist
+  count, and fixed limit of 20.
+- A candidate matching one of two must-have skills and one of two nice-to-have
+  skills receives `50.00`: 35 must-have points plus 15 nice-to-have points.
+- A missing skill is shown as **Not recorded**, receives zero points, and is not
+  described as proof that the candidate lacks the skill.
+- Explicit hard-filter failures do not appear in the shortlist, even if they have
+  many recorded skills.
+- Scores sort descending. At an equal score, a candidate who passed all hard
+  filters appears before a candidate who still needs review. The final tie-break
+  uses stable record ID rather than candidate name.
+- Every row shows requirement wording, importance, recorded candidate wording,
+  evidence, and awarded/possible points.
+- Candidate contact fields, raw CV text, and storage paths are absent.
+- Generating again creates a new run; it does not overwrite the earlier report.
+
+To test the bound, create more than 20 active eligible synthetic candidates and
+generate again. Expected result: exactly 20 entries appear, while the summary and
+note retain the full eligible count and report how many fell outside the bound.
+
+An older run is not yet labelled stale after candidate or vacancy data changes.
+That behavior belongs to `MATCH-004` and is not a defect in this checkpoint.
+
+## 13. Test organization isolation
 
 In Django admin:
 
@@ -396,12 +434,12 @@ Expected result:
 - Django staff/superuser status alone still does not bypass the normal app's
   membership requirement.
 
-## 13. What is intentionally unavailable
+## 14. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
 - No AI extraction or AI matching request.
-- No relevance score, rank, bounded shortlist, or persisted match run yet.
+- No automatic stale-result warning or invalidation yet.
 - No recruiter-facing typed-rule or candidate-skill editor yet; `MATCH-001`
   exposes the data contract and Django admin inspection only.
 - No candidate-profile extraction from CV text yet.
@@ -409,7 +447,7 @@ The following are not defects at this milestone:
 - No OCR for scanned PDFs.
 - No outreach workflow.
 
-## 14. Final acceptance checklist
+## 15. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -427,11 +465,14 @@ The current milestone is behaving correctly when all of these are true:
   punctuation, and typed rules keep unknown candidate facts eligible for review.
 - Deterministic filtering shows inspectable pass/fail/unknown rule outcomes and
   excludes only candidates with an explicit failed fact.
+- Shortlist generation is POST-only, excludes explicit failures, shows the
+  70/30 skill formula and evidence, persists version-labelled history, and never
+  exceeds 20 entries.
 - Confirmed matching definitions cannot be edited; correction drafts copy them.
 - Cross-organization URLs do not disclose data.
 - No AI key or live AI request is required.
 
-## 15. Reset disposable local test data
+## 16. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

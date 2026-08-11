@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 3 — Deterministic search and shortlist.
 
-Status: In progress. `MATCH-001` and `MATCH-002` are complete; `MATCH-003` is next.
+Status: In progress. `MATCH-001` through `MATCH-003` are complete; `MATCH-004` is next.
 
 ## Decisions made
 
@@ -244,21 +244,49 @@ Status: In progress. `MATCH-001` and `MATCH-002` are complete; `MATCH-003` is ne
 - Kept results computed on request and intentionally excluded ranking, shortlist
   bounds, persisted match runs, AI calls, and hiring decisions from this task.
 
+### `MATCH-003 — Relevance scoring and bounded shortlist`
+
+- Added persistent, organization-scoped match runs tied to one immutable
+  confirmed requirements version, algorithm version, recruiter actor, generation
+  time, shortlist limit, and evaluated/eligible population counts.
+- Excluded every explicit hard-constraint failure before relevance scoring while
+  preserving passed and needs-review candidates as eligible.
+- Added a deterministic skill score from 0 to 100. When both groups exist,
+  must-have skills contribute 70 points and nice-to-have skills contribute 30;
+  a single available group contributes all 100 points, and skills within each
+  group are equally weighted.
+- Treated missing candidate skill evidence as zero relevance points rather than
+  proof of failure. Every skill row preserves requirement wording, recorded
+  candidate wording, evidence, match state, and awarded/possible points.
+- Ranked by score descending, then passed before needs-review only for equal
+  scores, then stable candidate record ID. Names and protected characteristics
+  do not influence the order.
+- Bounded each persisted shortlist to 20 entries while recording the full
+  evaluated and eligible counts and reporting how many eligible candidates fell
+  outside the bound.
+- Added POST-only generation, a recruiter-facing score explanation and shortlist
+  report, latest-shortlist links, tenant isolation, database constraints, admin
+  inspection, and version-labelled historical runs.
+- Extended candidate deletion to remove persisted shortlist entries and skill
+  evidence snapshots while retaining only non-identifying run-level counts.
+- Kept AI requests, hiring decisions, candidate approval/rejection, and stale-run
+  invalidation outside this task.
+
 ## Verification
 
 Verified on 2026-08-11 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 211 passed.
+- `pytest`: 226 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
 ## Not implemented
 
-No relevance scoring, bounded shortlist, outreach workflow, or AI business service
-have been implemented yet. Candidate records can be manually created, imported, and given
+No stale-result invalidation, outreach workflow, or AI business service has been
+implemented yet. Candidate records can be manually created, imported, and given
 validated PDF/DOCX CVs through the organization workspace. Recruiters can create
 vacancies, manually structure and confirm their requirements, and preserve
 corrections as immutable numbered history. Scanned-image CVs are not supported,
@@ -268,9 +296,11 @@ requirements version is confirmed. Recruiters can also delete vacancies and
 candidates through explicit confirmation pages; scheduled retention enforcement,
 administrative deletion reports, and comprehensive audit views remain in
 `PROD-002`. Recruiters can inspect deterministic rule outcomes for active
-candidates using the current confirmed requirements. These results are computed
-on request and are not yet persisted, ranked, or bounded into a shortlist.
+candidates using the current confirmed requirements, then generate a persistent
+version-labelled shortlist of up to 20 eligible candidates. Candidate or
+requirements changes do not yet mark an earlier run stale; that is the explicit
+next task.
 
 ## Next task
 
-`MATCH-003 — Implement relevance scoring and a bounded shortlist.`
+`MATCH-004 — Add stale-result invalidation when candidate or vacancy data changes.`

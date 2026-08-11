@@ -813,6 +813,78 @@ tbody tr:last-child td {
     line-height: 1.4;
 }
 
+.scoring-note,
+.human-review-note {
+    border: 1px solid #b8ddd0;
+    border-radius: 16px;
+    background: var(--accent);
+}
+
+.scoring-note {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 28px;
+    margin-bottom: 24px;
+    padding: 24px;
+}
+
+.scoring-note p,
+.human-review-note {
+    margin-bottom: 0;
+    color: var(--primary-dark);
+    line-height: 1.6;
+}
+
+.shortlist-rank {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.shortlist-rank > span {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--primary-dark);
+    font-size: 1.05rem;
+    font-weight: 850;
+}
+
+.shortlist-score {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.shortlist-score > strong {
+    font-size: 1.9rem;
+}
+
+.shortlist-score > span:not(.filter-outcome) {
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.shortlist-match-counts {
+    display: flex;
+    gap: 24px;
+    padding: 0 24px 20px;
+    color: var(--muted);
+}
+
+.shortlist-empty-score {
+    padding: 0 24px 22px;
+}
+
+.human-review-note {
+    margin-top: 24px;
+    padding: 18px 22px;
+    font-weight: 700;
+}
+
 .pagination {
     display: flex;
     align-items: center;
@@ -863,6 +935,16 @@ tbody tr:last-child td {
     }
 
     .filter-candidate > header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .scoring-note {
+        grid-template-columns: 1fr;
+    }
+
+    .shortlist-score,
+    .shortlist-match-counts {
         align-items: flex-start;
         flex-direction: column;
     }
