@@ -14,7 +14,7 @@
         {% if current_requirements %}
             <a class="primary-button button-link" href="{% url 'matching:candidate-filter-report' organization.slug vacancy.pk %}">Evaluate candidates</a>
             {% if latest_match_run %}
-                <a class="secondary-button" href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_match_run.pk %}">Latest shortlist</a>
+                <a class="secondary-button" href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_match_run.pk %}">Latest shortlist{% if latest_match_run_staleness.is_stale %} (stale){% endif %}</a>
             {% endif %}
         {% endif %}
         {% if draft %}

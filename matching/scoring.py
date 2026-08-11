@@ -12,6 +12,11 @@ from matching.models import (
     RequirementSkill,
     ShortlistEntry,
 )
+from matching.staleness import (
+    INPUT_SNAPSHOT_VERSION,
+    candidate_input_signature,
+    requirements_input_signature,
+)
 from organizations.permissions import require_organization_object_access
 from vacancies.models import VacancyRequirements
 
@@ -220,6 +225,11 @@ def generate_shortlist(
     run = MatchRun.objects.create(
         requirements=requirements,
         algorithm_version=ALGORITHM_VERSION,
+        input_snapshot_version=INPUT_SNAPSHOT_VERSION,
+        requirements_input_signature=requirements_input_signature(requirements),
+        candidate_input_signature=candidate_input_signature(
+            result.candidate for result in filter_report.results
+        ),
         shortlist_limit=SHORTLIST_LIMIT,
         evaluated_count=filter_report.evaluated_count,
         eligible_count=filter_report.eligible_count,

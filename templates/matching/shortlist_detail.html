@@ -18,6 +18,25 @@
     </div>
 </section>
 
+{% if staleness.is_stale %}
+    <section class="stale-result-callout" role="alert" aria-labelledby="stale-result-title">
+        <div>
+            <p class="eyebrow">Outdated result</p>
+            <h2 id="stale-result-title">This shortlist is stale</h2>
+            <p>The saved ranking remains available as history, but it no longer represents all current matching inputs.</p>
+            <ul>
+                {% for reason in staleness.reasons %}<li>{{ reason }}</li>{% endfor %}
+            </ul>
+        </div>
+        <form method="post" action="{% url 'matching:shortlist-generate' organization.slug vacancy.pk %}">
+            {% csrf_token %}
+            <button class="primary-button" type="submit">Generate current shortlist</button>
+        </form>
+    </section>
+{% else %}
+    <p class="fresh-result-note" role="status"><strong>Current result:</strong> vacancy requirements and candidate matching inputs are unchanged since this run.</p>
+{% endif %}
+
 <section class="filter-summary" aria-label="Shortlist summary">
     <article><span>Evaluated</span><strong>{{ run.evaluated_count }}</strong></article>
     <article><span>Eligible</span><strong>{{ run.eligible_count }}</strong></article>

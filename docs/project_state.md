@@ -12,9 +12,9 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 ## Current milestone
 
-Sprint 3 — Deterministic search and shortlist.
+Sprint 4 — AI extraction and assessment.
 
-Status: In progress. `MATCH-001` through `MATCH-003` are complete; `MATCH-004` is next.
+Status: Not started. Sprint 3 is complete; `AI-001` is next.
 
 ## Decisions made
 
@@ -272,21 +272,42 @@ Status: In progress. `MATCH-001` through `MATCH-003` are complete; `MATCH-004` i
 - Kept AI requests, hiring decisions, candidate approval/rejection, and stale-run
   invalidation outside this task.
 
+### `MATCH-004 — Stale-result invalidation`
+
+- Added versioned SHA-256 signatures for the confirmed vacancy matching inputs
+  and active candidate-pool facts used by deterministic filtering, scoring, and
+  displayed evidence.
+- Added an organization-authorized staleness service that compares saved input
+  signatures with current inputs without exposing or duplicating candidate data.
+- Marked runs stale after a newer confirmed requirements version, matching-input
+  mutation, active candidate addition/removal, candidate deletion, location
+  change, or skill/experience/evidence change.
+- Kept unrelated contact, source, retention, and vacancy-lifecycle changes out of
+  invalidation because they cannot affect the deterministic result.
+- Added a clear current/stale result banner, reason-specific warnings, stale
+  labels on latest-shortlist links, and recruiter-triggered regeneration that
+  creates a new run while preserving old history.
+- Treated pre-signature match runs as explicitly stale instead of incorrectly
+  assuming they are current, and repeated tenant authorization in the staleness
+  service.
+- Kept all AI requests, assessment persistence, review decisions, and outreach
+  outside this task.
+
 ## Verification
 
 Verified on 2026-08-11 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 226 passed.
+- `pytest`: 239 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
 ## Not implemented
 
-No stale-result invalidation, outreach workflow, or AI business service has been
-implemented yet. Candidate records can be manually created, imported, and given
+No outreach workflow or AI business service has been implemented yet. Candidate
+records can be manually created, imported, and given
 validated PDF/DOCX CVs through the organization workspace. Recruiters can create
 vacancies, manually structure and confirm their requirements, and preserve
 corrections as immutable numbered history. Scanned-image CVs are not supported,
@@ -297,10 +318,10 @@ candidates through explicit confirmation pages; scheduled retention enforcement,
 administrative deletion reports, and comprehensive audit views remain in
 `PROD-002`. Recruiters can inspect deterministic rule outcomes for active
 candidates using the current confirmed requirements, then generate a persistent
-version-labelled shortlist of up to 20 eligible candidates. Candidate or
-requirements changes do not yet mark an earlier run stale; that is the explicit
-next task.
+version-labelled shortlist of up to 20 eligible candidates. Relevant candidate
+or confirmed-requirements changes clearly mark earlier runs stale while retaining
+their immutable historical scores and explanations.
 
 ## Next task
 
-`MATCH-004 — Add stale-result invalidation when candidate or vacancy data changes.`
+`AI-001 — Add an application AI gateway backed by Python AI Toolkit v1.0.0.`

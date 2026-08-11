@@ -12,8 +12,7 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0, Sprint 1, and Sprint 2 are complete. Sprint 3 is in progress;
-`MATCH-001` through `MATCH-003` are complete.
+Sprint 0 through Sprint 3 are complete.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -42,11 +41,14 @@ remain eligible for review. Recruiters can generate a persistent shortlist of
 up to 20 eligible candidates ranked by an inspectable deterministic skill score.
 Must-have skills contribute 70% and nice-to-have skills 30% when both groups
 exist; every recorded match, missing fact, evidence item, and point contribution
-is visible. The app uses the published
+is visible. Each match run also stores privacy-preserving signatures of the
+confirmed vacancy inputs and active candidate matching facts. A historical run
+is clearly labelled stale when either input set changes; regeneration creates a
+new run without rewriting the saved ranking. The app uses the published
 `python-ai-toolkit==1.0.0` distribution.
 
-The next approved task is `MATCH-004 — Add stale-result invalidation when
-candidate or vacancy data changes`.
+The next approved task is `AI-001 — Add an application AI gateway backed by
+Python AI Toolkit v1.0.0`.
 
 ## Local setup
 
@@ -110,6 +112,10 @@ admin. After confirming a requirements version, open the vacancy and select
 **Evaluate candidates** for recruiter-facing deterministic results. This stage
 does not call an AI provider. From that report, select **Generate shortlist** to
 persist and inspect a version-labelled ranking of up to 20 eligible candidates.
+The shortlist page labels the result current or stale. A stale warning explains
+whether confirmed vacancy requirements, active candidate matching inputs, or a
+legacy untracked snapshot requires regeneration; saved history is never silently
+recomputed.
 
 ## Production configuration
 

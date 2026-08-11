@@ -619,6 +619,12 @@ class MatchRun(models.Model):
         related_name="match_runs",
     )
     algorithm_version = models.CharField(max_length=50)
+    input_snapshot_version = models.CharField(
+        max_length=50,
+        default="deterministic_match_inputs.v1",
+    )
+    requirements_input_signature = models.CharField(max_length=64, blank=True)
+    candidate_input_signature = models.CharField(max_length=64, blank=True)
     shortlist_limit = models.PositiveIntegerField()
     evaluated_count = models.PositiveIntegerField()
     eligible_count = models.PositiveIntegerField()

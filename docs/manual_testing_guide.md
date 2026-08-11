@@ -410,10 +410,55 @@ To test the bound, create more than 20 active eligible synthetic candidates and
 generate again. Expected result: exactly 20 entries appear, while the summary and
 note retain the full eligible count and report how many fell outside the bound.
 
-An older run is not yet labelled stale after candidate or vacancy data changes.
-That behavior belongs to `MATCH-004` and is not a defect in this checkpoint.
+## 13. Test stale-result detection and regeneration
 
-## 13. Test organization isolation
+Keep the shortlist from the previous section open in one browser tab.
+
+### Candidate matching-input change
+
+In Django admin, change one active synthetic candidate's `location`, recorded
+skill, experience years, or skill evidence. Alternatively, add another active
+synthetic candidate to the same organization. Refresh the saved shortlist.
+
+Expected result:
+
+- A prominent **This shortlist is stale** warning appears.
+- The warning says that the active candidate pool or candidate matching evidence
+  changed.
+- The saved ranks, scores, and evidence snapshot remain unchanged; no automatic
+  recomputation occurs.
+- The vacancy and filter pages label the latest historical link **(stale)**.
+
+Changing only a candidate email, phone, source/consent metadata, or retention
+date does not make the deterministic result stale because those values are not
+filtering, scoring, or score-explanation inputs.
+
+### Vacancy requirements change
+
+Select **Create correction draft**, change a must-have or nice-to-have skill,
+save, and confirm the new requirements version. Open the older shortlist again.
+
+Expected result:
+
+- The old run remains available under its original requirements version.
+- It is labelled stale because the vacancy's confirmed matching requirements
+  changed.
+- Confirming or editing only a draft does not replace the current matching input;
+  confirmation is the point at which the old run becomes stale.
+
+### Regeneration
+
+From the stale warning, select **Generate current shortlist**.
+
+Expected result:
+
+- A separate run is created using the current confirmed requirements and active
+  candidate matching inputs.
+- The new page shows **Current result**.
+- Opening the earlier run still shows its stale warning and original history.
+- No AI request, approval/rejection, outreach, or automatic hiring action occurs.
+
+## 14. Test organization isolation
 
 In Django admin:
 
@@ -434,12 +479,11 @@ Expected result:
 - Django staff/superuser status alone still does not bypass the normal app's
   membership requirement.
 
-## 14. What is intentionally unavailable
+## 15. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
 - No AI extraction or AI matching request.
-- No automatic stale-result warning or invalidation yet.
 - No recruiter-facing typed-rule or candidate-skill editor yet; `MATCH-001`
   exposes the data contract and Django admin inspection only.
 - No candidate-profile extraction from CV text yet.
@@ -447,7 +491,7 @@ The following are not defects at this milestone:
 - No OCR for scanned PDFs.
 - No outreach workflow.
 
-## 15. Final acceptance checklist
+## 16. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -468,11 +512,13 @@ The current milestone is behaving correctly when all of these are true:
 - Shortlist generation is POST-only, excludes explicit failures, shows the
   70/30 skill formula and evidence, persists version-labelled history, and never
   exceeds 20 entries.
+- Relevant candidate or confirmed-requirements changes clearly mark older runs
+  stale; regeneration creates a separate current run without rewriting history.
 - Confirmed matching definitions cannot be edited; correction drafts copy them.
 - Cross-organization URLs do not disclose data.
 - No AI key or live AI request is required.
 
-## 16. Reset disposable local test data
+## 17. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

@@ -14,7 +14,7 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0, Sprint 1, and Sprint 2 are complete. Sprint 3 is in progress.
+Sprint 0 through Sprint 3 are complete. Sprint 4 is next.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -78,11 +78,21 @@ the requirement, recorded candidate skill, evidence, and awarded points. Missing
 skill evidence earns no points but is not treated as proof of absence. Runs retain
 their requirements and algorithm versions, actor, counts, ranking, and score
 breakdown. Generation is POST-only, tenant-scoped, and never makes an AI request
-or hiring decision. Existing runs are not yet labelled stale when inputs change.
+or hiring decision.
+
+`MATCH-004` is complete. Each generated run records versioned SHA-256 signatures
+for its confirmed vacancy inputs and active candidate matching facts. When a run
+is viewed, an organization-authorized service compares those signatures with the
+current requirements and candidate pool. New confirmed requirements, active
+candidate additions/removals, candidate deletion, location changes, and
+skill/experience/evidence changes clearly mark the historical run stale. Facts
+unused by deterministic matching do not trigger false invalidation. Stale scores
+remain immutable, regeneration creates a separate run, and pre-signature runs
+are explicitly treated as stale.
 
 The next roadmap item is:
 
-`MATCH-004 — Add stale-result invalidation when candidate or vacancy data changes.`
+`AI-001 — Add an application AI gateway backed by Python AI Toolkit v1.0.0.`
 
 ## Required instructions
 
@@ -102,7 +112,7 @@ The next roadmap item is:
 Verified on 2026-08-11 with Python 3.12.13:
 
 - Django system check passed.
-- 226 pytest tests passed.
+- 239 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -112,6 +122,6 @@ Verified on 2026-08-11 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `MATCH-004`: detect and clearly mark persisted shortlist runs as
-stale when relevant candidate or vacancy matching inputs change, without
-silently recomputing history or starting AI assessment early.
+Implement only `AI-001`: add an application-owned AI gateway backed by the
+published Python AI Toolkit v1.0.0, preserving the existing privacy boundary and
+using fake/test substitution without starting vacancy or candidate extraction.

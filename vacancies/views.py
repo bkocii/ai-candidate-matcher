@@ -5,6 +5,8 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from matching.models import MatchRun
+from matching.staleness import assess_match_run_staleness
 from organizations.models import Organization
 from vacancies.forms import (
     VacancyCreateForm,
@@ -107,7 +109,14 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
     draft = versions.filter(status=VacancyRequirements.Status.DRAFT).first()
     current_requirements = vacancy.current_requirements
     latest_match_run = (
-        current_requirements.match_runs.first() if current_requirements else None
+        MatchRun.objects.for_organization(organization)
+        .filter(requirements__vacancy=vacancy)
+        .first()
+    )
+    latest_match_run_staleness = (
+        assess_match_run_staleness(run=latest_match_run, user=request.user)
+        if latest_match_run is not None
+        else None
     )
     return render(
         request,
@@ -117,6 +126,7 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
             "vacancy": vacancy,
             "current_requirements": current_requirements,
             "latest_match_run": latest_match_run,
+            "latest_match_run_staleness": latest_match_run_staleness,
             "draft": draft,
             "versions": versions,
             "status_transitions": available_vacancy_status_transitions(vacancy),

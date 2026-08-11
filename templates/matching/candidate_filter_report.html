@@ -16,7 +16,7 @@
     <div class="button-row">
         <a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Back to vacancy</a>
         {% if latest_run %}
-            <a class="secondary-button" href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_run.pk %}">View latest shortlist</a>
+            <a class="secondary-button" href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_run.pk %}">View latest shortlist{% if latest_run_staleness.is_stale %} (stale){% endif %}</a>
         {% endif %}
         {% if report and report.eligible_count %}
             <form method="post" action="{% url 'matching:shortlist-generate' organization.slug vacancy.pk %}">

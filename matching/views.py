@@ -7,6 +7,7 @@ from django.views.decorators.http import require_POST
 from matching.evaluation import filter_candidates
 from matching.models import MatchRun
 from matching.scoring import generate_shortlist
+from matching.staleness import assess_match_run_staleness
 from organizations.models import Organization
 from vacancies.models import Vacancy
 
@@ -25,14 +26,20 @@ def candidate_filter_report(request, organization_slug: str, vacancy_id: int):
     report = None
     page = None
     latest_run = None
+    latest_run_staleness = None
     if requirements is not None:
         report = filter_candidates(requirements=requirements, user=request.user)
         page = Paginator(report.results, 25).get_page(request.GET.get("page"))
         latest_run = (
             MatchRun.objects.for_organization(organization)
-            .filter(requirements=requirements)
+            .filter(requirements__vacancy=vacancy)
             .first()
         )
+        if latest_run is not None:
+            latest_run_staleness = assess_match_run_staleness(
+                run=latest_run,
+                user=request.user,
+            )
 
     return render(
         request,
@@ -44,6 +51,7 @@ def candidate_filter_report(request, organization_slug: str, vacancy_id: int):
             "report": report,
             "page": page,
             "latest_run": latest_run,
+            "latest_run_staleness": latest_run_staleness,
         },
     )
 
@@ -105,6 +113,7 @@ def shortlist_detail(
     )
     entries = run.entries.select_related("candidate").order_by("rank", "id")
     available_entry_count = entries.count()
+    staleness = assess_match_run_staleness(run=run, user=request.user)
     return render(
         request,
         "matching/shortlist_detail.html",
@@ -113,6 +122,7 @@ def shortlist_detail(
             "vacancy": vacancy,
             "run": run,
             "entries": entries,
+            "staleness": staleness,
             "omitted_count": max(
                 run.eligible_count - run.shortlisted_count,
                 0,

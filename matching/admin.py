@@ -69,6 +69,9 @@ class MatchRunAdmin(admin.ModelAdmin):
     readonly_fields = (
         "requirements",
         "algorithm_version",
+        "input_snapshot_version",
+        "requirements_input_signature",
+        "candidate_input_signature",
         "shortlist_limit",
         "evaluated_count",
         "eligible_count",

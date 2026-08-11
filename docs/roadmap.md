@@ -41,7 +41,9 @@ Sprint acceptance: a recruiter can import an anonymized candidate set and create
 - `MATCH-001` Define normalized skills and explicit hard-constraint rules. **Complete — 2026-08-10.**
 - `MATCH-002` Implement inspectable deterministic candidate filtering. **Complete — 2026-08-11.**
 - `MATCH-003` Implement relevance scoring and a bounded shortlist. **Complete — 2026-08-11.**
-- `MATCH-004` Add stale-result invalidation when candidate or vacancy data changes.
+- `MATCH-004` Add stale-result invalidation when candidate or vacancy data changes. **Complete — 2026-08-11.**
+
+Status: Complete.
 
 Sprint acceptance: the app produces a useful shortlist without any AI provider.
 

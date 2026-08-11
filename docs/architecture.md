@@ -317,8 +317,19 @@ Structured AI outputs should be stored with a schema version and the relevant so
   or earlier version-labelled report. Generating again creates history rather
   than overwriting a previous run. Explicit failures never enter the shortlist,
   regardless of their possible skill score.
-- `MATCH-003` intentionally does not decide that an existing result is stale.
-  Candidate or vacancy input changes are detected and surfaced by `MATCH-004`.
+- Every generated run stores a versioned SHA-256 signature of its immutable
+  requirements inputs and another signature of the active candidate pool facts
+  used by filtering, scoring, and evidence display. The signatures retain no raw
+  candidate payload and cannot be used as replacement profile data.
+- Staleness is evaluated against current authorized inputs when a run is viewed.
+  A newer confirmed requirements version, a matching-definition change, an active
+  candidate addition/removal, or a change to candidate location, skill,
+  experience, evidence, or evidence-document reference marks the historical run
+  stale. Contact, source, retention, and other facts unused by deterministic
+  matching do not create false invalidation.
+- Runs created before versioned input signatures are explicitly stale rather
+  than assumed current. Stale history remains inspectable and is never silently
+  recomputed; recruiter-triggered regeneration creates a separate current run.
   AI assessment and recruiter decisions remain later, separate stages.
 
 ## Matching pipeline
@@ -358,7 +369,8 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 
 - Imports are idempotent where a stable source identifier exists.
 - File hashes help detect duplicate CVs.
-- A vacancy or candidate profile edit invalidates stale assessments.
+- Relevant vacancy or candidate matching-input changes invalidate deterministic
+  shortlist freshness without overwriting historical results.
 - AI calls use bounded retries.
 - Batch operations can resume without duplicating completed assessments.
 - The deterministic shortlist remains inspectable if AI is unavailable.
