@@ -14,8 +14,8 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 3 are complete. Sprint 4 is in progress; `AI-001` and
-`AI-002` are complete and `AI-003` is next.
+Sprint 0 through Sprint 3 are complete. Sprint 4 is in progress; `AI-001`
+through `AI-003` are complete and `AI-004` is next.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -42,8 +42,8 @@ descriptions, choose an optional organization-owned client, edit normalized
 structured requirements, confirm meaningful versions through POST-only human
 review, and create numbered correction drafts without changing confirmed
 history. A detailed manual test guide and validated synthetic CSV/PDF/DOCX/job
-fixtures are included. Vacancy extraction is available only through the explicit
-draft action described below; candidate extraction is not implemented yet.
+fixtures are included. Vacancy and candidate-profile extraction are available
+only through explicit draft actions described below.
 
 A corrective `DATA-005` pass also makes completed CSV imports target the visible
 report section and adds recruiter-facing, POST-only vacancy lifecycle controls.
@@ -121,9 +121,21 @@ executable rules. Gateway failure and concurrent recruiter edits preserve the
 existing draft. Candidate data is not involved, and metadata persistence remains
 deferred to `AI-005`.
 
+`AI-003` is complete. Recruiters can trigger candidate-profile extraction from a
+successfully parsed CV. The application removes contact and sensitive prefixed
+content before the request, applies a bounded extra-forbidding schema, verifies
+every returned evidence excerpt against the redacted source, and stores a new
+numbered draft without changing deterministic matching. A separate recruiter
+confirmation publishes grounded profile facts and normalized skills. Confirmed
+profiles are immutable matching inputs, unknown or non-matching facts remain
+eligible for review, and profile confirmation makes affected saved shortlists
+stale. Manual candidate-skill assertions are preserved. Raw CV text, prompts,
+provider output, contact data, assessments, and request metadata are not stored
+or displayed by this workflow.
+
 The next roadmap item is:
 
-`AI-003 — Extract and validate structured candidate profiles from CV text.`
+`AI-004 — Generate structured evidence-based match assessments.`
 
 ## Required instructions
 
@@ -143,7 +155,7 @@ The next roadmap item is:
 Verified on 2026-08-12 with Python 3.12.13:
 
 - Django system check passed.
-- 293 pytest tests passed.
+- 313 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -153,7 +165,6 @@ Verified on 2026-08-12 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `AI-003`: extract and validate structured candidate profiles from
-lawfully stored CV text through the application gateway, preserve source evidence
-and explicit unknowns, exclude contact and protected data, and do not begin AI
-match assessment.
+Implement only `AI-004`: generate structured evidence-based match assessments
+from confirmed vacancy requirements and minimized confirmed candidate profiles,
+keep unsupported facts explicit, and do not begin review decisions or outreach.

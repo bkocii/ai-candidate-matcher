@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from accounts.models import User
-from candidates.models import Candidate
+from candidates.models import Candidate, CandidateProfile
 from matching.models import MatchRun
 from matching.scoring_policy import ALGORITHM_VERSION
 from organizations.permissions import require_organization_object_access
@@ -70,6 +70,14 @@ def candidate_input_signature(candidates: Iterable[Candidate]) -> str:
     """Fingerprint active candidate facts used by filtering, scoring, or evidence."""
     payload = []
     for candidate in sorted(candidates, key=lambda item: item.pk):
+        profile = next(
+            (
+                item
+                for item in candidate.profile_versions.all()
+                if item.status == CandidateProfile.Status.CONFIRMED
+            ),
+            None,
+        )
         skills = [
             {
                 "id": record.pk,
@@ -78,6 +86,7 @@ def candidate_input_signature(candidates: Iterable[Candidate]) -> str:
                 "evidence": record.evidence,
                 "years_experience": _decimal_value(record.years_experience),
                 "source_document_id": record.source_document_id,
+                "source_profile_id": record.source_profile_id,
             }
             for record in sorted(
                 candidate.skill_records.all(),
@@ -89,6 +98,25 @@ def candidate_input_signature(candidates: Iterable[Candidate]) -> str:
                 "candidate_id": candidate.pk,
                 "location": candidate.location,
                 "skills": skills,
+                "confirmed_profile": (
+                    {
+                        "id": profile.pk,
+                        "version": profile.version,
+                        "source_document_id": profile.source_document_id,
+                        "source_document_sha256": profile.source_document_sha256,
+                        "location": profile.location,
+                        "work_mode_preference": profile.work_mode_preference,
+                        "languages": profile.languages,
+                        "education": profile.education,
+                        "certifications": profile.certifications,
+                        "employment_type_preferences": (
+                            profile.employment_type_preferences
+                        ),
+                        "fact_evidence": profile.fact_evidence,
+                    }
+                    if profile is not None
+                    else None
+                ),
             }
         )
     return _signature(payload)
@@ -106,7 +134,7 @@ def _current_candidates(run: MatchRun):
     return (
         Candidate.objects.for_organization(run.organization)
         .filter(status=Candidate.Status.ACTIVE)
-        .prefetch_related("skill_records")
+        .prefetch_related("skill_records", "profile_versions")
         .order_by("id")
     )
 

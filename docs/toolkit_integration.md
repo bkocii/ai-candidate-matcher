@@ -41,6 +41,16 @@ Input: text extracted by the application from a lawfully stored CV.
 
 Output: a validated application-owned Pydantic schema containing relevant employment evidence and unknowns.
 
+Implemented in `AI-003` by `candidates.ai_extraction`. The service accepts one
+successfully extracted CV document, removes identity/contact and sensitive
+prefixed lines, bounds the remaining input to 60,000 characters, and requests an
+extra-forbidding `CandidateProfileExtraction`. Every returned fact must carry an
+exact excerpt that the application can find in the redacted source. A successful
+request creates a versioned draft; recruiter confirmation separately publishes
+matching facts and normalized skills. Python AI Toolkit remains unaware of
+candidate models, redaction policy, tenant authorization, evidence verification,
+profile versioning, and the human-confirmation boundary.
+
 ### Match assessment
 
 Input: confirmed vacancy requirements and a minimized candidate profile.
@@ -71,7 +81,8 @@ return `AIResult.raw_response` or `AIResult.original_raw_response`.
 Application business services expose or will expose concepts such as:
 
 - `extract_vacancy_requirements(requirements, user)`
-- `extract_candidate_profile(text)`
+- `extract_candidate_profile(document, user)`
+- `confirm_candidate_profile(profile, user)`
 - `assess_match(requirements, candidate_profile)`
 - `draft_outreach(vacancy, candidate, assessment)`
 

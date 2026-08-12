@@ -2,6 +2,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 
@@ -110,6 +111,12 @@ class Candidate(models.Model):
 
     def __str__(self) -> str:
         return self.full_name
+
+    @property
+    def current_profile(self):
+        return self.profile_versions.filter(
+            status=CandidateProfile.Status.CONFIRMED
+        ).first()
 
 
 class CandidateSource(models.Model):
@@ -368,3 +375,207 @@ class CandidateDocument(models.Model):
 
     def __str__(self) -> str:
         return f"{self.candidate} — {self.original_filename}"
+
+
+class CandidateProfile(models.Model):
+    """Versioned, recruiter-reviewed structured facts from one candidate CV."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        CONFIRMED = "confirmed", "Confirmed"
+
+    class WorkMode(models.TextChoices):
+        UNKNOWN = "unknown", "Unknown"
+        ON_SITE = "on_site", "On site"
+        HYBRID = "hybrid", "Hybrid"
+        REMOTE = "remote", "Remote"
+        FLEXIBLE = "flexible", "Flexible"
+
+    candidate = models.ForeignKey(
+        Candidate,
+        on_delete=models.CASCADE,
+        related_name="profile_versions",
+    )
+    source_document = models.ForeignKey(
+        CandidateDocument,
+        on_delete=models.CASCADE,
+        related_name="profile_versions",
+    )
+    version = models.PositiveIntegerField()
+    schema_version = models.CharField(
+        max_length=50,
+        default="candidate_profile.v1",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DRAFT,
+    )
+    source_document_sha256 = models.CharField(
+        max_length=64,
+        validators=[
+            RegexValidator(
+                regex=r"\A[0-9a-f]{64}\Z",
+                message="SHA-256 must contain 64 lowercase hexadecimal characters.",
+            )
+        ],
+    )
+    source_text_sha256 = models.CharField(
+        max_length=64,
+        validators=[
+            RegexValidator(
+                regex=r"\A[0-9a-f]{64}\Z",
+                message="SHA-256 must contain 64 lowercase hexadecimal characters.",
+            )
+        ],
+    )
+    relevant_experience_summary = models.TextField(blank=True)
+    skills = models.JSONField(default=list, blank=True)
+    employment_history = models.JSONField(default=list, blank=True)
+    location = models.CharField(max_length=200, blank=True)
+    work_mode_preference = models.CharField(
+        max_length=20,
+        choices=WorkMode.choices,
+        default=WorkMode.UNKNOWN,
+    )
+    languages = models.JSONField(default=list, blank=True)
+    education = models.JSONField(default=list, blank=True)
+    certifications = models.JSONField(default=list, blank=True)
+    employment_type_preferences = models.JSONField(default=list, blank=True)
+    availability = models.CharField(max_length=300, blank=True)
+    fact_evidence = models.JSONField(default=dict, blank=True)
+    ambiguities = models.JSONField(default=list, blank=True)
+    excluded_sensitive_content_detected = models.BooleanField(default=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_candidate_profiles",
+    )
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="confirmed_candidate_profiles",
+    )
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = CandidateRelatedQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-version", "-created_at", "id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("candidate", "version"),
+                name="unique_candidate_profile_version",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(version__gte=1),
+                name="candidate_profile_version_positive",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(status__in=["draft", "confirmed"]),
+                name="candidate_profile_valid_status",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    work_mode_preference__in=[
+                        "unknown",
+                        "on_site",
+                        "hybrid",
+                        "remote",
+                        "flexible",
+                    ]
+                ),
+                name="candidate_profile_valid_work_mode",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        status="draft",
+                        confirmed_by__isnull=True,
+                        confirmed_at__isnull=True,
+                    )
+                    | models.Q(
+                        status="confirmed",
+                        confirmed_by__isnull=False,
+                        confirmed_at__isnull=False,
+                    )
+                ),
+                name="candidate_profile_confirmation_consistent",
+            ),
+        ]
+
+    @property
+    def organization(self) -> Organization:
+        return self.candidate.organization
+
+    def _confirmed_snapshot_changed(self) -> bool:
+        if not self.pk:
+            return False
+        persisted = type(self).objects.get(pk=self.pk)
+        if persisted.status != self.Status.CONFIRMED:
+            return False
+        immutable_fields = (
+            "candidate_id",
+            "source_document_id",
+            "version",
+            "schema_version",
+            "status",
+            "source_document_sha256",
+            "source_text_sha256",
+            "relevant_experience_summary",
+            "skills",
+            "employment_history",
+            "location",
+            "work_mode_preference",
+            "languages",
+            "education",
+            "certifications",
+            "employment_type_preferences",
+            "availability",
+            "fact_evidence",
+            "ambiguities",
+            "excluded_sensitive_content_detected",
+            "created_by_id",
+            "confirmed_by_id",
+            "confirmed_at",
+        )
+        return any(
+            getattr(self, field_name) != getattr(persisted, field_name)
+            for field_name in immutable_fields
+        )
+
+    def clean(self) -> None:
+        super().clean()
+        if (
+            self.candidate_id
+            and self.source_document_id
+            and self.source_document.candidate_id != self.candidate_id
+        ):
+            raise ValidationError(
+                {"source_document": "The document must belong to this candidate."}
+            )
+        if self.candidate_id and self.candidate.status == Candidate.Status.DELETED:
+            raise ValidationError("Deleted candidates cannot have profiles.")
+        if self.source_document_id and (
+            self.source_document.extraction_status
+            != CandidateDocument.ExtractionStatus.SUCCEEDED
+        ):
+            raise ValidationError(
+                {"source_document": "The source document must have extracted text."}
+            )
+
+    def save(self, *args, **kwargs) -> None:
+        if self._confirmed_snapshot_changed():
+            raise ValidationError(
+                "Confirmed candidate profiles are immutable; extract a new version."
+            )
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.candidate} — profile v{self.version}"

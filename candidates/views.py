@@ -2,10 +2,17 @@ import csv
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
+from ai_gateway import AIGatewayError
+from candidates.ai_extraction import (
+    confirm_candidate_profile,
+    extract_candidate_profile,
+)
 from candidates.documents import CandidateDocumentUploadError, upload_candidate_cv
 from candidates.forms import (
     CandidateCSVImportForm,
@@ -15,7 +22,7 @@ from candidates.forms import (
     source_values_from_import_form,
     source_values_from_manual_form,
 )
-from candidates.models import Candidate
+from candidates.models import Candidate, CandidateDocument, CandidateProfile
 from candidates.services import (
     CSV_HEADERS,
     CandidateDeletionError,
@@ -58,7 +65,9 @@ def candidate_detail(request, organization_slug: str, candidate_id: int):
         Candidate.objects.for_organization(organization).not_deleted(),
         pk=candidate_id,
     )
-    documents = candidate.documents.filter(deleted_at__isnull=True)
+    documents = candidate.documents.filter(deleted_at__isnull=True).prefetch_related(
+        "profile_versions"
+    )
     return render(
         request,
         "candidates/candidate_detail.html",
@@ -67,6 +76,127 @@ def candidate_detail(request, organization_slug: str, candidate_id: int):
             "candidate": candidate,
             "documents": documents,
         },
+    )
+
+
+@login_required
+@require_POST
+def candidate_profile_extract(
+    request,
+    organization_slug: str,
+    candidate_id: int,
+    document_id: int,
+):
+    organization = _visible_organization(request, organization_slug)
+    candidate = get_object_or_404(
+        Candidate.objects.for_organization(organization).not_deleted(),
+        pk=candidate_id,
+    )
+    document = get_object_or_404(
+        CandidateDocument.objects.for_organization(organization),
+        pk=document_id,
+        candidate=candidate,
+        deleted_at__isnull=True,
+    )
+    try:
+        result = extract_candidate_profile(
+            document=document,
+            user=request.user,
+        )
+    except (AIGatewayError, ValidationError) as error:
+        public_message = (
+            "; ".join(error.messages)
+            if isinstance(error, ValidationError)
+            else str(error)
+        )
+        messages.error(request, public_message)
+        return redirect(
+            "candidates:candidate-detail",
+            organization_slug=organization.slug,
+            candidate_id=candidate.pk,
+        )
+
+    messages.success(
+        request,
+        "AI profile draft created. Review its evidence before confirming it for "
+        "matching.",
+    )
+    return redirect(
+        "candidates:candidate-profile-detail",
+        organization_slug=organization.slug,
+        candidate_id=candidate.pk,
+        profile_id=result.profile.pk,
+    )
+
+
+@login_required
+def candidate_profile_detail(
+    request,
+    organization_slug: str,
+    candidate_id: int,
+    profile_id: int,
+):
+    organization = _visible_organization(request, organization_slug)
+    candidate = get_object_or_404(
+        Candidate.objects.for_organization(organization).not_deleted(),
+        pk=candidate_id,
+    )
+    profile = get_object_or_404(
+        CandidateProfile.objects.for_organization(organization).select_related(
+            "source_document",
+            "created_by",
+            "confirmed_by",
+        ),
+        pk=profile_id,
+        candidate=candidate,
+    )
+    return render(
+        request,
+        "candidates/candidate_profile_detail.html",
+        {
+            "organization": organization,
+            "candidate": candidate,
+            "profile": profile,
+            "profile_versions": candidate.profile_versions.select_related(
+                "source_document"
+            ),
+        },
+    )
+
+
+@login_required
+@require_POST
+def candidate_profile_confirm(
+    request,
+    organization_slug: str,
+    candidate_id: int,
+    profile_id: int,
+):
+    organization = _visible_organization(request, organization_slug)
+    candidate = get_object_or_404(
+        Candidate.objects.for_organization(organization).not_deleted(),
+        pk=candidate_id,
+    )
+    profile = get_object_or_404(
+        CandidateProfile.objects.for_organization(organization),
+        pk=profile_id,
+        candidate=candidate,
+    )
+    try:
+        confirm_candidate_profile(profile=profile, user=request.user)
+    except ValidationError as error:
+        messages.error(request, "; ".join(error.messages))
+    else:
+        messages.success(
+            request,
+            "Candidate profile confirmed. Its grounded facts and skill evidence "
+            "are now available to deterministic matching.",
+        )
+    return redirect(
+        "candidates:candidate-profile-detail",
+        organization_slug=organization.slug,
+        candidate_id=candidate.pk,
+        profile_id=profile.pk,
     )
 
 

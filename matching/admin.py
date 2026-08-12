@@ -24,7 +24,13 @@ class CandidateSkillAdmin(admin.ModelAdmin):
     list_display = ("candidate", "skill", "years_experience", "created_at")
     list_filter = ("skill__organization",)
     search_fields = ("candidate__full_name", "skill__name", "evidence")
-    autocomplete_fields = ("candidate", "skill", "source_document", "created_by")
+    autocomplete_fields = (
+        "candidate",
+        "skill",
+        "source_document",
+        "source_profile",
+        "created_by",
+    )
     readonly_fields = ("created_at", "updated_at")
 
 

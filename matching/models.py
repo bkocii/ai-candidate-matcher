@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from candidates.models import Candidate, CandidateDocument
+from candidates.models import Candidate, CandidateDocument, CandidateProfile
 from organizations.models import (
     Organization,
     OrganizationScopedQuerySet,
@@ -194,6 +194,13 @@ class CandidateSkill(models.Model):
         blank=True,
         related_name="skill_records",
     )
+    source_profile = models.ForeignKey(
+        CandidateProfile,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="published_skill_records",
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -246,6 +253,26 @@ class CandidateSkill(models.Model):
         ):
             raise ValidationError(
                 {"source_document": "The document must belong to this candidate."}
+            )
+        if (
+            self.candidate_id
+            and self.source_profile_id
+            and self.source_profile.candidate_id != self.candidate_id
+        ):
+            raise ValidationError(
+                {"source_profile": "The profile must belong to this candidate."}
+            )
+        if (
+            self.source_document_id
+            and self.source_profile_id
+            and self.source_profile.source_document_id != self.source_document_id
+        ):
+            raise ValidationError(
+                {
+                    "source_profile": (
+                        "The profile and skill evidence must use the same document."
+                    )
+                }
             )
         if self.candidate_id and self.candidate.status == Candidate.Status.DELETED:
             raise ValidationError("Deleted candidates cannot receive skill records.")

@@ -13,7 +13,7 @@ python-ai-toolkit[django]==1.0.0
 ## Current status
 
 Sprint 0 through Sprint 3 are complete. Sprint 4 is in progress, with `AI-001`
-and `AI-002` complete.
+through `AI-003` complete.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -52,10 +52,14 @@ responses, translates provider/toolkit failures into bounded application errors,
 and supports fake substitution. Recruiters can now intentionally extract bounded,
 structured vacancy-requirement suggestions from a preserved source description.
 The suggestions remain an editable draft, never create executable rules, and
-still require explicit recruiter confirmation.
+still require explicit recruiter confirmation. Recruiters can also intentionally
+extract a versioned candidate-profile draft from a successfully parsed CV. The
+application removes contact and sensitive prefixed lines before the request,
+requires source-verifiable evidence, keeps missing facts explicitly unknown, and
+publishes matching facts and skills only after a separate recruiter confirmation.
 
-The next approved task is `AI-003 — Extract and validate structured candidate
-profiles from CV text`.
+The next approved task is `AI-004 — Generate structured evidence-based match
+assessments`.
 
 ## Local setup
 
@@ -105,6 +109,12 @@ Open a candidate and select **Upload CV** to add a PDF or DOCX file up to 10 MB.
 Password-protected, malformed, macro-enabled, textless/scanned, or resource-heavy
 documents are rejected. The app shows safe metadata only; direct document
 download is intentionally unavailable until the private-delivery task.
+After a CV extracts successfully, select **Extract profile** to run the optional
+AI workflow. Review its exact source excerpts and explicit ambiguities on the
+versioned draft page. Only **Confirm profile** publishes the profile's grounded
+skills and facts to deterministic matching; extraction alone does not change a
+shortlist or matching input. Extracted CV text, contact details, prompts, and raw
+provider output are never shown on the review page.
 
 Open **Vacancies** to paste a job description. Every new vacancy receives an
 editable requirements version 1. Recruiters enter list values one per line, save

@@ -178,7 +178,9 @@ AI usage events, operational events, privacy-relevant access, and failures witho
   Django database row alone does not guarantee storage deletion.
 - Recruiter-confirmed candidate deletion removes candidate contact fields,
   provenance rows, document database rows, stored document bytes, and extracted
-  text. It retains only the candidate primary key, organization ownership,
+  text. Document deletion cascades its candidate-profile versions and any
+  AI-published skill evidence. It retains only the candidate primary key,
+  organization ownership,
   creator attribution, a non-identifying placeholder name, and deletion
   timestamps as a minimal tombstone. Deleted candidates are excluded from
   recruiter lists, detail routes, and uploads.
@@ -209,6 +211,40 @@ AI usage events, operational events, privacy-relevant access, and failures witho
 - Duplicate reporting is an intake safety aid rather than a universal identity
   guarantee. Concurrency hardening and durable import/audit events remain part of
   the later production workflow.
+
+### Candidate profile extraction and confirmation
+
+- `CandidateProfile` is a numbered, organization-scoped snapshot tied to one
+  successfully extracted CV and its SHA-256/text SHA-256 source identity. It
+  records bounded structured employment, skill, location, work-mode, language,
+  education, certification, employment-type, and availability facts; exact
+  source evidence; explicit ambiguities; and whether sensitive prefixed content
+  was removed before the request.
+- Extraction is a recruiter-triggered POST action. The service repeats tenant,
+  candidate, document, lifecycle, document-type, extraction-status, and source-
+  size checks. It redacts the candidate name, email addresses, phone numbers,
+  URLs, contact-labelled lines, and protected/sensitive prefixed lines before
+  constructing an untrusted-document prompt.
+- The application-owned schema forbids extra fields, bounds all values, requires
+  evidence for every returned fact, and requires either grounded facts or an
+  explicit ambiguity. A second application check normalizes whitespace and
+  verifies that every evidence excerpt occurs in the redacted source.
+- Successful extraction creates only a new draft version. It stores validated
+  structured output but never stores prompts, raw provider responses, or contact
+  values. Provider, schema, authorization, stale-source, deletion, and size
+  failures create no profile and expose only bounded recruiter-facing errors.
+- Confirmation is a separate POST action. A confirmed snapshot is immutable and
+  becomes the candidate's current matching profile; a newer draft never replaces
+  it, and an older draft cannot supersede a newer confirmed version.
+- Confirmation publishes profile skills as inspectable `CandidateSkill` rows
+  linked to both the source document and source profile. Recruiter/manual skill
+  assertions are preserved; confirming a replacement profile removes only the
+  earlier AI-published assertions from the same source document.
+- Deterministic filtering consumes only confirmed profile facts and evidence.
+  Explicit matching facts can pass a rule, while absent or non-matching profile
+  facts remain unknown and eligible for recruiter review. A confirmed profile
+  changes the candidate matching signature and makes affected historical runs
+  stale; a draft profile does neither.
 
 ### Vacancy intake records
 

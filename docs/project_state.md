@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 4 — AI extraction and assessment.
 
-Status: In progress. `AI-001` and `AI-002` are complete; `AI-003` is next.
+Status: In progress. `AI-001` through `AI-003` are complete; `AI-004` is next.
 
 ## Decisions made
 
@@ -350,24 +350,59 @@ Status: In progress. `AI-001` and `AI-002` are complete; `AI-003` is next.
   returned by the service but is not stored in this task. No candidate data,
   candidate extraction, match assessment, or live ordinary test request was added.
 
+### `AI-003 — Structured candidate-profile extraction`
+
+- Added a recruiter-triggered, POST-only extraction action for successfully
+  parsed CV documents and a separate tenant-safe profile review page.
+- Added an application-owned, extra-forbidding Pydantic schema with bounded
+  employment history, skills, location, work mode, languages, education,
+  certifications, employment preferences, availability, and ambiguities.
+- Removed the candidate name, contact values, generic emails, phone numbers,
+  URLs, contact-labelled lines, and protected/sensitive prefixed lines before
+  building the untrusted-CV prompt. The prompt requests no hiring recommendation.
+- Required exact source evidence for every returned fact and independently
+  verified each excerpt against the redacted source before saving anything.
+  Missing facts remain unknown and unsupported output is rejected.
+- Added immutable, numbered `CandidateProfile` snapshots tied to one source
+  document and its document/text hashes. Successful extraction creates only a
+  draft; provider, schema, authorization, deletion, oversized-input, and source-
+  change failures create no profile and expose bounded messages.
+- Added a separate recruiter confirmation action. Only the latest confirmed
+  profile is matching input, older drafts cannot supersede it, and confirmed
+  snapshots cannot be changed in place.
+- Published confirmed profile skills as inspectable candidate-skill evidence
+  linked to the source profile and document while preserving recruiter/manual
+  assertions and replacing only earlier AI-published assertions for that source.
+- Extended deterministic rule evaluation to grounded confirmed profile facts.
+  Non-matching or absent facts remain unknown and eligible for review rather than
+  becoming inferred failures.
+- Added confirmed profile content to privacy-preserving candidate input
+  signatures. Draft extraction leaves historical shortlists current; confirmation
+  makes affected runs stale without rewriting them.
+- Extended candidate deletion so the source-document cascade removes profile
+  versions and their AI-published skills. Raw CV text, prompts, contact values,
+  provider output, match assessments, and AI request metadata are not displayed
+  or persisted by this task.
+
 ## Verification
 
 Verified on 2026-08-12 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 293 passed.
+- `pytest`: 313 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
 ## Not implemented
 
-No outreach workflow, candidate extraction, or AI match assessment has been
-implemented yet. Recruiters can intentionally run structured vacancy extraction
-for an editable requirements draft, but no candidate data is sent and no AI
-output is confirmed automatically. Candidate
-records can be manually created, imported, and given
+No outreach workflow or AI match assessment has been implemented yet.
+Recruiters can intentionally run structured vacancy extraction for an editable
+requirements draft and candidate-profile extraction for a lawfully stored,
+successfully parsed CV. Both create human-reviewable drafts; only explicit
+candidate-profile confirmation publishes grounded matching facts. Candidate
+records can also be manually created, imported, and given
 validated PDF/DOCX CVs through the organization workspace. Recruiters can create
 vacancies, manually structure and confirm their requirements, and preserve
 corrections as immutable numbered history. Scanned-image CVs are not supported,
@@ -389,4 +424,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`AI-003 — Extract and validate structured candidate profiles from CV text.`
+`AI-004 — Generate structured evidence-based match assessments.`

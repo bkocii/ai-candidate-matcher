@@ -40,7 +40,7 @@ Do not patch a local copy of the toolkit inside the app. Confirmed toolkit work 
 | ID | Hypothesis | Validation point | Status |
 | --- | --- | --- | --- |
 | `HYP-001` | Django integration may need clearer guidance for service-layer use and test substitution. | `AI-001`, `AI-006` | Evaluated — app-owned gateway sufficient |
-| `HYP-002` | Batch structured requests may need a reusable API or documented pattern. | `AI-003`, `AI-004` | Unverified |
+| `HYP-002` | Batch structured requests may need a reusable API or documented pattern. | `AI-003`, `AI-004` | AI-003 evaluated — single request sufficient; AI-004 pending |
 | `HYP-003` | Available result metadata may not cover all app usage-reporting needs. | `AI-005`, `PROD-004` | Unverified |
 | `HYP-004` | Generic PDF/DOCX loaders could be useful, but safe CV extraction may belong in the app or a separate package. | `DATA-004` | Evaluated — app-owned |
 | `HYP-005` | Persistent vector-store integration may be useful if embedding retrieval is adopted. | `EVAL-002` | Unverified |
@@ -64,6 +64,14 @@ organization authorization, duplicate policy, safe recruiter errors, and CV-text
 retention rules around ordinary PDF/DOCX parsing. Those controls belong to the
 Django application. No provider-independent AI request or generic toolkit loader
 failure was reproduced, so no Python AI Toolkit change is proposed.
+
+### `HYP-002` — partial evaluation, 2026-08-12
+
+`AI-003` extracts one bounded CV per explicit recruiter action, so the published
+structured-request contract is sufficient and batching would add no value to
+this workflow. No toolkit defect or reusable API gap was reproduced. The
+hypothesis remains open only for `AI-004`, where assessment throughput and
+failure isolation can be measured against a real bounded candidate set.
 
 ## Confirmed observations
 

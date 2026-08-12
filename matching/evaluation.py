@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 
 from accounts.models import User
-from candidates.models import Candidate
+from candidates.models import Candidate, CandidateProfile
 from matching.models import CandidateSkill, HardConstraintRule, normalize_taxonomy_value
 from organizations.permissions import require_organization_object_access
 from vacancies.models import VacancyRequirements
@@ -182,14 +182,20 @@ def _evaluate_minimum_experience(
 def _evaluate_location(
     rule: HardConstraintRule,
     candidate: Candidate,
+    profile: CandidateProfile | None,
 ) -> RuleEvaluation:
-    if not candidate.location.strip():
+    candidate_location = candidate.location.strip()
+    evidence = "Candidate record location"
+    if not candidate_location and profile is not None:
+        candidate_location = profile.location.strip()
+        evidence = profile.fact_evidence.get("location", "")
+    if not candidate_location:
         return _unknown(
             rule,
             explanation="No structured candidate location is recorded.",
         )
 
-    candidate_location = " ".join(candidate.location.split())
+    candidate_location = " ".join(candidate_location.split())
     outcome = (
         RuleOutcome.PASSED
         if normalize_taxonomy_value(candidate_location)
@@ -210,20 +216,91 @@ def _evaluate_location(
         expected_value=_expected_value(rule),
         candidate_value=candidate_location,
         explanation=explanation,
-        evidence="Candidate record location",
+        evidence=evidence,
     )
 
 
-def _evaluate_unavailable_profile_fact(
+def _profile_items_for_rule(
+    *,
     rule: HardConstraintRule,
+    profile: CandidateProfile,
+) -> tuple[tuple[str, str], ...]:
+    if rule.rule_type == HardConstraintRule.RuleType.WORK_MODE:
+        if profile.work_mode_preference == CandidateProfile.WorkMode.UNKNOWN:
+            return ()
+        return (
+            (
+                profile.work_mode_preference,
+                profile.fact_evidence.get("work_mode_preference", ""),
+            ),
+        )
+    if rule.rule_type == HardConstraintRule.RuleType.LANGUAGE:
+        values = []
+        for item in profile.languages:
+            label = item["language"]
+            if item.get("proficiency"):
+                label = f"{label} {item['proficiency']}"
+            values.append((label, item["evidence"]))
+            values.append((item["language"], item["evidence"]))
+        return tuple(values)
+    if rule.rule_type == HardConstraintRule.RuleType.EDUCATION:
+        return tuple(
+            (item["qualification"], item["evidence"]) for item in profile.education
+        )
+    if rule.rule_type == HardConstraintRule.RuleType.CERTIFICATION:
+        return tuple(
+            (item["name"], item["evidence"]) for item in profile.certifications
+        )
+    if rule.rule_type == HardConstraintRule.RuleType.EMPLOYMENT_TYPE:
+        evidence = profile.fact_evidence.get("employment_type_preferences", "")
+        return tuple(
+            (preference, evidence) for preference in profile.employment_type_preferences
+        )
+    return ()
+
+
+def _evaluate_profile_fact(
+    *,
+    rule: HardConstraintRule,
+    profile: CandidateProfile | None,
 ) -> RuleEvaluation:
-    return _unknown(
-        rule,
-        explanation=(
+    if profile is None:
+        return _unknown(
+            rule,
+            explanation=(
+                f"No confirmed candidate profile supplies a structured "
+                f"{rule.get_rule_type_display().lower()} fact. The candidate "
+                "remains eligible for recruiter review."
+            ),
+        )
+    facts = _profile_items_for_rule(rule=rule, profile=profile)
+    for candidate_value, evidence in facts:
+        if normalize_taxonomy_value(candidate_value) == rule.normalized_expected_value:
+            return RuleEvaluation(
+                rule_id=rule.pk,
+                rule_type=rule.rule_type,
+                rule_label=rule.get_rule_type_display(),
+                source_text=rule.source_text,
+                outcome=RuleOutcome.PASSED,
+                expected_value=_expected_value(rule),
+                candidate_value=candidate_value,
+                explanation=(
+                    "The confirmed candidate profile contains a matching "
+                    "source-grounded fact."
+                ),
+                evidence=evidence,
+            )
+    if not facts:
+        explanation = (
             f"No structured candidate {rule.get_rule_type_display().lower()} fact "
-            "is recorded. The candidate remains eligible for recruiter review."
-        ),
-    )
+            "is recorded."
+        )
+    else:
+        explanation = (
+            "The confirmed profile has related facts, but they do not prove this "
+            "requirement. Absence is not treated as a failure."
+        )
+    return _unknown(rule, explanation=explanation)
 
 
 def evaluate_rule(
@@ -231,14 +308,15 @@ def evaluate_rule(
     rule: HardConstraintRule,
     candidate: Candidate,
     candidate_skills: dict[int, CandidateSkill],
+    candidate_profile: CandidateProfile | None = None,
 ) -> RuleEvaluation:
     if rule.rule_type == HardConstraintRule.RuleType.REQUIRED_SKILL:
         return _evaluate_required_skill(rule, candidate_skills)
     if rule.rule_type == HardConstraintRule.RuleType.MINIMUM_EXPERIENCE:
         return _evaluate_minimum_experience(rule, candidate_skills)
     if rule.rule_type == HardConstraintRule.RuleType.LOCATION:
-        return _evaluate_location(rule, candidate)
-    return _evaluate_unavailable_profile_fact(rule)
+        return _evaluate_location(rule, candidate, candidate_profile)
+    return _evaluate_profile_fact(rule=rule, profile=candidate_profile)
 
 
 def _aggregate_outcome(rule_results: tuple[RuleEvaluation, ...]) -> str:
@@ -255,8 +333,21 @@ def _evaluate_candidate(
     rules: tuple[HardConstraintRule, ...],
 ) -> CandidateFilterResult:
     skills = {record.skill_id: record for record in candidate.skill_records.all()}
+    profile = next(
+        (
+            item
+            for item in candidate.profile_versions.all()
+            if item.status == CandidateProfile.Status.CONFIRMED
+        ),
+        None,
+    )
     results = tuple(
-        evaluate_rule(rule=rule, candidate=candidate, candidate_skills=skills)
+        evaluate_rule(
+            rule=rule,
+            candidate=candidate,
+            candidate_skills=skills,
+            candidate_profile=profile,
+        )
         for rule in rules
     )
     return CandidateFilterResult(
@@ -278,9 +369,10 @@ def evaluate_candidate_constraints(
     requirements = VacancyRequirements.objects.select_related("vacancy").get(
         pk=requirements.pk
     )
-    candidate = Candidate.objects.prefetch_related("skill_records__skill").get(
-        pk=candidate.pk
-    )
+    candidate = Candidate.objects.prefetch_related(
+        "skill_records__skill",
+        "profile_versions",
+    ).get(pk=candidate.pk)
     if requirements.status != VacancyRequirements.Status.CONFIRMED:
         raise ValidationError("Only confirmed requirements can be evaluated.")
     if requirements.vacancy.deleted_at is not None:
@@ -318,7 +410,7 @@ def filter_candidates(
     candidates = (
         Candidate.objects.for_organization(requirements.organization)
         .filter(status=Candidate.Status.ACTIVE)
-        .prefetch_related("skill_records__skill")
+        .prefetch_related("skill_records__skill", "profile_versions")
         .order_by("full_name", "id")
     )
     rules = tuple(

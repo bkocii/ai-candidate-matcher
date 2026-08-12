@@ -32,6 +32,7 @@
                         <th scope="col">Type</th>
                         <th scope="col">Size</th>
                         <th scope="col">Extraction</th>
+                        <th scope="col">AI profile</th>
                         <th scope="col">Uploaded</th>
                     </tr>
                 </thead>
@@ -42,6 +43,20 @@
                             <td>{{ document.get_document_type_display }}</td>
                             <td>{{ document.size_bytes|filesizeformat }}</td>
                             <td><span class="status-pill extraction-{{ document.extraction_status }}">{{ document.get_extraction_status_display }}</span></td>
+                            <td>
+                                {% with latest_profile=document.profile_versions.all.0 %}
+                                    {% if latest_profile %}
+                                        <a href="{% url 'candidates:candidate-profile-detail' organization.slug candidate.pk latest_profile.pk %}">Profile v{{ latest_profile.version }} · {{ latest_profile.get_status_display }}</a>
+                                    {% elif document.extraction_status == "succeeded" and document.document_type == "cv" %}
+                                        <form method="post" action="{% url 'candidates:candidate-profile-extract' organization.slug candidate.pk document.pk %}">
+                                            {% csrf_token %}
+                                            <button class="secondary-button" type="submit">Extract profile</button>
+                                        </form>
+                                    {% else %}
+                                        Not available
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
                             <td>{{ document.created_at|date:"Y-m-d H:i" }}</td>
                         </tr>
                     {% endfor %}

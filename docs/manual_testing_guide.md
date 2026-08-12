@@ -1,7 +1,7 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`AI-001`. Use only the synthetic files in `manual_testing/fixtures` or other
+`AI-003`. Use only the synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
 
@@ -295,9 +295,10 @@ Expected result:
 
 ## 11. Inspect skills, typed rules, and deterministic filtering
 
-Use only synthetic evidence. Django admin is still needed to create typed
-candidate-skill evidence until candidate-profile extraction is implemented.
-Vacancy hard-constraint rules are managed in the normal recruiter application.
+Use only synthetic evidence. Candidate skills can be published by confirming an
+AI-extracted profile as described in section 16; Django admin remains useful for
+precise manual test setup. Vacancy hard-constraint rules are managed in the
+normal recruiter application.
 
 1. Create or open an unconfirmed vacancy requirements draft in the normal app.
 2. Enter `Python` and `Django` as must-have skills and `PostgreSQL` as a
@@ -438,7 +439,8 @@ Keep the shortlist from the previous section open in one browser tab.
 
 In Django admin, change one active synthetic candidate's `location`, recorded
 skill, experience years, or skill evidence. Alternatively, add another active
-synthetic candidate to the same organization. Refresh the saved shortlist.
+synthetic candidate to the same organization or confirm a new candidate-profile
+draft containing a matching fact. Refresh the saved shortlist.
 
 Expected result:
 
@@ -545,19 +547,79 @@ Expected result:
 Do not use real candidate data for this vacancy-only test. Request metadata and
 failure history are not persisted until `AI-005`.
 
-## 16. What is intentionally unavailable
+## 16. Test AI-assisted candidate-profile extraction
+
+This is an optional live-provider workflow. Use only a synthetic candidate and
+one of the supplied synthetic CVs. Ordinary tests and deterministic matching
+still work without an API key.
+
+1. Configure a valid `OPENAI_API_KEY` and supported `OPENAI_MODEL` in `.env`, then
+   restart the development server.
+2. Open a synthetic candidate whose PDF or DOCX CV shows extraction status
+   **Succeeded**.
+3. In the CV table, select **Extract profile** once and wait for the request.
+4. Review the new numbered profile page before selecting **Confirm profile**.
+
+Expected draft result:
+
+- A new profile version is created as **Draft** and identifies its source CV by
+  safe filename and hash only.
+- The review shows bounded structured employment, skills, location/work mode,
+  languages, education, certifications, employment preferences, availability,
+  exact source excerpts, and explicit ambiguities when present.
+- Unsupported fields remain **Unknown** or empty. The profile contains no hiring
+  recommendation or candidate assessment.
+- Candidate name, email, phone, URL/contact lines, sensitive prefixed content,
+  raw extracted CV text, the prompt, storage path, and raw provider output are
+  absent from the review page.
+- Creating the draft alone does not publish candidate skills, change deterministic
+  filtering, or mark an existing shortlist stale.
+
+Select **Confirm profile** only after checking every fact against its displayed
+source excerpt.
+
+Expected confirmed result:
+
+- The version becomes **Confirmed**, records the recruiter and time, and cannot
+  be confirmed or edited again.
+- Grounded skills become inspectable candidate-skill evidence. Existing manual
+  assertions remain intact.
+- Confirmed location, work mode, language, education, certification, and
+  employment-type facts can satisfy their exact deterministic rules. Missing or
+  non-matching profile facts remain **Needs review**, not automatic failure.
+- Any saved shortlist affected by the newly published profile is labelled stale;
+  its historical score remains unchanged until a recruiter regenerates it.
+
+Run **Extract new version** from the confirmed page. Confirm that the next result
+is a higher-numbered draft and does not replace the current confirmed profile.
+After confirming the newer version, only older AI-published skills from that same
+CV are replaced; manually recorded skills remain.
+
+To test bounded failure, remove the API key, restart the server, and select
+**Extract profile** again.
+
+Expected result:
+
+- A safe error appears on the candidate page without provider text, prompt,
+  contact data, or raw output.
+- No new profile version or candidate skill is created.
+- Non-CV, failed/textless, deleted, changed-during-request, and oversized source
+  documents are also rejected without partial persistence.
+
+Request metadata and failure history remain deferred to `AI-005`.
+
+## 17. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
-- No candidate-profile extraction or AI matching request exists yet.
-- Candidate skills still require Django admin; typed vacancy rules are available
-  in the normal draft requirements editor.
-- No candidate-profile extraction from CV text yet.
+- No AI match-assessment request exists yet.
+- Manual candidate-skill entry still uses Django admin; confirmed AI profile
+  skills are published through the normal candidate workflow.
 - No private CV download route.
 - No OCR for scanned PDFs.
 - No outreach workflow.
 
-## 17. Final acceptance checklist
+## 18. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -584,11 +646,15 @@ The current milestone is behaving correctly when all of these are true:
 - AI vacancy extraction is POST-only, writes only to a draft, preserves explicit
   unknowns, creates no executable typed rules, and leaves the draft unchanged on
   bounded failure.
+- AI candidate-profile extraction sends only bounded redacted CV text, verifies
+  exact source evidence, creates a versioned draft, and changes matching only
+  after explicit confirmation. Confirmed profile facts remain inspectable,
+  unknowns remain eligible for review, and bounded failure creates no profile.
 - Cross-organization URLs do not disclose data.
 - The ordinary test suite and deterministic browser workflow require no AI key
-  or live AI request; only the explicit **Extract with AI** action does.
+  or live AI request; only explicit vacancy or candidate extraction actions do.
 
-## 18. Reset disposable local test data
+## 19. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

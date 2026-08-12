@@ -1,6 +1,11 @@
 from django.contrib import admin
 
-from candidates.models import Candidate, CandidateDocument, CandidateSource
+from candidates.models import (
+    Candidate,
+    CandidateDocument,
+    CandidateProfile,
+    CandidateSource,
+)
 
 
 class CandidateSourceInline(admin.TabularInline):
@@ -86,4 +91,56 @@ class CandidateDocumentAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         """Require the validated recruiter upload service for new documents."""
+        return False
+
+
+@admin.register(CandidateProfile)
+class CandidateProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "candidate",
+        "version",
+        "status",
+        "source_document",
+        "created_at",
+        "confirmed_at",
+    )
+    list_filter = ("status", "work_mode_preference")
+    search_fields = ("candidate__full_name", "source_document__original_filename")
+    autocomplete_fields = (
+        "candidate",
+        "source_document",
+        "created_by",
+        "confirmed_by",
+    )
+    readonly_fields = (
+        "candidate",
+        "source_document",
+        "version",
+        "schema_version",
+        "status",
+        "source_document_sha256",
+        "source_text_sha256",
+        "relevant_experience_summary",
+        "skills",
+        "employment_history",
+        "location",
+        "work_mode_preference",
+        "languages",
+        "education",
+        "certifications",
+        "employment_type_preferences",
+        "availability",
+        "fact_evidence",
+        "ambiguities",
+        "excluded_sensitive_content_detected",
+        "created_by",
+        "confirmed_by",
+        "confirmed_at",
+        "created_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
         return False

@@ -32,6 +32,24 @@ urlpatterns = [
         name="candidate-cv-upload",
     ),
     path(
+        "organizations/<slug:organization_slug>/candidates/"
+        "<int:candidate_id>/documents/<int:document_id>/extract-profile/",
+        views.candidate_profile_extract,
+        name="candidate-profile-extract",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/"
+        "<int:candidate_id>/profiles/<int:profile_id>/",
+        views.candidate_profile_detail,
+        name="candidate-profile-detail",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/"
+        "<int:candidate_id>/profiles/<int:profile_id>/confirm/",
+        views.candidate_profile_confirm,
+        name="candidate-profile-confirm",
+    ),
+    path(
         "organizations/<slug:organization_slug>/candidates/import/",
         views.candidate_import,
         name="candidate-import",
