@@ -38,6 +38,12 @@ urlpatterns = [
     ),
     path(
         "organizations/<slug:organization_slug>/vacancies/<int:vacancy_id>/"
+        "requirements/<int:requirements_id>/extract/",
+        views.requirements_extract,
+        name="requirements-extract",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/vacancies/<int:vacancy_id>/"
         "requirements/<int:requirements_id>/confirm/",
         views.requirements_confirm,
         name="requirements-confirm",

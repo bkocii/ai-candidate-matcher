@@ -74,7 +74,7 @@ error handling. Persistence of safe metadata and failures remains `AI-005`.
 
 Toolkit file logging is disabled in application settings. The application does
 not log prompts, CV text, contact data, raw responses, or translated exception
-details. `AI-001` establishes no prompt and performs no live provider request.
+details.
 
 ### audit
 
@@ -259,8 +259,32 @@ AI usage events, operational events, privacy-relevant access, and failures witho
   integrity and administrative audit. Service calls reject later lifecycle or
   requirements mutations on a deleted vacancy.
 - The vacancy description and each requirement version's source-description
-  snapshot remain application input. AI-assisted extraction remains behind the
-  application gateway in `AI-002`.
+  snapshot remain application input. AI-assisted extraction uses only that
+  preserved snapshot through the application gateway.
+- A recruiter can trigger AI extraction only for an editable requirements draft.
+  The business service repeats organization authorization and rejects confirmed
+  versions, deleted vacancies, blank sources, and sources over 30,000 characters
+  before constructing a gateway request.
+- The application-owned `vacancy_requirements_extraction.v1` Pydantic schema
+  forbids extra output, bounds every field, accepts only controlled work-mode and
+  employment-type values, and rejects duplicate or cross-group skill entries.
+  Missing facts stay empty, null, or `unknown`; they are not inferred.
+- The source text is explicitly treated as untrusted data in the prompt. Output
+  instructions exclude protected and sensitive criteria and produce only a
+  generic recruiter/legal-review ambiguity when such source content is detected.
+- A successful response updates the same requirements draft, marks its creation
+  method AI-assisted, resynchronizes normalized skills, and remains subject to
+  ordinary recruiter editing and explicit confirmation. It does not alter the
+  preserved source snapshot or create a confirmed matching input.
+- AI-suggested hard constraints are stored only in the existing non-executable
+  notes list. A recruiter must deliberately create typed rules through the normal
+  editor before deterministic filtering can use them.
+- The service snapshots the draft and typed-rule state before the request and
+  rechecks it under a database lock before applying the response. A concurrent
+  edit therefore prevents stale AI output from overwriting newer recruiter work.
+- Safe request metadata is returned transiently; persistence of metadata and
+  bounded failures remains `AI-005`. Ordinary tests substitute a fake gateway
+  and make no provider request.
 
 Structured AI outputs should be stored with a schema version and the relevant source/document version so assessments can be reproduced or invalidated when input changes.
 

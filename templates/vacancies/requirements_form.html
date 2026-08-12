@@ -14,6 +14,18 @@
     <div class="source-description">{{ requirements.source_description|linebreaks }}</div>
 </details>
 
+<section class="review-callout" aria-labelledby="ai-extraction-title">
+    <div>
+        <p class="eyebrow">Optional AI assistance</p>
+        <h2 id="ai-extraction-title">Extract suggestions from the source</h2>
+        <p>AI extraction replaces the structured fields in this draft. It never confirms the version or creates executable hard-constraint rules. Review and correct every suggestion before confirming.</p>
+    </div>
+    <form method="post" action="{% url 'vacancies:requirements-extract' organization.slug vacancy.pk requirements.pk %}">
+        {% csrf_token %}
+        <button class="secondary-button" type="submit">Extract with AI</button>
+    </form>
+</section>
+
 <form class="form-panel requirements-form stacked-form" method="post">
     {% csrf_token %}
     {% include "vacancies/_form_fields.html" %}

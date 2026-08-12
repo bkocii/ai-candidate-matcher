@@ -14,8 +14,8 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 3 are complete. Sprint 4 is in progress; `AI-001` is
-complete and `AI-002` is next.
+Sprint 0 through Sprint 3 are complete. Sprint 4 is in progress; `AI-001` and
+`AI-002` are complete and `AI-003` is next.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -42,7 +42,8 @@ descriptions, choose an optional organization-owned client, edit normalized
 structured requirements, confirm meaningful versions through POST-only human
 review, and create numbered correction drafts without changing confirmed
 history. A detailed manual test guide and validated synthetic CSV/PDF/DOCX/job
-fixtures are included. No AI extraction workflow exists yet.
+fixtures are included. Vacancy extraction is available only through the explicit
+draft action described below; candidate extraction is not implemented yet.
 
 A corrective `DATA-005` pass also makes completed CSV imports target the visible
 report section and adds recruiter-facing, POST-only vacancy lifecycle controls.
@@ -107,12 +108,22 @@ exceptions, configured factory, and a lazy `ToolkitAIGateway` backed by the
 published v1.0.0 Django integration. Toolkit raw/original responses are never
 returned through the application contract, underlying provider error text is
 suppressed, file logging remains disabled, and no API key or request is required
-for startup or ordinary tests. No vacancy/candidate extraction prompt or AI
-business workflow exists yet.
+for startup or ordinary tests. `AI-001` itself introduced no domain prompt or
+provider-backed business workflow.
+
+`AI-002` is complete. Recruiters can trigger structured extraction from an
+editable requirements draft through the application gateway. The bounded
+application-owned schema preserves unknowns, separates explicit must-have and
+nice-to-have skills, excludes extra fields, and uses controlled vocabulary for
+work mode and employment type. Successful output remains an AI-assisted draft,
+synchronizes normalized skills, and never confirms requirements or creates typed
+executable rules. Gateway failure and concurrent recruiter edits preserve the
+existing draft. Candidate data is not involved, and metadata persistence remains
+deferred to `AI-005`.
 
 The next roadmap item is:
 
-`AI-002 — Extract and validate structured vacancy requirements.`
+`AI-003 — Extract and validate structured candidate profiles from CV text.`
 
 ## Required instructions
 
@@ -132,7 +143,7 @@ The next roadmap item is:
 Verified on 2026-08-12 with Python 3.12.13:
 
 - Django system check passed.
-- 278 pytest tests passed.
+- 293 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -142,7 +153,7 @@ Verified on 2026-08-12 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `AI-002`: add structured vacancy-requirements extraction through
-the application gateway, validate an application-owned schema, preserve explicit
-unknowns and recruiter confirmation, and do not begin candidate extraction or
+Implement only `AI-003`: extract and validate structured candidate profiles from
+lawfully stored CV text through the application gateway, preserve source evidence
+and explicit unknowns, exclude contact and protected data, and do not begin AI
 match assessment.

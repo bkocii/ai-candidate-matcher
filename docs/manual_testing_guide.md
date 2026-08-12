@@ -503,20 +503,61 @@ Expected result:
 - Django staff/superuser status alone still does not bypass the normal app's
   membership requirement.
 
-## 15. What is intentionally unavailable
+## 15. Test AI-assisted vacancy extraction
+
+This is the first optional live-provider workflow. Ordinary tests and all
+deterministic features still work without an API key.
+
+1. Configure a valid `OPENAI_API_KEY` and supported `OPENAI_MODEL` in `.env`, then
+   restart the development server.
+2. Create a vacancy from `manual_testing/fixtures/vacancy-description.txt` or open
+   an existing editable requirements draft.
+3. Before clicking the AI action, note any structured values already in the
+   draft. **Extract with AI** replaces these draft fields after a successful
+   response.
+4. Select **Extract with AI** once and wait for the request to finish.
+
+Expected result:
+
+- The app returns to the same editable version and reports that AI suggestions
+  were saved to the draft.
+- The version remains **Draft** and its method becomes **AI assisted**.
+- Skills, experience, location, work mode, languages, education, certifications,
+  employment type, non-executable hard-constraint notes, and ambiguities are
+  populated only when supported by the source.
+- Missing information stays blank, null, or **Unknown** instead of being guessed.
+- Must-have and nice-to-have skills do not overlap.
+- No typed hard-constraint rule is created automatically. Add any executable rule
+  deliberately in the typed-rule editor.
+- You can edit every suggestion before using the separate confirmation action.
+
+To test bounded failure behavior, remove the API key, restart the server, and run
+**Extract with AI** on a draft containing a recognizable manual summary.
+
+Expected result:
+
+- A safe configuration message appears without provider details, prompts, or raw
+  output.
+- The manual summary and all other draft values remain unchanged.
+- Confirmed versions do not expose the extraction action, and the extraction URL
+  rejects a confirmed version.
+
+Do not use real candidate data for this vacancy-only test. Request metadata and
+failure history are not persisted until `AI-005`.
+
+## 16. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
-- The application-owned AI gateway exists, but no recruiter-facing AI extraction
-  or AI matching request exists yet.
-- No recruiter-facing typed-rule or candidate-skill editor yet; `MATCH-001`
-  exposes the data contract and Django admin inspection only.
+- No candidate-profile extraction or AI matching request exists yet.
+- Candidate skills still require Django admin; typed vacancy rules are available
+  in the normal draft requirements editor.
 - No candidate-profile extraction from CV text yet.
 - No private CV download route.
 - No OCR for scanned PDFs.
 - No outreach workflow.
 
-## 16. Final acceptance checklist
+## 17. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -540,11 +581,14 @@ The current milestone is behaving correctly when all of these are true:
 - Relevant candidate or confirmed-requirements changes clearly mark older runs
   stale; regeneration creates a separate current run without rewriting history.
 - Confirmed matching definitions cannot be edited; correction drafts copy them.
+- AI vacancy extraction is POST-only, writes only to a draft, preserves explicit
+  unknowns, creates no executable typed rules, and leaves the draft unchanged on
+  bounded failure.
 - Cross-organization URLs do not disclose data.
-- The ordinary test suite and browser workflow require no AI key or live AI
-  request; the lazy gateway does not change that behavior.
+- The ordinary test suite and deterministic browser workflow require no AI key
+  or live AI request; only the explicit **Extract with AI** action does.
 
-## 17. Reset disposable local test data
+## 18. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

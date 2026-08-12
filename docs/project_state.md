@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 4 — AI extraction and assessment.
 
-Status: In progress. `AI-001` is complete; `AI-002` is next.
+Status: In progress. `AI-001` and `AI-002` are complete; `AI-003` is next.
 
 ## Decisions made
 
@@ -324,23 +324,49 @@ Status: In progress. `AI-001` is complete; `AI-002` is next.
 - Kept vacancy extraction, candidate extraction, match assessment, persistence,
   UI, and live smoke requests in their later explicit roadmap tasks.
 
+### `AI-002 — Structured vacancy-requirements extraction`
+
+- Added a recruiter-triggered, POST-only **Extract with AI** action for editable
+  requirements drafts using the preserved source-description snapshot.
+- Added an application-owned, extra-forbidding Pydantic extraction schema with
+  bounded text and list fields, controlled work-mode and employment-type values,
+  non-negative bounded experience, unique list items, and disjoint must-have and
+  nice-to-have skill groups.
+- Added an untrusted-source prompt that requires explicit source grounding,
+  leaves missing facts empty, null, or `unknown`, separates mandatory from
+  preferred skills, and excludes protected or sensitive characteristics.
+- Applied validated suggestions only after repeating tenant, vacancy, and draft
+  authorization. Successful extraction marks the draft AI-assisted, preserves
+  its source snapshot, synchronizes normalized skill links, and never confirms
+  the version.
+- Kept AI hard-constraint suggestions as non-executable recruiter notes. Typed
+  deterministic rules still require deliberate recruiter creation in the draft
+  editor and retain fixed unknown-fact behavior.
+- Prevented a response from overwriting a draft that changed during the provider
+  request. Provider, schema, configuration, authorization, deleted-vacancy, and
+  concurrent-edit failures leave the draft unchanged and expose only bounded
+  recruiter-facing messages.
+- Kept request metadata and failure persistence in `AI-005`; the safe metadata is
+  returned by the service but is not stored in this task. No candidate data,
+  candidate extraction, match assessment, or live ordinary test request was added.
+
 ## Verification
 
 Verified on 2026-08-12 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 278 passed.
+- `pytest`: 293 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
 ## Not implemented
 
-No outreach workflow or AI business service has been implemented yet. The
-application AI gateway boundary is available, but no vacancy, candidate, or
-match-assessment prompt is implemented and no recruiter action makes an AI
-request. Candidate
+No outreach workflow, candidate extraction, or AI match assessment has been
+implemented yet. Recruiters can intentionally run structured vacancy extraction
+for an editable requirements draft, but no candidate data is sent and no AI
+output is confirmed automatically. Candidate
 records can be manually created, imported, and given
 validated PDF/DOCX CVs through the organization workspace. Recruiters can create
 vacancies, manually structure and confirm their requirements, and preserve
@@ -363,4 +389,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`AI-002 — Extract and validate structured vacancy requirements.`
+`AI-003 — Extract and validate structured candidate profiles from CV text.`

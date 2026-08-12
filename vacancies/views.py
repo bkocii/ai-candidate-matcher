@@ -5,9 +5,11 @@ from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from ai_gateway import AIGatewayError
 from matching.models import MatchRun
 from matching.staleness import assess_match_run_staleness
 from organizations.models import Organization
+from vacancies.ai_extraction import extract_vacancy_requirements
 from vacancies.forms import (
     VacancyCreateForm,
     VacancyRequirementsForm,
@@ -245,6 +247,44 @@ def requirements_edit(
                 "skill"
             ),
         },
+    )
+
+
+@login_required
+@require_POST
+def requirements_extract(
+    request,
+    organization_slug: str,
+    vacancy_id: int,
+    requirements_id: int,
+):
+    organization = _visible_organization(request, organization_slug)
+    vacancy = _visible_vacancy(organization, vacancy_id)
+    requirements = _visible_requirements(organization, vacancy, requirements_id)
+    try:
+        result = extract_vacancy_requirements(
+            requirements=requirements,
+            user=request.user,
+        )
+    except (AIGatewayError, ValidationError) as error:
+        public_message = (
+            "; ".join(error.messages)
+            if isinstance(error, ValidationError)
+            else str(error)
+        )
+        messages.error(request, public_message)
+    else:
+        messages.success(
+            request,
+            "AI suggestions were saved to the draft. Review every field and add "
+            "any executable typed rules before confirming.",
+        )
+        requirements = result.requirements
+    return redirect(
+        "vacancies:requirements-edit",
+        organization_slug=organization.slug,
+        vacancy_id=vacancy.pk,
+        requirements_id=requirements.pk,
     )
 
 

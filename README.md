@@ -13,7 +13,7 @@ python-ai-toolkit[django]==1.0.0
 ## Current status
 
 Sprint 0 through Sprint 3 are complete. Sprint 4 is in progress, with `AI-001`
-complete.
+and `AI-002` complete.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -49,10 +49,13 @@ new run without rewriting the saved ranking. The app uses the published
 `python-ai-toolkit==1.0.0` distribution through an application-owned, lazy AI
 gateway. The gateway returns validated data plus safe metadata, excludes raw
 responses, translates provider/toolkit failures into bounded application errors,
-and supports fake substitution. No recruiter workflow makes an AI request yet.
+and supports fake substitution. Recruiters can now intentionally extract bounded,
+structured vacancy-requirement suggestions from a preserved source description.
+The suggestions remain an editable draft, never create executable rules, and
+still require explicit recruiter confirmation.
 
-The next approved task is `AI-002 — Extract and validate structured vacancy
-requirements`.
+The next approved task is `AI-003 — Extract and validate structured candidate
+profiles from CV text`.
 
 ## Local setup
 
@@ -110,6 +113,11 @@ explicitly confirm it. Operators and missing-fact behavior are fixed by rule typ
 recruiters cannot turn unknown evidence into automatic rejection. Confirmed
 versions are read-only; **Create correction draft** copies the current snapshot
 and its typed rules into the next numbered version.
+On an editable requirements version, **Extract with AI** sends only the preserved
+vacancy source description and replaces the draft's structured suggestions after
+schema validation. Review every field, then add any executable typed rules
+deliberately before confirmation. A missing or invalid AI configuration produces
+a bounded error and leaves the current draft unchanged.
 After confirmation, use the vacancy detail page to open, pause, close, or reopen
 the vacancy through the available validated lifecycle transitions. Candidate and
 vacancy detail pages also provide confirmation-based deletion. Candidate deletion

@@ -28,6 +28,13 @@ Input: recruiter-supplied job description.
 
 Output: a validated application-owned Pydantic schema containing requirements and ambiguities.
 
+Implemented in `AI-002` by `vacancies.ai_extraction`. The business service sends
+only the preserved vacancy source-description snapshot, receives
+`VacancyRequirementsExtraction`, and applies it only to an authorized draft.
+It accepts an injected `AIGateway` for tests and otherwise resolves the configured
+gateway. Python AI Toolkit remains unaware of Django vacancy models, recruiter
+confirmation, typed hard rules, and draft concurrency policy.
+
 ### Candidate profile extraction
 
 Input: text extracted by the application from a lawfully stored CV.
@@ -61,9 +68,9 @@ the toolkit client, result, or exception contracts. It currently exposes:
 structured validation and repair to `AIClient.ask()`. It deliberately does not
 return `AIResult.raw_response` or `AIResult.original_raw_response`.
 
-Later business services will expose application concepts such as:
+Application business services expose or will expose concepts such as:
 
-- `extract_vacancy_requirements(text)`
+- `extract_vacancy_requirements(requirements, user)`
 - `extract_candidate_profile(text)`
 - `assess_match(requirements, candidate_profile)`
 - `draft_outreach(vacancy, candidate, assessment)`
