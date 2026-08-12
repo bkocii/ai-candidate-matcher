@@ -3,11 +3,14 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from ai_gateway import AIGatewayError
+from matching.ai_assessment import assess_shortlist_entry
 from matching.evaluation import filter_candidates
 from matching.forms import HardConstraintRuleForm, hard_constraint_values_from_form
-from matching.models import HardConstraintRule, MatchRun
+from matching.models import HardConstraintRule, MatchRun, ShortlistEntry
 from matching.scoring import generate_shortlist
 from matching.services import (
     create_hard_constraint_rule,
@@ -321,8 +324,22 @@ def shortlist_detail(
         pk=match_run_id,
         requirements__vacancy=vacancy,
     )
-    entries = run.entries.select_related("candidate").order_by("rank", "id")
-    available_entry_count = entries.count()
+    entries = list(
+        run.entries.select_related("candidate")
+        .prefetch_related("candidate__profile_versions", "assessments")
+        .order_by("rank", "id")
+    )
+    available_entry_count = len(entries)
+    for entry in entries:
+        entry.confirmed_profile = next(
+            (
+                profile
+                for profile in entry.candidate.profile_versions.all()
+                if profile.status == "confirmed"
+            ),
+            None,
+        )
+        entry.latest_assessment = next(iter(entry.assessments.all()), None)
     staleness = assess_match_run_staleness(run=run, user=request.user)
     return render(
         request,
@@ -343,3 +360,52 @@ def shortlist_detail(
             ),
         },
     )
+
+
+@login_required
+@require_POST
+def shortlist_assessment_generate(
+    request,
+    organization_slug: str,
+    vacancy_id: int,
+    match_run_id: int,
+    entry_id: int,
+):
+    organization = get_object_or_404(
+        Organization.objects.visible_to(request.user),
+        slug=organization_slug,
+    )
+    vacancy = get_object_or_404(
+        Vacancy.objects.for_organization(organization).active(),
+        pk=vacancy_id,
+    )
+    run = get_object_or_404(
+        MatchRun.objects.for_organization(organization),
+        pk=match_run_id,
+        requirements__vacancy=vacancy,
+    )
+    entry = get_object_or_404(
+        ShortlistEntry.objects.for_organization(organization),
+        pk=entry_id,
+        match_run=run,
+    )
+    try:
+        result = assess_shortlist_entry(entry=entry, user=request.user)
+    except (AIGatewayError, ValidationError) as error:
+        public_message = (
+            "; ".join(error.messages)
+            if isinstance(error, ValidationError)
+            else str(error)
+        )
+        messages.error(request, public_message)
+    else:
+        messages.success(
+            request,
+            f"AI assessment version {result.assessment.version} was saved as "
+            "recruiter decision support.",
+        )
+    detail_url = reverse(
+        "matching:shortlist-detail",
+        args=[organization.slug, vacancy.pk, run.pk],
+    )
+    return redirect(f"{detail_url}#assessment-entry-{entry.pk}")

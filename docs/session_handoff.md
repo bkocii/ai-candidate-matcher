@@ -15,7 +15,7 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 ## Current status
 
 Sprint 0 through Sprint 3 are complete. Sprint 4 is in progress; `AI-001`
-through `AI-003` are complete and `AI-004` is next.
+through `AI-004` are complete and `AI-005` is next.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -134,9 +134,23 @@ stale. Manual candidate-skill assertions are preserved. Raw CV text, prompts,
 provider output, contact data, assessments, and request metadata are not stored
 or displayed by this workflow.
 
+`AI-004` is complete. Recruiters can explicitly assess one candidate on a
+current deterministic shortlist when that candidate has a confirmed profile.
+The bounded structured request uses opaque IDs for confirmed requirements and
+candidate evidence, requires every requirement exactly once, requires supplied
+evidence for a match or gap, and keeps unsupported facts uncertain. Accepted IDs
+are resolved back to application-owned source wording before an immutable
+numbered `MatchAssessment` is saved. The app derives the score band, rejects
+decision/contact language, and rechecks profile and shortlist freshness after
+the provider returns. Assessment versions appear beneath the unchanged
+deterministic result with evidence-linked matches, gaps, uncertainties, and
+recruiter review focus. Request metadata remains transient until `AI-005`; no
+review queue, approve/reject decision, outreach, background batch, prompt, raw
+response, identity/contact data, or raw CV text was added.
+
 The next roadmap item is:
 
-`AI-004 — Generate structured evidence-based match assessments.`
+`AI-005 — Store request metadata and safe failure information.`
 
 ## Required instructions
 
@@ -156,7 +170,7 @@ The next roadmap item is:
 Verified on 2026-08-12 with Python 3.12.13:
 
 - Django system check passed.
-- 315 pytest tests passed.
+- 333 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -166,6 +180,6 @@ Verified on 2026-08-12 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `AI-004`: generate structured evidence-based match assessments
-from confirmed vacancy requirements and minimized confirmed candidate profiles,
-keep unsupported facts explicit, and do not begin review decisions or outreach.
+Implement only `AI-005`: persist safe request metadata and bounded failure
+information for the existing explicit AI workflows without storing prompts, raw
+responses, candidate contact data, or provider exception details.

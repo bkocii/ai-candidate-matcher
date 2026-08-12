@@ -116,6 +116,30 @@ class ShortlistEntryQuerySet(models.QuerySet):
         ).distinct()
 
 
+class MatchAssessmentQuerySet(models.QuerySet):
+    def for_organization(self, organization: Organization):
+        return self.filter(
+            shortlist_entry__match_run__requirements__vacancy__organization=(
+                organization
+            )
+        )
+
+    def visible_to(self, user: object):
+        if not _user_can_query_matching_data(user):
+            return self.none()
+        return self.filter(
+            shortlist_entry__match_run__requirements__vacancy__organization__is_active=(
+                True
+            ),
+            shortlist_entry__match_run__requirements__vacancy__organization__memberships__user=(
+                user
+            ),
+            shortlist_entry__match_run__requirements__vacancy__organization__memberships__is_active=(
+                True
+            ),
+        ).distinct()
+
+
 class Skill(models.Model):
     """An organization-owned canonical skill identity."""
 
@@ -849,3 +873,172 @@ class ShortlistEntry(models.Model):
 
     def __str__(self) -> str:
         return f"#{self.rank} {self.candidate} — {self.score}"
+
+
+class MatchAssessment(models.Model):
+    """Immutable, evidence-linked AI decision support for one shortlist entry."""
+
+    class TrafficLight(models.TextChoices):
+        RED = "red", "Red"
+        AMBER = "amber", "Amber"
+        GREEN = "green", "Green"
+
+    shortlist_entry = models.ForeignKey(
+        ShortlistEntry,
+        on_delete=models.CASCADE,
+        related_name="assessments",
+    )
+    requirements = models.ForeignKey(
+        VacancyRequirements,
+        on_delete=models.PROTECT,
+        related_name="match_assessments",
+    )
+    candidate_profile = models.ForeignKey(
+        CandidateProfile,
+        on_delete=models.CASCADE,
+        related_name="match_assessments",
+    )
+    version = models.PositiveIntegerField()
+    schema_version = models.CharField(
+        max_length=50,
+        default="match_assessment.v1",
+    )
+    score = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(100)]
+    )
+    traffic_light = models.CharField(max_length=10, choices=TrafficLight.choices)
+    summary = models.TextField()
+    matching_requirements = models.JSONField(default=list, blank=True)
+    gaps = models.JSONField(default=list, blank=True)
+    uncertainties = models.JSONField(default=list, blank=True)
+    review_recommendation = models.TextField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_match_assessments",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = MatchAssessmentQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-version", "-created_at", "id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("shortlist_entry", "version"),
+                name="unique_assessment_version_per_shortlist_entry",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(version__gte=1),
+                name="match_assessment_version_positive",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(score__gte=0) & models.Q(score__lte=100),
+                name="match_assessment_score_in_range",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(traffic_light__in=["red", "amber", "green"]),
+                name="match_assessment_valid_traffic_light",
+            ),
+        ]
+
+    @property
+    def organization(self) -> Organization:
+        return self.shortlist_entry.organization
+
+    def _snapshot_changed(self) -> bool:
+        if not self.pk:
+            return False
+        persisted = type(self).objects.get(pk=self.pk)
+        immutable_fields = (
+            "shortlist_entry_id",
+            "requirements_id",
+            "candidate_profile_id",
+            "version",
+            "schema_version",
+            "score",
+            "traffic_light",
+            "summary",
+            "matching_requirements",
+            "gaps",
+            "uncertainties",
+            "review_recommendation",
+            "created_by_id",
+        )
+        return any(
+            getattr(self, field_name) != getattr(persisted, field_name)
+            for field_name in immutable_fields
+        )
+
+    def clean(self) -> None:
+        super().clean()
+        if self.shortlist_entry_id and self.requirements_id:
+            entry_requirements_id = self.shortlist_entry.match_run.requirements_id
+            if entry_requirements_id != self.requirements_id:
+                raise ValidationError(
+                    {"requirements": "Use the shortlist's requirements version."}
+                )
+        if self.shortlist_entry_id and self.candidate_profile_id:
+            if self.candidate_profile.candidate_id != self.shortlist_entry.candidate_id:
+                raise ValidationError(
+                    {"candidate_profile": "Use this shortlisted candidate's profile."}
+                )
+        if (
+            self.candidate_profile_id
+            and self.candidate_profile.status != CandidateProfile.Status.CONFIRMED
+        ):
+            raise ValidationError(
+                {
+                    "candidate_profile": (
+                        "A match assessment requires a confirmed profile."
+                    )
+                }
+            )
+        if self.score is not None:
+            expected_light = self.traffic_light_for_score(self.score)
+            if self.traffic_light != expected_light:
+                raise ValidationError(
+                    {
+                        "traffic_light": (
+                            "The traffic light must be derived from the score."
+                        )
+                    }
+                )
+        for field_name in (
+            "matching_requirements",
+            "gaps",
+            "uncertainties",
+        ):
+            if not isinstance(getattr(self, field_name), list):
+                raise ValidationError({field_name: "Enter a list."})
+        if not any(
+            (
+                self.matching_requirements,
+                self.gaps,
+                self.uncertainties,
+            )
+        ):
+            raise ValidationError(
+                "A match assessment must contain at least one requirement result."
+            )
+
+    @classmethod
+    def traffic_light_for_score(cls, score: int) -> str:
+        if score >= 75:
+            return cls.TrafficLight.GREEN
+        if score >= 50:
+            return cls.TrafficLight.AMBER
+        return cls.TrafficLight.RED
+
+    def save(self, *args, **kwargs) -> None:
+        if self._snapshot_changed():
+            raise ValidationError(
+                "Match assessments are immutable; generate a new version."
+            )
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.shortlist_entry} — AI assessment v{self.version} ({self.score})"

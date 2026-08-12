@@ -57,6 +57,17 @@ Input: confirmed vacancy requirements and a minimized candidate profile.
 
 Output: a validated application-owned Pydantic schema containing score, evidence, gaps, uncertainties, and a recommendation for human review.
 
+Implemented in `AI-004` by `matching.ai_assessment`. One explicit recruiter
+action assesses one current shortlist entry through `assess_shortlist_entry`.
+The application sends a bounded minimized context whose confirmed requirements
+and candidate evidence use opaque IDs, requires exact requirement coverage, and
+resolves accepted references back to application-owned source wording before
+storing an immutable version. Missing support remains uncertain; the application
+derives the traffic-light band and rejects hiring, rejection, approval, contact,
+or outreach recommendations. The deterministic filter, score, rank, and
+shortlist membership are never changed. Toolkit metadata is returned by the
+service only transiently until `AI-005`.
+
 ### Outreach draft
 
 Input: an approved match plus organization-approved facts.
@@ -83,7 +94,7 @@ Application business services expose or will expose concepts such as:
 - `extract_vacancy_requirements(requirements, user)`
 - `extract_candidate_profile(document, user)`
 - `confirm_candidate_profile(profile, user)`
-- `assess_match(requirements, candidate_profile)`
+- `assess_shortlist_entry(entry, user)`
 - `draft_outreach(vacancy, candidate, assessment)`
 
 Views, forms, model methods, and templates must not call Python AI Toolkit directly.

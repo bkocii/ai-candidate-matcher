@@ -38,4 +38,10 @@ urlpatterns = [
         views.shortlist_detail,
         name="shortlist-detail",
     ),
+    path(
+        "organizations/<slug:organization_slug>/vacancies/<int:vacancy_id>/"
+        "shortlists/<int:match_run_id>/entries/<int:entry_id>/assess/",
+        views.shortlist_assessment_generate,
+        name="shortlist-assessment-generate",
+    ),
 ]

@@ -322,7 +322,8 @@ AI usage events, operational events, privacy-relevant access, and failures witho
   bounded failures remains `AI-005`. Ordinary tests substitute a fake gateway
   and make no provider request.
 
-Structured AI outputs should be stored with a schema version and the relevant source/document version so assessments can be reproduced or invalidated when input changes.
+Structured AI outputs are stored with a schema version and the relevant source
+versions so their evidence boundary remains inspectable when inputs later change.
 
 ### Deterministic matching definitions
 
@@ -431,6 +432,48 @@ Structured AI outputs should be stored with a schema version and the relevant so
   policy is also stale. Its saved ranking and breakdown remain immutable, while
   regeneration creates a new run under the current algorithm.
 
+### Evidence-based AI match assessment
+
+- `MatchAssessment` is an immutable numbered snapshot for one `ShortlistEntry`.
+  It also references the exact confirmed `VacancyRequirements` and confirmed
+  `CandidateProfile` used, stores schema version `match_assessment.v1`, and is
+  removed with the candidate's shortlist entry/profile when candidate data is
+  deleted.
+- Assessment is an explicit POST-only action for one shortlisted candidate. The
+  service repeats tenant authorization and accepts only an active candidate, the
+  vacancy's current confirmed requirements, the candidate's current confirmed
+  profile, and a non-stale deterministic match run. This one-request-per-entry
+  boundary isolates failures and allows a recruiter to continue with other
+  candidates without requiring synchronous batch orchestration.
+- The request context is capped at 80,000 serialized characters and contains
+  source/schema versions, confirmed requirement wording and evidence, confirmed
+  candidate facts with exact evidence, and the saved deterministic score/filter
+  outcome. It excludes candidate identity/contact data, raw CV text, vacancy
+  identity, and protected or sensitive characteristics.
+- Every requirement and candidate evidence item receives an application-owned
+  opaque ID. The structured response must assess each requirement exactly once as
+  `match`, `gap`, or `uncertain`; matches and gaps must cite supplied candidate
+  evidence, while missing support must be uncertain. The application rejects
+  unknown IDs or incomplete coverage and resolves accepted IDs back to its own
+  stored wording, preventing the provider from rewriting source evidence.
+- The AI score is a separate 0–100 decision-support value. The application, not
+  the provider, derives red below 50, amber from 50 through 74, and green from 75.
+  Neither the score nor the band changes hard-filter eligibility, deterministic
+  score, rank, or shortlist membership.
+- Summaries, explanations, and review focus are bounded and rejected if they
+  recommend hiring, rejecting, approving, contacting, or outreach. The result
+  can identify what a recruiter should verify; it cannot record a decision.
+- After the provider returns, the service locks and rechecks the entry, active
+  candidate, current profile, and run freshness. A concurrent profile
+  confirmation or matching-input change discards the output without persistence.
+- The shortlist displays all immutable assessment versions with evidence-linked
+  matches, gaps, uncertainties, and recruiter review focus. The review queue and
+  assessment detail screen remain `REV-001`; decisions and outreach remain later
+  stages.
+- Validated assessment output is persisted in `AI-004`. Gateway request metadata
+  remains transient and durable safe usage/failure records remain `AI-005`.
+  Background/idempotent bulk processing remains `PROD-003`.
+
 ## Matching pipeline
 
 1. Normalize and validate vacancy requirements.
@@ -439,7 +482,8 @@ Structured AI outputs should be stored with a schema version and the relevant so
 4. Build a deterministic relevance score and bounded shortlist.
 5. Send only necessary job and candidate evidence for structured AI assessment.
 6. Validate the AI response.
-7. Store assessment, metadata, schema version, and source versions.
+7. Store the validated assessment, schema version, and source versions; store
+   safe request metadata separately when `AI-005` is implemented.
 8. Present results for recruiter review.
 
 Embedding-based retrieval may be added after the deterministic baseline is measured. It is not required to prove the MVP.
@@ -471,7 +515,8 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 - Relevant vacancy or candidate matching-input changes invalidate deterministic
   shortlist freshness without overwriting historical results.
 - AI calls use bounded retries.
-- Batch operations can resume without duplicating completed assessments.
+- Per-candidate assessment requests isolate failures; durable resumable batch
+  processing and idempotency are introduced in `PROD-003`.
 - The deterministic shortlist remains inspectable if AI is unavailable.
 
 ## Testing strategy

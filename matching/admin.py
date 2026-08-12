@@ -3,6 +3,7 @@ from django.contrib import admin
 from matching.models import (
     CandidateSkill,
     HardConstraintRule,
+    MatchAssessment,
     MatchRun,
     RequirementSkill,
     ShortlistEntry,
@@ -114,6 +115,47 @@ class ShortlistEntryAdmin(admin.ModelAdmin):
     )
 
     def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(MatchAssessment)
+class MatchAssessmentAdmin(admin.ModelAdmin):
+    list_display = (
+        "shortlist_entry",
+        "version",
+        "score",
+        "traffic_light",
+        "created_at",
+    )
+    list_filter = ("traffic_light", "schema_version")
+    search_fields = (
+        "shortlist_entry__candidate__full_name",
+        "requirements__vacancy__title",
+    )
+    readonly_fields = (
+        "shortlist_entry",
+        "requirements",
+        "candidate_profile",
+        "version",
+        "schema_version",
+        "score",
+        "traffic_light",
+        "summary",
+        "matching_requirements",
+        "gaps",
+        "uncertainties",
+        "review_recommendation",
+        "created_by",
+        "created_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
         return False
 
     def has_delete_permission(self, request, obj=None):

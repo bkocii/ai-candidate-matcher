@@ -13,7 +13,7 @@ python-ai-toolkit[django]==1.0.0
 ## Current status
 
 Sprint 0 through Sprint 3 are complete. Sprint 4 is in progress, with `AI-001`
-through `AI-003` complete.
+through `AI-004` complete.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -57,9 +57,16 @@ extract a versioned candidate-profile draft from a successfully parsed CV. The
 application removes contact and sensitive prefixed lines before the request,
 requires source-verifiable evidence, keeps missing facts explicitly unknown, and
 publishes matching facts and skills only after a separate recruiter confirmation.
+On a current deterministic shortlist, recruiters can request a separate,
+versioned AI match assessment for any candidate with a confirmed profile. The
+assessment evaluates every confirmed requirement, resolves model references back
+to application-owned vacancy and candidate evidence, marks unsupported facts as
+uncertain, derives a red/amber/green band from its separate AI score, and leaves
+the deterministic rank and eligibility unchanged. It provides recruiter review
+focus only; it cannot approve, reject, contact, or rank a candidate.
 
-The next approved task is `AI-004 — Generate structured evidence-based match
-assessments`.
+The next approved task is `AI-005 — Store request metadata and safe failure
+information`.
 
 ## Local setup
 
@@ -147,7 +154,11 @@ persist and inspect a version-labelled ranking of up to 20 eligible candidates.
 The shortlist page labels the result current or stale. A stale warning explains
 whether confirmed vacancy requirements, active candidate matching inputs, or a
 legacy untracked snapshot requires regeneration; saved history is never silently
-recomputed.
+recomputed. On a current shortlist, candidates with confirmed profiles expose
+**Generate AI assessment**. Each explicit request handles one candidate, creates
+an immutable numbered assessment, and shows evidence-linked matches, gaps,
+uncertainties, score band, and recruiter review focus beneath the unchanged
+deterministic result. Regeneration creates another assessment version.
 
 ## Production configuration
 

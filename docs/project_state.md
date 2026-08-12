@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 4 — AI extraction and assessment.
 
-Status: In progress. `AI-001` through `AI-003` are complete; `AI-004` is next.
+Status: In progress. `AI-001` through `AI-004` are complete; `AI-005` is next.
 
 ## Decisions made
 
@@ -386,20 +386,57 @@ Status: In progress. `AI-001` through `AI-003` are complete; `AI-004` is next.
   provider output, match assessments, and AI request metadata are not displayed
   or persisted by this task.
 
+### `AI-004 — Structured evidence-based match assessments`
+
+- Added a recruiter-triggered, POST-only assessment action to each candidate on
+  a current deterministic shortlist. One explicit request assesses one candidate,
+  isolating failures and avoiding a blocking 20-candidate batch before background
+  processing is introduced.
+- Required the shortlist's exact current confirmed requirements version, an
+  active same-organization candidate, a current confirmed candidate profile, and
+  a non-stale match run before any provider request.
+- Built a bounded minimized context from confirmed requirement wording,
+  application-owned candidate evidence, source/schema versions, and the saved
+  deterministic outcome. Candidate identity, contact details, raw CV text,
+  vacancy identity, prompts, and raw provider output are not persisted or shown.
+- Added an extra-forbidding structured schema containing an independent 0–100 AI
+  score, a complete per-requirement outcome, opaque candidate-evidence references,
+  an evidence-based summary, and recruiter review focus. Every confirmed
+  requirement must appear exactly once; matches and gaps require supplied
+  evidence, while absent support must remain uncertain.
+- Resolved opaque model references back to application-owned vacancy and candidate
+  evidence before persistence, so provider output cannot invent or rewrite the
+  displayed source evidence. Unknown IDs, incomplete requirement coverage,
+  decision language, and oversized context save nothing.
+- Added immutable numbered `MatchAssessment` snapshots linked to the exact
+  `ShortlistEntry`, `VacancyRequirements`, and `CandidateProfile` versions. The
+  application derives red/amber/green from the AI score; neither value changes
+  deterministic eligibility, rank, score, or historical shortlist content.
+- Rechecked the candidate profile and shortlist inputs under database locks after
+  the provider returns. Concurrent confirmation or matching-input changes discard
+  the completed output instead of attaching it to stale evidence.
+- Added tenant-safe shortlist display of all assessment versions, evidence-linked
+  matches, gaps, uncertainties, and recruiter review focus. No approve/reject,
+  hiring recommendation, ranking change, contact action, review queue, or
+  outreach workflow was introduced.
+- Kept safe request metadata transient and safe failure persistence deferred to
+  `AI-005`. Ordinary tests use injected fake gateways and make no live request.
+
 ## Verification
 
 Verified on 2026-08-12 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 315 passed.
+- `pytest`: 333 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
 ## Not implemented
 
-No outreach workflow or AI match assessment has been implemented yet.
+No outreach workflow, review decision, or assessment review queue has been
+implemented yet.
 Recruiters can intentionally run structured vacancy extraction for an editable
 requirements draft and candidate-profile extraction for a lawfully stored,
 successfully parsed CV. Both create human-reviewable drafts; only explicit
@@ -418,6 +455,9 @@ candidates using the current confirmed requirements, then generate a persistent
 version-labelled shortlist of up to 20 eligible candidates. Relevant candidate
 or confirmed-requirements changes clearly mark earlier runs stale while retaining
 their immutable historical scores and explanations.
+For each candidate on a current shortlist with a confirmed profile, recruiters
+can request and inspect immutable evidence-based AI assessment versions. These
+are decision support only and cannot change the deterministic shortlist.
 
 Recruiters can manage typed hard-constraint records from the normal requirements
 editor while the version is a draft. The older free-text hard-constraint field is
@@ -426,4 +466,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`AI-004 — Generate structured evidence-based match assessments.`
+`AI-005 — Store request metadata and safe failure information.`

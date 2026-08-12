@@ -1,7 +1,7 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`AI-003`. Use only the synthetic files in `manual_testing/fixtures` or other
+`AI-004`. Use only the synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
 
@@ -608,18 +608,65 @@ Expected result:
 
 Request metadata and failure history remain deferred to `AI-005`.
 
-## 17. What is intentionally unavailable
+## 17. Test evidence-based AI match assessment
+
+This is an optional live-provider workflow for one shortlisted candidate at a
+time. Use a synthetic candidate whose latest AI profile is confirmed and a
+vacancy with confirmed requirements.
+
+1. Configure a valid `OPENAI_API_KEY` and supported `OPENAI_MODEL` in `.env`, then
+   restart the development server.
+2. Generate a fresh deterministic shortlist after the candidate profile and
+   vacancy requirements are confirmed.
+3. Open the shortlist and locate the candidate. Record the deterministic rank,
+   score, and filter outcome.
+4. Select **Generate AI assessment** once and wait for the request.
+
+Expected result:
+
+- Only that candidate receives **AI assessment version 1**. Other shortlist
+  entries remain usable and unchanged.
+- The result shows a separate AI score and application-derived red, amber, or
+  green band, evidence-linked matching requirements, gaps, uncertainties, and a
+  recruiter review focus.
+- Every confirmed requirement appears once in exactly one result group. Matches
+  and gaps display candidate evidence from the confirmed profile. Missing support
+  is shown as uncertainty rather than an invented fact or automatic rejection.
+- The deterministic rank, score, filter outcome, and shortlist membership are
+  unchanged. There is no approve/reject, hiring, ranking, contact, or outreach
+  action.
+- Candidate email/phone, raw CV text, prompt content, provider output, and vacancy
+  identity are absent from the assessment display.
+
+Select **Generate new assessment version** for the same candidate. Confirm that
+version 2 is added and version 1 remains inspectable and unchanged.
+
+To test safeguards:
+
+- Confirm a newer profile or change a matching input, then reopen the old run.
+  It is stale and exposes no assessment action until a fresh shortlist is
+  generated.
+- Use a shortlisted synthetic candidate without a confirmed profile. The page
+  explains that profile confirmation is required and exposes no action.
+- Remove the API key, restart, and request an assessment from a current eligible
+  entry. A bounded error appears; the shortlist and any earlier assessment
+  versions remain intact, and no partial version is created.
+
+Safe request metadata and failure history are not persisted until `AI-005`.
+Background bulk assessment remains deferred to `PROD-003`.
+
+## 18. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
-- No AI match-assessment request exists yet.
 - Manual candidate-skill entry still uses Django admin; confirmed AI profile
   skills are published through the normal candidate workflow.
+- No assessment review queue or recruiter approve/reject decisions.
 - No private CV download route.
 - No OCR for scanned PDFs.
 - No outreach workflow.
 
-## 18. Final acceptance checklist
+## 19. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -650,11 +697,16 @@ The current milestone is behaving correctly when all of these are true:
   exact source evidence, creates a versioned draft, and changes matching only
   after explicit confirmation. Confirmed profile facts remain inspectable,
   unknowns remain eligible for review, and bounded failure creates no profile.
+- AI match assessment is POST-only and per candidate, requires current confirmed
+  inputs, preserves immutable numbered versions, resolves evidence references,
+  keeps unsupported facts uncertain, and never changes the deterministic result
+  or makes a recruitment/contact decision. Bounded failure creates no version.
 - Cross-organization URLs do not disclose data.
 - The ordinary test suite and deterministic browser workflow require no AI key
-  or live AI request; only explicit vacancy or candidate extraction actions do.
+  or live AI request; only explicit vacancy extraction, candidate extraction, or
+  match-assessment actions do.
 
-## 19. Reset disposable local test data
+## 20. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

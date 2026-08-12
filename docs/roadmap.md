@@ -57,7 +57,7 @@ Sprint acceptance: the app produces a useful shortlist without any AI provider.
 - `AI-001` Add an application AI gateway backed by Python AI Toolkit v1.0.0. **Complete — 2026-08-11.**
 - `AI-002` Extract and validate structured vacancy requirements. **Complete — 2026-08-12.**
 - `AI-003` Extract and validate structured candidate profiles from CV text. **Complete — 2026-08-12.**
-- `AI-004` Generate structured evidence-based match assessments.
+- `AI-004` Generate structured evidence-based match assessments. **Complete — 2026-08-12.**
 - `AI-005` Store request metadata and safe failure information.
 - `AI-006` Add fake-gateway, contract, and opt-in live smoke tests.
 

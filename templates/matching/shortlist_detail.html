@@ -64,7 +64,7 @@
 {% if entries %}
     <div class="filter-results">
         {% for entry in entries %}
-            <article class="filter-candidate">
+            <article class="filter-candidate" id="assessment-entry-{{ entry.pk }}">
                 <header>
                     <div class="shortlist-rank">
                         <span>#{{ entry.rank }}</span>
@@ -128,6 +128,91 @@
                 {% else %}
                     <p class="section-note shortlist-empty-score">No normalized skill requirements were recorded, so the deterministic relevance score is 0.00. The candidate remains visible because the hard-filter stage found no explicit failure.</p>
                 {% endif %}
+
+                <section class="assessment-panel" aria-labelledby="assessment-title-{{ entry.pk }}">
+                    <div class="action-heading">
+                        <div>
+                            <p class="eyebrow">AI decision support</p>
+                            <h3 id="assessment-title-{{ entry.pk }}">Evidence-based match assessment</h3>
+                            <p class="section-note">The AI score is separate from the deterministic rank and cannot change hard-filter eligibility.</p>
+                        </div>
+                        {% if not staleness.is_stale and entry.confirmed_profile %}
+                            <form method="post" action="{% url 'matching:shortlist-assessment-generate' organization.slug vacancy.pk run.pk entry.pk %}">
+                                {% csrf_token %}
+                                <button class="secondary-button" type="submit">
+                                    {% if entry.latest_assessment %}Generate new assessment{% else %}Generate AI assessment{% endif %}
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+
+                    {% if staleness.is_stale %}
+                        <p class="section-note">Generate a current deterministic shortlist before requesting another AI assessment.</p>
+                    {% elif not entry.confirmed_profile %}
+                        <p class="section-note">Confirm a structured candidate profile before requesting an AI assessment.</p>
+                    {% endif %}
+
+                    {% for assessment in entry.assessments.all %}
+                        <details class="assessment-version" {% if forloop.first %}open{% endif %}>
+                            <summary>
+                                Assessment v{{ assessment.version }} · {{ assessment.score }}/100 · {{ assessment.get_traffic_light_display }}
+                            </summary>
+                            <div class="assessment-heading">
+                                <span class="assessment-light assessment-light-{{ assessment.traffic_light }}">{{ assessment.get_traffic_light_display }}</span>
+                                <div>
+                                    <strong>{{ assessment.score }}/100</strong>
+                                    <small>Profile v{{ assessment.candidate_profile.version }} · requirements v{{ assessment.requirements.version }} · {{ assessment.created_at|date:"Y-m-d H:i" }}</small>
+                                </div>
+                            </div>
+                            <p>{{ assessment.summary }}</p>
+
+                            <div class="assessment-findings">
+                                <div>
+                                    <h4>Matching requirements</h4>
+                                    {% for finding in assessment.matching_requirements %}
+                                        <article class="assessment-finding">
+                                            <strong>{{ finding.requirement_label }}</strong>
+                                            <p>{{ finding.explanation }}</p>
+                                            <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                                            {% for evidence in finding.candidate_evidence %}
+                                                <small>Candidate evidence: {{ evidence.evidence }}</small>
+                                            {% endfor %}
+                                        </article>
+                                    {% empty %}<p>No evidence-backed matches were recorded.</p>{% endfor %}
+                                </div>
+                                <div>
+                                    <h4>Evidence-backed gaps</h4>
+                                    {% for finding in assessment.gaps %}
+                                        <article class="assessment-finding">
+                                            <strong>{{ finding.requirement_label }}</strong>
+                                            <p>{{ finding.explanation }}</p>
+                                            <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                                            {% for evidence in finding.candidate_evidence %}
+                                                <small>Candidate evidence: {{ evidence.evidence }}</small>
+                                            {% endfor %}
+                                        </article>
+                                    {% empty %}<p>No proven gaps were recorded.</p>{% endfor %}
+                                </div>
+                                <div>
+                                    <h4>Uncertainties</h4>
+                                    {% for finding in assessment.uncertainties %}
+                                        <article class="assessment-finding">
+                                            <strong>{{ finding.requirement_label }}</strong>
+                                            <p>{{ finding.explanation }}</p>
+                                            <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                                            {% for evidence in finding.candidate_evidence %}
+                                                <small>Related candidate evidence: {{ evidence.evidence }}</small>
+                                            {% endfor %}
+                                        </article>
+                                    {% empty %}<p>No uncertainties were recorded.</p>{% endfor %}
+                                </div>
+                            </div>
+                            <p class="human-review-note"><strong>Recruiter review focus:</strong> {{ assessment.review_recommendation }}</p>
+                        </details>
+                    {% empty %}
+                        <p class="section-note">No AI assessment has been requested for this shortlist entry.</p>
+                    {% endfor %}
+                </section>
             </article>
         {% endfor %}
     </div>
