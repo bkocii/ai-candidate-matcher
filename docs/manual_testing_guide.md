@@ -295,17 +295,19 @@ Expected result:
 
 ## 11. Inspect skills, typed rules, and deterministic filtering
 
-Use only synthetic evidence. Django admin is still needed to create the typed
-candidate-skill and hard-constraint records; the evaluation report itself is in
-the normal recruiter application.
+Use only synthetic evidence. Django admin is still needed to create typed
+candidate-skill evidence until candidate-profile extraction is implemented.
+Vacancy hard-constraint rules are managed in the normal recruiter application.
 
 1. Create or open an unconfirmed vacancy requirements draft in the normal app.
 2. Enter `Python` and `Django` as must-have skills and `PostgreSQL` as a
    nice-to-have skill, then select **Save draft**.
-3. Open Django admin and inspect **Matching → Requirement skills**.
+3. Return to the draft editor. The **Typed hard-constraint rules** section must
+   be visible below the normal requirements form.
 
-Expected result: the version has three ordered links. `Python` and `Django` are
-must-have; `PostgreSQL` is nice-to-have. **Matching → Skills** contains one
+You may use Django admin to inspect **Matching → Requirement skills**. Expected
+result: the version has three ordered links. `Python` and `Django` are must-have;
+`PostgreSQL` is nice-to-have. **Matching → Skills** contains one
 organization-owned canonical record for each name. Changing case or surrounding
 spaces in the draft does not create another skill, while `C`, `C#`, and `C++`
 remain different skills.
@@ -321,28 +323,32 @@ add:
 
 Cross-organization candidate, document, and skill combinations must be rejected.
 
-To inspect a typed rule while the requirements version is still a draft, open
-**Matching → Hard constraint rules** and add:
+In the normal draft editor, select **Add typed rule** and add:
 
-- Requirements: the draft version above
 - Rule type: `Required skill`
-- Operator: `Has skill`
-- Source text: `Python is explicitly required.`
-- Skill: the same organization’s `Python` skill
-- Position: `1`
-- Expected value and numeric value: blank
+- Exact source wording: `Python is explicitly required.`
+- Required must-have skill: `Python`
 
-You may add a location rule at position `2` using rule type `Location`, operator
-`Equals`, source text `Candidate must be based in Prishtina`, and expected value
-`Prishtina`. The unknown outcome is read-only and remains **Keep for recruiter
-review**.
+The app selects `Has skill`, assigns the next position, and fixes a missing fact
+as **Keep for recruiter review**. Those internal fields are not recruiter-editable.
 
-Confirm the requirements in the normal app, then try to edit either normalized
-skill links or typed rules in admin. Expected result: confirmed definitions are
-immutable. Create a correction draft and inspect admin again; the normalized
-links and typed rules are copied to the new version instead of changing history.
+Add a second typed rule:
 
-Free-text values previously entered in the vacancy’s **Hard constraints** box
+- Rule type: `Location`
+- Exact source wording: `Candidate must be based in Prishtina`
+- Required value: `Prishtina`
+
+Expected result: both rules appear in the draft table. Edit the location rule,
+save a different synthetic value, and then restore `Prishtina`. Open **Delete**
+and select **Keep rule**. A GET of the confirmation screen must not delete data.
+
+Try removing `Python` from the draft's must-have skills while the required-skill
+rule still exists. Expected result: saving is rejected, the previous skill list
+is preserved, and the page explains that the rule must reference a must-have
+skill. Delete or edit the dependent rule before removing the skill.
+
+Free-text values previously entered in the vacancy’s **Hard-constraint notes
+(not executable)** box
 remain recruiter notes. They are not silently converted into executable rules.
 
 Before confirming, create three active synthetic candidates in the same
@@ -352,7 +358,14 @@ organization:
 - `Synthetic Review`: blank location and no recorded `Python` skill.
 - `Synthetic Fail`: location `Peja`, with or without the `Python` skill.
 
-Confirm the requirements, return to the vacancy detail page, and select
+Confirm the requirements in the normal app. Expected result: the vacancy detail
+page shows the confirmed typed-rule table without edit or delete actions. Opening
+an old draft rule edit URL redirects back to the read-only vacancy. Create a
+correction draft and confirm that the normalized links and typed rules were copied
+instead of changing history; continue this test with the original confirmed
+version.
+
+Return to the vacancy detail page and select
 **Evaluate candidates**.
 
 Expected result:

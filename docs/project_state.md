@@ -223,6 +223,14 @@ Status: In progress. `AI-001` is complete; `AI-002` is next.
   numbered version.
 - Added organization-scoped querysets, service-layer authorization, Django admin
   support, database constraints, and candidate-deletion cleanup for skill evidence.
+- Completed the non-admin workflow with a recruiter-facing typed-rule editor on
+  draft requirements. Required-skill choices are limited to saved must-have
+  skills; valid operators and `unknown / keep for recruiter review` behavior are
+  automatic; edit and confirmation-delete actions repeat tenant and draft-state
+  checks in the service layer.
+- Revalidate typed rules whenever a draft's normalized skills change and again
+  before confirmation. A save that would orphan a required-skill rule rolls back
+  atomically, while confirmed rules remain visible and immutable.
 
 ### `MATCH-002 — Inspectable deterministic candidate filtering`
 
@@ -318,11 +326,11 @@ Status: In progress. `AI-001` is complete; `AI-002` is next.
 
 ## Verification
 
-Verified on 2026-08-11 with Python 3.12.13:
+Verified on 2026-08-12 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 266 passed.
+- `pytest`: 278 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
@@ -348,11 +356,10 @@ version-labelled shortlist of up to 20 eligible candidates. Relevant candidate
 or confirmed-requirements changes clearly mark earlier runs stale while retaining
 their immutable historical scores and explanations.
 
-Typed hard-constraint records are currently created through Django admin while
-their requirements version is a draft. The normal recruiter requirements form
-stores free-text hard-constraint notes but does not yet provide the typed-rule
-editor required for a complete non-admin workflow. Confirmed versions remain
-correctly immutable; rule corrections require a new draft version.
+Recruiters can manage typed hard-constraint records from the normal requirements
+editor while the version is a draft. The older free-text hard-constraint field is
+clearly labelled as non-executable notes. Confirmed versions remain immutable;
+rule corrections require a copied draft version.
 
 ## Next task
 

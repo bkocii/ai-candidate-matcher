@@ -92,10 +92,12 @@ class VacancyRequirementsForm(forms.Form):
     )
     hard_constraints = forms.CharField(
         required=False,
+        label="Hard-constraint notes (not executable)",
         widget=forms.Textarea(attrs={"rows": 4}),
         help_text=(
-            "Enter only explicit, lawful constraints from the role, one per line. "
-            "Do not enter protected characteristics."
+            "Optional notes only. Use the typed-rule editor below for constraints "
+            "that deterministic filtering must evaluate. Do not enter protected "
+            "characteristics."
         ),
     )
     ambiguities = forms.CharField(

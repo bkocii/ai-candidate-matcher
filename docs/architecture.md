@@ -298,6 +298,16 @@ Structured AI outputs should be stored with a schema version and the relevant so
 - Normalized links and typed rules are editable only while their requirements
   version is a draft. They become immutable with confirmation and are copied,
   rather than changed, when a recruiter creates a correction version.
+- The normal draft requirements screen lists typed rules and links to guided add
+  and edit forms plus a separate delete-confirmation screen. Rule type determines
+  the operator and payload shape; the UI never exposes configurable operators or
+  an alternative missing-fact outcome. Required-skill choices come only from the
+  draft's saved normalized must-have skills.
+- Draft saves resynchronize normalized skills and then revalidate every typed
+  rule in the same transaction. Confirmation repeats that validation, so removing
+  a skill referenced by an executable rule cannot create a silently inconsistent
+  confirmed snapshot. Confirmed rules are visible on the vacancy detail page but
+  have no mutation actions.
 - Deterministic evaluation uses only the current confirmed requirements version
   and active candidates owned by the same authorized organization. Draft,
   deleted-vacancy, inactive-candidate, and cross-organization inputs are rejected.

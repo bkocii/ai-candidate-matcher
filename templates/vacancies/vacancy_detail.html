@@ -99,6 +99,19 @@
     </article>
 </section>
 
+{% if current_requirements %}
+<section class="rule-editor" aria-labelledby="confirmed-rules-title">
+    <div class="rule-editor-heading">
+        <div>
+            <p class="eyebrow">Confirmed matching definition</p>
+            <h2 id="confirmed-rules-title">Typed hard-constraint rules · v{{ current_requirements.version }}</h2>
+            <p class="section-note">These executable rules are immutable with the confirmed requirements version. Create a correction draft to change them.</p>
+        </div>
+    </div>
+    {% include "matching/_hard_constraint_rules.html" with rules=confirmed_hard_constraint_rules editable=False requirements=current_requirements %}
+</section>
+{% endif %}
+
 <section class="version-history" aria-labelledby="history-title">
     <h2 id="history-title">Requirements history</h2>
     <p class="section-note">Confirmed versions are immutable. Corrections create a new numbered draft.</p>

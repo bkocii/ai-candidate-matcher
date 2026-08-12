@@ -118,6 +118,11 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
         if latest_match_run is not None
         else None
     )
+    confirmed_hard_constraint_rules = (
+        current_requirements.hard_constraint_rules.select_related("skill")
+        if current_requirements is not None
+        else ()
+    )
     return render(
         request,
         "vacancies/vacancy_detail.html",
@@ -125,6 +130,7 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
             "organization": organization,
             "vacancy": vacancy,
             "current_requirements": current_requirements,
+            "confirmed_hard_constraint_rules": confirmed_hard_constraint_rules,
             "latest_match_run": latest_match_run,
             "latest_match_run_staleness": latest_match_run_staleness,
             "draft": draft,
@@ -207,17 +213,25 @@ def requirements_edit(
         requirements=requirements,
     )
     if request.method == "POST" and form.is_valid():
-        update_requirements_draft(
-            requirements=requirements,
-            user=request.user,
-            values=requirements_values_from_form(form),
-        )
-        messages.success(request, f"Saved requirements version {requirements.version}.")
-        return redirect(
-            "vacancies:vacancy-detail",
-            organization_slug=organization.slug,
-            vacancy_id=vacancy.pk,
-        )
+        try:
+            update_requirements_draft(
+                requirements=requirements,
+                user=request.user,
+                values=requirements_values_from_form(form),
+            )
+        except ValidationError as error:
+            form.add_error(None, "; ".join(error.messages))
+        else:
+            messages.success(
+                request,
+                f"Saved requirements version {requirements.version}.",
+            )
+            return redirect(
+                "vacancies:requirements-edit",
+                organization_slug=organization.slug,
+                vacancy_id=vacancy.pk,
+                requirements_id=requirements.pk,
+            )
 
     return render(
         request,
@@ -227,6 +241,9 @@ def requirements_edit(
             "vacancy": vacancy,
             "requirements": requirements,
             "form": form,
+            "hard_constraint_rules": requirements.hard_constraint_rules.select_related(
+                "skill"
+            ),
         },
     )
 

@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Max
 
 from accounts.models import User
 from candidates.models import Candidate, CandidateDocument
@@ -134,7 +135,7 @@ def create_hard_constraint_rule(
     user: User,
     rule_type: str,
     source_text: str,
-    position: int,
+    position: int | None = None,
     skill_label: str = "",
     expected_value: str = "",
     numeric_value: Decimal | None = None,
@@ -149,6 +150,38 @@ def create_hard_constraint_rule(
             "Confirmed hard-constraint rules are immutable; create a new version."
         )
 
+    skill, operator = _hard_constraint_payload(
+        requirements=requirements,
+        user=user,
+        rule_type=rule_type,
+        skill_label=skill_label,
+    )
+    if position is None:
+        highest_position = requirements.hard_constraint_rules.aggregate(
+            Max("position")
+        )["position__max"]
+        position = (highest_position or 0) + 1
+
+    return HardConstraintRule.objects.create(
+        requirements=requirements,
+        rule_type=rule_type,
+        operator=operator,
+        source_text=source_text,
+        skill=skill,
+        expected_value=expected_value,
+        numeric_value=numeric_value,
+        position=position,
+        created_by=user,
+    )
+
+
+def _hard_constraint_payload(
+    *,
+    requirements: VacancyRequirements,
+    user: User,
+    rule_type: str,
+    skill_label: str,
+) -> tuple[Skill | None, str]:
     skill = None
     operator = HardConstraintRule.Operator.EQUALS
     if rule_type == HardConstraintRule.RuleType.REQUIRED_SKILL:
@@ -162,18 +195,83 @@ def create_hard_constraint_rule(
         operator = HardConstraintRule.Operator.HAS_SKILL
     elif rule_type == HardConstraintRule.RuleType.MINIMUM_EXPERIENCE:
         operator = HardConstraintRule.Operator.AT_LEAST
+    return skill, operator
 
-    return HardConstraintRule.objects.create(
-        requirements=requirements,
-        rule_type=rule_type,
-        operator=operator,
-        source_text=source_text,
-        skill=skill,
-        expected_value=expected_value,
-        numeric_value=numeric_value,
-        position=position,
-        created_by=user,
+
+@transaction.atomic
+def update_hard_constraint_rule(
+    *,
+    rule: HardConstraintRule,
+    user: User,
+    rule_type: str,
+    source_text: str,
+    skill_label: str = "",
+    expected_value: str = "",
+    numeric_value: Decimal | None = None,
+) -> HardConstraintRule:
+    """Update one rule without allowing confirmed history to change."""
+    require_organization_object_access(user, rule)
+    rule = (
+        HardConstraintRule.objects.select_for_update()
+        .select_related("requirements__vacancy")
+        .get(pk=rule.pk)
     )
+    requirements = VacancyRequirements.objects.select_for_update().get(
+        pk=rule.requirements_id
+    )
+    if requirements.status != VacancyRequirements.Status.DRAFT:
+        raise ValidationError(
+            "Confirmed hard-constraint rules are immutable; create a new version."
+        )
+
+    skill, operator = _hard_constraint_payload(
+        requirements=requirements,
+        user=user,
+        rule_type=rule_type,
+        skill_label=skill_label,
+    )
+    rule.rule_type = rule_type
+    rule.operator = operator
+    rule.source_text = source_text
+    rule.skill = skill
+    rule.expected_value = expected_value
+    rule.numeric_value = numeric_value
+    rule.save()
+    return rule
+
+
+@transaction.atomic
+def delete_hard_constraint_rule(
+    *,
+    rule: HardConstraintRule,
+    user: User,
+) -> None:
+    """Delete one draft rule after repeating tenant and state checks."""
+    require_organization_object_access(user, rule)
+    rule = (
+        HardConstraintRule.objects.select_for_update()
+        .select_related("requirements__vacancy")
+        .get(pk=rule.pk)
+    )
+    requirements = VacancyRequirements.objects.select_for_update().get(
+        pk=rule.requirements_id
+    )
+    if requirements.status != VacancyRequirements.Status.DRAFT:
+        raise ValidationError(
+            "Confirmed hard-constraint rules are immutable; create a new version."
+        )
+    rule.delete()
+
+
+def validate_hard_constraint_rules(
+    *,
+    requirements: VacancyRequirements,
+    user: User,
+) -> None:
+    """Revalidate draft rules after their normalized requirement inputs change."""
+    require_organization_object_access(user, requirements)
+    for rule in requirements.hard_constraint_rules.select_related("skill"):
+        rule.full_clean()
 
 
 @transaction.atomic

@@ -19,7 +19,19 @@
     {% include "vacancies/_form_fields.html" %}
     <div class="button-row">
         <button class="primary-button" type="submit">Save draft</button>
-        <a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Cancel</a>
+        <a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Review and confirm</a>
     </div>
 </form>
+
+<section class="rule-editor" aria-labelledby="typed-rules-title">
+    <div class="rule-editor-heading">
+        <div>
+            <p class="eyebrow">Deterministic filtering</p>
+            <h2 id="typed-rules-title">Typed hard-constraint rules</h2>
+            <p class="section-note">Only these typed rules affect candidate filtering. Save must-have skill changes before adding a required-skill rule. Missing candidate facts always stay eligible for recruiter review.</p>
+        </div>
+        <a class="primary-button button-link" href="{% url 'matching:hard-constraint-add' organization.slug vacancy.pk requirements.pk %}">Add typed rule</a>
+    </div>
+    {% include "matching/_hard_constraint_rules.html" with rules=hard_constraint_rules editable=True %}
+</section>
 {% endblock %}

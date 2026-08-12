@@ -706,6 +706,51 @@ tbody tr:last-child td {
     margin-top: 32px;
 }
 
+.rule-editor {
+    margin-top: 32px;
+}
+
+.rule-editor-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 18px;
+}
+
+.table-actions {
+    display: flex;
+    gap: 14px;
+    font-weight: 750;
+}
+
+.table-actions a {
+    color: var(--primary);
+}
+
+.table-actions .danger-link {
+    color: var(--danger);
+}
+
+.empty-rule-list,
+.rule-policy-note {
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-soft);
+}
+
+.empty-rule-list p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.rule-policy-note {
+    display: grid;
+    gap: 5px;
+    color: var(--primary-dark);
+}
+
 .filter-summary {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -944,7 +989,8 @@ tbody tr:last-child td {
     .result-summary,
     .workspace-panel,
     .review-callout,
-    .status-actions {
+    .status-actions,
+    .rule-editor-heading {
         align-items: flex-start;
         flex-direction: column;
     }

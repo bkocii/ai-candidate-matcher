@@ -38,15 +38,15 @@ Sprint acceptance: a recruiter can import an anonymized candidate set and create
 
 ## Sprint 3 — Deterministic search and shortlist
 
-- `MATCH-001` Define normalized skills and explicit hard-constraint rules. **Complete — 2026-08-10.**
+- `MATCH-001` Define normalized skills and explicit hard-constraint rules. **Complete — 2026-08-10; corrective recruiter-facing typed-rule editor complete — 2026-08-12.**
 - `MATCH-002` Implement inspectable deterministic candidate filtering. **Complete — 2026-08-11.**
 - `MATCH-003` Implement relevance scoring and a bounded shortlist. **Complete — 2026-08-11; corrective per-skill 2:1 weighting pass complete.**
 - `MATCH-004` Add stale-result invalidation when candidate or vacancy data changes. **Complete — 2026-08-11.**
 
-Known workflow gap: typed hard-constraint rules are draft-only as designed but
-currently require Django admin. A recruiter-facing typed-rule editor must be
-approved as a corrective UI pass; free-text hard-constraint notes are not
-executable rules.
+Corrective workflow pass: recruiters can now create, edit, and confirmation-delete
+typed hard-constraint rules in the normal draft requirements editor. Confirmed
+versions remain immutable, and free-text hard-constraint notes remain explicitly
+non-executable.
 
 Status: Complete.
 

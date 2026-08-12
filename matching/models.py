@@ -503,6 +503,14 @@ class HardConstraintRule(models.Model):
     def organization(self) -> Organization:
         return self.requirements.organization
 
+    @property
+    def expected_display(self) -> str:
+        if self.skill_id:
+            return self.skill.name
+        if self.numeric_value is not None:
+            return f"{self.numeric_value} years"
+        return self.expected_value
+
     def clean(self) -> None:
         super().clean()
         self.source_text = self.source_text.strip()

@@ -105,8 +105,11 @@ download is intentionally unavailable until the private-delivery task.
 
 Open **Vacancies** to paste a job description. Every new vacancy receives an
 editable requirements version 1. Recruiters enter list values one per line, save
-the draft, and explicitly confirm it. Confirmed versions are read-only; **Create
-correction draft** copies the current snapshot into the next numbered version.
+the draft, add executable typed hard-constraint rules in the same editor, and
+explicitly confirm it. Operators and missing-fact behavior are fixed by rule type;
+recruiters cannot turn unknown evidence into automatic rejection. Confirmed
+versions are read-only; **Create correction draft** copies the current snapshot
+and its typed rules into the next numbered version.
 After confirmation, use the vacancy detail page to open, pause, close, or reopen
 the vacancy through the available validated lifecycle transitions. Candidate and
 vacancy detail pages also provide confirmation-based deletion. Candidate deletion
@@ -116,8 +119,10 @@ hides the vacancy while retaining its immutable requirements history.
 For a complete browser walkthrough and safe synthetic CSV, PDF, DOCX, rejection,
 and vacancy fixtures, follow `docs/manual_testing_guide.md`.
 
-The normalized skill and hard-constraint records can be inspected in Django
-admin. After confirming a requirements version, open the vacancy and select
+Normalized skills and candidate-skill evidence can still be inspected in Django
+admin. Typed vacancy rules are created, edited, and deleted from the normal draft
+requirements screen, and confirmed rules remain visible on the vacancy page.
+After confirming a requirements version, open the vacancy and select
 **Evaluate candidates** for recruiter-facing deterministic results. This stage
 does not call an AI provider. From that report, select **Generate shortlist** to
 persist and inspect a version-labelled ranking of up to 20 eligible candidates.

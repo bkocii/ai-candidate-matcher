@@ -92,11 +92,14 @@ unused by deterministic matching do not trigger false invalidation. Stale scores
 remain immutable, regeneration creates a separate run, and pre-signature runs
 are explicitly treated as stale.
 
-Typed hard-constraint rules are currently created in Django admin while a
-requirements version is still a draft. The normal recruiter form currently
-contains only free-text hard-constraint notes. Confirmed versions are correctly
-immutable and corrections copy rules into a new draft, but a recruiter-facing
-typed-rule editor remains a known workflow gap.
+Typed hard-constraint rules are managed in the normal recruiter application while
+a requirements version is still a draft. The editor limits required-skill rules
+to saved must-have skills, derives the operator and payload from the selected rule
+type, fixes missing facts as `keep for recruiter review`, and uses a separate
+delete-confirmation screen. Draft skill changes and confirmation both revalidate
+all typed rules atomically. Confirmed rules are visible but immutable, and
+corrections copy them into a new draft. The free-text hard-constraint field is
+labelled as non-executable notes.
 
 `AI-001` is complete. The plain `ai_gateway` package now owns a toolkit-neutral
 protocol, validated result envelope, safe request metadata, bounded application
@@ -126,10 +129,10 @@ The next roadmap item is:
 
 ## Current verification
 
-Verified on 2026-08-11 with Python 3.12.13:
+Verified on 2026-08-12 with Python 3.12.13:
 
 - Django system check passed.
-- 266 pytest tests passed.
+- 278 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
