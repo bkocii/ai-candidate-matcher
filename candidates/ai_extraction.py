@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import unicodedata
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Annotated, Literal
@@ -332,12 +333,17 @@ The JSON string below is the complete redacted source value:
 
 
 def _normalized_evidence(value: str) -> str:
-    return " ".join(value.split()).casefold()
+    normalized = unicodedata.normalize("NFKC", value)
+    normalized = re.sub(r"[\u2010-\u2015\u2212]", "-", normalized)
+    tokens = re.findall(r"\w+(?:[+#./-]+\w+)*[+#]*", normalized, flags=re.UNICODE)
+    return " ".join(tokens).casefold()
 
 
 def _normalized_fact(value: str) -> str:
-    value = value.replace("_", " ")
-    return " ".join(re.sub(r"[^\w]+", " ", value).split()).casefold()
+    normalized = unicodedata.normalize("NFKC", value).replace("_", " ")
+    normalized = re.sub(r"[\u2010-\u2015\u2212-]", " ", normalized)
+    tokens = re.findall(r"\w+(?:[+#./]+\w+)*[+#]*", normalized, flags=re.UNICODE)
+    return " ".join(tokens).casefold()
 
 
 def _require_fact_in_evidence(*, fact: str, evidence: str, label: str) -> None:
@@ -376,7 +382,8 @@ def validate_profile_evidence(
 ) -> None:
     normalized_source = _normalized_evidence(sanitized_source)
     for evidence in _evidence_values(output):
-        if _normalized_evidence(evidence) not in normalized_source:
+        normalized_evidence = _normalized_evidence(evidence)
+        if not normalized_evidence or normalized_evidence not in normalized_source:
             raise ValidationError(
                 "The AI profile contained evidence that is not present in the "
                 "source CV. No profile was saved."

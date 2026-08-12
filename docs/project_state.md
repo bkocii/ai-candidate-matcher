@@ -362,7 +362,9 @@ Status: In progress. `AI-001` through `AI-003` are complete; `AI-004` is next.
   building the untrusted-CV prompt. The prompt requests no hiring recommendation.
 - Required exact source evidence for every returned fact and independently
   verified each excerpt against the redacted source before saving anything.
-  Missing facts remain unknown and unsupported output is rejected.
+  Presentation-only Unicode quote, dash, bullet, and line-wrap differences are
+  normalized without accepting paraphrases or changing meaningful skill
+  punctuation. Missing facts remain unknown and unsupported output is rejected.
 - Added immutable, numbered `CandidateProfile` snapshots tied to one source
   document and its document/text hashes. Successful extraction creates only a
   draft; provider, schema, authorization, deletion, oversized-input, and source-
@@ -390,7 +392,7 @@ Verified on 2026-08-12 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 313 passed.
+- `pytest`: 315 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.

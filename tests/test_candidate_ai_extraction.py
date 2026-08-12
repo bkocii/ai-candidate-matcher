@@ -239,12 +239,67 @@ def test_untraceable_evidence_is_rejected() -> None:
     with pytest.raises(ValidationError, match="not present in the source CV"):
         validate_profile_evidence(output=output, sanitized_source=CV_TEXT)
 
+    punctuation_only = extracted_output(
+        relevant_experience_summary_evidence="...",
+    )
+    with pytest.raises(ValidationError, match="not present in the source CV"):
+        validate_profile_evidence(
+            output=punctuation_only,
+            sanitized_source=CV_TEXT,
+        )
+
+
+def test_evidence_matching_accepts_harmless_document_punctuation_changes() -> None:
+    source = "• Senior Python Developer - Sample Cloud (2021-2026)\nUsed C++."
+    output = extracted_output(
+        relevant_experience_summary="",
+        relevant_experience_summary_evidence="",
+        skills=[
+            {
+                "name": "C++",
+                "evidence": "“Used C++.”",
+            }
+        ],
+        employment_history=[
+            {
+                "job_title": "Senior Python Developer",
+                "employer": "Sample Cloud",
+                "period": "2021-2026",
+                "evidence": "Senior Python Developer — Sample Cloud (2021–2026)",
+            }
+        ],
+        location="",
+        location_evidence="",
+        work_mode_preference="unknown",
+        work_mode_preference_evidence="",
+        languages=[],
+        education=[],
+        employment_type_preferences=[],
+        employment_type_preferences_evidence="",
+        availability="",
+        availability_evidence="",
+    )
+
+    validate_profile_evidence(output=output, sanitized_source=source)
+
 
 def test_fact_not_supported_by_its_real_source_excerpt_is_rejected() -> None:
     output = extracted_output(skills=[{"name": "Java", "evidence": "Python: 5 years"}])
 
     with pytest.raises(ValidationError, match="skill.*not supported"):
         validate_profile_evidence(output=output, sanitized_source=CV_TEXT)
+
+
+def test_fact_grounding_preserves_meaningful_skill_punctuation() -> None:
+    output = extracted_output(
+        skills=[{"name": "C++", "evidence": "Used C# in production"}]
+    )
+
+    with pytest.raises(ValidationError, match="skill.*not supported"):
+        validate_profile_evidence(
+            output=output,
+            sanitized_source=CV_TEXT + "\nUsed C# in production",
+        )
 
 
 def test_service_creates_versioned_profile_draft_without_matching_changes() -> None:

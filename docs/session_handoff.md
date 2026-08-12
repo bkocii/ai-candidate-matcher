@@ -124,7 +124,8 @@ deferred to `AI-005`.
 `AI-003` is complete. Recruiters can trigger candidate-profile extraction from a
 successfully parsed CV. The application removes contact and sensitive prefixed
 content before the request, applies a bounded extra-forbidding schema, verifies
-every returned evidence excerpt against the redacted source, and stores a new
+every returned evidence excerpt against the redacted source, normalizes only
+presentation-level document punctuation during that comparison, and stores a new
 numbered draft without changing deterministic matching. A separate recruiter
 confirmation publishes grounded profile facts and normalized skills. Confirmed
 profiles are immutable matching inputs, unknown or non-matching facts remain
@@ -155,7 +156,7 @@ The next roadmap item is:
 Verified on 2026-08-12 with Python 3.12.13:
 
 - Django system check passed.
-- 313 pytest tests passed.
+- 315 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
