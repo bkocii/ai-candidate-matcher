@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 4 — AI extraction and assessment.
 
-Status: Not started. Sprint 3 is complete; `AI-001` is next.
+Status: In progress. `AI-001` is complete; `AI-002` is next.
 
 ## Decisions made
 
@@ -251,10 +251,11 @@ Status: Not started. Sprint 3 is complete; `AI-001` is next.
   time, shortlist limit, and evaluated/eligible population counts.
 - Excluded every explicit hard-constraint failure before relevance scoring while
   preserving passed and needs-review candidates as eligible.
-- Added a deterministic skill score from 0 to 100. When both groups exist,
-  must-have skills contribute 70 points and nice-to-have skills contribute 30;
-  a single available group contributes all 100 points, and skills within each
-  group are equally weighted.
+- Added a deterministic skill score from 0 to 100. Scoring algorithm v2 assigns
+  two weight units to every must-have skill and one to every nice-to-have skill,
+  then apportions exactly 100.00 points across all requirements. This keeps each
+  individual must-have approximately twice as valuable as an individual
+  nice-to-have regardless of the number of skills in either group.
 - Treated missing candidate skill evidence as zero relevance points rather than
   proof of failure. Every skill row preserves requirement wording, recorded
   candidate wording, evidence, match state, and awarded/possible points.
@@ -293,20 +294,45 @@ Status: Not started. Sprint 3 is complete; `AI-001` is next.
 - Kept all AI requests, assessment persistence, review decisions, and outreach
   outside this task.
 
+### `AI-001 — Application AI gateway`
+
+- Added an application-owned `AIGateway` protocol and toolkit-neutral structured
+  result, token-usage, and safe request-metadata contracts.
+- Added a `ToolkitAIGateway` adapter backed only by the published Python AI
+  Toolkit v1.0.0 Django integration and structured `AIClient.ask()` contract.
+- Constructed the toolkit client lazily so Django startup, checks, migrations,
+  deterministic matching, and ordinary tests require neither an API key nor a
+  provider request.
+- Translated toolkit configuration, provider, JSON, schema-validation, and
+  generic failures into bounded application exceptions without carrying raw
+  provider messages into normal application error handling.
+- Returned validated application-owned Pydantic data and safe operational
+  metadata while deliberately excluding toolkit raw and original responses.
+- Added a configured gateway factory and constructor injection seam so later
+  business-service tests can substitute a fake without monkeypatching views or
+  using a live provider.
+- Added provider-aware environment mapping for model, API key, embedding model,
+  and bounded retry configuration while keeping toolkit file logging disabled.
+- Kept vacancy extraction, candidate extraction, match assessment, persistence,
+  UI, and live smoke requests in their later explicit roadmap tasks.
+
 ## Verification
 
 Verified on 2026-08-11 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 239 passed.
+- `pytest`: 266 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
 ## Not implemented
 
-No outreach workflow or AI business service has been implemented yet. Candidate
+No outreach workflow or AI business service has been implemented yet. The
+application AI gateway boundary is available, but no vacancy, candidate, or
+match-assessment prompt is implemented and no recruiter action makes an AI
+request. Candidate
 records can be manually created, imported, and given
 validated PDF/DOCX CVs through the organization workspace. Recruiters can create
 vacancies, manually structure and confirm their requirements, and preserve
@@ -322,6 +348,12 @@ version-labelled shortlist of up to 20 eligible candidates. Relevant candidate
 or confirmed-requirements changes clearly mark earlier runs stale while retaining
 their immutable historical scores and explanations.
 
+Typed hard-constraint records are currently created through Django admin while
+their requirements version is a draft. The normal recruiter requirements form
+stores free-text hard-constraint notes but does not yet provide the typed-rule
+editor required for a complete non-admin workflow. Confirmed versions remain
+correctly immutable; rule corrections require a new draft version.
+
 ## Next task
 
-`AI-001 — Add an application AI gateway backed by Python AI Toolkit v1.0.0.`
+`AI-002 — Extract and validate structured vacancy requirements.`

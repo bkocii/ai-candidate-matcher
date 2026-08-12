@@ -12,6 +12,7 @@ from matching.models import (
     RequirementSkill,
     ShortlistEntry,
 )
+from matching.scoring_policy import ALGORITHM_VERSION
 from matching.staleness import (
     INPUT_SNAPSHOT_VERSION,
     candidate_input_signature,
@@ -20,11 +21,10 @@ from matching.staleness import (
 from organizations.permissions import require_organization_object_access
 from vacancies.models import VacancyRequirements
 
-ALGORITHM_VERSION = "deterministic_skill_relevance.v1"
 SHORTLIST_LIMIT = 20
-MUST_HAVE_WEIGHT = Decimal("70")
-NICE_TO_HAVE_WEIGHT = Decimal("30")
-FULL_WEIGHT = Decimal("100")
+MUST_HAVE_UNITS = 2
+NICE_TO_HAVE_UNITS = 1
+FULL_SCORE_CENTS = 10_000
 SCORE_QUANTUM = Decimal("0.01")
 
 
@@ -66,36 +66,41 @@ class CandidateRelevanceScore:
     skill_scores: tuple[SkillScore, ...]
 
 
-def _category_weights(
-    *,
-    must_have_count: int,
-    nice_to_have_count: int,
-) -> tuple[Decimal, Decimal]:
-    if must_have_count and nice_to_have_count:
-        return MUST_HAVE_WEIGHT, NICE_TO_HAVE_WEIGHT
-    if must_have_count:
-        return FULL_WEIGHT, Decimal("0")
-    if nice_to_have_count:
-        return Decimal("0"), FULL_WEIGHT
-    return Decimal("0"), Decimal("0")
-
-
-def _allocate_group_points(
+def _allocate_skill_points(
     requirement_skills: tuple[RequirementSkill, ...],
-    total_points: Decimal,
 ) -> dict[int, Decimal]:
+    """Apportion exactly 100 points with a 2:1 must-have/nice-to-have ratio."""
     if not requirement_skills:
         return {}
-    base_points = (total_points / len(requirement_skills)).quantize(
-        SCORE_QUANTUM,
-        rounding=ROUND_HALF_UP,
-    )
-    allocation = {item.pk: base_points for item in requirement_skills[:-1]}
-    allocation[requirement_skills[-1].pk] = total_points - sum(
-        allocation.values(),
-        start=Decimal("0"),
-    )
-    return allocation
+
+    weighted_skills = [
+        (
+            item,
+            MUST_HAVE_UNITS
+            if item.importance == RequirementSkill.Importance.MUST_HAVE
+            else NICE_TO_HAVE_UNITS,
+        )
+        for item in requirement_skills
+    ]
+    total_units = sum(units for _, units in weighted_skills)
+    cent_allocations: dict[int, int] = {}
+    remainders: list[tuple[int, int, int]] = []
+    allocated_cents = 0
+
+    for stable_order, (item, units) in enumerate(weighted_skills):
+        cents, remainder = divmod(FULL_SCORE_CENTS * units, total_units)
+        cent_allocations[item.pk] = cents
+        allocated_cents += cents
+        remainders.append((remainder, -stable_order, item.pk))
+
+    remaining_cents = FULL_SCORE_CENTS - allocated_cents
+    for _, _, item_id in sorted(remainders, reverse=True)[:remaining_cents]:
+        cent_allocations[item_id] += 1
+
+    return {
+        item_id: (Decimal(cents) / 100).quantize(SCORE_QUANTUM)
+        for item_id, cents in cent_allocations.items()
+    }
 
 
 def score_candidate_relevance(
@@ -118,14 +123,7 @@ def score_candidate_relevance(
         for record in requirement_skills
         if record.importance == RequirementSkill.Importance.NICE_TO_HAVE
     )
-    must_weight, nice_weight = _category_weights(
-        must_have_count=len(must_have),
-        nice_to_have_count=len(nice_to_have),
-    )
-    per_skill_weights = {
-        **_allocate_group_points(must_have, must_weight),
-        **_allocate_group_points(nice_to_have, nice_weight),
-    }
+    per_skill_weights = _allocate_skill_points(requirement_skills)
 
     skill_scores = []
     for requirement_skill in requirement_skills:

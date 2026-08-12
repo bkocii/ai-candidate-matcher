@@ -12,7 +12,8 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 through Sprint 3 are complete.
+Sprint 0 through Sprint 3 are complete. Sprint 4 is in progress, with `AI-001`
+complete.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -39,16 +40,19 @@ vacancy's current confirmed rules and inspect pass, fail, or unknown results,
 expected values, candidate facts, evidence, and explanations. Unknown facts
 remain eligible for review. Recruiters can generate a persistent shortlist of
 up to 20 eligible candidates ranked by an inspectable deterministic skill score.
-Must-have skills contribute 70% and nice-to-have skills 30% when both groups
-exist; every recorded match, missing fact, evidence item, and point contribution
-is visible. Each match run also stores privacy-preserving signatures of the
+Each must-have skill has twice the weight of each nice-to-have skill, with the
+combined weights normalized to exactly 100 points; every recorded match, missing
+fact, evidence item, and point contribution is visible. Each match run also stores privacy-preserving signatures of the
 confirmed vacancy inputs and active candidate matching facts. A historical run
 is clearly labelled stale when either input set changes; regeneration creates a
 new run without rewriting the saved ranking. The app uses the published
-`python-ai-toolkit==1.0.0` distribution.
+`python-ai-toolkit==1.0.0` distribution through an application-owned, lazy AI
+gateway. The gateway returns validated data plus safe metadata, excludes raw
+responses, translates provider/toolkit failures into bounded application errors,
+and supports fake substitution. No recruiter workflow makes an AI request yet.
 
-The next approved task is `AI-001 — Add an application AI gateway backed by
-Python AI Toolkit v1.0.0`.
+The next approved task is `AI-002 — Extract and validate structured vacancy
+requirements`.
 
 ## Local setup
 
@@ -61,12 +65,17 @@ uv run python manage.py migrate
 uv run python scripts/check.py
 ```
 
-An OpenAI API key is not needed for Django startup or the ordinary test suite.
-Add it to `.env` only when a later opt-in AI request is intentionally run:
+An OpenAI API key is not needed for Django startup, deterministic matching, or
+the ordinary test suite. Add it to `.env` only when a later opt-in AI request is
+intentionally run:
 
 ```env
 OPENAI_API_KEY=
 ```
+
+The default AI model is configured through `AI_MODEL`, or `OPENAI_MODEL` for the
+default provider. See `.env.example` for the provider, model, embedding, retry,
+and generic key fallbacks. Toolkit file logging is disabled by the application.
 
 ## Local admin test
 

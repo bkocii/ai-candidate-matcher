@@ -1,7 +1,7 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`DATA-005`. Use only the synthetic files in `manual_testing/fixtures` or other
+`AI-001`. Use only the synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
 
@@ -392,8 +392,15 @@ Expected result:
 - The generated run identifies the exact confirmed requirements version,
   generation time, algorithm version, evaluated count, eligible count, shortlist
   count, and fixed limit of 20.
-- A candidate matching one of two must-have skills and one of two nice-to-have
-  skills receives `50.00`: 35 must-have points plus 15 nice-to-have points.
+- Every must-have skill has two weight units and every nice-to-have skill has one;
+  the combined weights are apportioned to exactly `100.00` points.
+- With two must-have and two nice-to-have skills, a candidate matching one of
+  each receives `50.00`: `33.33` must-have points plus `16.67` nice-to-have
+  points.
+- With five must-have and two nice-to-have skills, the must-have rows receive
+  `16.67` or `16.66` each and the nice-to-have rows receive `8.33` each. The
+  possible points total exactly `100.00`, and one nice-to-have can no longer be
+  worth more than one must-have.
 - A missing skill is shown as **Not recorded**, receives zero points, and is not
   described as proof that the candidate lacks the skill.
 - Explicit hard-filter failures do not appear in the shortlist, even if they have
@@ -446,6 +453,10 @@ Expected result:
 - Confirming or editing only a draft does not replace the current matching input;
   confirmation is the point at which the old run becomes stale.
 
+A shortlist created with scoring algorithm v1 is also labelled stale after this
+upgrade. Its saved 70/30 score remains unchanged as historical evidence, and
+regeneration creates a separate v2 run using per-skill 2:1 weighting.
+
 ### Regeneration
 
 From the stale warning, select **Generate current shortlist**.
@@ -483,7 +494,8 @@ Expected result:
 
 The following are not defects at this milestone:
 
-- No AI extraction or AI matching request.
+- The application-owned AI gateway exists, but no recruiter-facing AI extraction
+  or AI matching request exists yet.
 - No recruiter-facing typed-rule or candidate-skill editor yet; `MATCH-001`
   exposes the data contract and Django admin inspection only.
 - No candidate-profile extraction from CV text yet.
@@ -510,13 +522,14 @@ The current milestone is behaving correctly when all of these are true:
 - Deterministic filtering shows inspectable pass/fail/unknown rule outcomes and
   excludes only candidates with an explicit failed fact.
 - Shortlist generation is POST-only, excludes explicit failures, shows the
-  70/30 skill formula and evidence, persists version-labelled history, and never
-  exceeds 20 entries.
+  per-skill 2:1 weighting and evidence, persists version-labelled history, and
+  never exceeds 20 entries.
 - Relevant candidate or confirmed-requirements changes clearly mark older runs
   stale; regeneration creates a separate current run without rewriting history.
 - Confirmed matching definitions cannot be edited; correction drafts copy them.
 - Cross-organization URLs do not disclose data.
-- No AI key or live AI request is required.
+- The ordinary test suite and browser workflow require no AI key or live AI
+  request; the lazy gateway does not change that behavior.
 
 ## 17. Reset disposable local test data
 

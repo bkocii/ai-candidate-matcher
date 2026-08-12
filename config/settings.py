@@ -203,13 +203,23 @@ LOGIN_REDIRECT_URL = "organizations:dashboard"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
 
-# Python AI Toolkit configuration. A real key is required only when an AI service
-# is called; Django startup, checks, and ordinary tests remain provider-free.
+# Python AI Toolkit configuration. A real key is required only when the lazy
+# application gateway makes an AI request; startup, checks, migrations, and
+# ordinary tests remain provider-free. File logging stays disabled so the app
+# controls all persistence of safe AI metadata.
+AI_PROVIDER = os.getenv("AI_PROVIDER", "openai").strip().lower()
+AI_PROVIDER_ENV_PREFIX = AI_PROVIDER.upper().replace("-", "_")
 AI_TOOLKIT = {
-    "provider": "openai",
-    "api_key": os.getenv("OPENAI_API_KEY", ""),
-    "model": "gpt-5.4-mini",
-    "embedding_model": "text-embedding-3-small",
-    "max_retries": 1,
+    "provider": AI_PROVIDER,
+    "api_key": os.getenv(f"{AI_PROVIDER_ENV_PREFIX}_API_KEY")
+    or os.getenv("AI_API_KEY", ""),
+    "model": os.getenv(f"{AI_PROVIDER_ENV_PREFIX}_MODEL")
+    or os.getenv("AI_MODEL", "gpt-5.4-mini"),
+    "embedding_model": os.getenv(f"{AI_PROVIDER_ENV_PREFIX}_EMBEDDING_MODEL")
+    or os.getenv("AI_EMBEDDING_MODEL", "text-embedding-3-small"),
+    "max_retries": env_int("AI_MAX_RETRIES", default=1),
     "file_logging_enabled": False,
 }
+AI_GATEWAY_FACTORY = os.getenv(
+    "AI_GATEWAY_FACTORY", "ai_gateway.toolkit.ToolkitAIGateway"
+).strip()

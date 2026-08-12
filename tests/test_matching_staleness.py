@@ -248,6 +248,40 @@ def test_legacy_run_without_signatures_is_explicitly_stale() -> None:
     assert staleness.reason_codes == ("input_snapshot_unavailable",)
 
 
+def test_run_from_previous_scoring_algorithm_is_explicitly_stale() -> None:
+    user, _, _, _, run = make_run()
+    MatchRun.objects.filter(pk=run.pk).update(
+        algorithm_version="deterministic_skill_relevance.v1"
+    )
+    run.refresh_from_db()
+
+    staleness = assess_match_run_staleness(run=run, user=user)
+
+    assert staleness.reason_codes == ("scoring_algorithm_changed",)
+    assert staleness.reasons == (
+        "The deterministic scoring method changed after this run was generated.",
+    )
+
+
+def test_shortlist_page_explains_scoring_algorithm_staleness(client) -> None:
+    user, organization, vacancy, _, run = make_run()
+    MatchRun.objects.filter(pk=run.pk).update(
+        algorithm_version="deterministic_skill_relevance.v1"
+    )
+    client.force_login(user)
+
+    response = client.get(
+        reverse(
+            "matching:shortlist-detail",
+            args=[organization.slug, vacancy.pk, run.pk],
+        )
+    )
+
+    assert response.status_code == 200
+    assert "This shortlist is stale" in response.content.decode()
+    assert "scoring method changed" in response.content.decode()
+
+
 def test_staleness_service_repeats_tenant_permission_boundary() -> None:
     owner, _, _, _, run = make_run()
     outsider, _ = make_workspace(username="outsider")

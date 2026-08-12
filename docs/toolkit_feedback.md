@@ -39,13 +39,23 @@ Do not patch a local copy of the toolkit inside the app. Confirmed toolkit work 
 
 | ID | Hypothesis | Validation point | Status |
 | --- | --- | --- | --- |
-| `HYP-001` | Django integration may need clearer guidance for service-layer use and test substitution. | `AI-001`, `AI-006` | Unverified |
+| `HYP-001` | Django integration may need clearer guidance for service-layer use and test substitution. | `AI-001`, `AI-006` | Evaluated — app-owned gateway sufficient |
 | `HYP-002` | Batch structured requests may need a reusable API or documented pattern. | `AI-003`, `AI-004` | Unverified |
 | `HYP-003` | Available result metadata may not cover all app usage-reporting needs. | `AI-005`, `PROD-004` | Unverified |
 | `HYP-004` | Generic PDF/DOCX loaders could be useful, but safe CV extraction may belong in the app or a separate package. | `DATA-004` | Evaluated — app-owned |
 | `HYP-005` | Persistent vector-store integration may be useful if embedding retrieval is adopted. | `EVAL-002` | Unverified |
 
 ## Evaluated hypotheses
+
+### `HYP-001` — 2026-08-11
+
+The published v1.0.0 Django integration successfully constructs a configured
+client for an application service. The recruitment application still needs its
+own domain-neutral result envelope, bounded public errors, privacy policy, lazy
+lifecycle, and fake-construction seam. Those are application responsibilities,
+and constructor/factory substitution works without changing the toolkit. No
+toolkit bug or API gap was reproduced in `AI-001`; fake and live contract
+coverage remains scheduled for `AI-006`.
 
 ### `HYP-004` — 2026-08-10
 

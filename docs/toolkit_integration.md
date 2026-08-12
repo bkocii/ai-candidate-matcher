@@ -48,7 +48,20 @@ Output: editable subject and body. The application never instructs the toolkit t
 
 ## Application wrapper
 
-The `ai_gateway` module will expose application concepts rather than toolkit objects to the rest of Django. Expected interfaces include:
+The `ai_gateway` package is the only application boundary permitted to import
+the toolkit client, result, or exception contracts. It currently exposes:
+
+- `AIGateway.request_structured(prompt=..., response_type=...)`
+- `AIGatewayResult`, containing validated application data and safe metadata
+- bounded application error types for configuration, availability, and invalid
+  structured responses
+- `get_ai_gateway()`, a configured construction seam for later fake substitution
+
+`ToolkitAIGateway` constructs the toolkit's Django client lazily and delegates
+structured validation and repair to `AIClient.ask()`. It deliberately does not
+return `AIResult.raw_response` or `AIResult.original_raw_response`.
+
+Later business services will expose application concepts such as:
 
 - `extract_vacancy_requirements(text)`
 - `extract_candidate_profile(text)`
@@ -56,6 +69,20 @@ The `ai_gateway` module will expose application concepts rather than toolkit obj
 - `draft_outreach(vacancy, candidate, assessment)`
 
 Views, forms, model methods, and templates must not call Python AI Toolkit directly.
+Those later business services accept an `AIGateway` rather than constructing or
+patching a provider client themselves.
+
+## Configuration
+
+Django maps `AI_PROVIDER`, provider-specific API key/model variables, generic
+`AI_API_KEY` / `AI_MODEL` fallbacks, `AI_EMBEDDING_MODEL`, and
+`AI_MAX_RETRIES` into `AI_TOOLKIT`. For the default provider, `OPENAI_API_KEY`
+and `OPENAI_MODEL` take precedence over the generic fallbacks. File logging is
+always disabled by the application configuration.
+
+No key is validated at Django startup. The first intentional gateway request
+constructs and validates the toolkit client; a missing or invalid configuration
+then becomes the application's safe configuration error.
 
 ## PII boundary
 
@@ -82,4 +109,3 @@ The app upgrades the toolkit only after:
 3. A fix is implemented and tested in the toolkit repository.
 4. A new toolkit version is released.
 5. The app dependency is updated deliberately and its contract tests pass.
-

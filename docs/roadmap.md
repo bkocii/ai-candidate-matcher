@@ -40,8 +40,13 @@ Sprint acceptance: a recruiter can import an anonymized candidate set and create
 
 - `MATCH-001` Define normalized skills and explicit hard-constraint rules. **Complete — 2026-08-10.**
 - `MATCH-002` Implement inspectable deterministic candidate filtering. **Complete — 2026-08-11.**
-- `MATCH-003` Implement relevance scoring and a bounded shortlist. **Complete — 2026-08-11.**
+- `MATCH-003` Implement relevance scoring and a bounded shortlist. **Complete — 2026-08-11; corrective per-skill 2:1 weighting pass complete.**
 - `MATCH-004` Add stale-result invalidation when candidate or vacancy data changes. **Complete — 2026-08-11.**
+
+Known workflow gap: typed hard-constraint rules are draft-only as designed but
+currently require Django admin. A recruiter-facing typed-rule editor must be
+approved as a corrective UI pass; free-text hard-constraint notes are not
+executable rules.
 
 Status: Complete.
 
@@ -49,12 +54,14 @@ Sprint acceptance: the app produces a useful shortlist without any AI provider.
 
 ## Sprint 4 — AI extraction and assessment
 
-- `AI-001` Add an application AI gateway backed by Python AI Toolkit v1.0.0.
+- `AI-001` Add an application AI gateway backed by Python AI Toolkit v1.0.0. **Complete — 2026-08-11.**
 - `AI-002` Extract and validate structured vacancy requirements.
 - `AI-003` Extract and validate structured candidate profiles from CV text.
 - `AI-004` Generate structured evidence-based match assessments.
 - `AI-005` Store request metadata and safe failure information.
 - `AI-006` Add fake-gateway, contract, and opt-in live smoke tests.
+
+Status: In progress.
 
 Sprint acceptance: AI output is schema-valid, evidence is traceable, missing data is marked unknown, and failure does not break the deterministic shortlist.
 

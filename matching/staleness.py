@@ -7,6 +7,7 @@ from decimal import Decimal
 from accounts.models import User
 from candidates.models import Candidate
 from matching.models import MatchRun
+from matching.scoring_policy import ALGORITHM_VERSION
 from organizations.permissions import require_organization_object_access
 from vacancies.models import VacancyRequirements
 
@@ -122,6 +123,15 @@ def assess_match_run_staleness(*, run: MatchRun, user: User) -> MatchRunStalenes
     require_organization_object_access(user, run)
     run = MatchRun.objects.select_related("requirements__vacancy").get(pk=run.pk)
     reason_pairs: list[tuple[str, str]] = []
+
+    if run.algorithm_version != ALGORITHM_VERSION:
+        reason_pairs.append(
+            (
+                "scoring_algorithm_changed",
+                "The deterministic scoring method changed after this run was "
+                "generated.",
+            )
+        )
 
     if (
         run.input_snapshot_version != INPUT_SNAPSHOT_VERSION

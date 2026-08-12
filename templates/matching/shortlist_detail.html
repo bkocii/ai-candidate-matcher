@@ -48,7 +48,7 @@
     <div>
         <p class="eyebrow">Inspectable scoring</p>
         <h2 id="scoring-method-title">How the score is calculated</h2>
-        <p>When both groups exist, must-have skills contribute 70 points and nice-to-have skills contribute 30. If only one group exists, it contributes all 100 points. Skills within a group are weighted equally. Missing skill evidence earns no points but is not treated as proof that the candidate lacks the skill.</p>
+        <p>Each must-have skill has two weight units and each nice-to-have skill has one. The combined weights are normalized to exactly 100 points, so an individual must-have is worth approximately twice an individual nice-to-have. Missing skill evidence earns no points but is not treated as proof that the candidate lacks the skill.</p>
     </div>
     <p><strong>Ranking order:</strong> score descending, then passed before needs-review only when scores tie, then stable record ID. Explicit hard-constraint failures are excluded regardless of score.</p>
 </section>

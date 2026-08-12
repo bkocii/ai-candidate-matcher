@@ -66,7 +66,7 @@ def confirm(requirements: VacancyRequirements, user: User) -> VacancyRequirement
     return confirm_requirements_draft(requirements=requirements, user=user)
 
 
-def test_relevance_score_uses_visible_70_30_skill_weights() -> None:
+def test_relevance_score_uses_visible_two_to_one_per_skill_weights() -> None:
     user, organization = make_workspace()
     _, requirements = make_requirements(
         organization=organization,
@@ -105,9 +105,86 @@ def test_relevance_score_uses_visible_70_30_skill_weights() -> None:
         "matched": True,
         "candidate_label": "python",
         "evidence": "Synthetic Python evidence.",
-        "awarded_points": "35.00",
-        "possible_points": "35.00",
+        "awarded_points": "33.33",
+        "possible_points": "33.33",
     }
+
+
+def test_five_must_have_and_two_nice_to_have_skills_total_exactly_100() -> None:
+    user, organization = make_workspace()
+    _, requirements = make_requirements(
+        organization=organization,
+        user=user,
+        must_have=["Python", "Django", "SQL", "Git", "Docker"],
+        nice_to_have=["Redis", "AWS"],
+    )
+    confirm(requirements, user)
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="All Skills Candidate",
+    )
+    for label in ["Python", "Django", "SQL", "Git", "Docker", "Redis", "AWS"]:
+        assign_candidate_skill(candidate=candidate, user=user, label=label)
+
+    entry = generate_shortlist(requirements=requirements, user=user).entries.get()
+    must_have_points = [
+        Decimal(item["possible_points"])
+        for item in entry.score_breakdown
+        if item["importance"] == "must_have"
+    ]
+    nice_to_have_points = [
+        Decimal(item["possible_points"])
+        for item in entry.score_breakdown
+        if item["importance"] == "nice_to_have"
+    ]
+
+    assert entry.score == Decimal("100.00")
+    assert must_have_points == [
+        Decimal("16.67"),
+        Decimal("16.67"),
+        Decimal("16.67"),
+        Decimal("16.67"),
+        Decimal("16.66"),
+    ]
+    assert nice_to_have_points == [Decimal("8.33"), Decimal("8.33")]
+    assert sum(must_have_points + nice_to_have_points) == Decimal("100.00")
+
+
+def test_one_must_have_match_outranks_one_nice_to_have_match() -> None:
+    user, organization = make_workspace()
+    _, requirements = make_requirements(
+        organization=organization,
+        user=user,
+        must_have=["Python", "Django", "SQL", "Git", "Docker"],
+        nice_to_have=["Redis", "AWS"],
+    )
+    confirm(requirements, user)
+    must_have_candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Must Have Match",
+    )
+    nice_to_have_candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Nice To Have Match",
+    )
+    assign_candidate_skill(
+        candidate=must_have_candidate,
+        user=user,
+        label="Python",
+    )
+    assign_candidate_skill(
+        candidate=nice_to_have_candidate,
+        user=user,
+        label="Redis",
+    )
+
+    run = generate_shortlist(requirements=requirements, user=user)
+    entries = list(run.entries.all())
+
+    assert entries[0].candidate == must_have_candidate
+    assert entries[0].score == Decimal("16.67")
+    assert entries[1].candidate == nice_to_have_candidate
+    assert entries[1].score == Decimal("8.33")
 
 
 def test_single_skill_category_uses_full_score_range() -> None:
@@ -435,7 +512,7 @@ def test_generate_route_is_post_only_and_redirects_to_report(client) -> None:
     assert get_response.status_code == 405
     assert post_response.status_code == 200
     assert "Visible Candidate" in content
-    assert "70.00" in content
+    assert "66.67" in content
     assert "Inspectable evidence only." in content
     assert "Requirements version 1" in content
     assert "private@example.test" not in content

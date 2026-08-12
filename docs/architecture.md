@@ -51,6 +51,31 @@ Editable drafts, approval state, and manual copy/export history.
 
 Application-level interfaces around Python AI Toolkit. No views or models call the toolkit directly.
 
+`ai_gateway` is a plain application boundary rather than a model-owning Django
+app. Business services depend on its `AIGateway` protocol and application-owned
+`AIGatewayResult`; they do not import toolkit clients, results, or exceptions.
+The initial protocol exposes one validated structured-request primitive. The
+vacancy, candidate, assessment, and outreach services added in later roadmap
+tasks will own their domain schemas and prompts and receive this gateway through
+an explicit dependency or the configured gateway factory.
+
+`ToolkitAIGateway` uses only the published v1.0.0 Django integration to construct
+`AIClient`, then calls its structured `ask()` method. Construction is lazy: a
+missing API key cannot break startup, checks, migrations, deterministic matching,
+or ordinary tests. One gateway instance reuses one client, while the application
+factory does not keep global mutable state and can be replaced by a test factory.
+
+The gateway result contains only validated Pydantic data plus request ID, model,
+duration, retries, token counts, and estimated cost when the toolkit supplies
+them. Raw and original model responses are not exposed. Toolkit configuration,
+provider, parse, and schema failures become bounded application error classes;
+underlying messages and exception chains are suppressed from normal application
+error handling. Persistence of safe metadata and failures remains `AI-005`.
+
+Toolkit file logging is disabled in application settings. The application does
+not log prompts, CV text, contact data, raw responses, or translated exception
+details. `AI-001` establishes no prompt and performs no live provider request.
+
 ### audit
 
 AI usage events, operational events, privacy-relevant access, and failures without raw sensitive content.
@@ -297,10 +322,11 @@ Structured AI outputs should be stored with a schema version and the relevant so
   first and excludes every candidate with an explicit failure. Passed and
   needs-review candidates remain eligible for scoring.
 - Relevance scoring uses only normalized requirement-skill links and recorded
-  candidate-skill assertions. When must-have and nice-to-have groups both exist,
-  they contribute 70 and 30 points respectively. A lone group contributes the
-  full 100 points, and each skill inside a group has equal weight. Missing skill
-  evidence earns zero points but is never converted into a hard-filter failure.
+  candidate-skill assertions. Algorithm v2 gives each must-have skill two weight
+  units and each nice-to-have skill one, then uses deterministic largest-remainder
+  apportionment to distribute exactly 100.00 points. Cent-level rounding is
+  stable by requirement order. Missing skill evidence earns zero points but is
+  never converted into a hard-filter failure.
 - Ranking sorts by score descending, uses passed-before-review only as an equal-
   score tie-break, and finally uses the stable candidate record ID. Candidate
   names, contact data, raw CV text, and protected characteristics do not affect
@@ -331,6 +357,9 @@ Structured AI outputs should be stored with a schema version and the relevant so
   than assumed current. Stale history remains inspectable and is never silently
   recomputed; recruiter-triggered regeneration creates a separate current run.
   AI assessment and recruiter decisions remain later, separate stages.
+- A run whose scoring algorithm version differs from the current application
+  policy is also stale. Its saved ranking and breakdown remain immutable, while
+  regeneration creates a new run under the current algorithm.
 
 ## Matching pipeline
 

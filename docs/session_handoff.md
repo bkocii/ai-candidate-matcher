@@ -14,7 +14,8 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 3 are complete. Sprint 4 is next.
+Sprint 0 through Sprint 3 are complete. Sprint 4 is in progress; `AI-001` is
+complete and `AI-002` is next.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -72,10 +73,11 @@ AI request, or make a hiring decision.
 
 `MATCH-003` is complete. After hard filtering, a recruiter can generate a
 persistent, version-labelled shortlist containing at most 20 eligible candidates.
-Explicit failures are excluded first. Recorded must-have skills contribute 70%
-and nice-to-have skills 30% when both groups exist; each visible score row shows
-the requirement, recorded candidate skill, evidence, and awarded points. Missing
-skill evidence earns no points but is not treated as proof of absence. Runs retain
+Explicit failures are excluded first. Scoring algorithm v2 gives every
+must-have skill two weight units and every nice-to-have skill one, then
+apportions exactly 100.00 points across the confirmed requirements. Each visible
+score row shows the requirement, recorded candidate skill, evidence, and awarded
+points. Missing skill evidence earns no points but is not treated as proof of absence. Runs retain
 their requirements and algorithm versions, actor, counts, ranking, and score
 breakdown. Generation is POST-only, tenant-scoped, and never makes an AI request
 or hiring decision.
@@ -90,9 +92,24 @@ unused by deterministic matching do not trigger false invalidation. Stale scores
 remain immutable, regeneration creates a separate run, and pre-signature runs
 are explicitly treated as stale.
 
+Typed hard-constraint rules are currently created in Django admin while a
+requirements version is still a draft. The normal recruiter form currently
+contains only free-text hard-constraint notes. Confirmed versions are correctly
+immutable and corrections copy rules into a new draft, but a recruiter-facing
+typed-rule editor remains a known workflow gap.
+
+`AI-001` is complete. The plain `ai_gateway` package now owns a toolkit-neutral
+protocol, validated result envelope, safe request metadata, bounded application
+exceptions, configured factory, and a lazy `ToolkitAIGateway` backed by the
+published v1.0.0 Django integration. Toolkit raw/original responses are never
+returned through the application contract, underlying provider error text is
+suppressed, file logging remains disabled, and no API key or request is required
+for startup or ordinary tests. No vacancy/candidate extraction prompt or AI
+business workflow exists yet.
+
 The next roadmap item is:
 
-`AI-001 — Add an application AI gateway backed by Python AI Toolkit v1.0.0.`
+`AI-002 — Extract and validate structured vacancy requirements.`
 
 ## Required instructions
 
@@ -112,7 +129,7 @@ The next roadmap item is:
 Verified on 2026-08-11 with Python 3.12.13:
 
 - Django system check passed.
-- 239 pytest tests passed.
+- 266 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -122,6 +139,7 @@ Verified on 2026-08-11 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `AI-001`: add an application-owned AI gateway backed by the
-published Python AI Toolkit v1.0.0, preserving the existing privacy boundary and
-using fake/test substitution without starting vacancy or candidate extraction.
+Implement only `AI-002`: add structured vacancy-requirements extraction through
+the application gateway, validate an application-owned schema, preserve explicit
+unknowns and recruiter confirmation, and do not begin candidate extraction or
+match assessment.
