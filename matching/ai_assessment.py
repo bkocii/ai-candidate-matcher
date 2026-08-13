@@ -21,7 +21,19 @@ from pydantic import (
 )
 
 from accounts.models import User
-from ai_gateway import AIGateway, AIGatewayMetadata, AIGatewayResult, get_ai_gateway
+from ai_gateway import (
+    AIGateway,
+    AIGatewayError,
+    AIGatewayMetadata,
+    AIGatewayResult,
+    get_ai_gateway,
+)
+from audit.models import AIUsageEvent
+from audit.services import (
+    complete_ai_usage_failure,
+    complete_ai_usage_success,
+    start_ai_usage_event,
+)
 from candidates.models import Candidate, CandidateProfile
 from matching.models import (
     MatchAssessment,
@@ -544,62 +556,84 @@ def assess_shortlist_entry(
     """Generate one immutable assessment without making a recruitment decision."""
     entry, profile = _load_assessable_entry(entry=entry, user=user)
     context = build_assessment_context(entry=entry, profile=profile)
-    active_gateway = gateway if gateway is not None else get_ai_gateway()
-    gateway_result: AIGatewayResult[MatchAssessmentOutput] = (
-        active_gateway.request_structured(
+    usage_event = start_ai_usage_event(
+        organization=entry.organization,
+        actor=user,
+        workflow=AIUsageEvent.Workflow.MATCH_ASSESSMENT,
+        target_type=AIUsageEvent.ObjectType.SHORTLIST_ENTRY,
+        target_id=entry.pk,
+    )
+    gateway_result: AIGatewayResult[MatchAssessmentOutput] | None = None
+    try:
+        active_gateway = gateway if gateway is not None else get_ai_gateway()
+        gateway_result = active_gateway.request_structured(
             prompt=build_match_assessment_prompt(context),
             response_type=MatchAssessmentOutput,
         )
-    )
-    output = gateway_result.data
-    validate_assessment_references(output=output, context=context)
-    if _decision_language_present(output):
-        raise ValidationError(
-            "The AI assessment attempted to make a recruitment decision. No "
-            "assessment was saved."
-        )
-
-    with transaction.atomic():
-        locked_entry = (
-            ShortlistEntry.objects.select_for_update()
-            .select_related("candidate", "match_run__requirements__vacancy")
-            .get(pk=entry.pk)
-        )
-        locked_candidate = Candidate.objects.select_for_update().get(
-            pk=locked_entry.candidate_id
-        )
-        locked_profile = CandidateProfile.objects.select_for_update().get(pk=profile.pk)
-        current_profile = locked_candidate.current_profile
-        if (
-            locked_candidate.status != Candidate.Status.ACTIVE
-            or current_profile is None
-            or current_profile.pk != locked_profile.pk
-        ):
+        output = gateway_result.data
+        validate_assessment_references(output=output, context=context)
+        if _decision_language_present(output):
             raise ValidationError(
-                "The candidate profile changed while assessment was running. No "
+                "The AI assessment attempted to make a recruitment decision. No "
                 "assessment was saved."
             )
-        staleness = assess_match_run_staleness(
-            run=locked_entry.match_run,
-            user=user,
-        )
-        if staleness.is_stale:
-            raise ValidationError(
-                "Matching inputs changed while assessment was running. No assessment "
-                "was saved; generate a current shortlist and try again."
+
+        with transaction.atomic():
+            locked_entry = (
+                ShortlistEntry.objects.select_for_update()
+                .select_related("candidate", "match_run__requirements__vacancy")
+                .get(pk=entry.pk)
             )
-        next_version = (
-            locked_entry.assessments.aggregate(Max("version"))["version__max"] or 0
-        ) + 1
-        assessment = MatchAssessment.objects.create(
-            shortlist_entry=locked_entry,
-            requirements=locked_entry.match_run.requirements,
-            candidate_profile=locked_profile,
-            version=next_version,
-            schema_version=MATCH_ASSESSMENT_SCHEMA_VERSION,
-            created_by=user,
-            **_assessment_values(output=output, context=context),
+            locked_candidate = Candidate.objects.select_for_update().get(
+                pk=locked_entry.candidate_id
+            )
+            locked_profile = CandidateProfile.objects.select_for_update().get(
+                pk=profile.pk
+            )
+            current_profile = locked_candidate.current_profile
+            if (
+                locked_candidate.status != Candidate.Status.ACTIVE
+                or current_profile is None
+                or current_profile.pk != locked_profile.pk
+            ):
+                raise ValidationError(
+                    "The candidate profile changed while assessment was running. No "
+                    "assessment was saved."
+                )
+            staleness = assess_match_run_staleness(
+                run=locked_entry.match_run,
+                user=user,
+            )
+            if staleness.is_stale:
+                raise ValidationError(
+                    "Matching inputs changed while assessment was running. No "
+                    "assessment was saved; generate a current shortlist and try again."
+                )
+            next_version = (
+                locked_entry.assessments.aggregate(Max("version"))["version__max"] or 0
+            ) + 1
+            assessment = MatchAssessment.objects.create(
+                shortlist_entry=locked_entry,
+                requirements=locked_entry.match_run.requirements,
+                candidate_profile=locked_profile,
+                version=next_version,
+                schema_version=MATCH_ASSESSMENT_SCHEMA_VERSION,
+                created_by=user,
+                **_assessment_values(output=output, context=context),
+            )
+            complete_ai_usage_success(
+                event=usage_event,
+                metadata=gateway_result.metadata,
+                result_type=AIUsageEvent.ObjectType.MATCH_ASSESSMENT,
+                result_id=assessment.pk,
+            )
+    except (AIGatewayError, ValidationError) as error:
+        complete_ai_usage_failure(
+            event=usage_event,
+            error=error,
+            metadata=gateway_result.metadata if gateway_result is not None else None,
         )
+        raise
 
     return MatchAssessmentResult(
         assessment=assessment,

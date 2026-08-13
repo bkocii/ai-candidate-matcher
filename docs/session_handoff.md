@@ -15,7 +15,7 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 ## Current status
 
 Sprint 0 through Sprint 3 are complete. Sprint 4 is in progress; `AI-001`
-through `AI-004` are complete and `AI-005` is next.
+through `AI-005` are complete and `AI-006` is next.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -118,8 +118,8 @@ nice-to-have skills, excludes extra fields, and uses controlled vocabulary for
 work mode and employment type. Successful output remains an AI-assisted draft,
 synchronizes normalized skills, and never confirms requirements or creates typed
 executable rules. Gateway failure and concurrent recruiter edits preserve the
-existing draft. Candidate data is not involved, and metadata persistence remains
-deferred to `AI-005`.
+existing draft. Candidate data is not involved; its safe usage metadata and
+bounded failures are now recorded separately by `AI-005`.
 
 `AI-003` is complete. Recruiters can trigger candidate-profile extraction from a
 successfully parsed CV. The application removes contact and sensitive prefixed
@@ -144,13 +144,27 @@ numbered `MatchAssessment` is saved. The app derives the score band, rejects
 decision/contact language, and rechecks profile and shortlist freshness after
 the provider returns. Assessment versions appear beneath the unchanged
 deterministic result with evidence-linked matches, gaps, uncertainties, and
-recruiter review focus. Request metadata remains transient until `AI-005`; no
-review queue, approve/reject decision, outreach, background batch, prompt, raw
-response, identity/contact data, or raw CV text was added.
+recruiter review focus. Its safe usage metadata and bounded failures are now
+recorded separately by `AI-005`; no review queue, approve/reject decision,
+outreach, background batch, prompt, raw response, identity/contact data, or raw
+CV text was added.
+
+`AI-005` is complete. The new `audit.AIUsageEvent` ledger creates one pending
+tenant-scoped record after domain preconditions pass and before each configured
+AI attempt. Successful vacancy extraction, profile extraction, and assessment
+finalize safe request/model/duration/retry/token/cost metadata plus generic
+target/result IDs in the same transaction as their domain result. Gateway
+failures persist only an allow-listed code and stage; completed output rejected by
+application validation may retain safe metadata with one generic validation code.
+Completed events are immutable and read-only in Django admin. There are no fields
+for prompts, raw responses, provider/validation messages, source text, CV text,
+candidate identity, or contact data. Failure metadata not exposed by toolkit
+v1.0.0 is left blank rather than inferred. Recruiter-facing usage reporting
+remains `PROD-004`.
 
 The next roadmap item is:
 
-`AI-005 — Store request metadata and safe failure information.`
+`AI-006 — Add fake-gateway, contract, and opt-in live smoke tests.`
 
 ## Required instructions
 
@@ -170,7 +184,7 @@ The next roadmap item is:
 Verified on 2026-08-12 with Python 3.12.13:
 
 - Django system check passed.
-- 333 pytest tests passed.
+- 341 pytest tests passed.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -180,6 +194,6 @@ Verified on 2026-08-12 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `AI-005`: persist safe request metadata and bounded failure
-information for the existing explicit AI workflows without storing prompts, raw
-responses, candidate contact data, or provider exception details.
+Implement only `AI-006`: consolidate fake-gateway coverage, add explicit gateway
+contract tests, and add a separately opt-in low-cost live smoke test that never
+runs in the ordinary test suite.

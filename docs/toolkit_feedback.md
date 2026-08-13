@@ -41,7 +41,7 @@ Do not patch a local copy of the toolkit inside the app. Confirmed toolkit work 
 | --- | --- | --- | --- |
 | `HYP-001` | Django integration may need clearer guidance for service-layer use and test substitution. | `AI-001`, `AI-006` | Evaluated — app-owned gateway sufficient |
 | `HYP-002` | Batch structured requests may need a reusable API or documented pattern. | `AI-003`, `AI-004` | Evaluated — app-owned orchestration sufficient |
-| `HYP-003` | Available result metadata may not cover all app usage-reporting needs. | `AI-005`, `PROD-004` | Unverified |
+| `HYP-003` | Available result metadata may not cover all app usage-reporting needs. | `AI-005`, `PROD-004` | Partially evaluated — success sufficient; revisit failure reporting in `PROD-004` |
 | `HYP-004` | Generic PDF/DOCX loaders could be useful, but safe CV extraction may belong in the app or a separate package. | `DATA-004` | Evaluated — app-owned |
 | `HYP-005` | Persistent vector-store integration may be useful if embedding retrieval is adopted. | `EVAL-002` | Unverified |
 
@@ -76,6 +76,21 @@ therefore issues one ordinary structured request per explicit candidate action;
 completed entries remain usable when another request fails, and background bulk
 orchestration can be added at the application layer in `PROD-003`. No toolkit
 defect or reusable batch API gap was reproduced.
+
+### `HYP-003` — partial evaluation, 2026-08-12
+
+For successful requests, toolkit v1.0.0 supplies the request ID, model, duration,
+retry count, optional token counts, and optional estimated cost needed by
+`AI-005`. The application persists these fields separately without storing raw
+request or response content. Translated gateway exceptions do not carry request
+ID, timing, retry, token, or cost metadata. `AI-005` therefore records its own
+attempt/completion timestamps and bounded failure category while leaving
+unavailable provider fields blank.
+
+This is sufficient for the current safe ledger and no toolkit defect or API
+change is proposed. The hypothesis remains open for `PROD-004`, when concrete
+failure-reporting and observability requirements can determine whether reusable
+failure metadata is actually needed.
 
 ## Confirmed observations
 

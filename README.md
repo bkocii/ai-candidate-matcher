@@ -13,7 +13,7 @@ python-ai-toolkit[django]==1.0.0
 ## Current status
 
 Sprint 0 through Sprint 3 are complete. Sprint 4 is in progress, with `AI-001`
-through `AI-004` complete.
+through `AI-005` complete.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -64,9 +64,16 @@ to application-owned vacancy and candidate evidence, marks unsupported facts as
 uncertain, derives a red/amber/green band from its separate AI score, and leaves
 the deterministic rank and eligibility unchanged. It provides recruiter review
 focus only; it cannot approve, reject, contact, or rank a candidate.
+Every intentional AI attempt now creates a tenant-scoped usage event after its
+domain preconditions pass. Successful events retain only safe request ID, model,
+duration, retry, token, cost, workflow/target/result IDs, actor, and timestamps;
+failed events retain an allow-listed gateway or application-validation category.
+Prompts, source descriptions, CV text, candidate identity/contact data, raw
+responses, provider exception messages, and user-visible validation text are not
+stored in the ledger. The operational records are read-only in Django admin.
 
-The next approved task is `AI-005 — Store request metadata and safe failure
-information`.
+The next approved task is `AI-006 — Add fake-gateway, contract, and opt-in live
+smoke tests`.
 
 ## Local setup
 

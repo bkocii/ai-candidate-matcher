@@ -22,9 +22,16 @@ from pydantic import (
 from accounts.models import User
 from ai_gateway import (
     AIGateway,
+    AIGatewayError,
     AIGatewayMetadata,
     AIGatewayResult,
     get_ai_gateway,
+)
+from audit.models import AIUsageEvent
+from audit.services import (
+    complete_ai_usage_failure,
+    complete_ai_usage_success,
+    start_ai_usage_event,
 )
 from organizations.permissions import require_organization_object_access
 from vacancies.models import VacancyRequirements
@@ -234,32 +241,52 @@ def extract_vacancy_requirements(
     """Extract, validate, and apply suggestions to an authorized draft."""
     draft = _load_extractable_draft(requirements=requirements, user=user)
     initial_signature = _draft_signature(draft)
-    active_gateway = gateway if gateway is not None else get_ai_gateway()
-    gateway_result: AIGatewayResult[VacancyRequirementsExtraction] = (
-        active_gateway.request_structured(
+    usage_event = start_ai_usage_event(
+        organization=draft.organization,
+        actor=user,
+        workflow=AIUsageEvent.Workflow.VACANCY_REQUIREMENTS,
+        target_type=AIUsageEvent.ObjectType.VACANCY_REQUIREMENTS,
+        target_id=draft.pk,
+    )
+    gateway_result: AIGatewayResult[VacancyRequirementsExtraction] | None = None
+    try:
+        active_gateway = gateway if gateway is not None else get_ai_gateway()
+        gateway_result = active_gateway.request_structured(
             prompt=build_vacancy_requirements_prompt(draft.source_description),
             response_type=VacancyRequirementsExtraction,
         )
-    )
-
-    with transaction.atomic():
-        locked = (
-            VacancyRequirements.objects.select_for_update()
-            .select_related("vacancy")
-            .get(pk=draft.pk)
-        )
-        if _draft_signature(locked) != initial_signature:
-            raise ValidationError(
-                "The requirements draft changed while extraction was running. "
-                "No AI suggestions were saved; review the current draft and try again."
+        with transaction.atomic():
+            locked = (
+                VacancyRequirements.objects.select_for_update()
+                .select_related("vacancy")
+                .get(pk=draft.pk)
             )
-        updated = update_requirements_draft(
-            requirements=locked,
-            user=user,
-            values=gateway_result.data.as_requirements_values(),
+            if _draft_signature(locked) != initial_signature:
+                raise ValidationError(
+                    "The requirements draft changed while extraction was running. "
+                    "No AI suggestions were saved; review the current draft and try "
+                    "again."
+                )
+            updated = update_requirements_draft(
+                requirements=locked,
+                user=user,
+                values=gateway_result.data.as_requirements_values(),
+            )
+            updated.creation_method = VacancyRequirements.CreationMethod.AI_ASSISTED
+            updated.save(update_fields=("creation_method",))
+            complete_ai_usage_success(
+                event=usage_event,
+                metadata=gateway_result.metadata,
+                result_type=AIUsageEvent.ObjectType.VACANCY_REQUIREMENTS,
+                result_id=updated.pk,
+            )
+    except (AIGatewayError, ValidationError) as error:
+        complete_ai_usage_failure(
+            event=usage_event,
+            error=error,
+            metadata=gateway_result.metadata if gateway_result is not None else None,
         )
-        updated.creation_method = VacancyRequirements.CreationMethod.AI_ASSISTED
-        updated.save(update_fields=("creation_method",))
+        raise
 
     return VacancyExtractionResult(
         requirements=updated,

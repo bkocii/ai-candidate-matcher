@@ -70,7 +70,8 @@ duration, retries, token counts, and estimated cost when the toolkit supplies
 them. Raw and original model responses are not exposed. Toolkit configuration,
 provider, parse, and schema failures become bounded application error classes;
 underlying messages and exception chains are suppressed from normal application
-error handling. Persistence of safe metadata and failures remains `AI-005`.
+error handling. `AIUsageEvent` persists the safe result metadata or a bounded
+failure category without expanding the gateway contract.
 
 Toolkit file logging is disabled in application settings. The application does
 not log prompts, CV text, contact data, raw responses, or translated exception
@@ -78,7 +79,36 @@ details.
 
 ### audit
 
-AI usage events, operational events, privacy-relevant access, and failures without raw sensitive content.
+Safe AI usage events and, in later production tasks, operational events and
+privacy-relevant access. Audit storage contains no prompts, raw model responses,
+source descriptions, CV text, candidate identity/contact data, provider exception
+messages, or user-visible validation messages.
+
+`AIUsageEvent` belongs directly to an organization and optionally retains the
+actor. It uses controlled workflow/object-type values plus numeric target/result
+IDs instead of domain foreign keys, allowing non-identifying operational history
+to survive actor or candidate deletion without retaining copied candidate data.
+Organization deletion is protected while usage history exists; actor deletion
+sets the attribution to null.
+
+An authorized business service creates a pending event only after its local
+preconditions pass and immediately before configured gateway construction. A
+successful event is finalized in the same transaction as the requirements
+update, profile draft, or assessment and stores request ID, model, duration,
+retries, optional token counts/cost, schema version, and completion time. Gateway
+failures store only one allow-listed code and stage. When a response completes but
+application evidence/concurrency validation rejects it, the event may retain the
+safe response metadata with a generic application-validation code. Provider
+failures expose no result metadata through toolkit v1.0.0, so those fields remain
+blank rather than being inferred.
+
+Completed usage events are immutable and database constraints keep status,
+completion, result, and failure fields consistent. An unexpected process or
+programming interruption may leave a pending event for later operational
+diagnosis; the application does not hide unrelated programming exceptions.
+Django admin exposes the ledger read-only. Recruiter-facing aggregation, cost/
+latency reporting, retention policy, and operational recovery remain `PROD-002`
+through `PROD-004`.
 
 ## Identity and organization policy
 
@@ -318,9 +348,9 @@ AI usage events, operational events, privacy-relevant access, and failures witho
 - The service snapshots the draft and typed-rule state before the request and
   rechecks it under a database lock before applying the response. A concurrent
   edit therefore prevents stale AI output from overwriting newer recruiter work.
-- Safe request metadata is returned transiently; persistence of metadata and
-  bounded failures remains `AI-005`. Ordinary tests substitute a fake gateway
-  and make no provider request.
+- Safe request metadata and bounded failure categories are persisted separately
+  as `AIUsageEvent` records. Ordinary tests substitute a fake gateway and make no
+  provider request.
 
 Structured AI outputs are stored with a schema version and the relevant source
 versions so their evidence boundary remains inspectable when inputs later change.
@@ -470,9 +500,8 @@ versions so their evidence boundary remains inspectable when inputs later change
   matches, gaps, uncertainties, and recruiter review focus. The review queue and
   assessment detail screen remain `REV-001`; decisions and outreach remain later
   stages.
-- Validated assessment output is persisted in `AI-004`. Gateway request metadata
-  remains transient and durable safe usage/failure records remain `AI-005`.
-  Background/idempotent bulk processing remains `PROD-003`.
+- Validated assessment output is persisted separately from its safe
+  `AIUsageEvent`. Background/idempotent bulk processing remains `PROD-003`.
 
 ## Matching pipeline
 
@@ -482,8 +511,8 @@ versions so their evidence boundary remains inspectable when inputs later change
 4. Build a deterministic relevance score and bounded shortlist.
 5. Send only necessary job and candidate evidence for structured AI assessment.
 6. Validate the AI response.
-7. Store the validated assessment, schema version, and source versions; store
-   safe request metadata separately when `AI-005` is implemented.
+7. Store the validated assessment, schema version, and source versions; finalize
+   the separate safe usage event in the same transaction.
 8. Present results for recruiter review.
 
 Embedding-based retrieval may be added after the deterministic baseline is measured. It is not required to prove the MVP.

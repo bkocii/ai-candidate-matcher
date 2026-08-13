@@ -1,2 +1,0 @@
-This is deliberately plain text with a .pdf filename.
-The upload validator must reject it because it has no PDF signature.

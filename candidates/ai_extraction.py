@@ -24,7 +24,19 @@ from pydantic import (
 )
 
 from accounts.models import User
-from ai_gateway import AIGateway, AIGatewayMetadata, AIGatewayResult, get_ai_gateway
+from ai_gateway import (
+    AIGateway,
+    AIGatewayError,
+    AIGatewayMetadata,
+    AIGatewayResult,
+    get_ai_gateway,
+)
+from audit.models import AIUsageEvent
+from audit.services import (
+    complete_ai_usage_failure,
+    complete_ai_usage_success,
+    start_ai_usage_event,
+)
 from candidates.models import Candidate, CandidateDocument, CandidateProfile
 from matching.models import CandidateSkill
 from matching.services import get_or_create_skill
@@ -525,64 +537,86 @@ def extract_candidate_profile(
     )
     initial_document_sha256 = source_document.sha256
     initial_text_sha256 = _source_text_sha256(source_document.extracted_text)
-    active_gateway = gateway if gateway is not None else get_ai_gateway()
-    gateway_result: AIGatewayResult[CandidateProfileExtraction] = (
-        active_gateway.request_structured(
+    usage_event = start_ai_usage_event(
+        organization=source_document.organization,
+        actor=user,
+        workflow=AIUsageEvent.Workflow.CANDIDATE_PROFILE,
+        target_type=AIUsageEvent.ObjectType.CANDIDATE_DOCUMENT,
+        target_id=source_document.pk,
+    )
+    gateway_result: AIGatewayResult[CandidateProfileExtraction] | None = None
+    try:
+        active_gateway = gateway if gateway is not None else get_ai_gateway()
+        gateway_result = active_gateway.request_structured(
             prompt=build_candidate_profile_prompt(sanitized_source),
             response_type=CandidateProfileExtraction,
         )
-    )
-    output = gateway_result.data
-    output = output.model_copy(
-        update={
-            "excluded_sensitive_content_detected": sensitive_content_redacted,
-        }
-    )
-    validate_profile_evidence(
-        output=output,
-        sanitized_source=sanitized_source,
-    )
+        output = gateway_result.data
+        output = output.model_copy(
+            update={
+                "excluded_sensitive_content_detected": sensitive_content_redacted,
+            }
+        )
+        validate_profile_evidence(
+            output=output,
+            sanitized_source=sanitized_source,
+        )
 
-    with transaction.atomic():
-        locked_document = (
-            CandidateDocument.objects.select_for_update()
-            .select_related("candidate")
-            .get(pk=source_document.pk)
-        )
-        locked_candidate = Candidate.objects.select_for_update().get(
-            pk=locked_document.candidate_id
-        )
-        if locked_candidate.status in {
-            Candidate.Status.DELETION_REQUESTED,
-            Candidate.Status.DELETED,
-        }:
-            raise ValidationError(
-                "Candidate profile extraction is unavailable during deletion."
+        with transaction.atomic():
+            locked_document = (
+                CandidateDocument.objects.select_for_update()
+                .select_related("candidate")
+                .get(pk=source_document.pk)
             )
-        if (
-            locked_document.deleted_at is not None
-            or locked_document.sha256 != initial_document_sha256
-            or _source_text_sha256(locked_document.extracted_text)
-            != initial_text_sha256
-        ):
-            raise ValidationError(
-                "The source CV changed while extraction was running. No profile "
-                "was saved; review the current document and try again."
+            locked_candidate = Candidate.objects.select_for_update().get(
+                pk=locked_document.candidate_id
             )
-        next_version = (
-            locked_candidate.profile_versions.aggregate(Max("version"))["version__max"]
-            or 0
-        ) + 1
-        profile = CandidateProfile.objects.create(
-            candidate=locked_candidate,
-            source_document=locked_document,
-            version=next_version,
-            schema_version=CANDIDATE_PROFILE_SCHEMA_VERSION,
-            source_document_sha256=initial_document_sha256,
-            source_text_sha256=initial_text_sha256,
-            created_by=user,
-            **output.as_profile_values(),
+            if locked_candidate.status in {
+                Candidate.Status.DELETION_REQUESTED,
+                Candidate.Status.DELETED,
+            }:
+                raise ValidationError(
+                    "Candidate profile extraction is unavailable during deletion."
+                )
+            if (
+                locked_document.deleted_at is not None
+                or locked_document.sha256 != initial_document_sha256
+                or _source_text_sha256(locked_document.extracted_text)
+                != initial_text_sha256
+            ):
+                raise ValidationError(
+                    "The source CV changed while extraction was running. No profile "
+                    "was saved; review the current document and try again."
+                )
+            next_version = (
+                locked_candidate.profile_versions.aggregate(Max("version"))[
+                    "version__max"
+                ]
+                or 0
+            ) + 1
+            profile = CandidateProfile.objects.create(
+                candidate=locked_candidate,
+                source_document=locked_document,
+                version=next_version,
+                schema_version=CANDIDATE_PROFILE_SCHEMA_VERSION,
+                source_document_sha256=initial_document_sha256,
+                source_text_sha256=initial_text_sha256,
+                created_by=user,
+                **output.as_profile_values(),
+            )
+            complete_ai_usage_success(
+                event=usage_event,
+                metadata=gateway_result.metadata,
+                result_type=AIUsageEvent.ObjectType.CANDIDATE_PROFILE,
+                result_id=profile.pk,
+            )
+    except (AIGatewayError, ValidationError) as error:
+        complete_ai_usage_failure(
+            event=usage_event,
+            error=error,
+            metadata=gateway_result.metadata if gateway_result is not None else None,
         )
+        raise
 
     return CandidateProfileExtractionResult(
         profile=profile,

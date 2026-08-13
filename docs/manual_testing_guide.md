@@ -544,8 +544,8 @@ Expected result:
 - Confirmed versions do not expose the extraction action, and the extraction URL
   rejects a confirmed version.
 
-Do not use real candidate data for this vacancy-only test. Request metadata and
-failure history are not persisted until `AI-005`.
+Do not use real candidate data for this vacancy-only test. The request produces a
+safe usage event as described in section 18.
 
 ## 16. Test AI-assisted candidate-profile extraction
 
@@ -606,7 +606,7 @@ Expected result:
 - Non-CV, failed/textless, deleted, changed-during-request, and oversized source
   documents are also rejected without partial persistence.
 
-Request metadata and failure history remain deferred to `AI-005`.
+Success or bounded failure produces a safe usage event as described in section 18.
 
 ## 17. Test evidence-based AI match assessment
 
@@ -652,21 +652,53 @@ To test safeguards:
   entry. A bounded error appears; the shortlist and any earlier assessment
   versions remain intact, and no partial version is created.
 
-Safe request metadata and failure history are not persisted until `AI-005`.
-Background bulk assessment remains deferred to `PROD-003`.
+Safe request metadata or a bounded failure category is recorded as described in
+section 18. Background bulk assessment remains deferred to `PROD-003`.
 
-## 18. What is intentionally unavailable
+## 18. Inspect safe AI usage events
+
+Sign in to Django admin and open **AI usage events** under **Audit** after running
+at least one successful and one deliberately failed synthetic AI action from
+sections 15 through 17.
+
+Expected successful event:
+
+- Organization, actor, workflow, generic target/result types and numeric IDs,
+  schema version, succeeded status, request ID, model, duration, retry count,
+  optional token counts/cost, and start/completion times are visible.
+- The result type matches the workflow: vacancy requirements, candidate profile,
+  or match assessment.
+- The record has no edit, add, or delete action.
+
+Expected failed event:
+
+- Configuration, unavailable-provider, invalid-response, generic-request, or
+  application-validation failure is represented by a bounded code and stage.
+- A failure before a validated response has no invented request/model/token/cost
+  values. A completed response rejected by application validation may retain its
+  safe operational metadata.
+- Provider messages, exception details, validation text, prompts, source vacancy
+  descriptions, CV text, candidate names/contact values, and raw responses are
+  absent.
+
+Submit an invalid local action that is rejected before gateway construction—for
+example, extraction from a confirmed requirements version. Confirm that no usage
+event is created because no AI attempt occurred.
+
+## 19. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
 - Manual candidate-skill entry still uses Django admin; confirmed AI profile
   skills are published through the normal candidate workflow.
 - No assessment review queue or recruiter approve/reject decisions.
+- No recruiter-facing AI usage/cost/failure dashboard; safe records are currently
+  read-only in Django admin.
 - No private CV download route.
 - No OCR for scanned PDFs.
 - No outreach workflow.
 
-## 19. Final acceptance checklist
+## 20. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -701,12 +733,16 @@ The current milestone is behaving correctly when all of these are true:
   inputs, preserves immutable numbered versions, resolves evidence references,
   keeps unsupported facts uncertain, and never changes the deterministic result
   or makes a recruitment/contact decision. Bounded failure creates no version.
+- Every actual AI attempt produces a tenant-scoped immutable usage event with
+  safe success metadata or an allow-listed failure category, while rejected
+  precondition-only actions produce no event and sensitive request/response data
+  is never stored in the ledger.
 - Cross-organization URLs do not disclose data.
 - The ordinary test suite and deterministic browser workflow require no AI key
   or live AI request; only explicit vacancy extraction, candidate extraction, or
   match-assessment actions do.
 
-## 20. Reset disposable local test data
+## 21. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

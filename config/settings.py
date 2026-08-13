@@ -95,6 +95,7 @@ X_FRAME_OPTIONS = "DENY"
 
 INSTALLED_APPS = [
     "accounts",
+    "audit",
     "candidates",
     "matching",
     "organizations",

@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 4 — AI extraction and assessment.
 
-Status: In progress. `AI-001` through `AI-004` are complete; `AI-005` is next.
+Status: In progress. `AI-001` through `AI-005` are complete; `AI-006` is next.
 
 ## Decisions made
 
@@ -346,8 +346,8 @@ Status: In progress. `AI-001` through `AI-004` are complete; `AI-005` is next.
   request. Provider, schema, configuration, authorization, deleted-vacancy, and
   concurrent-edit failures leave the draft unchanged and expose only bounded
   recruiter-facing messages.
-- Kept request metadata and failure persistence in `AI-005`; the safe metadata is
-  returned by the service but is not stored in this task. No candidate data,
+- Deferred request metadata and failure persistence to `AI-005`; the safe metadata
+  was returned by the service but not stored by this task. No candidate data,
   candidate extraction, match assessment, or live ordinary test request was added.
 
 ### `AI-003 — Structured candidate-profile extraction`
@@ -419,8 +419,35 @@ Status: In progress. `AI-001` through `AI-004` are complete; `AI-005` is next.
   matches, gaps, uncertainties, and recruiter review focus. No approve/reject,
   hiring recommendation, ranking change, contact action, review queue, or
   outreach workflow was introduced.
-- Kept safe request metadata transient and safe failure persistence deferred to
-  `AI-005`. Ordinary tests use injected fake gateways and make no live request.
+- Deferred safe request metadata and failure persistence to `AI-005`. Ordinary
+  tests use injected fake gateways and make no live request.
+
+### `AI-005 — Safe AI usage and failure persistence`
+
+- Added the `audit` Django app and a tenant-scoped `AIUsageEvent` ledger for
+  vacancy extraction, candidate-profile extraction, and match assessment.
+- Created one pending event only after workflow authorization and source/input
+  preconditions pass, but before configured gateway construction and the provider
+  request. Invalid local actions that never attempt AI create no misleading usage.
+- Persisted successful request ID, model, duration, retries, optional input/output/
+  total tokens, optional estimated USD cost, actor, organization, workflow,
+  generic target/result type and numeric IDs, schema version, and timestamps.
+- Finalized successful usage in the same database transaction as the resulting
+  requirements update, candidate-profile draft, or match assessment so the two
+  records cannot disagree after an ordinary transactional failure.
+- Recorded gateway failures using only allow-listed configuration, unavailable,
+  invalid-response, or generic request codes. Application rejection after a
+  completed response uses one bounded application-validation code and retains
+  only the response's safe operational metadata. Provider messages, validation
+  messages, exception text, prompts, raw responses, source text, CV text, names,
+  and contact values have no ledger fields.
+- Made completed events immutable, protected organization ownership, preserved
+  non-identifying event history when an actor is deleted, added database status/
+  result/failure consistency constraints, and exposed read-only Django admin
+  inspection without adding recruiter-facing cost/failure reporting early.
+- Added service, integration, tenant, privacy, immutability, deletion, and
+  database-constraint tests. The existing AI workflow fake gateways remain fully
+  provider-free; broader contract and opt-in live smoke coverage remains `AI-006`.
 
 ## Verification
 
@@ -428,7 +455,7 @@ Verified on 2026-08-12 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 333 passed.
+- `pytest`: 341 passed.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
@@ -458,6 +485,8 @@ their immutable historical scores and explanations.
 For each candidate on a current shortlist with a confirmed profile, recruiters
 can request and inspect immutable evidence-based AI assessment versions. These
 are decision support only and cannot change the deterministic shortlist.
+Safe AI usage events are available to operators through read-only Django admin;
+recruiter-facing usage/cost/failure reports remain deferred to `PROD-004`.
 
 Recruiters can manage typed hard-constraint records from the normal requirements
 editor while the version is a draft. The older free-text hard-constraint field is
@@ -466,4 +495,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`AI-005 — Store request metadata and safe failure information.`
+`AI-006 — Add fake-gateway, contract, and opt-in live smoke tests.`

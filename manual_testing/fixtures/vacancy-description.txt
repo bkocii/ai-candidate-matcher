@@ -1,9 +1,0 @@
-Senior Django Developer
-
-Acme Test Industries is seeking a Senior Django Developer to build and maintain secure business applications. The role requires at least four years of professional Python development experience and strong recent experience with Django and REST APIs.
-
-The developer will design backend services, review code, write automated tests, and work with PostgreSQL. Experience with Docker and CI/CD is helpful but not mandatory.
-
-The role is full-time and hybrid in Prishtina, with up to three remote days per week. Professional English is required. Candidates must be eligible to work in Kosovo.
-
-The description does not state whether the role includes an on-call rotation or whether a university degree is mandatory.

@@ -65,8 +65,8 @@ resolves accepted references back to application-owned source wording before
 storing an immutable version. Missing support remains uncertain; the application
 derives the traffic-light band and rejects hiring, rejection, approval, contact,
 or outreach recommendations. The deterministic filter, score, rank, and
-shortlist membership are never changed. Toolkit metadata is returned by the
-service only transiently until `AI-005`.
+shortlist membership are never changed. The service persists toolkit metadata
+only through the separate safe `AIUsageEvent` ledger.
 
 ### Outreach draft
 
@@ -100,6 +100,21 @@ Application business services expose or will expose concepts such as:
 Views, forms, model methods, and templates must not call Python AI Toolkit directly.
 Those later business services accept an `AIGateway` rather than constructing or
 patching a provider client themselves.
+
+## Safe usage persistence
+
+`AI-005` adds an application-owned `AIUsageEvent` around each existing business
+service call. The toolkit remains unaware of organizations, users, domain target
+IDs, result IDs, and application validation. Successful events persist only the
+safe fields already exposed by `AIGatewayMetadata`. Gateway exceptions expose no
+request metadata in v1.0.0, so failed events retain the application error code,
+stage, actor/organization, workflow/target IDs, and timestamps while leaving
+request/model/token/cost fields blank. A completed response later rejected by
+application validation can retain its safe metadata.
+
+The ledger never receives a prompt, raw/original response, toolkit/provider
+message, exception detail, source description, CV text, or candidate identity or
+contact value. Toolkit file logging remains disabled.
 
 ## Configuration
 

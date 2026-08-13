@@ -1,7 +1,0 @@
-full_name,email,phone,location,source_reference,retention_until
-Elira Gashi,elira.gashi@example.test,+38344404040,Peja,SYN-004,2027-12-31
-Amina Duplicate,amina.berisha@example.test,+38344999991,Prishtina,SYN-DUP-EMAIL,
-,missing.name@example.test,+38344999992,Gjilan,SYN-MISSING-NAME,
-Invalid Email,not-an-email,+38344999993,Ferizaj,SYN-BAD-EMAIL,
-Dren Testi,dren.testi@example.test,+38344505050,Gjakova,SYN-005,
-Dren Duplicate,dren.duplicate@example.test,+38344999994,Gjakova,SYN-005,
