@@ -10,7 +10,16 @@ from ai_gateway import AIGatewayError
 from matching.ai_assessment import assess_shortlist_entry
 from matching.evaluation import filter_candidates
 from matching.forms import HardConstraintRuleForm, hard_constraint_values_from_form
-from matching.models import HardConstraintRule, MatchRun, ShortlistEntry
+from matching.models import (
+    HardConstraintRule,
+    MatchAssessment,
+    MatchRun,
+    ShortlistEntry,
+)
+from matching.review import (
+    build_assessment_review_item,
+    build_assessment_review_queue,
+)
 from matching.scoring import generate_shortlist
 from matching.services import (
     create_hard_constraint_rule,
@@ -20,6 +29,8 @@ from matching.services import (
 from matching.staleness import assess_match_run_staleness
 from organizations.models import Organization
 from vacancies.models import Vacancy, VacancyRequirements
+
+REVIEW_QUEUE_SCOPES = {"exceptions", "changed", "all"}
 
 
 def _rule_editor_objects(
@@ -409,3 +420,81 @@ def shortlist_assessment_generate(
         args=[organization.slug, vacancy.pk, run.pk],
     )
     return redirect(f"{detail_url}#assessment-entry-{entry.pk}")
+
+
+@login_required
+def assessment_review_queue(request, organization_slug: str):
+    organization = get_object_or_404(
+        Organization.objects.visible_to(request.user),
+        slug=organization_slug,
+    )
+    queue = build_assessment_review_queue(
+        organization=organization,
+        user=request.user,
+    )
+    scope = request.GET.get("scope", "exceptions")
+    if scope not in REVIEW_QUEUE_SCOPES:
+        scope = "exceptions"
+    if scope == "changed":
+        selected_items = [item for item in queue.items if item.inputs_changed]
+    elif scope == "all":
+        selected_items = list(queue.items)
+    else:
+        selected_items = [item for item in queue.items if item.needs_focus]
+    page = Paginator(selected_items, 20).get_page(request.GET.get("page"))
+    return render(
+        request,
+        "matching/assessment_review_queue.html",
+        {
+            "organization": organization,
+            "queue": queue,
+            "scope": scope,
+            "page": page,
+        },
+    )
+
+
+@login_required
+def assessment_review_detail(
+    request,
+    organization_slug: str,
+    assessment_id: int,
+):
+    organization = get_object_or_404(
+        Organization.objects.visible_to(request.user),
+        slug=organization_slug,
+    )
+    assessment = get_object_or_404(
+        MatchAssessment.objects.for_organization(organization).select_related(
+            "candidate_profile",
+            "created_by",
+            "requirements",
+            "shortlist_entry__candidate",
+            "shortlist_entry__match_run__requirements__vacancy",
+        ),
+        pk=assessment_id,
+        shortlist_entry__match_run__requirements__vacancy__deleted_at__isnull=True,
+    )
+    review_item = build_assessment_review_item(
+        assessment=assessment,
+        user=request.user,
+    )
+    assessment_history = list(
+        MatchAssessment.objects.for_organization(organization)
+        .filter(shortlist_entry=assessment.shortlist_entry)
+        .select_related("candidate_profile", "created_by")
+        .order_by("-version", "-created_at", "-id")
+    )
+    return render(
+        request,
+        "matching/assessment_review_detail.html",
+        {
+            "organization": organization,
+            "assessment": assessment,
+            "review_item": review_item,
+            "assessment_history": assessment_history,
+            "vacancy": assessment.requirements.vacancy,
+            "entry": assessment.shortlist_entry,
+            "run": assessment.shortlist_entry.match_run,
+        },
+    )

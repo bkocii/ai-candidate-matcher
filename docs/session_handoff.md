@@ -14,8 +14,8 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 4 are complete. Sprint 5 is next; `REV-001` is the next
-approved roadmap task.
+Sprint 0 through Sprint 4 are complete. Sprint 5 is in progress; `REV-001` is
+complete and `REV-002` is the next approved roadmap task.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -146,9 +146,9 @@ decision/contact language, and rechecks profile and shortlist freshness after
 the provider returns. Assessment versions appear beneath the unchanged
 deterministic result with evidence-linked matches, gaps, uncertainties, and
 recruiter review focus. Its safe usage metadata and bounded failures are now
-recorded separately by `AI-005`; no review queue, approve/reject decision,
-outreach, background batch, prompt, raw response, identity/contact data, or raw
-CV text was added.
+recorded separately by `AI-005`; no approve/reject decision, outreach,
+background batch, prompt, raw response, identity/contact data, or raw CV text
+was added.
 
 `AI-005` is complete. The new `audit.AIUsageEvent` ledger creates one pending
 tenant-scoped record after domain preconditions pass and before each configured
@@ -174,12 +174,23 @@ raw responses. A tiny synthetic live structured smoke test lives under
 `RUN_LIVE_AI_SMOKE=1`, may incur one provider charge, uses no recruitment or
 database data, and is documented separately. No toolkit issue was reproduced.
 
+`REV-001` is complete. Recruiters can open an organization-scoped review queue
+that consolidates immutable history to the latest assessment per shortlist
+entry. Changed shortlist/profile inputs, evidence-backed gaps, uncertainties,
+confirmed-profile ambiguities, and deterministic unknown-fact flags appear
+before routine assessments; routine items remain available through **All** and
+are never silently approved. A dedicated detail screen shows application-owned
+vacancy/candidate evidence, separate AI and deterministic scores, profile
+ambiguities, currentness warnings, recruiter review focus, and all immutable
+assessment versions. The workflow reuses confirmed profiles and creates no new
+model or migration. It adds no decision, background batch, or outreach action.
+
 ## Recruiter-efficiency requirement for later tasks
 
-Do not treat the current per-candidate actions as the final high-volume UX.
+Do not treat the current per-candidate generation actions as the final high-volume UX.
 Confirmed profiles are reusable across vacancies and should be re-extracted only
-for new or corrected source/profile data. `REV-001` should introduce a compact
-queue emphasizing gaps, ambiguities, changed facts, and evidence exceptions.
+for new or corrected source/profile data. `REV-001` now provides a compact queue
+emphasizing gaps, ambiguities, changed facts, and evidence exceptions.
 `PROD-003` should add resumable background batch profile extraction and one
 whole-shortlist assessment action with per-candidate failure isolation. Selected
 profile drafts may be confirmed efficiently only while evidence remains
@@ -189,7 +200,7 @@ requires separate approval.
 
 The next roadmap item is:
 
-`REV-001 — Add the review queue and assessment detail screen.`
+`REV-002 — Add approve, reject, and revisit decisions with recruiter notes.`
 
 ## Required instructions
 
@@ -209,7 +220,7 @@ The next roadmap item is:
 Verified on 2026-08-13 with Python 3.12.13:
 
 - Django system check passed.
-- 354 ordinary pytest tests passed; the separate live smoke test is excluded.
+- 359 ordinary pytest tests passed; the separate live smoke test is excluded.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -219,7 +230,7 @@ Verified on 2026-08-13 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `REV-001`: add a tenant-safe recruiter review queue and assessment
-detail screen. Use the recruiter-efficiency requirement above to keep review
-compact and exception-focused, but do not add decisions (`REV-002`), background
-batch processing (`PROD-003`), or outreach yet.
+Implement only `REV-002`: add individual approve, reject, and revisit decisions
+with recruiter notes, actor, and timestamp. Preserve the exception-focused queue,
+keep decisions individually inspectable, and do not add background batch
+processing (`PROD-003`) or outreach yet.

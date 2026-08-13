@@ -12,9 +12,9 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 ## Current milestone
 
-Sprint 4 — AI extraction and assessment — is complete.
+Sprint 5 — Recruiter review and outreach — is in progress.
 
-Status: Sprint 5 is next; `REV-001` is the next approved task.
+Status: `REV-001` is complete; `REV-002` is the next approved task.
 
 ## Decisions made
 
@@ -480,20 +480,41 @@ Status: Sprint 5 is next; `REV-001` is the next approved task.
 - No toolkit defect or reusable API gap was reproduced against the published
   v1.0.0 integration.
 
+### `REV-001 — Recruiter review queue and assessment detail`
+
+- Added an organization-scoped review queue that consolidates immutable history
+  to the latest assessment for each shortlist entry and exposes explicit scopes
+  for items needing focus, changed inputs, and all assessments.
+- Ordered changed shortlist/profile inputs and evidence exceptions before routine
+  results. Each compact item shows gap, uncertainty, confirmed-profile ambiguity,
+  and deterministic unknown-fact counts without silently approving routine work.
+- Added a tenant-safe assessment detail screen with application-owned vacancy and
+  candidate evidence, separate AI and deterministic scores, confirmed-profile
+  ambiguities, currentness warnings, recruiter review focus, and links to every
+  immutable assessment version for the shortlist entry.
+- Reused existing confirmed candidate profiles and privacy-preserving shortlist
+  signatures. The workflow stores no repeated profile approval, review decision,
+  contact data, raw CV text, prompt, raw response, or protected characteristic.
+- Added normal workspace navigation and an assessment-detail link from the
+  shortlist while preserving the existing shortlist assessment display.
+- Kept approve/reject/revisit decisions in `REV-002`, batch/background processing
+  in `PROD-003`, and outreach in `OUT-001`/`OUT-002`. No model or migration was
+  required because review state is derived from existing immutable records.
+
 ## Verification
 
 Verified on 2026-08-13 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 354 passed; the separate live smoke test is excluded.
+- `pytest`: 359 passed; the separate live smoke test is excluded.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
 ## Not implemented
 
-No outreach workflow, review decision, or assessment review queue has been
+No outreach workflow or recruiter approve/reject/revisit decision has been
 implemented yet.
 Recruiters can intentionally run structured vacancy extraction for an editable
 requirements draft and candidate-profile extraction for a lawfully stored,
@@ -518,9 +539,8 @@ can request and inspect immutable evidence-based AI assessment versions. These
 are decision support only and cannot change the deterministic shortlist.
 Safe AI usage events are available to operators through read-only Django admin;
 recruiter-facing usage/cost/failure reports remain deferred to `PROD-004`.
-High-volume recruiter-efficiency work is also not implemented yet. The approved
-later workflow reuses confirmed profiles, uses `REV-001` for compact
-exception-focused assessment review, and uses `PROD-003` for resumable batch
+The review queue now reuses confirmed profiles and provides compact exception-
+focused assessment review. Remaining high-volume work uses `PROD-003` for resumable batch
 profile extraction and whole-shortlist assessment generation. No profile will be
 silently confirmed and final employment decisions remain individual recruiter
 actions in `REV-002`.
@@ -532,4 +552,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`REV-001 — Add the review queue and assessment detail screen.`
+`REV-002 — Add approve, reject, and revisit decisions with recruiter notes.`

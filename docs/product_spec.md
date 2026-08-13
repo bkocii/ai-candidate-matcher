@@ -77,6 +77,8 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Every substantive positive or negative conclusion must point to candidate or vacancy evidence.
 - Missing information is reported as unknown, not treated as proof that a candidate lacks a skill.
 - Recruiters can inspect and override every assessment.
+- Review defaults to changed evidence and exceptions while keeping every latest
+  assessment and its immutable version history individually inspectable.
 - Model prompts exclude protected characteristics and irrelevant personal data.
 - A confirmed candidate profile is reusable across vacancies. High-volume intake
   and assessment should use resumable background batches and exception-focused

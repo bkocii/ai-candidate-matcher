@@ -504,11 +504,37 @@ versions so their evidence boundary remains inspectable when inputs later change
   candidate, current profile, and run freshness. A concurrent profile
   confirmation or matching-input change discards the output without persistence.
 - The shortlist displays all immutable assessment versions with evidence-linked
-  matches, gaps, uncertainties, and recruiter review focus. The review queue and
-  assessment detail screen remain `REV-001`; decisions and outreach remain later
-  stages.
+  matches, gaps, uncertainties, and recruiter review focus. A dedicated review
+  detail route exposes the same application-owned evidence plus assessment
+  version history without changing the snapshot.
 - Validated assessment output is persisted separately from its safe
   `AIUsageEvent`. Background/idempotent bulk processing remains `PROD-003`.
+
+### Recruiter assessment review
+
+- The review queue is a derived view over existing immutable assessments; it
+  creates no review decision or duplicate assessment state. It selects only the
+  latest assessment version for each surviving shortlist entry while keeping
+  older versions reachable from the assessment detail screen.
+- The queue repeats tenant authorization, excludes soft-deleted vacancies from
+  the normal workspace, and resolves assessments only through organization-
+  scoped querysets. Cross-organization queue and detail URLs return `404`.
+- Changed shortlist inputs or a superseded confirmed profile are shown first,
+  followed by evidence-backed gaps, uncertainties, confirmed-profile
+  ambiguities, and deterministic unknown-fact review flags. Routine assessments
+  remain available through the explicit **All** scope instead of being deleted
+  or silently treated as approved.
+- Queue currentness is calculated from the existing privacy-preserving shortlist
+  signatures and current confirmed profile relationship. No raw CV text,
+  candidate contact details, prompt, raw provider response, or protected
+  characteristic is introduced into the review surface.
+- The detail screen shows the immutable AI score separately from the
+  deterministic score, all vacancy and candidate evidence resolved by the
+  application, profile ambiguities, changed-input warnings, recruiter review
+  focus, and links to every assessment version for the same shortlist entry.
+- `REV-001` records no approve, reject, revisit, or outreach action. Individual
+  decisions with actor, timestamp, and notes remain `REV-002`; background whole-
+  shortlist assessment generation remains `PROD-003`.
 
 ## Matching pipeline
 

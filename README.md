@@ -12,8 +12,8 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 through Sprint 4 are complete. Sprint 5 is next, beginning with
-`REV-001`.
+Sprint 0 through Sprint 4 are complete. Sprint 5 is in progress: `REV-001` is
+complete and `REV-002` is next.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -75,9 +75,15 @@ The three AI workflows now share a provider-free fake gateway and an explicit
 application contract tested against both the fake and published-toolkit adapter.
 A separately invoked synthetic live smoke test is outside the ordinary test path
 and cannot run without an explicit environment switch.
+Recruiters now have an organization-scoped assessment review queue that shows
+only the latest assessment per shortlist entry, places changed inputs, gaps,
+uncertainties, profile ambiguities, and deterministic unknowns first, and keeps
+routine assessments available under **All**. Each assessment has a dedicated
+evidence-linked detail screen with immutable version history. The review surface
+does not record a candidate decision or trigger outreach.
 
-The next approved task is `REV-001 — Add the review queue and assessment detail
-screen`.
+The next approved task is `REV-002 — Add approve, reject, and revisit decisions
+with recruiter notes`.
 
 ## Local setup
 
@@ -172,6 +178,11 @@ recomputed. On a current shortlist, candidates with confirmed profiles expose
 an immutable numbered assessment, and shows evidence-linked matches, gaps,
 uncertainties, score band, and recruiter review focus beneath the unchanged
 deterministic result. Regeneration creates another assessment version.
+Open **Reviews** from the organization navigation to inspect the exception-first
+queue. **Needs focus** is the compact default; **Changed inputs** isolates stale
+evidence boundaries, and **All** keeps routine latest assessments individually
+inspectable. The detail screen shows evidence, profile ambiguities, currentness,
+and all immutable versions without approving, rejecting, or contacting anyone.
 
 ## Production configuration
 

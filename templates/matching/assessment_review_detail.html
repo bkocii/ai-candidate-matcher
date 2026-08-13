@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment review | {{ entry.candidate.full_name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading" aria-labelledby="assessment-review-title">
+    <div>
+        <p class="eyebrow">Recruiter review · {{ vacancy.title }}</p>
+        <h1 id="assessment-review-title">{{ entry.candidate.full_name }}</h1>
+        <p class="lede">Assessment v{{ assessment.version }} · shortlist #{{ entry.rank }} · profile v{{ assessment.candidate_profile.version }} · requirements v{{ assessment.requirements.version }}</p>
+    </div>
+    <div class="button-row">
+        <a class="secondary-button" href="{% url 'matching:assessment-review-queue' organization.slug %}">Back to review queue</a>
+        <a class="secondary-button" href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk run.pk %}#assessment-entry-{{ entry.pk }}">Open source shortlist</a>
+    </div>
+</section>
+
+{% if review_item.inputs_changed %}
+    <section class="stale-result-callout" role="alert" aria-labelledby="assessment-stale-title">
+        <div>
+            <p class="eyebrow">Changed evidence boundary</p>
+            <h2 id="assessment-stale-title">Inspect as historical assessment</h2>
+            <p>This immutable assessment remains available, but current candidate or vacancy matching inputs have changed.</p>
+            {% if review_item.profile_changed %}<p>The candidate now has a different confirmed profile.</p>{% endif %}
+            {% if review_item.staleness.reasons %}
+                <ul>{% for reason in review_item.staleness.reasons %}<li>{{ reason }}</li>{% endfor %}</ul>
+            {% endif %}
+        </div>
+    </section>
+{% endif %}
+
+<section class="assessment-review-summary" aria-label="Assessment summary">
+    <div class="assessment-heading">
+        <span class="assessment-light assessment-light-{{ assessment.traffic_light }}">{{ assessment.get_traffic_light_display }}</span>
+        <div>
+            <strong>{{ assessment.score }}/100</strong>
+            <small>AI decision-support score; deterministic score {{ entry.score|floatformat:2 }}/100</small>
+        </div>
+    </div>
+    <p>{{ assessment.summary }}</p>
+    <div class="review-badges">
+        <span class="review-badge">{{ review_item.gap_count }} gap{{ review_item.gap_count|pluralize }}</span>
+        <span class="review-badge">{{ review_item.uncertainty_count }} uncertaint{{ review_item.uncertainty_count|pluralize:"y,ies" }}</span>
+        <span class="review-badge">{{ review_item.profile_ambiguity_count }} profile ambiguit{{ review_item.profile_ambiguity_count|pluralize:"y,ies" }}</span>
+        {% if review_item.deterministic_review_needed %}<span class="review-badge">Unknown hard-filter fact</span>{% endif %}
+    </div>
+</section>
+
+<section class="assessment-detail-grid" aria-label="Evidence-linked assessment findings">
+    <div>
+        <h2>Matching requirements</h2>
+        {% for finding in assessment.matching_requirements %}
+            <article class="assessment-finding">
+                <strong>{{ finding.requirement_label }}</strong>
+                <p>{{ finding.explanation }}</p>
+                <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                {% for evidence in finding.candidate_evidence %}<small>Candidate evidence: {{ evidence.evidence }}</small>{% endfor %}
+            </article>
+        {% empty %}<p>No evidence-backed matches were recorded.</p>{% endfor %}
+    </div>
+    <div>
+        <h2>Evidence-backed gaps</h2>
+        {% for finding in assessment.gaps %}
+            <article class="assessment-finding">
+                <strong>{{ finding.requirement_label }}</strong>
+                <p>{{ finding.explanation }}</p>
+                <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                {% for evidence in finding.candidate_evidence %}<small>Candidate evidence: {{ evidence.evidence }}</small>{% endfor %}
+            </article>
+        {% empty %}<p>No proven gaps were recorded.</p>{% endfor %}
+    </div>
+    <div>
+        <h2>Uncertainties</h2>
+        {% for finding in assessment.uncertainties %}
+            <article class="assessment-finding">
+                <strong>{{ finding.requirement_label }}</strong>
+                <p>{{ finding.explanation }}</p>
+                <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                {% for evidence in finding.candidate_evidence %}<small>Related candidate evidence: {{ evidence.evidence }}</small>{% endfor %}
+            </article>
+        {% empty %}<p>No uncertainties were recorded.</p>{% endfor %}
+    </div>
+</section>
+
+<section class="workspace-panel" aria-labelledby="profile-ambiguities-title">
+    <div>
+        <p class="eyebrow">Confirmed reusable profile</p>
+        <h2 id="profile-ambiguities-title">Profile evidence exceptions</h2>
+    </div>
+    {% if assessment.candidate_profile.ambiguities %}
+        <ul>{% for ambiguity in assessment.candidate_profile.ambiguities %}<li>{{ ambiguity }}</li>{% endfor %}</ul>
+    {% else %}
+        <p>No profile ambiguities were recorded.</p>
+    {% endif %}
+</section>
+
+<p class="human-review-note"><strong>Recruiter review focus:</strong> {{ assessment.review_recommendation }}</p>
+
+<section class="assessment-history" aria-labelledby="assessment-history-title">
+    <p class="eyebrow">Immutable history</p>
+    <h2 id="assessment-history-title">Assessment versions</h2>
+    <ul>
+        {% for version in assessment_history %}
+            <li>
+                {% if version.pk == assessment.pk %}<strong>{% endif %}
+                <a href="{% url 'matching:assessment-review-detail' organization.slug version.pk %}">Version {{ version.version }} · {{ version.score }}/100 · {{ version.get_traffic_light_display }}</a>
+                · {{ version.created_at|date:"Y-m-d H:i" }}
+                {% if version.pk == assessment.pk %}</strong>{% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</section>
+
+<p class="human-review-note">No candidate decision is recorded on this screen. Approve, reject, revisit, and outreach remain separate later workflow steps.</p>
+{% endblock %}

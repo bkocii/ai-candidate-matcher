@@ -6,6 +6,17 @@ app_name = "matching"
 
 urlpatterns = [
     path(
+        "organizations/<slug:organization_slug>/reviews/",
+        views.assessment_review_queue,
+        name="assessment-review-queue",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/reviews/assessments/"
+        "<int:assessment_id>/",
+        views.assessment_review_detail,
+        name="assessment-review-detail",
+    ),
+    path(
         "organizations/<slug:organization_slug>/vacancies/<int:vacancy_id>/"
         "requirements/<int:requirements_id>/hard-constraints/new/",
         views.hard_constraint_add,

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Review queue | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading" aria-labelledby="review-queue-title">
+    <div>
+        <p class="eyebrow">Recruiter review</p>
+        <h1 id="review-queue-title">Assessment review queue</h1>
+        <p class="lede">Latest assessment per shortlisted candidate, with changed inputs and evidence exceptions first. Routine assessments remain available under All.</p>
+    </div>
+</section>
+
+<section class="filter-summary" aria-label="Review queue summary">
+    <article><span>Latest assessments</span><strong>{{ queue.total_count }}</strong></article>
+    <article><span>Need focus</span><strong>{{ queue.focus_count }}</strong></article>
+    <article><span>Changed inputs</span><strong>{{ queue.changed_count }}</strong></article>
+    <article><span>Routine</span><strong>{{ queue.routine_count }}</strong></article>
+</section>
+
+<nav class="review-scope-nav" aria-label="Review queue scope">
+    <a href="?scope=exceptions"{% if scope == "exceptions" %} aria-current="page"{% endif %}>Needs focus ({{ queue.focus_count }})</a>
+    <a href="?scope=changed"{% if scope == "changed" %} aria-current="page"{% endif %}>Changed inputs ({{ queue.changed_count }})</a>
+    <a href="?scope=all"{% if scope == "all" %} aria-current="page"{% endif %}>All ({{ queue.total_count }})</a>
+</nav>
+
+{% if page.object_list %}
+    <div class="review-queue">
+        {% for item in page.object_list %}
+            {% with assessment=item.assessment entry=item.assessment.shortlist_entry %}
+                <article class="review-card{% if item.inputs_changed %} review-card-changed{% endif %}">
+                    <header>
+                        <div>
+                            <p class="eyebrow">{{ assessment.requirements.vacancy.title }} · shortlist #{{ entry.rank }}</p>
+                            <h2>{{ entry.candidate.full_name }}</h2>
+                            <p class="section-note">Assessment v{{ assessment.version }} · profile v{{ assessment.candidate_profile.version }} · {{ assessment.created_at|date:"Y-m-d H:i" }}</p>
+                        </div>
+                        <div class="review-score">
+                            <span class="assessment-light assessment-light-{{ assessment.traffic_light }}">{{ assessment.get_traffic_light_display }}</span>
+                            <strong>{{ assessment.score }}/100</strong>
+                        </div>
+                    </header>
+
+                    <div class="review-badges" aria-label="Review focus">
+                        {% if item.inputs_changed %}<span class="review-badge review-badge-changed">Inputs changed</span>{% endif %}
+                        {% if item.gap_count %}<span class="review-badge">{{ item.gap_count }} gap{{ item.gap_count|pluralize }}</span>{% endif %}
+                        {% if item.uncertainty_count %}<span class="review-badge">{{ item.uncertainty_count }} uncertaint{{ item.uncertainty_count|pluralize:"y,ies" }}</span>{% endif %}
+                        {% if item.profile_ambiguity_count %}<span class="review-badge">{{ item.profile_ambiguity_count }} profile ambiguit{{ item.profile_ambiguity_count|pluralize:"y,ies" }}</span>{% endif %}
+                        {% if item.deterministic_review_needed %}<span class="review-badge">Unknown hard-filter fact</span>{% endif %}
+                        {% if not item.needs_focus %}<span class="review-badge review-badge-routine">No recorded exception</span>{% endif %}
+                    </div>
+
+                    <p>{{ assessment.summary }}</p>
+                    <p class="human-review-note"><strong>Review focus:</strong> {{ assessment.review_recommendation }}</p>
+                    <a class="primary-button" href="{% url 'matching:assessment-review-detail' organization.slug assessment.pk %}">Inspect assessment</a>
+                </article>
+            {% endwith %}
+        {% endfor %}
+    </div>
+
+    {% if page.paginator.num_pages > 1 %}
+        <nav class="pagination" aria-label="Review queue pages">
+            {% if page.has_previous %}<a href="?scope={{ scope }}&amp;page={{ page.previous_page_number }}">Previous</a>{% endif %}
+            <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+            {% if page.has_next %}<a href="?scope={{ scope }}&amp;page={{ page.next_page_number }}">Next</a>{% endif %}
+        </nav>
+    {% endif %}
+{% else %}
+    <section class="empty-state">
+        <span class="empty-icon" aria-hidden="true">0</span>
+        {% if queue.total_count %}
+            <h2>No assessments in this view</h2>
+            <p>Choose All to inspect routine assessments as well.</p>
+        {% else %}
+            <h2>No assessments are ready for review</h2>
+            <p>Generate an evidence-based assessment from a current shortlist. Confirmed candidate profiles can be reused across vacancies.</p>
+        {% endif %}
+    </section>
+{% endif %}
+
+<p class="human-review-note">This queue organizes decision support only. Candidate decisions and outreach remain separate, explicit recruiter actions.</p>
+{% endblock %}

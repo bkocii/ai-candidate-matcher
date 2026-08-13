@@ -165,6 +165,7 @@
                                 </div>
                             </div>
                             <p>{{ assessment.summary }}</p>
+                            <p><a class="secondary-button" href="{% url 'matching:assessment-review-detail' organization.slug assessment.pk %}">Open assessment review</a></p>
 
                             <div class="assessment-findings">
                                 <div>
