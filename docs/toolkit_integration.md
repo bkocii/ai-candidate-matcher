@@ -116,6 +116,20 @@ The ledger never receives a prompt, raw/original response, toolkit/provider
 message, exception detail, source description, CV text, or candidate identity or
 contact value. Toolkit file logging remains disabled.
 
+## Test contract
+
+`ai_gateway.testing.FakeAIGateway` is the provider-free application test double.
+It and `ToolkitAIGateway` share the same non-blank prompt and Pydantic response-
+type validation. Shared tests verify the runtime protocol, normalized request,
+validated `AIGatewayResult`, safe `AIGatewayMetadata`, and absence of raw response
+fields. Domain suites supply their own application-owned output schemas through
+the fake without importing toolkit result types.
+
+The separately invoked `live_tests/test_ai_gateway_live.py` verifies one tiny
+synthetic structured request through the published v1.0.0 Django integration.
+It is outside ordinary `testpaths`, requires `RUN_LIVE_AI_SMOKE=1`, may incur a
+provider charge, uses no database or recruitment data, and is never a CI gate.
+
 ## Configuration
 
 Django maps `AI_PROVIDER`, provider-specific API key/model variables, generic

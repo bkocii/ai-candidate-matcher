@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{% if rule %}Edit{% else %}Add{% endif %} typed rule | {{ vacancy.title }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">Requirements version {{ requirements.version }} · Draft</p>
+    <h1>{% if rule %}Edit{% else %}Add{% endif %} typed hard constraint</h1>
+    <p class="lede">Create an explicit, lawful filtering rule. The operator is selected automatically from the rule type, and missing candidate information always remains for recruiter review.</p>
+</section>
+
+<form class="form-panel stacked-form" method="post">
+    {% csrf_token %}
+    {% include "vacancies/_form_fields.html" %}
+    <div class="rule-policy-note">
+        <strong>Human-review safeguard</strong>
+        <span>Unknown candidate facts cannot be configured as an automatic failure.</span>
+    </div>
+    <div class="button-row">
+        <button class="primary-button" type="submit">{% if rule %}Save changes{% else %}Add rule{% endif %}</button>
+        <a class="secondary-button" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk requirements.pk %}">Cancel</a>
+    </div>
+</form>
+{% endblock %}

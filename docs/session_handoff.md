@@ -14,8 +14,8 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 3 are complete. Sprint 4 is in progress; `AI-001`
-through `AI-005` are complete and `AI-006` is next.
+Sprint 0 through Sprint 4 are complete. Sprint 5 is next; `REV-001` is the next
+approved roadmap task.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -131,8 +131,9 @@ confirmation publishes grounded profile facts and normalized skills. Confirmed
 profiles are immutable matching inputs, unknown or non-matching facts remain
 eligible for review, and profile confirmation makes affected saved shortlists
 stale. Manual candidate-skill assertions are preserved. Raw CV text, prompts,
-provider output, contact data, assessments, and request metadata are not stored
-or displayed by this workflow.
+provider output, contact data, and assessments are not stored or displayed by
+this workflow; only the separate safe AI usage ledger retains operational
+metadata.
 
 `AI-004` is complete. Recruiters can explicitly assess one candidate on a
 current deterministic shortlist when that candidate has a confirmed profile.
@@ -162,9 +163,33 @@ candidate identity, or contact data. Failure metadata not exposed by toolkit
 v1.0.0 is left blank rather than inferred. Recruiter-facing usage reporting
 remains `PROD-004`.
 
+`AI-006` is complete. `ai_gateway.testing.FakeAIGateway` is now the reusable
+provider-free test double for all three AI business workflows. It shares
+non-blank prompt and Pydantic response-type validation with `ToolkitAIGateway`,
+captures normalized calls, supports static/dynamic schema-valid output and
+bounded errors, and rejects mismatched test output. Shared contract tests exercise
+both adapters and preserve the application-owned result/metadata boundary without
+raw responses. A tiny synthetic live structured smoke test lives under
+`live_tests`, outside ordinary pytest `testpaths`; it requires
+`RUN_LIVE_AI_SMOKE=1`, may incur one provider charge, uses no recruitment or
+database data, and is documented separately. No toolkit issue was reproduced.
+
+## Recruiter-efficiency requirement for later tasks
+
+Do not treat the current per-candidate actions as the final high-volume UX.
+Confirmed profiles are reusable across vacancies and should be re-extracted only
+for new or corrected source/profile data. `REV-001` should introduce a compact
+queue emphasizing gaps, ambiguities, changed facts, and evidence exceptions.
+`PROD-003` should add resumable background batch profile extraction and one
+whole-shortlist assessment action with per-candidate failure isolation. Selected
+profile drafts may be confirmed efficiently only while evidence remains
+inspectable; no silent auto-confirmation is allowed. Final approve/reject/revisit
+decisions remain individual recruiter actions in `REV-002`, and outreach still
+requires separate approval.
+
 The next roadmap item is:
 
-`AI-006 — Add fake-gateway, contract, and opt-in live smoke tests.`
+`REV-001 — Add the review queue and assessment detail screen.`
 
 ## Required instructions
 
@@ -181,10 +206,10 @@ The next roadmap item is:
 
 ## Current verification
 
-Verified on 2026-08-12 with Python 3.12.13:
+Verified on 2026-08-13 with Python 3.12.13:
 
 - Django system check passed.
-- 341 pytest tests passed.
+- 354 ordinary pytest tests passed; the separate live smoke test is excluded.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -194,6 +219,7 @@ Verified on 2026-08-12 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `AI-006`: consolidate fake-gateway coverage, add explicit gateway
-contract tests, and add a separately opt-in low-cost live smoke test that never
-runs in the ordinary test suite.
+Implement only `REV-001`: add a tenant-safe recruiter review queue and assessment
+detail screen. Use the recruiter-efficiency requirement above to keep review
+compact and exception-focused, but do not add decisions (`REV-002`), background
+batch processing (`PROD-003`), or outreach yet.

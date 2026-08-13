@@ -39,7 +39,7 @@ Do not patch a local copy of the toolkit inside the app. Confirmed toolkit work 
 
 | ID | Hypothesis | Validation point | Status |
 | --- | --- | --- | --- |
-| `HYP-001` | Django integration may need clearer guidance for service-layer use and test substitution. | `AI-001`, `AI-006` | Evaluated — app-owned gateway sufficient |
+| `HYP-001` | Django integration may need clearer guidance for service-layer use and test substitution. | `AI-001`, `AI-006` | Fully evaluated — app-owned gateway and fake sufficient |
 | `HYP-002` | Batch structured requests may need a reusable API or documented pattern. | `AI-003`, `AI-004` | Evaluated — app-owned orchestration sufficient |
 | `HYP-003` | Available result metadata may not cover all app usage-reporting needs. | `AI-005`, `PROD-004` | Partially evaluated — success sufficient; revisit failure reporting in `PROD-004` |
 | `HYP-004` | Generic PDF/DOCX loaders could be useful, but safe CV extraction may belong in the app or a separate package. | `DATA-004` | Evaluated — app-owned |
@@ -54,8 +54,15 @@ client for an application service. The recruitment application still needs its
 own domain-neutral result envelope, bounded public errors, privacy policy, lazy
 lifecycle, and fake-construction seam. Those are application responsibilities,
 and constructor/factory substitution works without changing the toolkit. No
-toolkit bug or API gap was reproduced in `AI-001`; fake and live contract
-coverage remains scheduled for `AI-006`.
+toolkit bug or API gap was reproduced in `AI-001`.
+
+`AI-006` completed the evaluation with a reusable application `FakeAIGateway`,
+shared input/result contract tests against both fake and toolkit-backed adapters,
+and a separately opted-in synthetic live smoke test. Domain services substitute
+the application protocol cleanly, while the published integration retains lazy
+construction and safe structured result translation. No toolkit-owned fake,
+contract abstraction, documentation correction, or API change is needed for the
+current application.
 
 ### `HYP-004` — 2026-08-10
 

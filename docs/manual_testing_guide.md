@@ -685,7 +685,31 @@ Submit an invalid local action that is rejected before gateway construction—fo
 example, extraction from a confirmed requirements version. Confirm that no usage
 event is created because no AI attempt occurred.
 
-## 19. What is intentionally unavailable
+## 19. Run the optional synthetic live gateway smoke test
+
+This developer test is separate from the browser workflows and ordinary quality
+gate. It may incur one small provider charge. It sends no candidate, vacancy, CV,
+contact, database, or other private content.
+
+After configuring a valid provider key and model in `.env`, run from PowerShell:
+
+```powershell
+$env:RUN_LIVE_AI_SMOKE = "1"
+uv run pytest -q -m live_ai live_tests/test_ai_gateway_live.py
+Remove-Item Env:RUN_LIVE_AI_SMOKE
+```
+
+Expected result: `1 passed`, with a validated `status=ok` structured result and
+safe request metadata. Without the environment switch, the same explicit command
+reports `1 skipped`. The ordinary `uv run pytest` and
+`uv run python scripts/check.py` commands never collect `live_tests` because the
+configured test path is only `tests`.
+
+Never edit this smoke test to send real recruitment data. A live failure does not
+change any candidate, vacancy, profile, assessment, or audit record because the
+test calls only the application gateway contract.
+
+## 20. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
@@ -698,7 +722,7 @@ The following are not defects at this milestone:
 - No OCR for scanned PDFs.
 - No outreach workflow.
 
-## 20. Final acceptance checklist
+## 21. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -737,12 +761,15 @@ The current milestone is behaving correctly when all of these are true:
   safe success metadata or an allow-listed failure category, while rejected
   precondition-only actions produce no event and sensitive request/response data
   is never stored in the ledger.
+- The shared fake/toolkit contract tests pass provider-free, the ordinary suite
+  excludes `live_tests`, and the explicitly enabled synthetic live smoke returns
+  one schema-valid result when valid provider configuration is supplied.
 - Cross-organization URLs do not disclose data.
 - The ordinary test suite and deterministic browser workflow require no AI key
   or live AI request; only explicit vacancy extraction, candidate extraction, or
   match-assessment actions do.
 
-## 21. Reset disposable local test data
+## 22. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

@@ -12,8 +12,8 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 through Sprint 3 are complete. Sprint 4 is in progress, with `AI-001`
-through `AI-005` complete.
+Sprint 0 through Sprint 4 are complete. Sprint 5 is next, beginning with
+`REV-001`.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -71,9 +71,13 @@ failed events retain an allow-listed gateway or application-validation category.
 Prompts, source descriptions, CV text, candidate identity/contact data, raw
 responses, provider exception messages, and user-visible validation text are not
 stored in the ledger. The operational records are read-only in Django admin.
+The three AI workflows now share a provider-free fake gateway and an explicit
+application contract tested against both the fake and published-toolkit adapter.
+A separately invoked synthetic live smoke test is outside the ordinary test path
+and cannot run without an explicit environment switch.
 
-The next approved task is `AI-006 — Add fake-gateway, contract, and opt-in live
-smoke tests`.
+The next approved task is `REV-001 — Add the review queue and assessment detail
+screen`.
 
 ## Local setup
 
@@ -97,6 +101,8 @@ OPENAI_API_KEY=
 The default AI model is configured through `AI_MODEL`, or `OPENAI_MODEL` for the
 default provider. See `.env.example` for the provider, model, embedding, retry,
 and generic key fallbacks. Toolkit file logging is disabled by the application.
+The optional potentially billable synthetic smoke test is documented in
+`live_tests/README.md`; it is not collected by `scripts/check.py`.
 
 ## Local admin test
 

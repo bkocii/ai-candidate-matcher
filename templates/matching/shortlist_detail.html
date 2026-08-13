@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Shortlist | {{ vacancy.title }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading" aria-labelledby="shortlist-title">
+    <div>
+        <p class="eyebrow">Deterministic shortlist</p>
+        <h1 id="shortlist-title">{{ vacancy.title }}</h1>
+        <p class="lede">Requirements version {{ run.requirements.version }} · generated {{ run.created_at|date:"Y-m-d H:i" }} · algorithm {{ run.algorithm_version }}</p>
+    </div>
+    <div class="button-row">
+        <a class="secondary-button" href="{% url 'matching:candidate-filter-report' organization.slug vacancy.pk %}">Inspect hard filters</a>
+        <form method="post" action="{% url 'matching:shortlist-generate' organization.slug vacancy.pk %}">
+            {% csrf_token %}
+            <button class="primary-button" type="submit">Generate new shortlist</button>
+        </form>
+    </div>
+</section>
+
+{% if staleness.is_stale %}
+    <section class="stale-result-callout" role="alert" aria-labelledby="stale-result-title">
+        <div>
+            <p class="eyebrow">Outdated result</p>
+            <h2 id="stale-result-title">This shortlist is stale</h2>
+            <p>The saved ranking remains available as history, but it no longer represents all current matching inputs.</p>
+            <ul>
+                {% for reason in staleness.reasons %}<li>{{ reason }}</li>{% endfor %}
+            </ul>
+        </div>
+        <form method="post" action="{% url 'matching:shortlist-generate' organization.slug vacancy.pk %}">
+            {% csrf_token %}
+            <button class="primary-button" type="submit">Generate current shortlist</button>
+        </form>
+    </section>
+{% else %}
+    <p class="fresh-result-note" role="status"><strong>Current result:</strong> vacancy requirements and candidate matching inputs are unchanged since this run.</p>
+{% endif %}
+
+<section class="filter-summary" aria-label="Shortlist summary">
+    <article><span>Evaluated</span><strong>{{ run.evaluated_count }}</strong></article>
+    <article><span>Eligible</span><strong>{{ run.eligible_count }}</strong></article>
+    <article><span>Shortlisted</span><strong>{{ run.shortlisted_count }}</strong></article>
+    <article><span>Limit</span><strong>{{ run.shortlist_limit }}</strong></article>
+</section>
+
+<section class="scoring-note" aria-labelledby="scoring-method-title">
+    <div>
+        <p class="eyebrow">Inspectable scoring</p>
+        <h2 id="scoring-method-title">How the score is calculated</h2>
+        <p>Each must-have skill has two weight units and each nice-to-have skill has one. The combined weights are normalized to exactly 100 points, so an individual must-have is worth approximately twice an individual nice-to-have. Missing skill evidence earns no points but is not treated as proof that the candidate lacks the skill.</p>
+    </div>
+    <p><strong>Ranking order:</strong> score descending, then passed before needs-review only when scores tie, then stable record ID. Explicit hard-constraint failures are excluded regardless of score.</p>
+</section>
+
+{% if omitted_count %}
+    <p class="section-note">{{ omitted_count }} eligible candidate{{ omitted_count|pluralize }} fell outside the {{ run.shortlist_limit }}-candidate bound. Generate a new run after correcting candidate or vacancy data.</p>
+{% endif %}
+
+{% if removed_count %}
+    <p class="section-note">{{ removed_count }} originally shortlisted candidate entr{{ removed_count|pluralize:"y,ies" }} no longer appears because candidate-specific data was deleted.</p>
+{% endif %}
+
+{% if entries %}
+    <div class="filter-results">
+        {% for entry in entries %}
+            <article class="filter-candidate" id="assessment-entry-{{ entry.pk }}">
+                <header>
+                    <div class="shortlist-rank">
+                        <span>#{{ entry.rank }}</span>
+                        <div>
+                            <p class="eyebrow">Candidate</p>
+                            <h2>
+                                {% if entry.candidate.status == "deleted" %}
+                                    Deleted candidate
+                                {% else %}
+                                    <a href="{% url 'candidates:candidate-detail' organization.slug entry.candidate.pk %}">{{ entry.candidate.full_name }}</a>
+                                {% endif %}
+                            </h2>
+                        </div>
+                    </div>
+                    <div class="shortlist-score">
+                        <strong>{{ entry.score|floatformat:2 }}</strong>
+                        <span>of 100</span>
+                        <span class="filter-outcome filter-outcome-{{ entry.filter_outcome }}">
+                            {% if entry.filter_outcome == "review" %}Needs review{% else %}Passed filters{% endif %}
+                        </span>
+                    </div>
+                </header>
+
+                <div class="shortlist-match-counts">
+                    <span>Must-have: <strong>{{ entry.matched_must_have }}/{{ entry.total_must_have }}</strong></span>
+                    <span>Nice-to-have: <strong>{{ entry.matched_nice_to_have }}/{{ entry.total_nice_to_have }}</strong></span>
+                </div>
+
+                {% if entry.score_breakdown %}
+                    <div class="table-wrap">
+                        <table class="filter-rule-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Requirement</th>
+                                    <th scope="col">Importance</th>
+                                    <th scope="col">Recorded match</th>
+                                    <th scope="col">Evidence</th>
+                                    <th scope="col">Points</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in entry.score_breakdown %}
+                                    <tr>
+                                        <th scope="row">{{ item.skill_label }}</th>
+                                        <td>{{ item.importance_label }}</td>
+                                        <td>
+                                            {% if item.matched %}
+                                                <span class="rule-outcome rule-outcome-passed">Matched</span>
+                                                <small>{{ item.candidate_label }}</small>
+                                            {% else %}
+                                                <span class="rule-outcome rule-outcome-unknown">Not recorded</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ item.evidence|default:"No source evidence recorded" }}</td>
+                                        <td>{{ item.awarded_points }} / {{ item.possible_points }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="section-note shortlist-empty-score">No normalized skill requirements were recorded, so the deterministic relevance score is 0.00. The candidate remains visible because the hard-filter stage found no explicit failure.</p>
+                {% endif %}
+
+                <section class="assessment-panel" aria-labelledby="assessment-title-{{ entry.pk }}">
+                    <div class="action-heading">
+                        <div>
+                            <p class="eyebrow">AI decision support</p>
+                            <h3 id="assessment-title-{{ entry.pk }}">Evidence-based match assessment</h3>
+                            <p class="section-note">The AI score is separate from the deterministic rank and cannot change hard-filter eligibility.</p>
+                        </div>
+                        {% if not staleness.is_stale and entry.confirmed_profile %}
+                            <form method="post" action="{% url 'matching:shortlist-assessment-generate' organization.slug vacancy.pk run.pk entry.pk %}">
+                                {% csrf_token %}
+                                <button class="secondary-button" type="submit">
+                                    {% if entry.latest_assessment %}Generate new assessment{% else %}Generate AI assessment{% endif %}
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+
+                    {% if staleness.is_stale %}
+                        <p class="section-note">Generate a current deterministic shortlist before requesting another AI assessment.</p>
+                    {% elif not entry.confirmed_profile %}
+                        <p class="section-note">Confirm a structured candidate profile before requesting an AI assessment.</p>
+                    {% endif %}
+
+                    {% for assessment in entry.assessments.all %}
+                        <details class="assessment-version" {% if forloop.first %}open{% endif %}>
+                            <summary>
+                                Assessment v{{ assessment.version }} · {{ assessment.score }}/100 · {{ assessment.get_traffic_light_display }}
+                            </summary>
+                            <div class="assessment-heading">
+                                <span class="assessment-light assessment-light-{{ assessment.traffic_light }}">{{ assessment.get_traffic_light_display }}</span>
+                                <div>
+                                    <strong>{{ assessment.score }}/100</strong>
+                                    <small>Profile v{{ assessment.candidate_profile.version }} · requirements v{{ assessment.requirements.version }} · {{ assessment.created_at|date:"Y-m-d H:i" }}</small>
+                                </div>
+                            </div>
+                            <p>{{ assessment.summary }}</p>
+
+                            <div class="assessment-findings">
+                                <div>
+                                    <h4>Matching requirements</h4>
+                                    {% for finding in assessment.matching_requirements %}
+                                        <article class="assessment-finding">
+                                            <strong>{{ finding.requirement_label }}</strong>
+                                            <p>{{ finding.explanation }}</p>
+                                            <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                                            {% for evidence in finding.candidate_evidence %}
+                                                <small>Candidate evidence: {{ evidence.evidence }}</small>
+                                            {% endfor %}
+                                        </article>
+                                    {% empty %}<p>No evidence-backed matches were recorded.</p>{% endfor %}
+                                </div>
+                                <div>
+                                    <h4>Evidence-backed gaps</h4>
+                                    {% for finding in assessment.gaps %}
+                                        <article class="assessment-finding">
+                                            <strong>{{ finding.requirement_label }}</strong>
+                                            <p>{{ finding.explanation }}</p>
+                                            <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                                            {% for evidence in finding.candidate_evidence %}
+                                                <small>Candidate evidence: {{ evidence.evidence }}</small>
+                                            {% endfor %}
+                                        </article>
+                                    {% empty %}<p>No proven gaps were recorded.</p>{% endfor %}
+                                </div>
+                                <div>
+                                    <h4>Uncertainties</h4>
+                                    {% for finding in assessment.uncertainties %}
+                                        <article class="assessment-finding">
+                                            <strong>{{ finding.requirement_label }}</strong>
+                                            <p>{{ finding.explanation }}</p>
+                                            <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                                            {% for evidence in finding.candidate_evidence %}
+                                                <small>Related candidate evidence: {{ evidence.evidence }}</small>
+                                            {% endfor %}
+                                        </article>
+                                    {% empty %}<p>No uncertainties were recorded.</p>{% endfor %}
+                                </div>
+                            </div>
+                            <p class="human-review-note"><strong>Recruiter review focus:</strong> {{ assessment.review_recommendation }}</p>
+                        </details>
+                    {% empty %}
+                        <p class="section-note">No AI assessment has been requested for this shortlist entry.</p>
+                    {% endfor %}
+                </section>
+            </article>
+        {% endfor %}
+    </div>
+{% else %}
+    <section class="empty-state">
+        <span class="empty-icon" aria-hidden="true">0</span>
+        <h2>No candidates were shortlisted</h2>
+        <p>No active candidate remained eligible after explicit hard constraints.</p>
+    </section>
+{% endif %}
+
+<p class="human-review-note">This shortlist is recruiter decision support. It does not automatically reject, approve, contact, or hire anyone.</p>
+{% endblock %}

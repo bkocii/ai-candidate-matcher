@@ -59,11 +59,24 @@ Sprint acceptance: the app produces a useful shortlist without any AI provider.
 - `AI-003` Extract and validate structured candidate profiles from CV text. **Complete — 2026-08-12.**
 - `AI-004` Generate structured evidence-based match assessments. **Complete — 2026-08-12.**
 - `AI-005` Store request metadata and safe failure information. **Complete — 2026-08-12.**
-- `AI-006` Add fake-gateway, contract, and opt-in live smoke tests.
+- `AI-006` Add fake-gateway, contract, and opt-in live smoke tests. **Complete — 2026-08-13.**
 
-Status: In progress.
+Status: Complete.
 
 Sprint acceptance: AI output is schema-valid, evidence is traceable, missing data is marked unknown, and failure does not break the deterministic shortlist.
+
+### Approved recruiter-efficiency requirement for later tasks
+
+The safe per-candidate workflow is a foundation, not the intended high-volume
+recruiter experience. Confirmed profiles must be reusable across vacancies and
+should require re-extraction only for a new or corrected CV/profile. `REV-001`
+should provide a compact queue emphasizing gaps, ambiguities, changed facts, and
+evidence exceptions. `PROD-003` should add resumable background batch profile
+extraction and whole-shortlist assessment generation with per-candidate failure
+isolation. Selected profile drafts may be confirmed efficiently only after their
+evidence remains inspectable; no profile is silently auto-confirmed. Final
+approve/reject/revisit decisions remain individual human actions in `REV-002`,
+and outreach remains separately approved.
 
 ## Sprint 5 — Recruiter review and outreach
 

@@ -1,0 +1,51 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}AI Candidate Matcher{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+    <header class="site-header">
+        <nav class="site-nav" aria-label="Primary navigation">
+            <a class="brand" href="{% url 'organizations:dashboard' %}">
+                <span class="brand-mark" aria-hidden="true">AM</span>
+                <span>AI Candidate Matcher</span>
+            </a>
+
+            {% if user.is_authenticated %}
+                <div class="nav-links">
+                    {% if organization %}
+                        <a href="{% url 'organizations:organization-dashboard' organization.slug %}">Dashboard</a>
+                        <a href="{% url 'candidates:candidate-list' organization.slug %}">Candidates</a>
+                        <a href="{% url 'vacancies:vacancy-list' organization.slug %}">Vacancies</a>
+                    {% else %}
+                        <a href="{% url 'organizations:dashboard' %}">Organizations</a>
+                    {% endif %}
+                    {% if user.is_staff %}
+                        <a href="{% url 'admin:index' %}">Django admin</a>
+                    {% endif %}
+                    <form method="post" action="{% url 'accounts:logout' %}">
+                        {% csrf_token %}
+                        <button class="link-button" type="submit">Sign out</button>
+                    </form>
+                </div>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main class="page-shell">
+        {% if messages %}
+            <div class="messages" aria-live="polite">
+                {% for message in messages %}
+                    <p class="message">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

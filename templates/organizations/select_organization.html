@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Choose an organization | AI Candidate Matcher{% endblock %}
+
+{% block content %}
+<section class="page-heading" aria-labelledby="organization-title">
+    <p class="eyebrow">Your workspaces</p>
+    <h1 id="organization-title">Choose an organization</h1>
+    <p class="lede">Your access and data are kept separate for each organization.</p>
+</section>
+
+<div class="card-grid">
+    {% for item in organizations %}
+        <a class="organization-card" href="{% url 'organizations:organization-dashboard' item.slug %}">
+            <span class="organization-initial" aria-hidden="true">{{ item.name|first|upper }}</span>
+            <span>
+                <strong>{{ item.name }}</strong>
+                <small>Open workspace</small>
+            </span>
+        </a>
+    {% endfor %}
+</div>
+{% endblock %}

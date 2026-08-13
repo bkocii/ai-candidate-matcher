@@ -77,6 +77,13 @@ Toolkit file logging is disabled in application settings. The application does
 not log prompts, CV text, contact data, raw responses, or translated exception
 details.
 
+`FakeAIGateway` is the reusable provider-free business-service test double. It
+implements the same runtime-checkable application protocol, shares prompt/type
+input validation with `ToolkitAIGateway`, captures normalized calls, returns a
+configured static or dynamic Pydantic response plus deterministic safe metadata,
+or raises a configured bounded error. A mismatched fake response is a test
+programming error rather than a simulated provider result.
+
 ### audit
 
 Safe AI usage events and, in later production tasks, operational events and
@@ -547,15 +554,22 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 - Per-candidate assessment requests isolate failures; durable resumable batch
   processing and idempotency are introduced in `PROD-003`.
 - The deterministic shortlist remains inspectable if AI is unavailable.
+- Confirmed profiles are reusable across vacancies. The eventual high-volume
+  path uses exception-focused review plus background batch profile extraction and
+  whole-shortlist assessment generation, while confirmation and final employment
+  decisions remain explicit human actions.
 
 ## Testing strategy
 
 - Unit tests for parsing normalization, hard filters, scoring bands, and permissions.
-- Service tests with a fake AI gateway; ordinary tests never make live provider calls.
-- Contract tests against Python AI Toolkit structured outputs.
+- Service tests use the shared fake AI gateway; ordinary tests never make live
+  provider calls.
+- Shared contract tests exercise both the fake and toolkit-backed adapters for
+  normalized input validation and the application-owned result/metadata envelope.
 - Integration tests for import-to-review workflows.
 - Security tests for cross-organization access and private documents.
-- A separate opt-in smoke test may make a live low-cost API request.
+- A separate synthetic smoke test lives outside ordinary pytest `testpaths`,
+  requires `RUN_LIVE_AI_SMOKE=1`, and may make one low-cost billable API request.
 - An anonymized/synthetic benchmark set measures ranking stability and explanation quality.
 - `scripts/check.py` is the single local and CI quality gate. It includes normal
   and warning-strict deployment checks, migration-drift detection, tests, lint,

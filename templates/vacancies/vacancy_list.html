@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Vacancies | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading" aria-labelledby="vacancy-list-title">
+    <div>
+        <p class="eyebrow">Vacancy workspace</p>
+        <h1 id="vacancy-list-title">Vacancies</h1>
+        <p class="lede">Recruiter-entered job descriptions and their confirmed requirement versions.</p>
+    </div>
+    <a class="primary-button button-link" href="{% url 'vacancies:vacancy-create' organization.slug %}">Add vacancy</a>
+</section>
+
+{% if page.object_list %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Vacancy</th>
+                    <th scope="col">Client</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Current requirements</th>
+                    <th scope="col">Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vacancy in page.object_list %}
+                    <tr>
+                        <th scope="row"><a href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">{{ vacancy.title }}</a></th>
+                        <td>{{ vacancy.client_company|default:"Direct employer" }}</td>
+                        <td><span class="status-pill status-{{ vacancy.status }}">{{ vacancy.get_status_display }}</span></td>
+                        <td>
+                            {% if vacancy.current_requirements %}
+                                Confirmed v{{ vacancy.current_requirements.version }}
+                            {% else %}
+                                Not confirmed
+                            {% endif %}
+                        </td>
+                        <td>{{ vacancy.created_at|date:"Y-m-d" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page.paginator.num_pages > 1 %}
+        <nav class="pagination" aria-label="Vacancy pages">
+            {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">Previous</a>{% endif %}
+            <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+            {% if page.has_next %}<a href="?page={{ page.next_page_number }}">Next</a>{% endif %}
+        </nav>
+    {% endif %}
+{% else %}
+    <section class="empty-state inline-empty">
+        <div class="empty-icon" aria-hidden="true">V</div>
+        <h2>No vacancies yet</h2>
+        <p>Paste a vacancy description, then review and confirm its structured requirements.</p>
+    </section>
+{% endif %}
+{% endblock %}

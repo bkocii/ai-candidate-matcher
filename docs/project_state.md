@@ -12,9 +12,9 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 ## Current milestone
 
-Sprint 4 — AI extraction and assessment.
+Sprint 4 — AI extraction and assessment — is complete.
 
-Status: In progress. `AI-001` through `AI-005` are complete; `AI-006` is next.
+Status: Sprint 5 is next; `REV-001` is the next approved task.
 
 ## Decisions made
 
@@ -29,6 +29,11 @@ Status: In progress. `AI-001` through `AI-005` are complete; `AI-006` is next.
 - The app is a separate repository from Python AI Toolkit.
 - The app pins `python-ai-toolkit[django]==1.0.0` initially.
 - Toolkit improvement candidates are recorded and reproduced before any toolkit change.
+- Confirmed candidate profiles are reusable across vacancies and should be
+  re-extracted only for a new or corrected CV/profile.
+- Later recruiter UX must replace repetitive high-volume actions with
+  exception-focused review and resumable background batches while keeping final
+  approve/reject/revisit decisions individual and human-controlled.
 
 ## Implemented
 
@@ -449,13 +454,39 @@ Status: In progress. `AI-001` through `AI-005` are complete; `AI-006` is next.
   database-constraint tests. The existing AI workflow fake gateways remain fully
   provider-free; broader contract and opt-in live smoke coverage remains `AI-006`.
 
+### `AI-006 — Fake gateway, contracts, and opt-in live smoke test`
+
+- Added a reusable provider-free `FakeAIGateway` with deterministic safe
+  metadata, static or dynamic structured responses, configured bounded failures,
+  normalized call capture, and response-type mismatch detection.
+- Replaced the separate vacancy, candidate-profile, and match-assessment request
+  doubles with the shared fake while preserving each domain suite's specialized
+  outputs and concurrency simulations.
+- Centralized non-blank prompt and Pydantic response-type validation so the fake
+  and `ToolkitAIGateway` enforce the same application input contract.
+- Made `AIGateway` runtime-checkable and added shared contract tests that exercise
+  fake and toolkit-backed adapters for normalized requests, validated result/
+  metadata envelopes, absent raw-response exposure, and pre-call validation.
+- Preserved adapter-specific coverage for lazy toolkit client construction,
+  safe result translation, optional metadata, bounded exception translation,
+  configured factory substitution, and non-toolkit programming failures.
+- Added `live_tests/test_ai_gateway_live.py` outside ordinary pytest `testpaths`.
+  It requires `RUN_LIVE_AI_SMOKE=1`, sends one tiny synthetic structured prompt,
+  verifies safe metadata, uses no domain/database/private data, and remains
+  potentially billable and deliberately manual.
+- Documented the PowerShell live command and confirmed the test skips without
+  the explicit switch. CI and `scripts/check.py` cannot collect the live test
+  under the configured ordinary `tests` path.
+- No toolkit defect or reusable API gap was reproduced against the published
+  v1.0.0 integration.
+
 ## Verification
 
-Verified on 2026-08-12 with Python 3.12.13:
+Verified on 2026-08-13 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 341 passed.
+- `pytest`: 354 passed; the separate live smoke test is excluded.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
@@ -487,6 +518,12 @@ can request and inspect immutable evidence-based AI assessment versions. These
 are decision support only and cannot change the deterministic shortlist.
 Safe AI usage events are available to operators through read-only Django admin;
 recruiter-facing usage/cost/failure reports remain deferred to `PROD-004`.
+High-volume recruiter-efficiency work is also not implemented yet. The approved
+later workflow reuses confirmed profiles, uses `REV-001` for compact
+exception-focused assessment review, and uses `PROD-003` for resumable batch
+profile extraction and whole-shortlist assessment generation. No profile will be
+silently confirmed and final employment decisions remain individual recruiter
+actions in `REV-002`.
 
 Recruiters can manage typed hard-constraint records from the normal requirements
 editor while the version is a draft. The older free-text hard-constraint field is
@@ -495,4 +532,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`AI-006 — Add fake-gateway, contract, and opt-in live smoke tests.`
+`REV-001 — Add the review queue and assessment detail screen.`

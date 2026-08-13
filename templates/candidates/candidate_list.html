@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Candidates | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading" aria-labelledby="candidate-list-title">
+    <div>
+        <p class="eyebrow">Candidate pool</p>
+        <h1 id="candidate-list-title">Candidates</h1>
+        <p class="lede">Organization-controlled candidate records and their current intake status.</p>
+    </div>
+    <div class="button-row">
+        <a class="secondary-button" href="{% url 'candidates:candidate-import' organization.slug %}">Import CSV</a>
+        <a class="primary-button button-link" href="{% url 'candidates:candidate-create' organization.slug %}">Add candidate</a>
+    </div>
+</section>
+
+{% if page.object_list %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Phone</th>
+                    <th scope="col">Location</th>
+                    <th scope="col">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for candidate in page.object_list %}
+                    <tr>
+                        <th scope="row">
+                            <a href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">{{ candidate.full_name }}</a>
+                        </th>
+                        <td>{{ candidate.email|default:"—" }}</td>
+                        <td>{{ candidate.phone|default:"—" }}</td>
+                        <td>{{ candidate.location|default:"—" }}</td>
+                        <td><span class="status-pill status-{{ candidate.status }}">{{ candidate.get_status_display }}</span></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page.paginator.num_pages > 1 %}
+        <nav class="pagination" aria-label="Candidate pages">
+            {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">Previous</a>{% endif %}
+            <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+            {% if page.has_next %}<a href="?page={{ page.next_page_number }}">Next</a>{% endif %}
+        </nav>
+    {% endif %}
+{% else %}
+    <section class="empty-state inline-empty">
+        <div class="empty-icon" aria-hidden="true">C</div>
+        <h2>No candidates yet</h2>
+        <p>Add one candidate manually or import a validated CSV file.</p>
+    </section>
+{% endif %}
+{% endblock %}
