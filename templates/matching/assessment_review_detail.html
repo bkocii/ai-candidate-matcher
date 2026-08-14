@@ -134,6 +134,29 @@
     {% endif %}
 </section>
 
+<section class="decision-panel" aria-labelledby="outreach-generation-title">
+    <div>
+        <p class="eyebrow">Separate outreach action</p>
+        <h2 id="outreach-generation-title">Generate an outreach draft</h2>
+        <p>Generation requires the latest explicit approval and current evidence. It creates an inspectable draft only; it does not approve or send a message.</p>
+    </div>
+    {% if outreach_eligibility.can_generate %}
+        <form method="post" action="{% url 'outreach:outreach-draft-generate' organization.slug latest_decision.pk %}">
+            {% csrf_token %}
+            <button class="primary-button" type="submit">Generate outreach draft</button>
+        </form>
+    {% else %}
+        <p class="section-note"><strong>A draft cannot be generated:</strong> {{ outreach_eligibility.reason }}</p>
+    {% endif %}
+    {% if outreach_history %}
+        <ul>
+            {% for draft in outreach_history %}
+                <li><a href="{% url 'outreach:outreach-draft-detail' organization.slug draft.pk %}">Draft v{{ draft.version }}</a> · decision v{{ draft.review_decision.version }} · {{ draft.created_by.get_username }} · {{ draft.created_at|date:"Y-m-d H:i" }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</section>
+
 <section class="assessment-history" aria-labelledby="assessment-history-title">
     <p class="eyebrow">Immutable history</p>
     <h2 id="assessment-history-title">Assessment versions</h2>
@@ -149,5 +172,5 @@
     </ul>
 </section>
 
-<p class="human-review-note">These decisions do not change deterministic ranking or AI evidence and do not send, draft, or approve outreach.</p>
+<p class="human-review-note">Decisions do not change deterministic ranking or AI evidence. Outreach draft generation is separate, and no draft is finally approved or sent automatically.</p>
 {% endblock %}

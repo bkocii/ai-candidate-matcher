@@ -74,6 +74,17 @@ Input: an approved match plus organization-approved facts.
 
 Output: editable subject and body. The application never instructs the toolkit to send the message.
 
+Implemented for generation in `OUT-001` by `outreach.generation`. One explicit
+recruiter action accepts only the latest current `ReviewDecision` when its choice
+is approve. The application sends a bounded vacancy title, organization name,
+and evidence-backed positive match facts with an application-owned candidate-name
+placeholder. It excludes candidate identity/contact data, raw CV text, recruiter
+notes, gaps, uncertainties, scores, and protected characteristics. After
+structured validation, the application substitutes the candidate name and saves
+an immutable actor-attributed numbered draft with safe usage metadata. The
+toolkit never sees Django outreach models and never approves or sends a message.
+Editing, final approval, copy, and export remain `OUT-002`.
+
 ## Application wrapper
 
 The `ai_gateway` package is the only application boundary permitted to import
@@ -95,7 +106,7 @@ Application business services expose or will expose concepts such as:
 - `extract_candidate_profile(document, user)`
 - `confirm_candidate_profile(profile, user)`
 - `assess_shortlist_entry(entry, user)`
-- `draft_outreach(vacancy, candidate, assessment)`
+- `generate_outreach_draft(decision, user)`
 
 Views, forms, model methods, and templates must not call Python AI Toolkit directly.
 Those later business services accept an `AIGateway` rather than constructing or

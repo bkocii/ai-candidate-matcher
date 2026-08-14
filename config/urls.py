@@ -23,6 +23,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("", include("candidates.urls")),
     path("", include("matching.urls")),
+    path("", include("outreach.urls")),
     path("", include("vacancies.urls")),
     path("", include("organizations.urls")),
 ]

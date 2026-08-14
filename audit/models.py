@@ -30,6 +30,7 @@ class AIUsageEvent(models.Model):
         VACANCY_REQUIREMENTS = "vacancy_requirements", "Vacancy requirements"
         CANDIDATE_PROFILE = "candidate_profile", "Candidate profile"
         MATCH_ASSESSMENT = "match_assessment", "Match assessment"
+        OUTREACH_DRAFT = "outreach_draft", "Outreach draft"
 
     class ObjectType(models.TextChoices):
         VACANCY_REQUIREMENTS = "vacancy_requirements", "Vacancy requirements"
@@ -37,6 +38,8 @@ class AIUsageEvent(models.Model):
         CANDIDATE_PROFILE = "candidate_profile", "Candidate profile"
         SHORTLIST_ENTRY = "shortlist_entry", "Shortlist entry"
         MATCH_ASSESSMENT = "match_assessment", "Match assessment"
+        REVIEW_DECISION = "review_decision", "Review decision"
+        OUTREACH_DRAFT = "outreach_draft", "Outreach draft"
 
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"

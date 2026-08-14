@@ -82,12 +82,12 @@ and outreach remains separately approved.
 
 - `REV-001` Add the review queue and assessment detail screen. **Complete — 2026-08-13.**
 - `REV-002` Add approve, reject, and revisit decisions with recruiter notes. **Complete — 2026-08-13.**
-- `OUT-001` Generate outreach drafts only for explicitly approved candidates.
+- `OUT-001` Generate outreach drafts only for explicitly approved candidates. **Complete — 2026-08-14.**
 - `OUT-002` Add editing, final approval, copy, and export.
 
 Sprint acceptance: nothing is sent automatically, and every decision/draft has a human actor and timestamp.
 
-Status: In progress. `OUT-001` is next.
+Status: In progress. `OUT-002` is next.
 
 ## Sprint 6 — Production safeguards and observability
 

@@ -1179,6 +1179,16 @@ tbody tr:last-child td {
     margin: 0;
 }
 
+.outreach-message {
+    margin-top: 24px;
+}
+
+.outreach-body {
+    margin-bottom: 0;
+    white-space: pre-wrap;
+    line-height: 1.7;
+}
+
 .decision-panel .field:first-of-type ul {
     display: flex;
     flex-wrap: wrap;

@@ -1,7 +1,7 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`REV-002`. Use only the synthetic files in `manual_testing/fixtures` or other
+`OUT-001`. Use only the synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
 
@@ -738,11 +738,58 @@ read-only and show the shortlist entry, exact assessment, decision version,
 choice, notes, actor, and timestamp. Candidate deletion removes that candidate's
 decision history together with the private shortlist/assessment history.
 
-## 20. Inspect safe AI usage events
+## 20. Test approved-only outreach draft generation
+
+Return to a current latest assessment from section 19. If its latest decision is
+**Revisit later** or **Reject**, first record a new individual **Approve** decision
+with non-blank recruiter notes. The outreach panel must use only the latest
+decision; an older approval never authorizes a draft after a later correction.
+
+Select **Generate outreach draft**.
+
+Expected result:
+
+- The action is POST-only and creates outreach draft version 1 only from the
+  exact latest approved decision while the assessment, confirmed profile, and
+  shortlist inputs remain current.
+- The resulting page shows a bounded subject and plain-text body, the candidate
+  name, source decision version, generating recruiter, and timestamp.
+- The page clearly labels the result **Generated only — not approved or sent**.
+- There is no edit, final-approval, copy, export, send, email, or platform-
+  messaging action. Those controls remain `OUT-002`.
+- The recruiter approval notes, candidate email/phone, raw CV, gaps,
+  uncertainties, protected characteristics, prompt, and raw provider response
+  were not supplied to or returned from the AI workflow. The application inserts
+  the candidate name after validating a provider-generated name placeholder.
+- The approved decision and assessment remain unchanged. Generating a draft does
+  not make a hiring decision, alter scores/rank, or contact the candidate.
+
+Return to the assessment review page and select **Generate outreach draft**
+again. Expected result: version 2 is added while version 1 remains linked and
+unchanged. Both versions show their exact source decision, actor, and timestamp.
+
+Test the authorization and currentness guards:
+
+1. Record **Revisit later** or **Reject** as a newer decision. Confirm the older
+   approval no longer exposes an eligible generation action.
+2. Record a new approval, then change a deterministic candidate fact or confirm
+   a newer profile. Confirm the historical approval cannot generate a draft and
+   the page requires a current shortlist, assessment, and approval.
+3. Sign in as a member of another organization and try a copied generation or
+   draft-detail URL. It returns `404` without disclosing the candidate or draft.
+4. Remove the API key, restart, and generate from an otherwise eligible approval.
+   A bounded error appears, no partial draft is created, and existing versions
+   remain unchanged.
+
+In Django admin, open **Outreach drafts** under **Outreach**. Confirm generated
+records are read-only. Deleting a disposable synthetic candidate removes that
+candidate's drafts with the private shortlist, assessment, and decision history.
+
+## 21. Inspect safe AI usage events
 
 Sign in to Django admin and open **AI usage events** under **Audit** after running
 at least one successful and one deliberately failed synthetic AI action from
-sections 15 through 17.
+sections 15 through 17 or section 20.
 
 Expected successful event:
 
@@ -750,7 +797,8 @@ Expected successful event:
   schema version, succeeded status, request ID, model, duration, retry count,
   optional token counts/cost, and start/completion times are visible.
 - The result type matches the workflow: vacancy requirements, candidate profile,
-  or match assessment.
+  match assessment, or outreach draft. Outreach uses a generic review-decision
+  target and outreach-draft result ID, never recruiter notes or candidate data.
 - The record has no edit, add, or delete action.
 
 Expected failed event:
@@ -768,7 +816,7 @@ Submit an invalid local action that is rejected before gateway construction—fo
 example, extraction from a confirmed requirements version. Confirm that no usage
 event is created because no AI attempt occurred.
 
-## 21. Run the optional synthetic live gateway smoke test
+## 22. Run the optional synthetic live gateway smoke test
 
 This developer test is separate from the browser workflows and ordinary quality
 gate. It may incur one small provider charge. It sends no candidate, vacancy, CV,
@@ -792,7 +840,7 @@ Never edit this smoke test to send real recruitment data. A live failure does no
 change any candidate, vacancy, profile, assessment, or audit record because the
 test calls only the application gateway contract.
 
-## 22. What is intentionally unavailable
+## 23. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
@@ -802,9 +850,10 @@ The following are not defects at this milestone:
   read-only in Django admin.
 - No private CV download route.
 - No OCR for scanned PDFs.
-- No outreach workflow.
+- No outreach editing, final approval, copy, export, or automatic sending; only
+  approved-current draft generation and inspection are available in `OUT-001`.
 
-## 23. Final acceptance checklist
+## 24. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -845,7 +894,13 @@ The current milestone is behaving correctly when all of these are true:
 - Approve, reject, and revisit decisions require individual POST actions and
   non-blank recruiter notes; each immutable version records the exact assessment,
   actor, and timestamp, while older or stale evidence cannot receive a current
-  decision and no decision triggers outreach.
+  decision and no decision triggers outreach automatically.
+- Outreach draft generation is POST-only and accepts only the exact latest
+  explicit approval while its assessment/profile/shortlist evidence remains
+  current. Each immutable draft version records its source decision, human actor,
+  and timestamp; the AI request excludes candidate identity/contact, CV text,
+  recruiter notes, gaps, and uncertainties. No draft can yet be edited, finally
+  approved, copied, exported, or sent.
 - Every actual AI attempt produces a tenant-scoped immutable usage event with
   safe success metadata or an allow-listed failure category, while rejected
   precondition-only actions produce no event and sensitive request/response data
@@ -855,10 +910,10 @@ The current milestone is behaving correctly when all of these are true:
   one schema-valid result when valid provider configuration is supplied.
 - Cross-organization URLs do not disclose data.
 - The ordinary test suite and deterministic browser workflow require no AI key
-  or live AI request; only explicit vacancy extraction, candidate extraction, or
-  match-assessment actions do.
+  or live AI request; only explicit vacancy extraction, candidate extraction,
+  match-assessment, or outreach-generation actions do.
 
-## 24. Reset disposable local test data
+## 25. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

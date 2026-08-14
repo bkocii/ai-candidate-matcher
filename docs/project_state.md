@@ -14,7 +14,8 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 5 — Recruiter review and outreach — is in progress.
 
-Status: `REV-001` and `REV-002` are complete; `OUT-001` is the next approved task.
+Status: `REV-001`, `REV-002`, and `OUT-001` are complete; `OUT-002` is the next
+approved task.
 
 ## Decisions made
 
@@ -525,20 +526,53 @@ Status: `REV-001` and `REV-002` are complete; `OUT-001` is the next approved tas
   draft, approval, copy/export, send, or contact action. Those remain `OUT-001`
   and `OUT-002`.
 
+### `OUT-001 — Approved-only outreach draft generation`
+
+- Added an organization-scoped `outreach` app with immutable numbered
+  `OutreachDraft` snapshots tied to the exact approved `ReviewDecision`, shortlist
+  entry, schema version, generating human actor, and timestamp.
+- Added a POST-only generation service and route that accept only the latest
+  explicit approval while the exact latest assessment, active candidate,
+  confirmed profile, and shortlist inputs remain current. The service locks and
+  repeats those checks after the provider returns.
+- Added a bounded extra-forbidding subject/body output schema. The minimized
+  request sends an application-owned candidate-name placeholder, organization
+  name, vacancy title, and evidence-backed positive match facts only. Candidate
+  name/email/phone, raw CV text, recruiter notes, scores, gaps, uncertainties,
+  protected characteristics, and raw responses are excluded.
+- Added application-side placeholder substitution plus rejection of missing or
+  repeated placeholders, invented contact details/links, and hiring-decision or
+  job-offer language.
+- Added a recruiter-facing generated-draft detail and immutable version history,
+  with its exact source decision, actor, timestamp, and an explicit generated-
+  only/no-send warning. The assessment review page exposes generation only when
+  currently eligible.
+- Added safe outreach workflow/target/result categories to `AIUsageEvent`; domain
+  persistence and successful usage finalization share a transaction, while
+  bounded gateway/application failures create no partial draft.
+- Added read-only Django admin, tenant-isolation, concurrency/currentness,
+  privacy-minimization, immutability, candidate-deletion, route, and manual test
+  coverage. Editing, final approval, copy, export, and sending remain `OUT-002`.
+
 ## Verification
 
-Verified on 2026-08-13 with Python 3.12.13:
+Verified on 2026-08-14 with Python 3.12.13:
 
+- Focused outreach/review/audit tests: 26 passed.
 - Normal and warning-strict production Django checks: passed.
-- Migration drift check: passed.
-- `pytest`: 366 passed; the separate live smoke test is excluded.
-- Ruff lint and formatting: passed.
-- Dependency compatibility check: passed for 32 installed packages.
-- Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
+- Migration drift check: passed with no model changes missing migrations.
+- `pytest`: 377 passed; the separate live smoke test is excluded.
+- Ruff lint and formatting: passed for 138 files.
+- Dependency compatibility: all 32 installed packages passed.
+- `python-ai-toolkit==1.0.0` remains installed from `.venv` site-packages.
+- `audit.0002_outreach_usage_choices` and `outreach.0001_initial` apply after
+  existing migrations; both are required new `OUT-001` migrations.
 
 ## Not implemented
 
-No outreach workflow has been implemented yet.
+Outreach draft generation and inspection are implemented for the latest explicit
+current approval. Draft editing, final approval, copy, export, and any automatic
+sending are not implemented; `OUT-002` owns the remaining MVP draft actions.
 Recruiters can intentionally run structured vacancy extraction for an editable
 requirements draft and candidate-profile extraction for a lawfully stored,
 successfully parsed CV. Both create human-reviewable drafts; only explicit
@@ -575,4 +609,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`OUT-001 — Generate outreach drafts only for explicitly approved candidates.`
+`OUT-002 — Add editing, final approval, copy, and export.`

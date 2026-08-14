@@ -37,6 +37,11 @@ from matching.services import (
 )
 from matching.staleness import assess_match_run_staleness
 from organizations.models import Organization
+from outreach.generation import (
+    OutreachDraftEligibility,
+    assess_outreach_draft_eligibility,
+)
+from outreach.models import OutreachDraft
 from vacancies.models import Vacancy, VacancyRequirements
 
 REVIEW_QUEUE_SCOPES = {"pending", "exceptions", "changed", "all"}
@@ -506,6 +511,28 @@ def assessment_review_detail(
         assessment=assessment,
         user=request.user,
     )
+    latest_decision = decision_history[0] if decision_history else None
+    if latest_decision is None:
+        outreach_eligibility = OutreachDraftEligibility(
+            False,
+            "Record an explicit current approval before generating outreach.",
+        )
+    elif latest_decision.assessment_id != assessment.pk:
+        outreach_eligibility = OutreachDraftEligibility(
+            False,
+            "Record an explicit approval for this latest assessment before "
+            "generating outreach.",
+        )
+    else:
+        outreach_eligibility = assess_outreach_draft_eligibility(
+            decision=latest_decision,
+            user=request.user,
+        )
+    outreach_history = list(
+        OutreachDraft.objects.for_organization(organization)
+        .filter(shortlist_entry=assessment.shortlist_entry)
+        .select_related("review_decision", "created_by")
+    )
     return render(
         request,
         "matching/assessment_review_detail.html",
@@ -517,6 +544,9 @@ def assessment_review_detail(
             "decision_history": decision_history,
             "decision_eligibility": decision_eligibility,
             "decision_form": ReviewDecisionForm(),
+            "latest_decision": latest_decision,
+            "outreach_eligibility": outreach_eligibility,
+            "outreach_history": outreach_history,
             "vacancy": assessment.requirements.vacancy,
             "entry": assessment.shortlist_entry,
             "run": assessment.shortlist_entry.match_run,

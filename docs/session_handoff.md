@@ -14,8 +14,9 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 4 are complete. Sprint 5 is in progress; `REV-001` and
-`REV-002` are complete and `OUT-001` is the next approved roadmap task.
+Sprint 0 through Sprint 4 are complete. Sprint 5 is in progress; `REV-001`,
+`REV-002`, and `OUT-001` are complete and `OUT-002` is the next approved roadmap
+task.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -164,7 +165,7 @@ v1.0.0 is left blank rather than inferred. Recruiter-facing usage reporting
 remains `PROD-004`.
 
 `AI-006` is complete. `ai_gateway.testing.FakeAIGateway` is now the reusable
-provider-free test double for all three AI business workflows. It shares
+provider-free test double for all application AI business workflows. It shares
 non-blank prompt and Pydantic response-type validation with `ToolkitAIGateway`,
 captures normalized calls, supports static/dynamic schema-valid output and
 bounded errors, and rejects mismatched test output. Shared contract tests exercise
@@ -194,7 +195,23 @@ decisions and shows current decision counts/status under its other scopes; a
 decision tied to an older assessment is not carried onto a newer assessment.
 Cross-organization and stale actions are blocked, candidate deletion removes the
 candidate-specific decision history, and Django admin is read-only. Decisions do
-not change any score/evidence and create no outreach action.
+not change any score/evidence and create no outreach automatically.
+
+`OUT-001` is complete. Recruiters can separately generate an immutable numbered
+outreach draft only from the exact latest explicit approval while the linked
+assessment, confirmed profile, and privacy-preserving shortlist inputs remain
+current. Each generated draft records its source decision, human actor,
+timestamp, bounded subject, and plain-text body. The service locks and rechecks
+approval/currentness after the provider returns and creates no partial draft on
+bounded failure. The minimized request uses a candidate-name placeholder plus
+organization-approved vacancy and positive match facts; it excludes candidate
+identity/contact data, raw CV text, recruiter notes, gaps, uncertainties, scores,
+and protected characteristics. The application substitutes the real name only
+after structured safety validation. Recruiters can inspect version history, but
+cannot yet edit, finally approve, copy, export, or send a draft. Safe outreach AI
+usage metadata is recorded without prompts or model responses, cross-organization
+routes are hidden, candidate deletion removes draft history, and Django admin is
+read-only.
 
 ## Recruiter-efficiency requirement for later tasks
 
@@ -207,11 +224,11 @@ whole-shortlist assessment action with per-candidate failure isolation. Selected
 profile drafts may be confirmed efficiently only while evidence remains
 inspectable; no silent auto-confirmation is allowed. Final approve/reject/revisit
 decisions are individual recruiter actions with notes, actor, and timestamp, and
-outreach still requires separate approval.
+outreach generation and final draft approval remain separate actions.
 
 The next roadmap item is:
 
-`OUT-001 — Generate outreach drafts only for explicitly approved candidates.`
+`OUT-002 — Add editing, final approval, copy, and export.`
 
 ## Required instructions
 
@@ -228,20 +245,20 @@ The next roadmap item is:
 
 ## Current verification
 
-Verified on 2026-08-13 with Python 3.12.13:
+Verified on 2026-08-14 with Python 3.12.13:
 
-- Django system check passed.
-- 366 ordinary pytest tests passed; the separate live smoke test is excluded.
-- Ruff lint and format checks passed.
+- Django system and warning-strict production checks passed.
+- 377 ordinary pytest tests passed; the separate live smoke test is excluded.
+- The 26 focused outreach/review/audit tests passed.
+- Ruff lint and format checks passed for 138 files.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
-- The application repository contains no local `ai` toolkit source package.
-- The normal and warning-strict production Django checks passed.
-- No migration drift was detected.
+- No migration drift was detected. New required migrations
+  `audit.0002_outreach_usage_choices` and `outreach.0001_initial` apply
+  successfully after the existing migration history.
 
 ## Immediate next action
 
-Implement only `OUT-001`: generate an outreach draft only from an explicitly
-approved current recruiter decision. Keep generation separate from final draft
-approval/copy/export (`OUT-002`), add no automatic sending, and do not add
-background batch processing (`PROD-003`).
+Implement only `OUT-002`: add recruiter editing, final approval of the exact
+draft, and manual copy/export. Keep sending unavailable and do not add background
+batch processing (`PROD-003`).

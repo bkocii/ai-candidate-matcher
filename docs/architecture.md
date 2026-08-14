@@ -561,6 +561,36 @@ versions so their evidence boundary remains inspectable when inputs later change
   evidence, or traffic-light band. They create no outreach draft and perform no
   contact action; outreach remains a separately approved workflow.
 
+### Approved outreach draft generation
+
+- `OutreachDraft` is an immutable numbered generated snapshot for one
+  `ShortlistEntry` and the exact `ReviewDecision` that authorized it. Every
+  version records the generating human actor, timestamp, schema version, subject,
+  and plain-text body. Candidate deletion removes its draft history with the
+  candidate-specific shortlist and review history.
+- Generation is a separate POST-only recruiter action. The service repeats
+  tenant authorization and accepts only the exact latest decision when it is an
+  explicit approval tied to the latest assessment while the active candidate,
+  current confirmed profile, and privacy-preserving shortlist inputs remain
+  current. Approval and currentness are locked and rechecked after the provider
+  returns so a concurrent correction discards the output.
+- The minimized structured request contains the organization name, vacancy title,
+  and at most eight evidence-backed positive match facts. It excludes candidate
+  name/contact data, raw CV text, recruiter decision notes, assessment summary,
+  gaps, uncertainties, scores, protected characteristics, prompts, and raw model
+  responses. The provider must use an application-owned candidate-name
+  placeholder exactly once; the application substitutes the real name only after
+  validating the bounded output.
+- The output schema allows only a bounded subject and plain-text body, forbids
+  extra fields, invented contact details/links, job-offer or hiring-decision
+  language, and a missing or repeated name placeholder. Safe AI usage metadata is
+  finalized transactionally with the draft; bounded failures create no partial
+  draft.
+- Recruiters can inspect generated version history and its exact source approval.
+  `OUT-001` adds no editing, final draft approval, copy/export, email/platform
+  integration, or sending. Those human-controlled actions remain `OUT-002`, and
+  sending remains outside the MVP.
+
 ## Matching pipeline
 
 1. Normalize and validate vacancy requirements.

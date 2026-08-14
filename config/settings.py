@@ -99,6 +99,7 @@ INSTALLED_APPS = [
     "candidates",
     "matching",
     "organizations",
+    "outreach",
     "vacancies",
     "django.contrib.admin",
     "django.contrib.auth",
