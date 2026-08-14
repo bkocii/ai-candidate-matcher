@@ -79,6 +79,9 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Recruiters can inspect and override every assessment.
 - Review defaults to changed evidence and exceptions while keeping every latest
   assessment and its immutable version history individually inspectable.
+- Approve, reject, and revisit are explicit individual recruiter actions with
+  notes, actor, timestamp, and immutable correction history; they never trigger
+  outreach automatically.
 - Model prompts exclude protected characteristics and irrelevant personal data.
 - A confirmed candidate profile is reusable across vacancies. High-volume intake
   and assessment should use resumable background batches and exception-focused

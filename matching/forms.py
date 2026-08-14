@@ -1,6 +1,6 @@
 from django import forms
 
-from matching.models import HardConstraintRule, RequirementSkill
+from matching.models import HardConstraintRule, RequirementSkill, ReviewDecision
 from vacancies.models import VacancyRequirements
 
 
@@ -155,3 +155,26 @@ def hard_constraint_values_from_form(form: HardConstraintRuleForm) -> dict:
         "numeric_value": form.cleaned_data["numeric_value"],
         "expected_value": form.cleaned_data["expected_value"],
     }
+
+
+class ReviewDecisionForm(forms.Form):
+    decision = forms.ChoiceField(
+        choices=ReviewDecision.Decision.choices,
+        widget=forms.RadioSelect,
+        label="Recruiter decision",
+    )
+    notes = forms.CharField(
+        max_length=2_000,
+        label="Recruiter notes",
+        widget=forms.Textarea(attrs={"rows": 5}),
+        help_text=(
+            "Record the evidence considered, follow-up needed, or reason for this "
+            "individual decision."
+        ),
+    )
+
+    def clean_notes(self) -> str:
+        notes = self.cleaned_data["notes"].strip()
+        if not notes:
+            raise forms.ValidationError("Record recruiter notes for the decision.")
+        return notes

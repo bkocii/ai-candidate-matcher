@@ -6,6 +6,7 @@ from matching.models import (
     MatchAssessment,
     MatchRun,
     RequirementSkill,
+    ReviewDecision,
     ShortlistEntry,
     Skill,
 )
@@ -148,6 +149,41 @@ class MatchAssessmentAdmin(admin.ModelAdmin):
         "gaps",
         "uncertainties",
         "review_recommendation",
+        "created_by",
+        "created_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ReviewDecision)
+class ReviewDecisionAdmin(admin.ModelAdmin):
+    list_display = (
+        "shortlist_entry",
+        "version",
+        "decision",
+        "created_by",
+        "created_at",
+    )
+    list_filter = ("decision",)
+    search_fields = (
+        "shortlist_entry__candidate__full_name",
+        "shortlist_entry__match_run__requirements__vacancy__title",
+        "notes",
+    )
+    readonly_fields = (
+        "shortlist_entry",
+        "assessment",
+        "version",
+        "decision",
+        "notes",
         "created_by",
         "created_at",
     )

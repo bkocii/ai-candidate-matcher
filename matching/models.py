@@ -4,7 +4,11 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import (
+    MaxLengthValidator,
+    MaxValueValidator,
+    MinValueValidator,
+)
 from django.db import models
 
 from candidates.models import Candidate, CandidateDocument, CandidateProfile
@@ -117,6 +121,30 @@ class ShortlistEntryQuerySet(models.QuerySet):
 
 
 class MatchAssessmentQuerySet(models.QuerySet):
+    def for_organization(self, organization: Organization):
+        return self.filter(
+            shortlist_entry__match_run__requirements__vacancy__organization=(
+                organization
+            )
+        )
+
+    def visible_to(self, user: object):
+        if not _user_can_query_matching_data(user):
+            return self.none()
+        return self.filter(
+            shortlist_entry__match_run__requirements__vacancy__organization__is_active=(
+                True
+            ),
+            shortlist_entry__match_run__requirements__vacancy__organization__memberships__user=(
+                user
+            ),
+            shortlist_entry__match_run__requirements__vacancy__organization__memberships__is_active=(
+                True
+            ),
+        ).distinct()
+
+
+class ReviewDecisionQuerySet(models.QuerySet):
     def for_organization(self, organization: Organization):
         return self.filter(
             shortlist_entry__match_run__requirements__vacancy__organization=(
@@ -1042,3 +1070,100 @@ class MatchAssessment(models.Model):
 
     def __str__(self) -> str:
         return f"{self.shortlist_entry} — AI assessment v{self.version} ({self.score})"
+
+
+class ReviewDecision(models.Model):
+    """Immutable human decision for one exact shortlist assessment."""
+
+    class Decision(models.TextChoices):
+        APPROVED = "approved", "Approve"
+        REJECTED = "rejected", "Reject"
+        REVISIT = "revisit", "Revisit later"
+
+    shortlist_entry = models.ForeignKey(
+        ShortlistEntry,
+        on_delete=models.CASCADE,
+        related_name="review_decisions",
+    )
+    assessment = models.ForeignKey(
+        MatchAssessment,
+        on_delete=models.CASCADE,
+        related_name="review_decisions",
+    )
+    version = models.PositiveIntegerField()
+    decision = models.CharField(max_length=20, choices=Decision.choices)
+    notes = models.TextField(validators=[MaxLengthValidator(2_000)])
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="created_review_decisions",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = ReviewDecisionQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-version", "-created_at", "id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("shortlist_entry", "version"),
+                name="unique_review_decision_version_per_entry",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(version__gte=1),
+                name="review_decision_version_positive",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(decision__in=["approved", "rejected", "revisit"]),
+                name="review_decision_valid_choice",
+            ),
+        ]
+
+    @property
+    def organization(self) -> Organization:
+        return self.shortlist_entry.organization
+
+    def _snapshot_changed(self) -> bool:
+        if not self.pk:
+            return False
+        persisted = type(self).objects.get(pk=self.pk)
+        immutable_fields = (
+            "shortlist_entry_id",
+            "assessment_id",
+            "version",
+            "decision",
+            "notes",
+            "created_by_id",
+        )
+        return any(
+            getattr(self, field_name) != getattr(persisted, field_name)
+            for field_name in immutable_fields
+        )
+
+    def clean(self) -> None:
+        super().clean()
+        if (
+            self.shortlist_entry_id
+            and self.assessment_id
+            and self.assessment.shortlist_entry_id != self.shortlist_entry_id
+        ):
+            raise ValidationError(
+                {"assessment": "Use an assessment for this shortlist entry."}
+            )
+        self.notes = self.notes.strip()
+        if not self.notes:
+            raise ValidationError({"notes": "Record recruiter notes for the decision."})
+
+    def save(self, *args, **kwargs) -> None:
+        if self._snapshot_changed():
+            raise ValidationError(
+                "Review decisions are immutable; record a new decision version."
+            )
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return (
+            f"{self.shortlist_entry} — review decision v{self.version} "
+            f"({self.decision})"
+        )

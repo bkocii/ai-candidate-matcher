@@ -107,7 +107,7 @@ def test_routine_assessment_is_compact_but_remains_inspectable(client):
     ).assessment
     client.force_login(user)
 
-    focused = client.get(queue_url(organization))
+    focused = client.get(queue_url(organization, scope="exceptions"))
     all_items = client.get(queue_url(organization, scope="all"))
 
     assert "No assessments in this view" in focused.content.decode()

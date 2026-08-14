@@ -96,6 +96,44 @@
 
 <p class="human-review-note"><strong>Recruiter review focus:</strong> {{ assessment.review_recommendation }}</p>
 
+<section class="decision-panel" aria-labelledby="decision-title">
+    <div>
+        <p class="eyebrow">Human-controlled decision</p>
+        <h2 id="decision-title">Record individual recruiter decision</h2>
+        <p>A saved decision is tied to this exact assessment and cannot be edited. A later correction creates another decision version.</p>
+    </div>
+    {% if decision_eligibility.can_record %}
+        <form method="post" action="{% url 'matching:assessment-review-decide' organization.slug assessment.pk %}">
+            {% csrf_token %}
+            {% include "candidates/_form_fields.html" with form=decision_form %}
+            <button class="primary-button" type="submit">Record decision</button>
+        </form>
+    {% else %}
+        <p class="section-note"><strong>A new decision cannot be recorded from this version:</strong> {{ decision_eligibility.reason }}</p>
+    {% endif %}
+</section>
+
+<section class="decision-history" aria-labelledby="decision-history-title">
+    <p class="eyebrow">Human decision history</p>
+    <h2 id="decision-history-title">Recruiter decisions</h2>
+    {% if decision_history %}
+        <div class="decision-list">
+            {% for decision in decision_history %}
+                <article>
+                    <div class="decision-heading">
+                        <span class="decision-state decision-state-{{ decision.decision }}">{{ decision.get_decision_display }}</span>
+                        <strong>Decision v{{ decision.version }}</strong>
+                    </div>
+                    <p>{{ decision.notes }}</p>
+                    <small>Assessment v{{ decision.assessment.version }} · {{ decision.created_by.get_username }} · {{ decision.created_at|date:"Y-m-d H:i" }}</small>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No recruiter decision has been recorded for this shortlist entry.</p>
+    {% endif %}
+</section>
+
 <section class="assessment-history" aria-labelledby="assessment-history-title">
     <p class="eyebrow">Immutable history</p>
     <h2 id="assessment-history-title">Assessment versions</h2>
@@ -111,5 +149,5 @@
     </ul>
 </section>
 
-<p class="human-review-note">No candidate decision is recorded on this screen. Approve, reject, revisit, and outreach remain separate later workflow steps.</p>
+<p class="human-review-note">These decisions do not change deterministic ranking or AI evidence and do not send, draft, or approve outreach.</p>
 {% endblock %}

@@ -14,8 +14,8 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 4 are complete. Sprint 5 is in progress; `REV-001` is
-complete and `REV-002` is the next approved roadmap task.
+Sprint 0 through Sprint 4 are complete. Sprint 5 is in progress; `REV-001` and
+`REV-002` are complete and `OUT-001` is the next approved roadmap task.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -185,6 +185,17 @@ ambiguities, currentness warnings, recruiter review focus, and all immutable
 assessment versions. The workflow reuses confirmed profiles and creates no new
 model or migration. It adds no decision, background batch, or outreach action.
 
+`REV-002` is complete. Recruiters can record an individual approve, reject, or
+revisit decision only from the exact latest assessment while its confirmed
+profile and shortlist inputs remain current. Every immutable numbered decision
+requires recruiter notes and records a protected human actor and timestamp.
+Corrections append history rather than editing it. The queue defaults to pending
+decisions and shows current decision counts/status under its other scopes; a
+decision tied to an older assessment is not carried onto a newer assessment.
+Cross-organization and stale actions are blocked, candidate deletion removes the
+candidate-specific decision history, and Django admin is read-only. Decisions do
+not change any score/evidence and create no outreach action.
+
 ## Recruiter-efficiency requirement for later tasks
 
 Do not treat the current per-candidate generation actions as the final high-volume UX.
@@ -195,12 +206,12 @@ emphasizing gaps, ambiguities, changed facts, and evidence exceptions.
 whole-shortlist assessment action with per-candidate failure isolation. Selected
 profile drafts may be confirmed efficiently only while evidence remains
 inspectable; no silent auto-confirmation is allowed. Final approve/reject/revisit
-decisions remain individual recruiter actions in `REV-002`, and outreach still
-requires separate approval.
+decisions are individual recruiter actions with notes, actor, and timestamp, and
+outreach still requires separate approval.
 
 The next roadmap item is:
 
-`REV-002 — Add approve, reject, and revisit decisions with recruiter notes.`
+`OUT-001 — Generate outreach drafts only for explicitly approved candidates.`
 
 ## Required instructions
 
@@ -220,7 +231,7 @@ The next roadmap item is:
 Verified on 2026-08-13 with Python 3.12.13:
 
 - Django system check passed.
-- 359 ordinary pytest tests passed; the separate live smoke test is excluded.
+- 366 ordinary pytest tests passed; the separate live smoke test is excluded.
 - Ruff lint and format checks passed.
 - All 32 installed packages passed dependency compatibility checks.
 - `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
@@ -230,7 +241,7 @@ Verified on 2026-08-13 with Python 3.12.13:
 
 ## Immediate next action
 
-Implement only `REV-002`: add individual approve, reject, and revisit decisions
-with recruiter notes, actor, and timestamp. Preserve the exception-focused queue,
-keep decisions individually inspectable, and do not add background batch
-processing (`PROD-003`) or outreach yet.
+Implement only `OUT-001`: generate an outreach draft only from an explicitly
+approved current recruiter decision. Keep generation separate from final draft
+approval/copy/export (`OUT-002`), add no automatic sending, and do not add
+background batch processing (`PROD-003`).

@@ -7,18 +7,20 @@
     <div>
         <p class="eyebrow">Recruiter review</p>
         <h1 id="review-queue-title">Assessment review queue</h1>
-        <p class="lede">Latest assessment per shortlisted candidate, with changed inputs and evidence exceptions first. Routine assessments remain available under All.</p>
+        <p class="lede">Latest assessment per shortlisted candidate, with pending individual decisions, changed inputs, and evidence exceptions kept visible.</p>
     </div>
 </section>
 
 <section class="filter-summary" aria-label="Review queue summary">
     <article><span>Latest assessments</span><strong>{{ queue.total_count }}</strong></article>
-    <article><span>Need focus</span><strong>{{ queue.focus_count }}</strong></article>
-    <article><span>Changed inputs</span><strong>{{ queue.changed_count }}</strong></article>
-    <article><span>Routine</span><strong>{{ queue.routine_count }}</strong></article>
+    <article><span>Decision pending</span><strong>{{ queue.pending_count }}</strong></article>
+    <article><span>Approved</span><strong>{{ queue.approved_count }}</strong></article>
+    <article><span>Rejected</span><strong>{{ queue.rejected_count }}</strong></article>
+    <article><span>Revisit later</span><strong>{{ queue.revisit_count }}</strong></article>
 </section>
 
 <nav class="review-scope-nav" aria-label="Review queue scope">
+    <a href="?scope=pending"{% if scope == "pending" %} aria-current="page"{% endif %}>Decision pending ({{ queue.pending_count }})</a>
     <a href="?scope=exceptions"{% if scope == "exceptions" %} aria-current="page"{% endif %}>Needs focus ({{ queue.focus_count }})</a>
     <a href="?scope=changed"{% if scope == "changed" %} aria-current="page"{% endif %}>Changed inputs ({{ queue.changed_count }})</a>
     <a href="?scope=all"{% if scope == "all" %} aria-current="page"{% endif %}>All ({{ queue.total_count }})</a>
@@ -48,11 +50,17 @@
                         {% if item.profile_ambiguity_count %}<span class="review-badge">{{ item.profile_ambiguity_count }} profile ambiguit{{ item.profile_ambiguity_count|pluralize:"y,ies" }}</span>{% endif %}
                         {% if item.deterministic_review_needed %}<span class="review-badge">Unknown hard-filter fact</span>{% endif %}
                         {% if not item.needs_focus %}<span class="review-badge review-badge-routine">No recorded exception</span>{% endif %}
+                        {% if item.current_decision %}
+                            <span class="review-badge decision-badge decision-badge-{{ item.current_decision.decision }}">Decision: {{ item.current_decision.get_decision_display }}</span>
+                        {% else %}
+                            <span class="review-badge decision-badge decision-badge-pending">Decision pending</span>
+                            {% if item.latest_decision %}<span class="review-badge">Earlier assessment has a decision</span>{% endif %}
+                        {% endif %}
                     </div>
 
                     <p>{{ assessment.summary }}</p>
                     <p class="human-review-note"><strong>Review focus:</strong> {{ assessment.review_recommendation }}</p>
-                    <a class="primary-button" href="{% url 'matching:assessment-review-detail' organization.slug assessment.pk %}">Inspect assessment</a>
+                    <a class="primary-button" href="{% url 'matching:assessment-review-detail' organization.slug assessment.pk %}">{% if item.decision_pending %}Inspect and decide{% else %}Inspect decision{% endif %}</a>
                 </article>
             {% endwith %}
         {% endfor %}
@@ -70,7 +78,7 @@
         <span class="empty-icon" aria-hidden="true">0</span>
         {% if queue.total_count %}
             <h2>No assessments in this view</h2>
-            <p>Choose All to inspect routine assessments as well.</p>
+            <p>Choose another queue scope or All to inspect every latest assessment.</p>
         {% else %}
             <h2>No assessments are ready for review</h2>
             <p>Generate an evidence-based assessment from a current shortlist. Confirmed candidate profiles can be reused across vacancies.</p>
@@ -78,5 +86,5 @@
     </section>
 {% endif %}
 
-<p class="human-review-note">This queue organizes decision support only. Candidate decisions and outreach remain separate, explicit recruiter actions.</p>
+<p class="human-review-note">Every candidate decision is an individual recruiter action tied to the exact assessment reviewed. Outreach remains a separate, later approved action.</p>
 {% endblock %}

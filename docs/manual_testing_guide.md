@@ -1,7 +1,7 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`REV-001`. Use only the synthetic files in `manual_testing/fixtures` or other
+`REV-002`. Use only the synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
 
@@ -606,7 +606,7 @@ Expected result:
 - Non-CV, failed/textless, deleted, changed-during-request, and oversized source
   documents are also rejected without partial persistence.
 
-Success or bounded failure produces a safe usage event as described in section 19.
+Success or bounded failure produces a safe usage event as described in section 20.
 
 ## 17. Test evidence-based AI match assessment
 
@@ -653,7 +653,7 @@ To test safeguards:
   versions remain intact, and no partial version is created.
 
 Safe request metadata or a bounded failure category is recorded as described in
-section 19. Background bulk assessment remains deferred to `PROD-003`.
+section 20. Background bulk assessment remains deferred to `PROD-003`.
 
 ## 18. Test the recruiter assessment review workflow
 
@@ -662,17 +662,19 @@ open **Reviews** in the organization navigation.
 
 Expected queue behavior:
 
-- **Needs focus** is selected initially and shows the latest assessment per
-  shortlist entry, not every historical version.
+- **Decision pending** is selected initially and shows the latest assessment per
+  shortlist entry that still needs an individual human decision, not every
+  historical version.
 - Changed shortlist/profile inputs appear before current items. Gaps,
   uncertainties, confirmed-profile ambiguities, and unknown hard-filter facts
   are visible as compact counts.
-- **Changed inputs** isolates assessments whose evidence boundary is no longer
-  current. **All** also displays routine assessments with no recorded exception.
+- **Needs focus** isolates evidence exceptions, **Changed inputs** isolates
+  assessments whose evidence boundary is no longer current, and **All** also
+  displays routine or already-decided latest assessments.
 - Candidate contact details, raw CV text, prompts, provider responses, and
   protected characteristics do not appear.
 
-Open **Inspect assessment** for one queue item.
+Open **Inspect and decide** for one queue item.
 
 Expected detail behavior:
 
@@ -684,14 +686,59 @@ Expected detail behavior:
   an older version does not alter it.
 - If candidate or vacancy matching evidence changed, the page clearly labels the
   assessment historical and explains why.
-- There is no approve, reject, revisit, contact, or outreach action yet.
+- Decision controls appear only for the latest assessment while its shortlist
+  and confirmed profile remain current. Decision behavior is tested next.
 
 Confirm a new candidate profile or change a deterministic matching fact, then
 return to **Reviews**. Confirm that the item appears under **Changed inputs** and
 the saved assessment remains readable as history. Confirm that no profile is
 re-extracted or reconfirmed merely by opening either review screen.
 
-## 19. Inspect safe AI usage events
+## 19. Test individual recruiter decisions
+
+Use a current latest assessment from section 18 and select **Inspect and decide**.
+The page must show the full evidence before the decision form.
+
+1. Select **Approve**.
+2. Enter notes such as `Evidence inspected; suitable for the next recruiter-controlled step.`
+3. Select **Record decision**.
+
+Expected result:
+
+- **Decision version 1** is added with **Approve**, the exact notes, your username,
+  and a timestamp.
+- The decision references the exact assessment version shown on the page.
+- The assessment, AI score, deterministic score, evidence, rank, and shortlist
+  membership remain unchanged.
+- The candidate leaves the default **Decision pending** queue and appears under
+  **All** with **Decision: Approve**.
+- No outreach draft is created, approved, copied, exported, or sent.
+
+Record another decision from the same current assessment, choosing **Revisit
+later** with new notes. Expected result: decision version 2 is appended while
+version 1 remains visible and unchanged. Repeat with **Reject** on another
+synthetic candidate to confirm all three explicit choices work. No decision is
+automatic, and no score or traffic-light band selects a decision for you.
+
+Test validation and currentness:
+
+- Submit without notes. The app reports that both a decision and recruiter notes
+  are required and creates no decision.
+- Open an older assessment version after a newer one exists. The page shows the
+  decision history but says to open the latest assessment before recording a new
+  decision.
+- Change a matching fact or confirm a newer profile, then open the previous
+  assessment. The page marks the evidence boundary historical and requires a
+  current shortlist and assessment before another decision.
+- Sign in as a member of another organization and try the copied decision URL.
+  The route returns `404` and discloses no candidate, assessment, notes, or actor.
+
+In Django admin, open **Review decisions** under **Matching**. Confirm records are
+read-only and show the shortlist entry, exact assessment, decision version,
+choice, notes, actor, and timestamp. Candidate deletion removes that candidate's
+decision history together with the private shortlist/assessment history.
+
+## 20. Inspect safe AI usage events
 
 Sign in to Django admin and open **AI usage events** under **Audit** after running
 at least one successful and one deliberately failed synthetic AI action from
@@ -721,7 +768,7 @@ Submit an invalid local action that is rejected before gateway construction—fo
 example, extraction from a confirmed requirements version. Confirm that no usage
 event is created because no AI attempt occurred.
 
-## 20. Run the optional synthetic live gateway smoke test
+## 21. Run the optional synthetic live gateway smoke test
 
 This developer test is separate from the browser workflows and ordinary quality
 gate. It may incur one small provider charge. It sends no candidate, vacancy, CV,
@@ -745,20 +792,19 @@ Never edit this smoke test to send real recruitment data. A live failure does no
 change any candidate, vacancy, profile, assessment, or audit record because the
 test calls only the application gateway contract.
 
-## 21. What is intentionally unavailable
+## 22. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
 - Manual candidate-skill entry still uses Django admin; confirmed AI profile
   skills are published through the normal candidate workflow.
-- No recruiter approve/reject/revisit decisions.
 - No recruiter-facing AI usage/cost/failure dashboard; safe records are currently
   read-only in Django admin.
 - No private CV download route.
 - No OCR for scanned PDFs.
 - No outreach workflow.
 
-## 22. Final acceptance checklist
+## 23. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -795,7 +841,11 @@ The current milestone is behaving correctly when all of these are true:
   or makes a recruitment/contact decision. Bounded failure creates no version.
 - The review queue consolidates latest assessments, prioritizes changed inputs
   and evidence exceptions, keeps routine assessments available, and opens a
-  tenant-safe evidence-linked detail/history screen without recording a decision.
+  tenant-safe evidence-linked detail/history screen.
+- Approve, reject, and revisit decisions require individual POST actions and
+  non-blank recruiter notes; each immutable version records the exact assessment,
+  actor, and timestamp, while older or stale evidence cannot receive a current
+  decision and no decision triggers outreach.
 - Every actual AI attempt produces a tenant-scoped immutable usage event with
   safe success metadata or an allow-listed failure category, while rejected
   precondition-only actions produce no event and sensitive request/response data
@@ -808,7 +858,7 @@ The current milestone is behaving correctly when all of these are true:
   or live AI request; only explicit vacancy extraction, candidate extraction, or
   match-assessment actions do.
 
-## 23. Reset disposable local test data
+## 24. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

@@ -533,8 +533,33 @@ versions so their evidence boundary remains inspectable when inputs later change
   application, profile ambiguities, changed-input warnings, recruiter review
   focus, and links to every assessment version for the same shortlist entry.
 - `REV-001` records no approve, reject, revisit, or outreach action. Individual
-  decisions with actor, timestamp, and notes remain `REV-002`; background whole-
-  shortlist assessment generation remains `PROD-003`.
+  decisions are introduced separately by `REV-002`; background whole-shortlist
+  assessment generation remains `PROD-003`.
+
+### Human recruiter decisions
+
+- `ReviewDecision` is an immutable numbered event for one `ShortlistEntry` and
+  the exact `MatchAssessment` reviewed. It stores only approve, reject, or
+  revisit, mandatory bounded recruiter notes, the recruiter actor, and timestamp.
+- Decision creation repeats tenant authorization and is POST-only. It accepts
+  only the latest assessment version for an active candidate while the confirmed
+  profile and privacy-preserving shortlist input signatures remain current.
+  Historical or stale assessments remain inspectable but cannot receive a new
+  current decision.
+- A recruiter may correct a decision only by appending another decision version;
+  earlier choices, notes, actors, timestamps, and assessment links remain
+  unchanged. The actor is protected from deletion while attributed history
+  exists.
+- The queue defaults to latest assessments with no decision for that exact
+  assessment. It also exposes exception, changed-input, and all scopes, plus
+  counts and badges for current approved, rejected, and revisit decisions. A
+  decision on an older assessment is not silently applied to a newer version.
+- Candidate deletion removes the candidate-specific shortlist, assessments, and
+  review decisions together. Cross-organization queue, detail, and decision URLs
+  return `404` without disclosing notes or actor identity.
+- Decisions do not change deterministic eligibility, rank, score, assessment
+  evidence, or traffic-light band. They create no outreach draft and perform no
+  contact action; outreach remains a separately approved workflow.
 
 ## Matching pipeline
 

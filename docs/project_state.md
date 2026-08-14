@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 5 — Recruiter review and outreach — is in progress.
 
-Status: `REV-001` is complete; `REV-002` is the next approved task.
+Status: `REV-001` and `REV-002` are complete; `OUT-001` is the next approved task.
 
 ## Decisions made
 
@@ -501,21 +501,44 @@ Status: `REV-001` is complete; `REV-002` is the next approved task.
   in `PROD-003`, and outreach in `OUT-001`/`OUT-002`. No model or migration was
   required because review state is derived from existing immutable records.
 
+### `REV-002 — Individual recruiter decisions`
+
+- Added immutable numbered `ReviewDecision` events tied to one shortlist entry
+  and the exact latest assessment reviewed. Choices are limited to approve,
+  reject, or revisit, and every record requires bounded recruiter notes, a
+  protected human actor, and timestamp.
+- Added an organization-authorized transactional service that serializes
+  decision versions and refuses decisions for inactive candidates, older
+  assessment versions, changed confirmed profiles, stale shortlist inputs, or
+  deleted vacancies.
+- Added a POST-only decision form to the evidence detail screen. Corrections
+  append a new decision version while preserving earlier choice, notes,
+  assessment, actor, and time.
+- Updated the review queue to default to pending individual decisions while
+  retaining exception, changed-input, and all scopes. It shows current decision
+  counts and status badges and never carries a decision from an older assessment
+  onto a newer version.
+- Added read-only Django admin inspection, tenant-isolation and immutability
+  safeguards, candidate-deletion cleanup, focused automated coverage, and a full
+  manual browser test workflow.
+- Decisions do not change deterministic or AI results and create no outreach
+  draft, approval, copy/export, send, or contact action. Those remain `OUT-001`
+  and `OUT-002`.
+
 ## Verification
 
 Verified on 2026-08-13 with Python 3.12.13:
 
 - Normal and warning-strict production Django checks: passed.
 - Migration drift check: passed.
-- `pytest`: 359 passed; the separate live smoke test is excluded.
+- `pytest`: 366 passed; the separate live smoke test is excluded.
 - Ruff lint and formatting: passed.
 - Dependency compatibility check: passed for 32 installed packages.
 - Installed toolkit distribution: `python-ai-toolkit==1.0.0`.
 
 ## Not implemented
 
-No outreach workflow or recruiter approve/reject/revisit decision has been
-implemented yet.
+No outreach workflow has been implemented yet.
 Recruiters can intentionally run structured vacancy extraction for an editable
 requirements draft and candidate-profile extraction for a lawfully stored,
 successfully parsed CV. Both create human-reviewable drafts; only explicit
@@ -540,10 +563,10 @@ are decision support only and cannot change the deterministic shortlist.
 Safe AI usage events are available to operators through read-only Django admin;
 recruiter-facing usage/cost/failure reports remain deferred to `PROD-004`.
 The review queue now reuses confirmed profiles and provides compact exception-
-focused assessment review. Remaining high-volume work uses `PROD-003` for resumable batch
+focused assessment review and individual decision history. Remaining high-volume work uses `PROD-003` for resumable batch
 profile extraction and whole-shortlist assessment generation. No profile will be
-silently confirmed and final employment decisions remain individual recruiter
-actions in `REV-002`.
+silently confirmed, and final employment decisions are individual recruiter
+actions with notes, actor, and timestamp.
 
 Recruiters can manage typed hard-constraint records from the normal requirements
 editor while the version is a draft. The older free-text hard-constraint field is
@@ -552,4 +575,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`REV-002 — Add approve, reject, and revisit decisions with recruiter notes.`
+`OUT-001 — Generate outreach drafts only for explicitly approved candidates.`

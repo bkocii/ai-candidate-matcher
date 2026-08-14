@@ -12,8 +12,8 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 through Sprint 4 are complete. Sprint 5 is in progress: `REV-001` is
-complete and `REV-002` is next.
+Sprint 0 through Sprint 4 are complete. Sprint 5 is in progress: `REV-001` and
+`REV-002` are complete, and `OUT-001` is next.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -80,10 +80,15 @@ only the latest assessment per shortlist entry, places changed inputs, gaps,
 uncertainties, profile ambiguities, and deterministic unknowns first, and keeps
 routine assessments available under **All**. Each assessment has a dedicated
 evidence-linked detail screen with immutable version history. The review surface
-does not record a candidate decision or trigger outreach.
+keeps decision state separate from assessment evidence and never triggers outreach.
+Recruiters can now record an individual approve, reject, or revisit decision
+from the exact latest assessment reviewed. Every immutable decision version
+requires notes and records the human actor and timestamp; stale or older evidence
+cannot receive a current decision. Decisions never change scores or generate
+outreach.
 
-The next approved task is `REV-002 — Add approve, reject, and revisit decisions
-with recruiter notes`.
+The next approved task is `OUT-001 — Generate outreach drafts only for explicitly
+approved candidates`.
 
 ## Local setup
 
@@ -179,10 +184,15 @@ an immutable numbered assessment, and shows evidence-linked matches, gaps,
 uncertainties, score band, and recruiter review focus beneath the unchanged
 deterministic result. Regeneration creates another assessment version.
 Open **Reviews** from the organization navigation to inspect the exception-first
-queue. **Needs focus** is the compact default; **Changed inputs** isolates stale
-evidence boundaries, and **All** keeps routine latest assessments individually
-inspectable. The detail screen shows evidence, profile ambiguities, currentness,
-and all immutable versions without approving, rejecting, or contacting anyone.
+queue. **Decision pending** is the compact default; **Needs focus** shows evidence
+exceptions, **Changed inputs** isolates stale evidence boundaries, and **All**
+keeps routine or already-decided latest assessments individually inspectable. The
+detail screen shows evidence, profile ambiguities, currentness, and all immutable
+versions before any individual decision is recorded.
+From a current latest assessment, the recruiter can record an individual
+**Approve**, **Reject**, or **Revisit later** decision with mandatory notes.
+Corrections append history rather than editing it, and the pending queue updates
+without creating an outreach draft or contacting the candidate.
 
 ## Production configuration
 

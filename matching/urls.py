@@ -17,6 +17,12 @@ urlpatterns = [
         name="assessment-review-detail",
     ),
     path(
+        "organizations/<slug:organization_slug>/reviews/assessments/"
+        "<int:assessment_id>/decide/",
+        views.assessment_review_decide,
+        name="assessment-review-decide",
+    ),
+    path(
         "organizations/<slug:organization_slug>/vacancies/<int:vacancy_id>/"
         "requirements/<int:requirements_id>/hard-constraints/new/",
         views.hard_constraint_add,

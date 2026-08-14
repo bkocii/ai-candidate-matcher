@@ -8,12 +8,21 @@ from django.views.decorators.http import require_POST
 
 from ai_gateway import AIGatewayError
 from matching.ai_assessment import assess_shortlist_entry
+from matching.decisions import (
+    assess_review_decision_eligibility,
+    record_review_decision,
+)
 from matching.evaluation import filter_candidates
-from matching.forms import HardConstraintRuleForm, hard_constraint_values_from_form
+from matching.forms import (
+    HardConstraintRuleForm,
+    ReviewDecisionForm,
+    hard_constraint_values_from_form,
+)
 from matching.models import (
     HardConstraintRule,
     MatchAssessment,
     MatchRun,
+    ReviewDecision,
     ShortlistEntry,
 )
 from matching.review import (
@@ -30,7 +39,7 @@ from matching.staleness import assess_match_run_staleness
 from organizations.models import Organization
 from vacancies.models import Vacancy, VacancyRequirements
 
-REVIEW_QUEUE_SCOPES = {"exceptions", "changed", "all"}
+REVIEW_QUEUE_SCOPES = {"pending", "exceptions", "changed", "all"}
 
 
 def _rule_editor_objects(
@@ -432,10 +441,12 @@ def assessment_review_queue(request, organization_slug: str):
         organization=organization,
         user=request.user,
     )
-    scope = request.GET.get("scope", "exceptions")
+    scope = request.GET.get("scope", "pending")
     if scope not in REVIEW_QUEUE_SCOPES:
-        scope = "exceptions"
-    if scope == "changed":
+        scope = "pending"
+    if scope == "pending":
+        selected_items = [item for item in queue.items if item.decision_pending]
+    elif scope == "changed":
         selected_items = [item for item in queue.items if item.inputs_changed]
     elif scope == "all":
         selected_items = list(queue.items)
@@ -485,6 +496,16 @@ def assessment_review_detail(
         .select_related("candidate_profile", "created_by")
         .order_by("-version", "-created_at", "-id")
     )
+    decision_history = list(
+        ReviewDecision.objects.for_organization(organization)
+        .filter(shortlist_entry=assessment.shortlist_entry)
+        .select_related("assessment", "created_by")
+        .order_by("-version", "-created_at", "-id")
+    )
+    decision_eligibility = assess_review_decision_eligibility(
+        assessment=assessment,
+        user=request.user,
+    )
     return render(
         request,
         "matching/assessment_review_detail.html",
@@ -493,8 +514,60 @@ def assessment_review_detail(
             "assessment": assessment,
             "review_item": review_item,
             "assessment_history": assessment_history,
+            "decision_history": decision_history,
+            "decision_eligibility": decision_eligibility,
+            "decision_form": ReviewDecisionForm(),
             "vacancy": assessment.requirements.vacancy,
             "entry": assessment.shortlist_entry,
             "run": assessment.shortlist_entry.match_run,
         },
+    )
+
+
+@login_required
+@require_POST
+def assessment_review_decide(
+    request,
+    organization_slug: str,
+    assessment_id: int,
+):
+    organization = get_object_or_404(
+        Organization.objects.visible_to(request.user),
+        slug=organization_slug,
+    )
+    assessment = get_object_or_404(
+        MatchAssessment.objects.for_organization(organization).select_related(
+            "candidate_profile",
+            "shortlist_entry__candidate",
+            "shortlist_entry__match_run__requirements__vacancy",
+        ),
+        pk=assessment_id,
+        shortlist_entry__match_run__requirements__vacancy__deleted_at__isnull=True,
+    )
+    form = ReviewDecisionForm(request.POST)
+    if not form.is_valid():
+        messages.error(
+            request,
+            "Select a decision and record recruiter notes before saving.",
+        )
+    else:
+        try:
+            decision = record_review_decision(
+                assessment=assessment,
+                user=request.user,
+                decision=form.cleaned_data["decision"],
+                notes=form.cleaned_data["notes"],
+            )
+        except ValidationError as error:
+            messages.error(request, "; ".join(error.messages))
+        else:
+            messages.success(
+                request,
+                f"Decision version {decision.version} was recorded as "
+                f"{decision.get_decision_display().lower()}.",
+            )
+    return redirect(
+        "matching:assessment-review-detail",
+        organization_slug=organization.slug,
+        assessment_id=assessment.pk,
     )
