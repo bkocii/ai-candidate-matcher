@@ -1,7 +1,7 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`PROD-003`. Use only the synthetic files in `manual_testing/fixtures` or other
+`PROD-004`. Use only the synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
 
@@ -63,8 +63,8 @@ organization isolation.
 2. If prompted, sign in with the superuser.
 3. Confirm that the single active organization opens automatically.
 4. Confirm that the navigation contains **Dashboard**, **Candidates**,
-   **Vacancies**, **Reviews**, **Jobs**, **Privacy & audit**, **Django admin**, and
-   **Sign out**.
+   **Vacancies**, **Reviews**, **Jobs**, **AI usage**, **Privacy & audit**,
+   **Django admin**, and **Sign out**.
 5. Confirm the dashboard initially shows zero active candidates and zero open
    vacancies.
 6. Select **Sign out** and confirm you return to the login page.
@@ -1080,7 +1080,42 @@ Run the focused provider-free coverage:
 uv run pytest -q tests/test_background_jobs.py tests/test_candidate_ai_extraction.py tests/test_match_ai_assessment.py tests/test_matching_staleness.py tests/test_recruiter_review.py tests/test_review_decisions.py tests/test_outreach_workflow.py
 ```
 
-## 24. Run the optional synthetic live gateway smoke test
+## 24. Test organization AI usage reporting
+
+After creating successful and deliberately failed synthetic AI attempts in
+sections 15 through 17, 20, or 23, open **AI usage** in the organization
+navigation.
+
+Expected result:
+
+- The default report covers the past 30 days and all workflows. The period can
+  be changed to 7, 30, or 90 days or all time, and the workflow filter can select
+  vacancy requirements, candidate profiles, match assessments, or outreach
+  drafts.
+- Attempts, successes, failures, pending attempts, success rate, total/input/
+  output tokens, estimated cost, average latency, and retry totals agree with the
+  safe usage records inside the chosen boundary.
+- Workflow and model tables, safe failure categories, and the daily trend use
+  organization-scoped aggregate data. The daily table is bounded to the most
+  recent 90 displayed days even for an all-time report.
+- Provider metadata that was not supplied is displayed as unavailable (`—`) and
+  included in the coverage counts. A failed request without provider metadata
+  does not invent zero tokens, zero cost, a model, latency, or retry data.
+- Pending attempts older than 15 minutes are counted separately for operational
+  review. Pending work is not treated as either success or failure.
+- The report contains no request IDs, prompts, raw responses, source descriptions,
+  CV text, candidate names/contact data, recruiter notes, decision content, or
+  outreach subject/body.
+- A member of another organization receives `404` for a copied report URL and
+  sees none of this organization's totals.
+
+Run the focused provider-free coverage:
+
+```powershell
+uv run pytest -q tests/test_ai_usage_reporting.py tests/test_ai_usage_events.py tests/test_audit_retention.py
+```
+
+## 25. Run the optional synthetic live gateway smoke test
 
 This developer test is separate from the browser workflows and ordinary quality
 gate. It may incur one small provider charge. It sends no candidate, vacancy, CV,
@@ -1104,21 +1139,21 @@ Never edit this smoke test to send real recruitment data. A live failure does no
 change any candidate, vacancy, profile, assessment, or audit record because the
 test calls only the application gateway contract.
 
-## 25. What is intentionally unavailable
+## 26. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
 - Manual candidate-skill entry still uses Django admin; confirmed AI profile
   skills are published through the normal candidate workflow.
-- No token/cost/latency/retry/failure aggregation dashboard yet. Background job
-  recovery/status is available under **Jobs**; usage observability remains
-  `PROD-004`.
+- No external monitoring integration, alert delivery, usage export, or billing
+  system. **AI usage** is a read-only in-application operational report;
+  production deployment and monitoring guidance remains `PROD-005`.
 - No OCR for scanned PDFs.
 - No automatic outreach sending, recipient selection, email/ATS/platform
   integration, or normal-workspace contact-permission editor. Manual clipboard
   copy and plain-text export deliberately stop before transmission.
 
-## 26. Final acceptance checklist
+## 27. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -1208,6 +1243,10 @@ The current milestone is behaving correctly when all of these are true:
   safe success metadata or an allow-listed failure category, while rejected
   precondition-only actions produce no event and sensitive request/response data
   is never stored in the ledger.
+- The tenant-scoped AI usage report aggregates attempts, outcomes, available
+  token/cost/latency/retry metadata, workflow/model breakdowns, safe failures,
+  and daily trends while marking missing provider metadata unavailable instead
+  of estimating it or exposing private recruitment content.
 - The shared fake/toolkit contract tests pass provider-free, the ordinary suite
   excludes `live_tests`, and the explicitly enabled synthetic live smoke returns
   one schema-valid result when valid provider configuration is supplied.
@@ -1216,7 +1255,7 @@ The current milestone is behaving correctly when all of these are true:
   or live AI request; only explicit vacancy extraction, candidate extraction,
   match-assessment, or outreach-generation actions do.
 
-## 27. Reset disposable local test data
+## 28. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

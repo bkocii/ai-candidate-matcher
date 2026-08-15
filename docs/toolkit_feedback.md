@@ -41,7 +41,7 @@ Do not patch a local copy of the toolkit inside the app. Confirmed toolkit work 
 | --- | --- | --- | --- |
 | `HYP-001` | Django integration may need clearer guidance for service-layer use and test substitution. | `AI-001`, `AI-006` | Fully evaluated — app-owned gateway and fake sufficient |
 | `HYP-002` | Batch structured requests may need a reusable API or documented pattern. | `AI-003`, `AI-004` | Evaluated — app-owned orchestration sufficient |
-| `HYP-003` | Available result metadata may not cover all app usage-reporting needs. | `AI-005`, `PROD-004` | Partially evaluated — success sufficient; revisit failure reporting in `PROD-004` |
+| `HYP-003` | Available result metadata may not cover all app usage-reporting needs. | `AI-005`, `PROD-004` | Fully evaluated — explicit availability is sufficient; no toolkit change |
 | `HYP-004` | Generic PDF/DOCX loaders could be useful, but safe CV extraction may belong in the app or a separate package. | `DATA-004` | Evaluated — app-owned |
 | `HYP-005` | Persistent vector-store integration may be useful if embedding retrieval is adopted. | `EVAL-002` | Unverified |
 
@@ -90,7 +90,7 @@ entirely in the application while each task continued to use the existing
 ordinary structured-request gateway contract. No toolkit batch API or toolkit
 change was required.
 
-### `HYP-003` — partial evaluation, 2026-08-12
+### `HYP-003` — fully evaluated, 2026-08-15
 
 For successful requests, toolkit v1.0.0 supplies the request ID, model, duration,
 retry count, optional token counts, and optional estimated cost needed by
@@ -100,10 +100,13 @@ ID, timing, retry, token, or cost metadata. `AI-005` therefore records its own
 attempt/completion timestamps and bounded failure category while leaving
 unavailable provider fields blank.
 
-This is sufficient for the current safe ledger and no toolkit defect or API
-change is proposed. The hypothesis remains open for `PROD-004`, when concrete
-failure-reporting and observability requirements can determine whether reusable
-failure metadata is actually needed.
+`PROD-004` confirmed that this is sufficient for safe operational reporting.
+Successful and application-validation-complete responses contribute available
+provider metrics. Gateway failures contribute application timestamps, status,
+workflow, and allow-listed failure stage/code while provider-only metrics are
+shown as unavailable rather than inferred. This preserves honest coverage and
+supports useful failure reporting without storing exception detail or expanding
+the gateway contract. No toolkit defect or API change is proposed.
 
 ## Confirmed observations
 

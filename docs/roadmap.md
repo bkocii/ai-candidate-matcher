@@ -96,10 +96,10 @@ Status: Complete.
 - `PROD-001` Add private file-delivery controls and upload hardening. **Complete — 2026-08-15.**
 - `PROD-002` Add audit views, retention/deletion workflow, and data minimization checks. **Complete — 2026-08-15.**
 - `PROD-003` Add background processing, idempotency, resumability, and operational status. **Complete — 2026-08-15.**
-- `PROD-004` Add token, cost, latency, retry, and failure reporting.
+- `PROD-004` Add token, cost, latency, retry, and failure reporting. **Complete — 2026-08-15.**
 - `PROD-005` Add deployment documentation and production checks.
 
-Status: In progress. `PROD-004` is next.
+Status: In progress. `PROD-005` is next.
 
 ## Sprint 7 — Evaluation and showcase release
 

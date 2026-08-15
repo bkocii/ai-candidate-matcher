@@ -100,6 +100,9 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Audit views expose only the minimum identifiers and operational metadata needed
   for accountability; they do not duplicate CV, contact, prompt, response,
   recruiter-note, or outreach content.
+- AI usage reporting is tenant-scoped and aggregate. It distinguishes unavailable
+  provider metadata from zero, never estimates missing token/cost/latency/retry
+  values, and does not expose per-request or private recruitment content.
 
 ## Core structured outputs
 

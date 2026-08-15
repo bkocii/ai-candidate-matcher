@@ -132,8 +132,27 @@ views over existing immutable AI usage, CSV-source, assessment, decision,
 outreach-approval, and copy/export records. It intentionally omits all copied
 domain content. Candidate/source/document retention exceptions and deleted-
 candidate minimization findings are calculated from organization-scoped records.
-Cost/latency aggregation and operational recovery remain `PROD-004` and
-`PROD-003` respectively.
+Operational recovery is implemented in `PROD-003`. Aggregate AI usage reporting
+is implemented in `PROD-004`; production deployment and monitoring guidance
+remains `PROD-005`.
+
+### AI usage reporting
+
+The organization **AI usage** page is a read-only derived query over
+`AIUsageEvent`; it introduces no mutable summary table or copied reporting
+record. Authorized recruiters can filter by a bounded period or controlled
+workflow and inspect aggregate attempts, outcomes, success rate, available
+tokens/cost/latency/retries, stale pending attempts, workflow/model breakdowns,
+safe failure categories, and at most 90 displayed daily rows.
+
+Each aggregate retains an availability count. Missing provider metadata is
+reported as unavailable rather than coerced to zero or estimated. Retry metadata
+is considered available only when a provider response supplied request metadata,
+because the persisted numeric default cannot prove what happened for a gateway
+failure. The page exposes neither per-request IDs nor prompt, response, source,
+CV, candidate/contact, recruiter-note, decision, or outreach content. Existing
+indexes and fields support the query, so `PROD-004` adds no persistence or
+migration.
 
 ## Identity and organization policy
 
@@ -592,8 +611,8 @@ versions so their evidence boundary remains inspectable when inputs later change
   tenant-scoped domain querysets rather than copying identity into operational
   rows. Extraction results are drafts only. Candidate decisions remain
   individually inspectable POST actions, and outreach remains separate.
-- Cost, latency, retry, token, and failure aggregation across existing safe usage
-  events remains `PROD-004`; the job status surface does not duplicate that
+- Cost, latency, retry, token, and failure aggregation is derived from existing
+  safe usage events by `PROD-004`; the job status surface does not duplicate that
   observability scope.
 
 ### Recruiter assessment review

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}AI usage | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading" aria-labelledby="usage-title">
+    <div>
+        <p class="eyebrow">Safe observability</p>
+        <h1 id="usage-title">AI usage</h1>
+        <p class="lede">Organization-scoped attempts, availability, and provider-supplied usage metadata without prompts, responses, CVs, contact details, or recruiter content.</p>
+    </div>
+    <a class="secondary-button" href="{% url 'audit:privacy-dashboard' organization.slug %}">Privacy &amp; audit</a>
+</section>
+
+<form class="report-filters" method="get" aria-label="AI usage filters">
+    <div class="field">
+        <label for="period">Period</label>
+        <select id="period" name="period">
+            {% for value, label in period_options %}<option value="{{ value }}" {% if report.period == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="field">
+        <label for="workflow">Workflow</label>
+        <select id="workflow" name="workflow">
+            {% for value, label in workflow_options %}<option value="{{ value }}" {% if report.workflow == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+    </div>
+    <button class="primary-button" type="submit">Apply filters</button>
+</form>
+
+<p class="section-note"><strong>{{ report.period_label }}</strong> · {{ report.workflow_label }}. Success rate uses completed attempts only; pending attempts are reported separately.</p>
+
+<section class="metric-grid usage-metric-grid" aria-label="AI usage summary">
+    <article class="metric-card"><span class="metric-label">Attempts</span><strong class="metric-value">{{ report.metrics.attempts }}</strong><span class="metric-detail">{{ report.metrics.completed }} completed</span></article>
+    <article class="metric-card"><span class="metric-label">Success rate</span><strong class="metric-value metric-value-text">{% if report.metrics.completed %}{{ report.metrics.success_rate }}%{% else %}—{% endif %}</strong><span class="metric-detail">{{ report.metrics.succeeded }} succeeded · {{ report.metrics.failed }} failed</span></article>
+    <article class="metric-card"><span class="metric-label">Total tokens</span><strong class="metric-value metric-value-text">{% if report.metrics.token_metadata_count %}{{ report.metrics.total_tokens }}{% else %}—{% endif %}</strong><span class="metric-detail">Input {% if report.metrics.input_token_metadata_count %}{{ report.metrics.input_tokens }}{% else %}—{% endif %} · output {% if report.metrics.output_token_metadata_count %}{{ report.metrics.output_tokens }}{% else %}—{% endif %} · total available for {{ report.metrics.token_metadata_count }} of {{ report.metrics.attempts }}</span></article>
+    <article class="metric-card"><span class="metric-label">Estimated cost</span><strong class="metric-value metric-value-text">{% if report.metrics.cost_metadata_count %}${{ report.metrics.cost_usd|floatformat:6 }}{% else %}—{% endif %}</strong><span class="metric-detail">Provider estimate for {{ report.metrics.cost_metadata_count }} of {{ report.metrics.attempts }}</span></article>
+    <article class="metric-card"><span class="metric-label">Average latency</span><strong class="metric-value metric-value-text">{% if report.metrics.duration_metadata_count %}{{ report.metrics.average_duration_ms|floatformat:0 }} ms{% else %}—{% endif %}</strong><span class="metric-detail">Available for {{ report.metrics.duration_metadata_count }} of {{ report.metrics.attempts }}</span></article>
+    <article class="metric-card"><span class="metric-label">Retries used</span><strong class="metric-value metric-value-text">{% if report.metrics.retry_metadata_count %}{{ report.metrics.retries_used }}{% else %}—{% endif %}</strong><span class="metric-detail">{{ report.metrics.retried_attempts }} retried attempts · metadata for {{ report.metrics.retry_metadata_count }}</span></article>
+    <article class="metric-card"><span class="metric-label">Failures</span><strong class="metric-value">{{ report.metrics.failed }}</strong><span class="metric-detail">Safe categories only</span></article>
+    <article class="metric-card"><span class="metric-label">Pending</span><strong class="metric-value">{{ report.metrics.pending }}</strong><span class="metric-detail">{{ report.stale_pending_count }} older than 15 minutes</span></article>
+</section>
+
+<section class="report-section" aria-labelledby="workflow-breakdown-title">
+    <h2 id="workflow-breakdown-title">Workflow breakdown</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Workflow</th><th>Attempts</th><th>Succeeded</th><th>Failed</th><th>Tokens</th><th>Estimated cost</th><th>Average latency</th><th>Retries</th></tr></thead>
+            <tbody>
+                {% for row in report.workflow_rows %}
+                    <tr><th>{{ row.label }}</th><td>{{ row.metrics.attempts }}</td><td>{{ row.metrics.succeeded }}</td><td>{{ row.metrics.failed }}</td><td>{% if row.metrics.token_metadata_count %}{{ row.metrics.total_tokens }}{% else %}—{% endif %}</td><td>{% if row.metrics.cost_metadata_count %}${{ row.metrics.cost_usd|floatformat:6 }}{% else %}—{% endif %}</td><td>{% if row.metrics.duration_metadata_count %}{{ row.metrics.average_duration_ms|floatformat:0 }} ms{% else %}—{% endif %}</td><td>{% if row.metrics.retry_metadata_count %}{{ row.metrics.retries_used }}{% else %}—{% endif %}</td></tr>
+                {% empty %}<tr><td colspan="8">No AI attempts match these filters.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="report-section" aria-labelledby="model-breakdown-title">
+    <h2 id="model-breakdown-title">Model breakdown</h2>
+    <p class="section-note">Models are shown only when supplied with completed provider metadata. {{ report.metrics.missing_model_metadata_count }} filtered attempt{{ report.metrics.missing_model_metadata_count|pluralize }} ha{{ report.metrics.missing_model_metadata_count|pluralize:"s,ve" }} no model metadata.</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Model</th><th>Attempts</th><th>Succeeded</th><th>Failed</th><th>Tokens</th><th>Estimated cost</th><th>Average latency</th><th>Retries</th></tr></thead>
+            <tbody>
+                {% for row in report.model_rows %}
+                    <tr><th>{{ row.label }}</th><td>{{ row.metrics.attempts }}</td><td>{{ row.metrics.succeeded }}</td><td>{{ row.metrics.failed }}</td><td>{% if row.metrics.token_metadata_count %}{{ row.metrics.total_tokens }}{% else %}—{% endif %}</td><td>{% if row.metrics.cost_metadata_count %}${{ row.metrics.cost_usd|floatformat:6 }}{% else %}—{% endif %}</td><td>{% if row.metrics.duration_metadata_count %}{{ row.metrics.average_duration_ms|floatformat:0 }} ms{% else %}—{% endif %}</td><td>{% if row.metrics.retry_metadata_count %}{{ row.metrics.retries_used }}{% else %}—{% endif %}</td></tr>
+                {% empty %}<tr><td colspan="8">No model metadata is available for these filters.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="report-columns">
+    <section class="report-section" aria-labelledby="failure-breakdown-title">
+        <h2 id="failure-breakdown-title">Failure categories</h2>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Stage</th><th>Category</th><th>Count</th></tr></thead>
+                <tbody>{% for row in report.failure_rows %}<tr><td>{{ row.stage }}</td><th>{{ row.label }}</th><td>{{ row.count }}</td></tr>{% empty %}<tr><td colspan="3">No failures match these filters.</td></tr>{% endfor %}</tbody>
+            </table>
+        </div>
+    </section>
+    <section class="report-section" aria-labelledby="metadata-coverage-title">
+        <h2 id="metadata-coverage-title">Metadata availability</h2>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Field</th><th>Available</th><th>Unavailable</th></tr></thead>
+                <tbody>
+                    <tr><th>Input tokens</th><td>{{ report.metrics.input_token_metadata_count }}</td><td>{{ report.metrics.missing_input_token_metadata_count }}</td></tr>
+                    <tr><th>Output tokens</th><td>{{ report.metrics.output_token_metadata_count }}</td><td>{{ report.metrics.missing_output_token_metadata_count }}</td></tr>
+                    <tr><th>Total tokens</th><td>{{ report.metrics.token_metadata_count }}</td><td>{{ report.metrics.missing_token_metadata_count }}</td></tr>
+                    <tr><th>Estimated cost</th><td>{{ report.metrics.cost_metadata_count }}</td><td>{{ report.metrics.missing_cost_metadata_count }}</td></tr>
+                    <tr><th>Latency</th><td>{{ report.metrics.duration_metadata_count }}</td><td>{{ report.metrics.missing_duration_metadata_count }}</td></tr>
+                    <tr><th>Retry count</th><td>{{ report.metrics.retry_metadata_count }}</td><td>{{ report.metrics.missing_retry_metadata_count }}</td></tr>
+                    <tr><th>Model</th><td>{{ report.metrics.model_metadata_count }}</td><td>{{ report.metrics.missing_model_metadata_count }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<section class="report-section" aria-labelledby="daily-usage-title">
+    <h2 id="daily-usage-title">Daily usage</h2>
+    <p class="section-note">At most the latest 90 recorded days are shown. Missing daily provider metadata remains unavailable rather than being displayed as zero.</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Date</th><th>Attempts</th><th>Succeeded</th><th>Failed</th><th>Available tokens</th><th>Available estimated cost</th></tr></thead>
+            <tbody>{% for row in report.daily_rows %}<tr><th>{{ row.day|date:"Y-m-d" }}</th><td>{{ row.attempts }}</td><td>{{ row.succeeded }}</td><td>{{ row.failed }}</td><td>{% if row.token_metadata_count %}{{ row.total_tokens }}{% else %}—{% endif %}</td><td>{% if row.cost_metadata_count %}${{ row.cost_usd|floatformat:6 }}{% else %}—{% endif %}</td></tr>{% empty %}<tr><td colspan="6">No daily usage matches these filters.</td></tr>{% endfor %}</tbody>
+        </table>
+    </div>
+</section>
+
+<p class="human-review-note">This report is derived from immutable minimized usage events. Missing provider metadata remains unavailable and is never estimated. It contains no AI prompt or response content and does not change candidate decisions or outreach.</p>
+{% endblock %}

@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 6 — Production safeguards and observability — is in progress.
 
-Status: `PROD-003` is complete; `PROD-004` is the next approved task.
+Status: `PROD-004` is complete; `PROD-005` is the next approved task.
 
 ## Decisions made
 
@@ -688,20 +688,39 @@ Status: `PROD-003` is complete; `PROD-004` is the next approved task.
 - Kept toolkit integration unchanged: orchestration wraps the existing
   application services and their ordinary structured-request gateway calls.
 
+### `PROD-004 — Token, cost, latency, retry, and failure reporting`
+
+- Added a tenant-scoped **AI usage** report derived from the immutable,
+  minimized `AIUsageEvent` ledger. No reporting copy or parallel usage store was
+  introduced.
+- Added 7-, 30-, and 90-day and all-time period filters plus workflow filters.
+  The report aggregates attempts, completion outcomes, success rate, available
+  input/output/total tokens, estimated cost, average latency, retries, and stale
+  pending attempts.
+- Added workflow and model breakdowns, allow-listed failure categories, and a
+  bounded daily trend. Provider metadata coverage is shown explicitly; missing
+  values remain unavailable rather than being treated as zero or estimated.
+- Kept the report content-free: it exposes no request IDs, prompts, raw
+  responses, source descriptions, CV or contact data, recruiter notes,
+  decisions, or outreach content.
+- Kept toolkit and schema boundaries unchanged. Existing safe success metadata,
+  application timestamps, and failure codes were sufficient, so no toolkit
+  change or database migration was needed.
+
 ## Verification
 
-`PROD-003` verification completed on 2026-08-15:
+`PROD-004` verification completed on 2026-08-15:
 
-- Focused background and affected AI/review regression set: `92 passed`.
-- Complete `python scripts/check.py` quality gate: `417 passed`.
+- Focused reporting and affected AI/privacy regression set: `100 passed`.
+- Complete `python scripts/check.py` quality gate: `422 passed`.
 - Django system and deploy checks passed with no issues.
-- `PROD-003` adds `operations.0001_initial`; it applied successfully, the
-  resulting migration plan is empty, and drift is zero.
-- Ruff lint passed and all `164` files were formatted.
+- `PROD-004` adds no migration. All existing migrations applied successfully
+  from an empty database, the resulting plan is empty, and drift is zero.
+- Ruff lint passed and all `166` files were formatted.
 - Dependency check confirmed all `32` installed packages are compatible.
 - A clean extraction of the restricted final ZIP installed from the lockfile,
   applied all migrations from an empty database, reported an empty follow-up
-  plan, and passed the same complete `417`-test quality gate.
+  plan, and passed the same complete `422`-test quality gate.
 
 ## Not implemented
 
@@ -731,9 +750,9 @@ their immutable historical scores and explanations.
 For each candidate on a current shortlist with a confirmed profile, recruiters
 can request and inspect immutable evidence-based AI assessment versions. These
 are decision support only and cannot change the deterministic shortlist.
-Safe AI usage events are available to operators through read-only Django admin
-and as compact content-free summaries on the privacy dashboard; aggregated
-usage/cost/latency/retry/failure reporting remains deferred to `PROD-004`.
+Safe AI usage events are available to operators through read-only Django admin,
+as compact content-free summaries on the privacy dashboard, and as aggregate
+tenant-scoped token/cost/latency/retry/failure reporting under **AI usage**.
 The review queue now reuses confirmed profiles and provides compact exception-
 focused assessment review and individual decision history. Resumable batch
 profile extraction and whole-shortlist assessment generation are implemented in
@@ -747,4 +766,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`PROD-004 — Add token, cost, latency, retry, and failure reporting.`
+`PROD-005 — Add deployment documentation and production checks.`

@@ -14,8 +14,8 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 5 and `PROD-001` through `PROD-003` are complete. Sprint
-6 is in progress; `PROD-004` is the next approved roadmap task.
+Sprint 0 through Sprint 5 and `PROD-001` through `PROD-004` are complete. Sprint
+6 is in progress; `PROD-005` is the next approved roadmap task.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -176,8 +176,8 @@ application validation may retain safe metadata with one generic validation code
 Completed events are immutable and read-only in Django admin. There are no fields
 for prompts, raw responses, provider/validation messages, source text, CV text,
 candidate identity, or contact data. Failure metadata not exposed by toolkit
-v1.0.0 is left blank rather than inferred. Recruiter-facing usage reporting
-remains `PROD-004`.
+v1.0.0 is left blank rather than inferred. `PROD-004` now reports aggregates over
+this ledger while keeping those unavailable fields explicit.
 
 `AI-006` is complete. `ai_gateway.testing.FakeAIGateway` is now the reusable
 provider-free test double for all application AI business workflows. It shares
@@ -303,6 +303,14 @@ queue. Profile results remain drafts requiring evidence inspection and
 individual confirmation. Assessment results enter the existing review flow;
 approve/reject/revisit and outreach remain separate individual actions.
 
+`PROD-004` is complete. The tenant-scoped **AI usage** page derives aggregate
+attempt, outcome, token, cost, latency, retry, model, workflow, safe-failure, and
+daily trend reporting from existing minimized `AIUsageEvent` records. Filters
+support 7, 30, and 90 days or all time and individual workflows. Metadata
+coverage is explicit, and absent provider metadata remains unavailable rather
+than being estimated. The report contains no request IDs or private recruitment
+content. No toolkit or database migration change was needed.
+
 ## Recruiter-efficiency requirement
 
 Do not treat the current per-candidate generation actions as the final high-volume UX.
@@ -319,7 +327,7 @@ actions with notes, actor, and timestamp, and outreach remains separate.
 
 The next roadmap item is:
 
-`PROD-004 — Add token, cost, latency, retry, and failure reporting.`
+`PROD-005 — Add deployment documentation and production checks.`
 
 ## Required instructions
 
@@ -336,21 +344,21 @@ The next roadmap item is:
 
 ## Current verification
 
-`PROD-003` verification completed on 2026-08-15:
+`PROD-004` verification completed on 2026-08-15:
 
-- Focused background and affected AI/review regression set: `92 passed`.
-- Complete `python scripts/check.py` quality gate: `417 passed`.
+- Focused reporting and affected AI/privacy regression set: `100 passed`.
+- Complete `python scripts/check.py` quality gate: `422 passed`.
 - Django system/deploy checks passed; migration drift is zero; Ruff lint passed
-  and all `164` files are formatted; all `32` installed packages are compatible.
-- `PROD-003` adds one migration: `operations.0001_initial`. It applies cleanly,
-  the follow-up migration plan is empty, and migration drift is zero.
+  and all `166` files are formatted; all `32` installed packages are compatible.
+- `PROD-004` adds no migration. All existing migrations apply cleanly from an
+  empty database, the follow-up migration plan is empty, and drift is zero.
 - A clean extraction of the restricted final ZIP installed from the lockfile,
   applied all migrations from an empty database, reported an empty follow-up
-  plan, and passed the same complete `417`-test quality gate.
+  plan, and passed the same complete `422`-test quality gate.
 
 ## Immediate next action
 
-Implement only `PROD-004`: add aggregate token, cost, latency, retry, and failure
-reporting over existing minimized AI usage events. Preserve the `PROD-003` job
+Implement only `PROD-005`: add deployment documentation and production checks.
+Preserve the minimized `PROD-004` reporting boundary, the `PROD-003` job
 boundary, staged deletion, and separate individually approved candidate-decision
 and outreach actions.

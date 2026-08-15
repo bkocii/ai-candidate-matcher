@@ -12,8 +12,8 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 through Sprint 5 and `PROD-001` through `PROD-003` are complete.
-Production-safeguard work continues with `PROD-004`.
+Sprint 0 through Sprint 5 and `PROD-001` through `PROD-004` are complete.
+Production-safeguard work continues with `PROD-005`.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -130,8 +130,15 @@ confirmation, approve/reject/revisit decisions, and outreach remain separate
 individual actions. Repeating the same batch request returns the existing job
 instead of repeating routine AI work.
 
-The next approved task is `PROD-004 — Add token, cost, latency, retry, and
-failure reporting`.
+Recruiters also have a tenant-scoped **AI usage** report derived from the existing
+minimized event ledger. Period and workflow filters expose aggregate attempts,
+outcomes, token/cost/latency/retry coverage, workflow/model breakdowns, safe
+failure categories, and bounded daily trends. Missing provider metadata is shown
+as unavailable instead of being estimated, and the report contains no prompts,
+responses, CV/contact data, recruiter notes, or outreach content.
+
+The next approved task is `PROD-005 — Add deployment documentation and
+production checks`.
 
 ## Local setup
 

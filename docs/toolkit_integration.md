@@ -141,6 +141,13 @@ The ledger never receives a prompt, raw/original response, toolkit/provider
 message, exception detail, source description, CV text, or candidate identity or
 contact value. Toolkit file logging remains disabled.
 
+`PROD-004` derives the tenant-scoped **AI usage** report directly from this
+ledger. Available success metadata supports token, cost, latency, retry, model,
+workflow, and daily aggregates; application timestamps and allow-listed codes
+support attempt/outcome/pending/failure reporting. Missing provider fields on
+gateway failures remain explicitly unavailable. Reporting makes no toolkit call,
+stores no additional copy, and requires no toolkit contract change.
+
 ## Test contract
 
 `ai_gateway.testing.FakeAIGateway` is the provider-free application test double.
