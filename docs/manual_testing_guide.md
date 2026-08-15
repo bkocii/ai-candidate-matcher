@@ -1,7 +1,7 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`OUT-002`. Use only the synthetic files in `manual_testing/fixtures` or other
+`PROD-001`. Use only the synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
 
@@ -154,7 +154,9 @@ Expected result:
 
 - The upload succeeds.
 - The candidate page shows filename, type, size, extraction status, and time.
-- No extracted CV text, private storage path, or download link is displayed.
+- No extracted CV text or private storage path is displayed.
+- A **Download original** link is available only inside the authenticated
+  organization workspace.
 
 Open another synthetic candidate and upload `synthetic-amina-berisha-cv.docx`.
 Expected result: the DOCX is accepted and extraction succeeds.
@@ -172,6 +174,32 @@ Now test rejection cases:
 
 Failed uploads must create neither a document database row nor stored file
 bytes. Use a retention date if you also want to verify that optional metadata.
+
+### Private CV delivery
+
+Select **Download original** for each accepted synthetic PDF and DOCX.
+
+Expected result:
+
+- The browser downloads the exact original file as an attachment instead of
+  rendering it as a public page.
+- The downloaded filename is the safe original basename. No opaque media/storage
+  path appears in the page, URL, response headers, or filename.
+- In browser developer tools, the response has the saved PDF/DOCX content type,
+  `Content-Disposition: attachment`, `Cache-Control: private, no-store,
+  max-age=0`, `X-Content-Type-Options: nosniff`, and a sandbox content-security
+  policy.
+- Signing out prevents access. A recruiter who lacks membership in the owning
+  organization receives no candidate or document disclosure.
+- Deleting the disposable candidate makes its former document URL unavailable
+  and removes the stored bytes as described below.
+
+The deterministic automated regression for active-content rejection, archive
+hardening, cross-tenant access, byte-integrity checking, and private headers is:
+
+```powershell
+uv run pytest -q tests/test_candidate_documents.py
+```
 
 ### Candidate deletion
 
@@ -946,7 +974,6 @@ The following are not defects at this milestone:
   skills are published through the normal candidate workflow.
 - No recruiter-facing AI usage/cost/failure dashboard; safe records are currently
   read-only in Django admin.
-- No private CV download route.
 - No OCR for scanned PDFs.
 - No automatic outreach sending, recipient selection, email/ATS/platform
   integration, or normal-workspace contact-permission editor. Manual clipboard
@@ -959,6 +986,9 @@ The current milestone is behaving correctly when all of these are true:
 - `uv run python scripts/check.py` passes.
 - Manual candidate entry and both CSV reports match the expectations above.
 - Valid PDF and DOCX CVs extract successfully; unsafe fixtures are rejected.
+- Authorized CV downloads return the exact integrity-checked original only as a
+  private/no-store attachment; signed-out, cross-organization, mismatched,
+  deleted, missing, or changed stored documents are not delivered.
 - Recruiters can create direct-employer and client-associated vacancies.
 - Requirements can be saved, confirmed, copied to a new version, and confirmed
   again without mutating history.

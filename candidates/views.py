@@ -1,10 +1,11 @@
 import csv
+from io import BytesIO
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.http import HttpResponse
+from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -13,7 +14,12 @@ from candidates.ai_extraction import (
     confirm_candidate_profile,
     extract_candidate_profile,
 )
-from candidates.documents import CandidateDocumentUploadError, upload_candidate_cv
+from candidates.documents import (
+    CandidateDocumentDeliveryError,
+    CandidateDocumentUploadError,
+    load_private_candidate_document,
+    upload_candidate_cv,
+)
 from candidates.forms import (
     CandidateCSVImportForm,
     CandidateCVUploadForm,
@@ -244,6 +250,55 @@ def candidate_cv_upload(request, organization_slug: str, candidate_id: int):
             "form": form,
         },
     )
+
+
+@login_required
+def candidate_document_download(
+    request,
+    organization_slug: str,
+    candidate_id: int,
+    document_id: int,
+):
+    organization = _visible_organization(request, organization_slug)
+    candidate = get_object_or_404(
+        Candidate.objects.for_organization(organization).not_deleted(),
+        pk=candidate_id,
+    )
+    document = get_object_or_404(
+        CandidateDocument.objects.for_organization(organization).select_related(
+            "candidate"
+        ),
+        pk=document_id,
+        candidate=candidate,
+        deleted_at__isnull=True,
+    )
+    try:
+        private_document = load_private_candidate_document(
+            document=document,
+            user=request.user,
+        )
+    except CandidateDocumentDeliveryError as error:
+        messages.error(request, error.public_message)
+        return redirect(
+            "candidates:candidate-detail",
+            organization_slug=organization.slug,
+            candidate_id=candidate.pk,
+        )
+
+    response = FileResponse(
+        BytesIO(private_document.content),
+        as_attachment=True,
+        filename=private_document.filename,
+        content_type=private_document.content_type,
+    )
+    response["Cache-Control"] = "private, no-store, max-age=0"
+    response["Pragma"] = "no-cache"
+    response["X-Content-Type-Options"] = "nosniff"
+    response["Content-Security-Policy"] = "sandbox"
+    response["Cross-Origin-Resource-Policy"] = "same-origin"
+    response["Referrer-Policy"] = "no-referrer"
+    response["X-Robots-Tag"] = "noindex, nofollow, noarchive"
+    return response
 
 
 @login_required

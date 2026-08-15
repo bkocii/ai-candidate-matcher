@@ -198,7 +198,7 @@ through `PROD-004`.
   scoping or an active user/membership path. Related objects expose their owning
   organization for the shared object-permission helpers.
 - Stored document paths retain only the extension from the supplied filename and
-  use an opaque UUID. No public media URL or delivery route exists.
+  use an opaque UUID. No public media URL exists.
 - PDF and DOCX CV uploads are validated and synchronously extracted before their
   metadata is committed. The service enforces a 10 MB file limit plus bounded
   page, archive-entry, expanded-byte, compression-ratio, and extracted-text limits.
@@ -206,11 +206,23 @@ through `PROD-004`.
   status, timestamp, retention date, and uploader. Failed validation or extraction
   stores neither a document row nor file bytes and returns a bounded public error.
 - SHA-256 duplicate checks are organization-local and advisory. The same bytes in
-  another organization neither disclose nor block that organization's upload;
-  concurrency hardening remains part of the production workflow.
-- Recruiter HTML shows safe document metadata only. It exposes neither storage
-  paths nor extracted CV text, and no application route serves document bytes.
-  Hardened private delivery remains in `PROD-001`.
+  another organization neither disclose nor block that organization's upload.
+  The final same-organization check and save are serialized with database row
+  locks so concurrent uploads do not create an avoidable duplicate race.
+- Recruiter HTML shows safe document metadata only and exposes neither storage
+  paths nor extracted CV text. An authenticated tenant-scoped route downloads
+  the original as an attachment only after the application repeats service-layer
+  authorization and verifies its stored length and SHA-256. Responses are
+  private/no-store, use the validated content type and safe original basename,
+  and include browser hardening headers; failures never reveal the storage key.
+- Upload validation rejects Unicode control/format filename spoofing, executable
+  or embedded PDF features, duplicate or symlink DOCX entries, embedded active
+  Word content, and unsafe external package relationships while retaining normal
+  PDF and DOCX hyperlinks. Existing size, page, expansion, compression, XML,
+  encryption, signature, and extracted-text limits remain enforced.
+- Organization-row and candidate-row locks serialize the final same-organization
+  hash check and save, closing the duplicate-upload race while keeping equal
+  document bytes isolated and permitted across organizations.
 - Textless/scanned PDFs are rejected rather than silently stored as usable CV
   text. OCR is a separately approved future capability.
 - Retention/deletion services must remove underlying stored bytes; deleting a
@@ -656,7 +668,9 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 
 - Authorization checks are organization-scoped at the query layer and view/service boundary.
 - Candidate documents are private and never served by guessable public paths.
-- Upload type, size, and content are validated.
+- Upload type, size, package structure, active content, and resource use are
+  validated before persistence. Private delivery repeats authorization and
+  verifies byte integrity before returning a non-cacheable attachment.
 - Logs do not contain raw CVs, contact details, prompts, or model responses.
 - AI requests minimize personal data and exclude protected attributes.
 - Candidate records include source, permission/consent notes, retention dates, and deletion status.

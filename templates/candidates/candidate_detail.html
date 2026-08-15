@@ -21,7 +21,7 @@
 
 <section aria-labelledby="documents-title">
     <h2 id="documents-title">Private documents</h2>
-    <p class="section-note">Document bytes and extracted text remain private. Direct file delivery is not enabled yet.</p>
+    <p class="section-note">Document bytes and extracted text remain private. Authorized downloads are attachment-only and are not cached.</p>
 
     {% if documents %}
         <div class="table-wrap">
@@ -34,6 +34,7 @@
                         <th scope="col">Extraction</th>
                         <th scope="col">AI profile</th>
                         <th scope="col">Uploaded</th>
+                        <th scope="col">Private file</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -58,6 +59,7 @@
                                 {% endwith %}
                             </td>
                             <td>{{ document.created_at|date:"Y-m-d H:i" }}</td>
+                            <td><a href="{% url 'candidates:candidate-document-download' organization.slug candidate.pk document.pk %}">Download original</a></td>
                         </tr>
                     {% endfor %}
                 </tbody>

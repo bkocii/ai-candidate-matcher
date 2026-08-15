@@ -14,8 +14,8 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 5 are complete. `REV-001`, `REV-002`, `OUT-001`, and
-`OUT-002` are complete; `PROD-001` is the next approved roadmap task.
+Sprint 0 through Sprint 5 and `PROD-001` are complete. Sprint 6 is in progress;
+`PROD-002` is the next approved roadmap task.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -241,6 +241,19 @@ export, and each action records the exact draft, actor, and timestamp. The serve
 rechecks permission/currentness before returning content. No recipient is chosen,
 no provider or AI request is made by these human steps, and nothing is sent.
 
+`PROD-001` is complete. Recruiters can download an original candidate CV only
+through an authenticated tenant-scoped attachment route. The application repeats
+service authorization, loads no more than the existing upload bound, and verifies
+the stored length and SHA-256 before delivery. Private/no-store, no-sniff,
+sandbox, same-origin resource, no-referrer, and no-index headers protect the
+response; opaque storage paths and extracted text remain hidden. Uploads now
+reject filename control/format spoofing, PDF scripts/launch actions/embedded
+files, and DOCX duplicate entries, symlinks, active embedded objects, malformed
+relationships, and unsafe external package relationships. The final
+same-organization duplicate check is serialized before save. No AI, toolkit,
+audit view/event, retention scheduler, background task, or observability scope
+was added.
+
 ## Recruiter-efficiency requirement for later tasks
 
 Do not treat the current per-candidate generation actions as the final high-volume UX.
@@ -256,7 +269,7 @@ outreach generation and final draft approval remain separate actions.
 
 The next roadmap item is:
 
-`PROD-001 — Add private file-delivery controls and upload hardening.`
+`PROD-002 — Add audit views, retention/deletion workflow, and data minimization checks.`
 
 ## Required instructions
 
@@ -273,20 +286,19 @@ The next roadmap item is:
 
 ## Current verification
 
-Final corrective evidence-grounding and skill-completeness verification completed
-on 2026-08-15:
+`PROD-001` verification completed on 2026-08-15:
 
-- Focused candidate-profile and safe-usage regression set: `35 passed`.
-- Complete `python scripts/check.py` quality gate: `395 passed`.
+- Focused private-document regression set: `32 passed`.
+- Complete `python scripts/check.py` quality gate: `405 passed`.
 - Django system/deploy checks, migration drift, Ruff lint/format (`142` files),
   and dependency compatibility (`32` packages) all passed.
-- This corrective pass adds no migration; the migration plan is empty and
+- `PROD-001` adds no migration; the migration plan is empty and
   `outreach.0002_outreach_workflow` remains the latest project migration.
 - Migration checks and the complete gate were repeated successfully from a clean
   extraction of the restricted final deliverable ZIP.
 
 ## Immediate next action
 
-Implement only `PROD-001`: add private file-delivery controls and upload
-hardening. Keep outreach sending unavailable and do not pull later retention,
-background processing, or observability work forward.
+Implement only `PROD-002`: add audit views, retention/deletion workflow, and data
+minimization checks. Keep outreach sending unavailable and do not pull background
+processing or observability reporting forward.

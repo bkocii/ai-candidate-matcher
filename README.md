@@ -12,8 +12,8 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 through Sprint 5 are complete. `OUT-002` completes the recruiter review
-and outreach milestone; `PROD-001` is next.
+Sprint 0 through Sprint 5 and `PROD-001` are complete. Production-safeguard work
+continues with `PROD-002`.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -103,9 +103,17 @@ history. Final approval binds one exact latest version with notes, contact-
 permission attestation, actor, and timestamp. Only an exact approved current
 version with explicit permitted contact can be copied or exported as plain text;
 each action is recorded. No recipient is selected and nothing is sent.
+Candidate CVs now have an authenticated, tenant-scoped, attachment-only download
+that repeats authorization and verifies the stored size and SHA-256 before
+delivery. Private responses are non-cacheable and expose neither the opaque
+storage key nor extracted text. Upload validation additionally rejects filename
+control characters, PDF scripts/launch actions/embedded files, DOCX symlinks,
+duplicate entries, embedded active content, and unsafe external package
+relationships. Organization-level serialization closes the duplicate-upload
+race without preventing another organization from storing the same document.
 
-The next approved task is `PROD-001 — Add private file-delivery controls and
-upload hardening`.
+The next approved task is `PROD-002 — Add audit views, retention/deletion
+workflow, and data minimization checks`.
 
 ## Local setup
 
@@ -154,9 +162,12 @@ header template from **Import CSV**. Imports accept up to 2 MB and 2,000 rows;
 and ISO `retention_until` are optional.
 
 Open a candidate and select **Upload CV** to add a PDF or DOCX file up to 10 MB.
-Password-protected, malformed, macro-enabled, textless/scanned, or resource-heavy
-documents are rejected. The app shows safe metadata only; direct document
-download is intentionally unavailable until the private-delivery task.
+Password-protected, malformed, active-content, embedded-payload, macro-enabled,
+textless/scanned, or resource-heavy documents are rejected. An authorized
+organization member can select **Download original**. Delivery is attachment-
+only, private/no-store, tenant-scoped, and blocked if stored bytes no longer
+match their saved size and SHA-256. No public media URL or opaque storage path is
+exposed.
 After a CV extracts successfully, select **Extract profile** to run the optional
 AI workflow. Review its exact source excerpts and explicit ambiguities on the
 versioned draft page. Only **Confirm profile** publishes the profile's grounded

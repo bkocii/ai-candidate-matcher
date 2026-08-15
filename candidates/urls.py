@@ -33,6 +33,12 @@ urlpatterns = [
     ),
     path(
         "organizations/<slug:organization_slug>/candidates/"
+        "<int:candidate_id>/documents/<int:document_id>/download/",
+        views.candidate_document_download,
+        name="candidate-document-download",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/"
         "<int:candidate_id>/documents/<int:document_id>/extract-profile/",
         views.candidate_profile_extract,
         name="candidate-profile-extract",

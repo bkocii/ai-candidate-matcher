@@ -7,6 +7,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
 from django.urls import reverse
+from django.utils import timezone
 from docx import Document as DocxDocument
 from pypdf import PdfWriter
 
@@ -16,6 +17,7 @@ from candidates.documents import (
     CandidateDocumentDuplicateError,
     CandidateDocumentUploadError,
     extract_cv_text,
+    load_private_candidate_document,
     upload_candidate_cv,
 )
 from candidates.models import Candidate, CandidateDocument, CandidateSource
@@ -89,6 +91,37 @@ def pdf_upload(content: bytes | None = None) -> SimpleUploadedFile:
     )
 
 
+def pdf_with_active_content(kind: str) -> bytes:
+    writer = PdfWriter()
+    writer.append(BytesIO(text_pdf("Synthetic candidate text")))
+    if kind == "javascript":
+        writer.add_js("app.alert('synthetic')")
+    else:
+        writer.add_attachment("payload.txt", b"synthetic attachment")
+    output = BytesIO()
+    writer.write(output)
+    return output.getvalue()
+
+
+def docx_with_relationship(*, relationship_type: str, target_mode: str) -> bytes:
+    output = BytesIO()
+    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", "<Types />")
+        archive.writestr("word/document.xml", "<document />")
+        archive.writestr(
+            "word/_rels/document.xml.rels",
+            (
+                '<Relationships xmlns="http://schemas.openxmlformats.org/'
+                'package/2006/relationships">'
+                f'<Relationship Id="rId1" Type="{relationship_type}" '
+                f'Target="https://example.test/resource" '
+                f'TargetMode="{target_mode}" />'
+                "</Relationships>"
+            ),
+        )
+    return output.getvalue()
+
+
 def test_extracts_text_from_pdf_and_docx() -> None:
     pdf = extract_cv_text(
         raw=text_pdf("Arta Krasniqi Python Django"),
@@ -158,6 +191,18 @@ def test_rejects_encrypted_or_textless_pdf() -> None:
     assert captured.value.code == "no_extractable_text"
 
 
+@pytest.mark.parametrize("kind", ["javascript", "attachment"])
+def test_pdf_active_content_and_embedded_files_are_rejected(kind: str) -> None:
+    with pytest.raises(CandidateDocumentUploadError) as captured:
+        extract_cv_text(
+            raw=pdf_with_active_content(kind),
+            filename="candidate.pdf",
+            declared_content_type="application/pdf",
+        )
+
+    assert captured.value.code == "unsafe_pdf_content"
+
+
 def test_pdf_page_and_extracted_text_limits_are_enforced() -> None:
     raw = text_pdf("Candidate text longer than the configured limit")
 
@@ -203,6 +248,52 @@ def test_docx_with_entity_declarations_is_rejected() -> None:
         extract_cv_text(raw=output.getvalue(), filename="candidate.docx")
 
     assert captured.value.code == "unsafe_docx_xml"
+
+
+def test_docx_unsafe_external_relationship_is_rejected() -> None:
+    relationship_type = (
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/"
+        "attachedTemplate"
+    )
+
+    with pytest.raises(CandidateDocumentUploadError) as captured:
+        extract_cv_text(
+            raw=docx_with_relationship(
+                relationship_type=relationship_type,
+                target_mode="External",
+            ),
+            filename="candidate.docx",
+            declared_content_type=DOCX_CONTENT_TYPE,
+        )
+
+    assert captured.value.code == "unsafe_docx_relationship"
+
+
+def test_docx_symlink_entry_is_rejected() -> None:
+    output = BytesIO()
+    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("[Content_Types].xml", "<Types />")
+        archive.writestr("word/document.xml", "<document />")
+        symlink = zipfile.ZipInfo("word/media/link.png")
+        symlink.create_system = 3
+        symlink.external_attr = (0o120777 << 16) | 0xA1ED0000
+        archive.writestr(symlink, "../../../private")
+
+    with pytest.raises(CandidateDocumentUploadError) as captured:
+        extract_cv_text(raw=output.getvalue(), filename="candidate.docx")
+
+    assert captured.value.code == "unsafe_docx_path"
+
+
+def test_filename_with_bidirectional_control_is_rejected() -> None:
+    with pytest.raises(CandidateDocumentUploadError) as captured:
+        extract_cv_text(
+            raw=text_pdf("Synthetic candidate"),
+            filename="candidate\N{RIGHT-TO-LEFT OVERRIDE}.pdf",
+            declared_content_type="application/pdf",
+        )
+
+    assert captured.value.code == "invalid_filename"
 
 
 def test_upload_stores_private_metadata_hash_and_extracted_text(
@@ -302,6 +393,31 @@ def test_upload_service_requires_membership_before_storing(settings, tmp_path) -
     assert not tmp_path.exists() or not any(tmp_path.rglob("*"))
 
 
+def test_upload_service_rejects_deleted_candidate(settings, tmp_path) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    user = User.objects.create_user(username="recruiter")
+    organization = Organization.objects.create(name="Northstar", slug="northstar")
+    add_member(user, organization)
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Deleted candidate #1",
+        status=Candidate.Status.DELETED,
+        deletion_requested_at=timezone.now(),
+        deleted_at=timezone.now(),
+    )
+
+    with pytest.raises(CandidateDocumentUploadError) as captured:
+        upload_candidate_cv(
+            candidate=candidate,
+            user=user,
+            uploaded_file=pdf_upload(),
+        )
+
+    assert captured.value.code == "candidate_unavailable"
+    assert not CandidateDocument.objects.exists()
+    assert not tmp_path.exists() or not any(tmp_path.rglob("*"))
+
+
 def test_failed_extraction_does_not_store_file(settings, tmp_path) -> None:
     settings.MEDIA_ROOT = tmp_path
     user = User.objects.create_user(username="recruiter")
@@ -385,6 +501,154 @@ def test_recruiter_can_upload_cv_and_view_only_safe_metadata(
     assert "Succeeded" in content
     assert "PRIVATE-CV-TEXT" not in content
     assert document.file.name not in content
+    assert "Download original" in content
+
+
+def test_recruiter_can_privately_download_original_cv(
+    client,
+    settings,
+    tmp_path,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    user = User.objects.create_user(username="recruiter")
+    organization = Organization.objects.create(name="Northstar", slug="northstar")
+    add_member(user, organization)
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Arta Krasniqi",
+    )
+    raw = text_pdf("PRIVATE SYNTHETIC CV")
+    document = upload_candidate_cv(
+        candidate=candidate,
+        user=user,
+        uploaded_file=SimpleUploadedFile(
+            "Arta CV.pdf",
+            raw,
+            content_type="application/pdf",
+        ),
+    )
+    client.force_login(user)
+
+    response = client.get(
+        reverse(
+            "candidates:candidate-document-download",
+            args=[organization.slug, candidate.pk, document.pk],
+        )
+    )
+
+    assert response.status_code == 200
+    assert b"".join(response.streaming_content) == raw
+    assert response["Content-Type"] == "application/pdf"
+    assert "attachment" in response["Content-Disposition"]
+    assert "Arta CV.pdf" in response["Content-Disposition"]
+    assert document.file.name not in response["Content-Disposition"]
+    assert response["Cache-Control"] == "private, no-store, max-age=0"
+    assert response["Pragma"] == "no-cache"
+    assert response["X-Content-Type-Options"] == "nosniff"
+    assert response["Content-Security-Policy"] == "sandbox"
+    assert response["Cross-Origin-Resource-Policy"] == "same-origin"
+    assert response["Referrer-Policy"] == "no-referrer"
+    assert response["X-Robots-Tag"] == "noindex, nofollow, noarchive"
+
+
+def test_private_download_repeats_service_authorization(settings, tmp_path) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    owner = User.objects.create_user(username="owner")
+    outsider = User.objects.create_user(username="outsider")
+    organization = Organization.objects.create(name="Northstar", slug="northstar")
+    add_member(owner, organization)
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Candidate",
+    )
+    document = upload_candidate_cv(
+        candidate=candidate,
+        user=owner,
+        uploaded_file=pdf_upload(),
+    )
+
+    with pytest.raises(PermissionDenied):
+        load_private_candidate_document(document=document, user=outsider)
+
+
+def test_private_download_hides_cross_tenant_and_candidate_mismatch(
+    client,
+    settings,
+    tmp_path,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    user = User.objects.create_user(username="recruiter")
+    hidden_owner = User.objects.create_user(username="hidden-owner")
+    visible = Organization.objects.create(name="Visible", slug="visible")
+    hidden = Organization.objects.create(name="Hidden", slug="hidden")
+    add_member(user, visible)
+    add_member(hidden_owner, hidden)
+    visible_candidate = Candidate.objects.create(
+        organization=visible,
+        full_name="Visible Candidate",
+    )
+    hidden_candidate = Candidate.objects.create(
+        organization=hidden,
+        full_name="Hidden Candidate",
+    )
+    hidden_document = upload_candidate_cv(
+        candidate=hidden_candidate,
+        user=hidden_owner,
+        uploaded_file=pdf_upload(),
+    )
+    client.force_login(user)
+
+    cross_tenant = client.get(
+        reverse(
+            "candidates:candidate-document-download",
+            args=[hidden.slug, hidden_candidate.pk, hidden_document.pk],
+        )
+    )
+    wrong_candidate = client.get(
+        reverse(
+            "candidates:candidate-document-download",
+            args=[visible.slug, visible_candidate.pk, hidden_document.pk],
+        )
+    )
+
+    assert cross_tenant.status_code == 404
+    assert wrong_candidate.status_code == 404
+
+
+def test_private_download_refuses_changed_storage_bytes(
+    client,
+    settings,
+    tmp_path,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    user = User.objects.create_user(username="recruiter")
+    organization = Organization.objects.create(name="Northstar", slug="northstar")
+    add_member(user, organization)
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Candidate",
+    )
+    document = upload_candidate_cv(
+        candidate=candidate,
+        user=user,
+        uploaded_file=pdf_upload(),
+    )
+    with document.file.storage.open(document.file.name, "wb") as stored_file:
+        stored_file.write(b"changed private bytes")
+    client.force_login(user)
+
+    response = client.get(
+        reverse(
+            "candidates:candidate-document-download",
+            args=[organization.slug, candidate.pk, document.pk],
+        ),
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert response.redirect_chain
+    assert "failed its integrity check" in response.content.decode()
+    assert not getattr(response, "streaming", False)
 
 
 @pytest.mark.parametrize("route_name", ["candidate-detail", "candidate-cv-upload"])

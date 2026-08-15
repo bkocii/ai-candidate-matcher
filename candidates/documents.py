@@ -1,15 +1,19 @@
 import hashlib
+import stat
+import unicodedata
 import zipfile
 from dataclasses import dataclass
 from datetime import date
 from io import BytesIO
 from pathlib import PurePosixPath
+from xml.etree import ElementTree
 
 from django.core.files.base import ContentFile
 from django.db import transaction
 from django.utils import timezone
 from docx import Document as DocxDocument
 from pypdf import PdfReader
+from pypdf.generic import ArrayObject, DictionaryObject, IndirectObject
 
 from accounts.models import User
 from candidates.models import Candidate, CandidateDocument
@@ -22,6 +26,8 @@ DEFAULT_MAX_DOCX_EXPANDED_BYTES = 50 * 1024 * 1024
 DEFAULT_MAX_DOCX_ENTRY_BYTES = 20 * 1024 * 1024
 DEFAULT_MAX_EXTRACTED_CHARACTERS = 1_000_000
 MAX_DOCX_COMPRESSION_RATIO = 1_000
+MAX_PDF_OBJECTS = 25_000
+MAX_PDF_OBJECT_DEPTH = 100
 
 PDF_CONTENT_TYPE = "application/pdf"
 DOCX_CONTENT_TYPE = (
@@ -43,6 +49,15 @@ class CandidateDocumentDuplicateError(CandidateDocumentUploadError):
     """The organization already stores the exact document bytes."""
 
 
+class CandidateDocumentDeliveryError(ValueError):
+    """A safe, recruiter-visible private document delivery failure."""
+
+    def __init__(self, code: str, public_message: str):
+        self.code = code
+        self.public_message = public_message
+        super().__init__(public_message)
+
+
 @dataclass(frozen=True)
 class ExtractedCV:
     text: str
@@ -50,9 +65,18 @@ class ExtractedCV:
     extension: str
 
 
+@dataclass(frozen=True)
+class PrivateCandidateDocument:
+    content: bytes
+    filename: str
+    content_type: str
+
+
 def _safe_original_filename(filename: str) -> str:
     cleaned = filename.replace("\\", "/").rsplit("/", maxsplit=1)[-1].strip()
-    if not cleaned or any(ord(character) < 32 for character in cleaned):
+    if not cleaned or any(
+        unicodedata.category(character) in {"Cc", "Cf"} for character in cleaned
+    ):
         raise CandidateDocumentUploadError(
             "invalid_filename",
             "The uploaded document must have a valid filename.",
@@ -65,8 +89,91 @@ def _safe_original_filename(filename: str) -> str:
     return cleaned
 
 
+def _validate_pdf_object_graph(reader: PdfReader) -> None:
+    """Reject executable or embedded PDF features without blocking ordinary links."""
+    stack: list[tuple[object, int]] = [(reader.trailer, 0)]
+    seen_indirect: set[tuple[int, int]] = set()
+    seen_containers: set[int] = set()
+    visited = 0
+
+    while stack:
+        value, depth = stack.pop()
+        if depth > MAX_PDF_OBJECT_DEPTH:
+            raise CandidateDocumentUploadError(
+                "pdf_structure_too_complex",
+                "The PDF structure exceeds the supported safety limit.",
+            )
+
+        if isinstance(value, IndirectObject):
+            object_key = (value.idnum, value.generation)
+            if object_key in seen_indirect:
+                continue
+            seen_indirect.add(object_key)
+            value = value.get_object()
+
+        if not isinstance(value, (DictionaryObject, ArrayObject)):
+            continue
+
+        container_id = id(value)
+        if container_id in seen_containers:
+            continue
+        seen_containers.add(container_id)
+        visited += 1
+        if visited > MAX_PDF_OBJECTS:
+            raise CandidateDocumentUploadError(
+                "pdf_structure_too_complex",
+                "The PDF structure exceeds the supported safety limit.",
+            )
+
+        if isinstance(value, DictionaryObject):
+            names = {str(key) for key in value}
+            if names.intersection({"/JS", "/JavaScript", "/EmbeddedFiles", "/EF"}):
+                raise CandidateDocumentUploadError(
+                    "unsafe_pdf_content",
+                    "PDF scripts, embedded files, and launch actions are not "
+                    "supported.",
+                )
+            if str(value.get("/S", "")) in {
+                "/JavaScript",
+                "/Launch",
+                "/GoToR",
+                "/GoToE",
+                "/ImportData",
+                "/SubmitForm",
+            }:
+                raise CandidateDocumentUploadError(
+                    "unsafe_pdf_content",
+                    "PDF scripts, embedded files, and launch actions are not "
+                    "supported.",
+                )
+            if str(value.get("/Type", "")) == "/EmbeddedFile" or str(
+                value.get("/Subtype", "")
+            ) in {
+                "/FileAttachment",
+                "/RichMedia",
+                "/Movie",
+                "/Sound",
+            }:
+                raise CandidateDocumentUploadError(
+                    "unsafe_pdf_content",
+                    "PDF scripts, embedded files, and launch actions are not "
+                    "supported.",
+                )
+            stack.extend((item, depth + 1) for item in value.values())
+        else:
+            stack.extend((item, depth + 1) for item in value)
+
+
 def _read_bounded(uploaded_file, max_bytes: int) -> bytes:
-    raw = uploaded_file.read(max_bytes + 1)
+    chunks: list[bytes] = []
+    total = 0
+    while total <= max_bytes:
+        chunk = uploaded_file.read(max_bytes + 1 - total)
+        if not chunk:
+            break
+        chunks.append(chunk)
+        total += len(chunk)
+    raw = b"".join(chunks)
     if not raw:
         raise CandidateDocumentUploadError(
             "empty_file",
@@ -121,6 +228,7 @@ def _extract_pdf_text(
                 "too_many_pdf_pages",
                 f"The PDF exceeds the {max_pages}-page limit.",
             )
+        _validate_pdf_object_graph(reader)
 
         parts: list[str] = []
         character_count = 0
@@ -167,6 +275,14 @@ def _validate_docx_archive(
                 )
 
             names = {entry.filename for entry in entries}
+            normalized_names = [
+                entry.filename.replace("\\", "/").casefold() for entry in entries
+            ]
+            if len(normalized_names) != len(set(normalized_names)):
+                raise CandidateDocumentUploadError(
+                    "duplicate_docx_entry",
+                    "The DOCX package contains duplicate internal files.",
+                )
             required = {"[Content_Types].xml", "word/document.xml"}
             if not required.issubset(names):
                 raise CandidateDocumentUploadError(
@@ -178,10 +294,25 @@ def _validate_docx_archive(
             for entry in entries:
                 normalized_name = entry.filename.replace("\\", "/")
                 path = PurePosixPath(normalized_name)
-                if path.is_absolute() or ".." in path.parts:
+                unix_mode = (entry.external_attr >> 16) & 0xFFFF
+                if (
+                    normalized_name != entry.filename
+                    or path.is_absolute()
+                    or ".." in path.parts
+                    or (path.parts and path.parts[0].endswith(":"))
+                    or stat.S_ISLNK(unix_mode)
+                ):
                     raise CandidateDocumentUploadError(
                         "unsafe_docx_path",
                         "The DOCX package contains an unsafe internal path.",
+                    )
+                if normalized_name.casefold().startswith(
+                    ("word/activex/", "word/embeddings/")
+                ):
+                    raise CandidateDocumentUploadError(
+                        "unsafe_docx_content",
+                        "Embedded objects and active document content are not "
+                        "supported.",
                     )
                 if entry.flag_bits & 0x1:
                     raise CandidateDocumentUploadError(
@@ -230,6 +361,38 @@ def _validate_docx_archive(
                         "unsafe_docx_xml",
                         "The DOCX package contains unsupported XML declarations.",
                     )
+                if lowered_name.endswith(".rels"):
+                    try:
+                        relationships = ElementTree.fromstring(xml_content)
+                    except ElementTree.ParseError as error:
+                        raise CandidateDocumentUploadError(
+                            "invalid_docx_relationships",
+                            "The DOCX package contains malformed relationships.",
+                        ) from error
+                    for relationship in relationships:
+                        relationship_type = relationship.attrib.get(
+                            "Type", ""
+                        ).casefold()
+                        target_mode = relationship.attrib.get(
+                            "TargetMode", ""
+                        ).casefold()
+                        if relationship_type.endswith(
+                            (
+                                "/attachedtemplate",
+                                "/oleobject",
+                                "/package",
+                                "/control",
+                                "/afchunk",
+                            )
+                        ) or (
+                            target_mode == "external"
+                            and not relationship_type.endswith("/hyperlink")
+                        ):
+                            raise CandidateDocumentUploadError(
+                                "unsafe_docx_relationship",
+                                "The DOCX package contains an unsafe external or "
+                                "embedded relationship.",
+                            )
     except CandidateDocumentUploadError:
         raise
     except Exception as error:
@@ -333,18 +496,6 @@ def upload_candidate_cv(
         declared_content_type=getattr(uploaded_file, "content_type", ""),
     )
     digest = hashlib.sha256(raw).hexdigest()
-    duplicate = (
-        CandidateDocument.objects.for_organization(candidate.organization)
-        .filter(sha256=digest, deleted_at__isnull=True)
-        .select_related("candidate")
-        .first()
-    )
-    if duplicate:
-        raise CandidateDocumentDuplicateError(
-            "duplicate_document",
-            "This exact document is already stored for "
-            f"{duplicate.candidate.full_name}.",
-        )
 
     document = CandidateDocument(
         candidate=candidate,
@@ -363,6 +514,32 @@ def upload_candidate_cv(
 
     try:
         with transaction.atomic():
+            from organizations.models import Organization
+
+            Organization.objects.select_for_update().get(pk=candidate.organization_id)
+            locked_candidate = Candidate.objects.select_for_update().get(
+                pk=candidate.pk
+            )
+            if locked_candidate.status == Candidate.Status.DELETED:
+                raise CandidateDocumentUploadError(
+                    "candidate_unavailable",
+                    "A CV cannot be uploaded for a deleted candidate.",
+                )
+            duplicate = (
+                CandidateDocument.objects.for_organization(
+                    locked_candidate.organization
+                )
+                .filter(sha256=digest, deleted_at__isnull=True)
+                .select_related("candidate")
+                .first()
+            )
+            if duplicate:
+                raise CandidateDocumentDuplicateError(
+                    "duplicate_document",
+                    "This exact document is already stored for "
+                    f"{duplicate.candidate.full_name}.",
+                )
+            document.candidate = locked_candidate
             document.full_clean()
             document.save()
     except Exception:
@@ -372,3 +549,72 @@ def upload_candidate_cv(
         raise
 
     return document
+
+
+def load_private_candidate_document(
+    *,
+    document: CandidateDocument,
+    user: User,
+    max_bytes: int = DEFAULT_MAX_DOCUMENT_BYTES,
+) -> PrivateCandidateDocument:
+    """Authorize and load one validated private document without exposing its key."""
+    require_organization_object_access(user, document)
+    if (
+        document.deleted_at is not None
+        or document.candidate.status == Candidate.Status.DELETED
+    ):
+        raise CandidateDocumentDeliveryError(
+            "document_unavailable",
+            "This private document is no longer available.",
+        )
+    if document.extraction_status != CandidateDocument.ExtractionStatus.SUCCEEDED:
+        raise CandidateDocumentDeliveryError(
+            "document_unavailable",
+            "This private document is not available for download.",
+        )
+    if (
+        document.document_type != CandidateDocument.DocumentType.CV
+        or document.content_type not in {PDF_CONTENT_TYPE, DOCX_CONTENT_TYPE}
+    ):
+        raise CandidateDocumentDeliveryError(
+            "invalid_document_metadata",
+            "This private document cannot be delivered safely.",
+        )
+
+    try:
+        filename = _safe_original_filename(document.original_filename)
+    except CandidateDocumentUploadError as error:
+        raise CandidateDocumentDeliveryError(
+            "invalid_document_metadata",
+            "This private document cannot be delivered safely.",
+        ) from error
+    try:
+        with document.file.storage.open(document.file.name, "rb") as stored_file:
+            content = _read_bounded(stored_file, max_bytes)
+    except CandidateDocumentUploadError as error:
+        raise CandidateDocumentDeliveryError(
+            "document_integrity_failed",
+            "This private document failed its integrity check and was not delivered.",
+        ) from error
+    except (OSError, ValueError) as error:
+        raise CandidateDocumentDeliveryError(
+            "document_unavailable",
+            "This private document is temporarily unavailable.",
+        ) from error
+
+    if (
+        len(content) > max_bytes
+        or document.size_bytes != len(content)
+        or not document.sha256
+        or hashlib.sha256(content).hexdigest() != document.sha256
+    ):
+        raise CandidateDocumentDeliveryError(
+            "document_integrity_failed",
+            "This private document failed its integrity check and was not delivered.",
+        )
+
+    return PrivateCandidateDocument(
+        content=content,
+        filename=filename,
+        content_type=document.content_type,
+    )

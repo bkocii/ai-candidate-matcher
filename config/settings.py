@@ -189,8 +189,8 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
-# Candidate documents are private application data. No URL route serves this
-# directory; controlled delivery is introduced in PROD-001.
+# Candidate documents are private application data. No public media URL serves
+# this directory; PROD-001 delivery goes through an authorized Django view.
 MEDIA_ROOT = BASE_DIR / "media"
 
 # Default primary key field type

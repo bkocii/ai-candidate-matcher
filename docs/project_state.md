@@ -12,10 +12,9 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 ## Current milestone
 
-Sprint 5 — Recruiter review and outreach — is complete.
+Sprint 6 — Production safeguards and observability — is in progress.
 
-Status: `REV-001`, `REV-002`, `OUT-001`, and `OUT-002` are complete; `PROD-001`
-is the next approved task.
+Status: `PROD-001` is complete; `PROD-002` is the next approved task.
 
 ## Decisions made
 
@@ -173,7 +172,8 @@ is the next approved task.
 - Added organization-local duplicate-document reporting through SHA-256 without
   revealing or blocking identical files belonging to another organization.
 - Kept stored bytes and extracted CV text out of recruiter-facing HTML and added
-  no file-delivery route; hardened private delivery remains owned by `PROD-001`.
+  no file-delivery route at the `DATA-004` milestone; hardened private delivery
+  was completed later in `PROD-001`.
 - Added `pypdf==6.1.1` and `python-docx==1.2.0` as application dependencies. The
   toolkit loader hypothesis was evaluated as app-owned rather than a toolkit gap.
 
@@ -602,17 +602,42 @@ is the next approved task.
   manual browser coverage. No recipient, email/ATS integration, provider send,
   automatic outreach, or new AI request was added.
 
+### `PROD-001 — Private file delivery and upload hardening`
+
+- Added an authenticated organization-scoped download for stored candidate CVs.
+  The view resolves the organization, active candidate, and exact document
+  relationship before a service repeats organization-object authorization.
+- Loads at most the existing 10 MB bound and verifies the saved byte length and
+  SHA-256 before returning anything. Missing, changed, deleted, unsuccessful, or
+  invalid-metadata documents receive only a bounded safe failure.
+- Returns the validated original basename and content type as an attachment with
+  private/no-store caching, no-sniff, sandbox, same-origin resource, no-referrer,
+  and no-index headers. Neither opaque storage keys nor extracted CV text are
+  included in the route, page, headers, or error messages.
+- Hardened upload filenames against Unicode control/format spoofing. PDF parsing
+  now rejects scripts, launch/external-file actions, submissions/import actions,
+  rich media, and embedded files while retaining ordinary links.
+- Hardened DOCX validation against case-insensitive duplicate entries, symlinks,
+  backslash/drive-style paths, embedded/active objects, malformed relationships,
+  and unsafe external package relationships. Ordinary hyperlink relationships
+  remain supported.
+- Serialized the final duplicate-hash check and save with organization and
+  candidate row locks, and rechecked deleted-candidate state before persistence.
+  Equal bytes remain allowed across separate organizations.
+- Added focused service, parser, tenant-isolation, route, response-header,
+  integrity, and recruiter-browser coverage. No AI/toolkit, audit-event,
+  retention scheduler, background task, or observability behavior changed.
+
 ## Verification
 
-Final corrective evidence-grounding and skill-completeness verification completed
-on 2026-08-15:
+`PROD-001` verification completed on 2026-08-15:
 
-- Focused candidate-profile and safe-usage regression set: `35 passed`.
-- Complete `python scripts/check.py` quality gate: `395 passed`.
+- Focused private-document regression set: `32 passed`.
+- Complete `python scripts/check.py` quality gate: `405 passed`.
 - Django system and deploy checks passed with no issues.
-- Migration plan and drift checks reported no operations or model changes. This
-  corrective pass adds no migration; `outreach.0002_outreach_workflow` remains
-  the latest project migration.
+- Migration plan and drift checks reported no operations or model changes.
+  `PROD-001` adds no migration; `outreach.0002_outreach_workflow` remains the
+  latest project migration.
 - Ruff lint passed and all `142` files were already formatted.
 - Dependency check confirmed all `32` installed packages are compatible.
 - Migration checks and the complete gate were repeated successfully from a clean
@@ -631,8 +656,9 @@ candidate-profile confirmation publishes grounded matching facts. Candidate
 records can also be manually created, imported, and given
 validated PDF/DOCX CVs through the organization workspace. Recruiters can create
 vacancies, manually structure and confirm their requirements, and preserve
-corrections as immutable numbered history. Scanned-image CVs are not supported,
-and stored document bytes have no delivery route before `PROD-001`. Recruiters
+corrections as immutable numbered history. Scanned-image CVs are not supported.
+Stored document bytes are available only through the integrity-checked,
+authenticated private attachment route completed in `PROD-001`. Recruiters
 can manage vacancy status through the normal organization workspace after a
 requirements version is confirmed. Recruiters can also delete vacancies and
 candidates through explicit confirmation pages; scheduled retention enforcement,
@@ -660,4 +686,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`PROD-001 — Add private file-delivery controls and upload hardening.`
+`PROD-002 — Add audit views, retention/deletion workflow, and data minimization checks.`

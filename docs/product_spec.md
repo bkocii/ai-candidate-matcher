@@ -43,7 +43,8 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - One organization with multiple recruiter accounts.
 - Optional client companies for agency use.
 - Candidate creation and CSV import.
-- PDF and DOCX CV upload, subject to implementation feasibility and safe text extraction.
+- Hardened PDF and DOCX CV upload, safe text extraction, and authorized private
+  attachment delivery.
 - Vacancy creation from pasted text.
 - Recruiter confirmation of extracted vacancy requirements.
 - Hard filters for explicit requirements.
