@@ -275,6 +275,63 @@ class CandidateProfileExtraction(BaseModel):
 class CandidateProfileExtractionResult:
     profile: CandidateProfile
     metadata: AIGatewayMetadata
+    evidence_repair_used: bool = False
+
+
+@dataclass(frozen=True)
+class CandidateProfileEvidenceIssue:
+    """One privacy-safe location where deterministic grounding failed."""
+
+    label: str
+    reason: Literal["evidence_not_in_source", "fact_not_in_evidence"]
+
+
+class CandidateProfileEvidenceError(ValidationError):
+    """Evidence failure carrying field locations but no CV or provider text."""
+
+    def __init__(
+        self,
+        issues: tuple[CandidateProfileEvidenceIssue, ...],
+        *,
+        after_repair: bool = False,
+    ) -> None:
+        if not issues:
+            raise ValueError("At least one evidence issue is required.")
+        self.issues = issues
+        self.after_repair = after_repair
+        labels = list(dict.fromkeys(issue.label for issue in issues))
+        visible_labels = labels[:3]
+        areas = ", ".join(visible_labels)
+        if len(labels) > len(visible_labels):
+            areas = f"{areas}, and {len(labels) - len(visible_labels)} more"
+
+        if after_repair:
+            message = (
+                "The corrected AI profile still contained unsupported source "
+                "evidence after one automatic correction attempt "
+                f"(affected area: {areas}). No profile was saved."
+            )
+        elif len(issues) == 1:
+            issue = issues[0]
+            if issue.reason == "evidence_not_in_source":
+                message = (
+                    f"The AI profile's {issue.label} evidence is not present in "
+                    "the source CV. No profile was saved."
+                )
+            else:
+                message = (
+                    f"The AI profile's {issue.label} is not supported by its "
+                    "source excerpt. No profile was saved."
+                )
+        else:
+            message = (
+                "The AI profile contained unsupported source evidence "
+                f"(affected areas: {areas}). No profile was saved."
+            )
+        super().__init__(message)
+
+    def after_automatic_repair(self) -> CandidateProfileEvidenceError:
+        return type(self)(self.issues, after_repair=True)
 
 
 def _replace_known_value(text: str, value: str) -> str:
@@ -320,6 +377,20 @@ from the supplied source.
 When location, work mode, employment-type preferences, or availability is
 recorded, its corresponding evidence field must contain a source excerpt too.
 
+Skill completeness rules:
+- Inspect the entire source, including profile summaries and experience text; do
+  not limit skill extraction to a section labelled Skills or Technologies.
+- Include each distinct job-relevant technology, tool, method, or competency that
+  the source explicitly names. Use the shortest meaningful skill name that still
+  appears verbatim inside its evidence excerpt.
+- Keep separately stated related facts separate. For example, when the source
+  explicitly states both "pytest" and "automated testing", include both. Do not
+  infer "automated testing" from pytest alone or infer an unnamed broader skill
+  from a tool.
+- Before responding, rescan the complete source for explicit job-relevant skills
+  omitted from the draft output. Do not add anything that requires a synonym,
+  implication, or outside knowledge.
+
 Privacy and safety rules:
 - Do not output a name, email, phone number, URL, street address, photograph, or
   other contact/identity data.
@@ -344,6 +415,33 @@ The JSON string below is the complete redacted source value:
 </candidate_cv_source_json>"""
 
 
+def build_candidate_profile_evidence_repair_prompt(
+    *,
+    sanitized_cv_text: str,
+    issues: tuple[CandidateProfileEvidenceIssue, ...],
+) -> str:
+    """Request one complete replacement without returning failed private output."""
+    labels = list(dict.fromkeys(issue.label for issue in issues))
+    issue_lines = "\n".join(f"- {label}" for label in labels)
+    return f"""A previous schema-valid candidate-profile extraction failed the
+application's deterministic evidence checks in these areas:
+{issue_lines}
+
+Return one complete replacement profile. Start again from the supplied redacted
+source. Every evidence value must be a short verbatim, contiguous excerpt copied
+from that source. Do not paraphrase, summarize, omit words inside a quote, join
+separate passages, or add labels that are absent from the source. Every returned
+skill, job title, employer, period, language, proficiency, qualification,
+institution, certification, issuer, location, preference, and availability value
+must also appear explicitly inside its own evidence excerpt. Omit a fact or mark
+it ambiguous when the source cannot satisfy both checks. Do not discuss the
+failed output or add commentary.
+
+This is the only automatic evidence-correction attempt.
+
+{build_candidate_profile_prompt(sanitized_cv_text)}"""
+
+
 def _normalized_evidence(value: str) -> str:
     normalized = unicodedata.normalize("NFKC", value)
     normalized = re.sub(r"[\u2010-\u2015\u2212]", "-", normalized)
@@ -358,33 +456,132 @@ def _normalized_fact(value: str) -> str:
     return " ".join(tokens).casefold()
 
 
-def _require_fact_in_evidence(*, fact: str, evidence: str, label: str) -> None:
-    if fact and _normalized_fact(fact) not in _normalized_fact(evidence):
-        raise ValidationError(
-            f"The AI profile's {label} is not supported by its source excerpt. "
-            "No profile was saved."
-        )
-
-
 def _evidence_values(output: CandidateProfileExtraction):
     groups = (
-        output.skills,
-        output.employment_history,
-        output.languages,
-        output.education,
-        output.certifications,
+        ("skill item", output.skills),
+        ("employment-history item", output.employment_history),
+        ("language item", output.languages),
+        ("education item", output.education),
+        ("certification item", output.certifications),
     )
-    for group in groups:
-        for item in group:
-            yield item.evidence
+    for group_label, group in groups:
+        for index, item in enumerate(group, start=1):
+            yield f"{group_label} {index}", item.evidence
     scalar_evidence = (
-        output.relevant_experience_summary_evidence,
-        output.location_evidence,
-        output.work_mode_preference_evidence,
-        output.employment_type_preferences_evidence,
-        output.availability_evidence,
+        (
+            "relevant-experience summary",
+            output.relevant_experience_summary_evidence,
+        ),
+        ("location", output.location_evidence),
+        ("work-mode preference", output.work_mode_preference_evidence),
+        (
+            "employment-type preferences",
+            output.employment_type_preferences_evidence,
+        ),
+        ("availability", output.availability_evidence),
     )
-    yield from (value for value in scalar_evidence if value)
+    yield from ((label, evidence) for label, evidence in scalar_evidence if evidence)
+
+
+def _profile_evidence_issues(
+    *,
+    output: CandidateProfileExtraction,
+    sanitized_source: str,
+) -> tuple[CandidateProfileEvidenceIssue, ...]:
+    issues: list[CandidateProfileEvidenceIssue] = []
+    normalized_source = _normalized_evidence(sanitized_source)
+    for label, evidence in _evidence_values(output):
+        normalized_evidence = _normalized_evidence(evidence)
+        if not normalized_evidence or normalized_evidence not in normalized_source:
+            issues.append(
+                CandidateProfileEvidenceIssue(
+                    label=label,
+                    reason="evidence_not_in_source",
+                )
+            )
+
+    def check_fact(*, label: str, fact: str, evidence: str) -> None:
+        if fact and _normalized_fact(fact) not in _normalized_fact(evidence):
+            issues.append(
+                CandidateProfileEvidenceIssue(
+                    label=label,
+                    reason="fact_not_in_evidence",
+                )
+            )
+
+    for index, item in enumerate(output.skills, start=1):
+        check_fact(
+            label=f"skill item {index}",
+            fact=item.name,
+            evidence=item.evidence,
+        )
+    for index, item in enumerate(output.employment_history, start=1):
+        for field_label, fact in (
+            ("job title", item.job_title),
+            ("employer", item.employer),
+            ("period", item.period),
+        ):
+            check_fact(
+                label=f"employment-history item {index} {field_label}",
+                fact=fact,
+                evidence=item.evidence,
+            )
+    for index, item in enumerate(output.languages, start=1):
+        check_fact(
+            label=f"language item {index}",
+            fact=item.language,
+            evidence=item.evidence,
+        )
+        check_fact(
+            label=f"language item {index} proficiency",
+            fact=item.proficiency,
+            evidence=item.evidence,
+        )
+    for index, item in enumerate(output.education, start=1):
+        check_fact(
+            label=f"education item {index} qualification",
+            fact=item.qualification,
+            evidence=item.evidence,
+        )
+        check_fact(
+            label=f"education item {index} institution",
+            fact=item.institution,
+            evidence=item.evidence,
+        )
+    for index, item in enumerate(output.certifications, start=1):
+        check_fact(
+            label=f"certification item {index}",
+            fact=item.name,
+            evidence=item.evidence,
+        )
+        check_fact(
+            label=f"certification item {index} issuer",
+            fact=item.issuer,
+            evidence=item.evidence,
+        )
+    check_fact(
+        label="location",
+        fact=output.location,
+        evidence=output.location_evidence,
+    )
+    if output.work_mode_preference != "unknown":
+        check_fact(
+            label="work-mode preference",
+            fact=output.work_mode_preference,
+            evidence=output.work_mode_preference_evidence,
+        )
+    for preference in output.employment_type_preferences:
+        check_fact(
+            label="employment-type preferences",
+            fact=preference,
+            evidence=output.employment_type_preferences_evidence,
+        )
+    check_fact(
+        label="availability",
+        fact=output.availability,
+        evidence=output.availability_evidence,
+    )
+    return tuple(dict.fromkeys(issues))
 
 
 def validate_profile_evidence(
@@ -392,83 +589,12 @@ def validate_profile_evidence(
     output: CandidateProfileExtraction,
     sanitized_source: str,
 ) -> None:
-    normalized_source = _normalized_evidence(sanitized_source)
-    for evidence in _evidence_values(output):
-        normalized_evidence = _normalized_evidence(evidence)
-        if not normalized_evidence or normalized_evidence not in normalized_source:
-            raise ValidationError(
-                "The AI profile contained evidence that is not present in the "
-                "source CV. No profile was saved."
-            )
-
-    for item in output.skills:
-        _require_fact_in_evidence(
-            fact=item.name,
-            evidence=item.evidence,
-            label="skill",
-        )
-    for item in output.employment_history:
-        for label, fact in (
-            ("employment job title", item.job_title),
-            ("employment employer", item.employer),
-            ("employment period", item.period),
-        ):
-            _require_fact_in_evidence(fact=fact, evidence=item.evidence, label=label)
-    for item in output.languages:
-        _require_fact_in_evidence(
-            fact=item.language,
-            evidence=item.evidence,
-            label="language",
-        )
-        _require_fact_in_evidence(
-            fact=item.proficiency,
-            evidence=item.evidence,
-            label="language proficiency",
-        )
-    for item in output.education:
-        _require_fact_in_evidence(
-            fact=item.qualification,
-            evidence=item.evidence,
-            label="education qualification",
-        )
-        _require_fact_in_evidence(
-            fact=item.institution,
-            evidence=item.evidence,
-            label="education institution",
-        )
-    for item in output.certifications:
-        _require_fact_in_evidence(
-            fact=item.name,
-            evidence=item.evidence,
-            label="certification",
-        )
-        _require_fact_in_evidence(
-            fact=item.issuer,
-            evidence=item.evidence,
-            label="certification issuer",
-        )
-    _require_fact_in_evidence(
-        fact=output.location,
-        evidence=output.location_evidence,
-        label="location",
+    issues = _profile_evidence_issues(
+        output=output,
+        sanitized_source=sanitized_source,
     )
-    if output.work_mode_preference != "unknown":
-        _require_fact_in_evidence(
-            fact=output.work_mode_preference,
-            evidence=output.work_mode_preference_evidence,
-            label="work-mode preference",
-        )
-    for preference in output.employment_type_preferences:
-        _require_fact_in_evidence(
-            fact=preference,
-            evidence=output.employment_type_preferences_evidence,
-            label="employment-type preference",
-        )
-    _require_fact_in_evidence(
-        fact=output.availability,
-        evidence=output.availability_evidence,
-        label="availability",
-    )
+    if issues:
+        raise CandidateProfileEvidenceError(issues)
 
 
 def _source_text_sha256(value: str) -> str:
@@ -545,6 +671,7 @@ def extract_candidate_profile(
         target_id=source_document.pk,
     )
     gateway_result: AIGatewayResult[CandidateProfileExtraction] | None = None
+    evidence_repair_used = False
     try:
         active_gateway = gateway if gateway is not None else get_ai_gateway()
         gateway_result = active_gateway.request_structured(
@@ -557,11 +684,67 @@ def extract_candidate_profile(
                 "excluded_sensitive_content_detected": sensitive_content_redacted,
             }
         )
+    except (AIGatewayError, ValidationError) as error:
+        complete_ai_usage_failure(
+            event=usage_event,
+            error=error,
+            metadata=gateway_result.metadata if gateway_result is not None else None,
+        )
+        raise
+
+    try:
         validate_profile_evidence(
             output=output,
             sanitized_source=sanitized_source,
         )
+    except CandidateProfileEvidenceError as evidence_error:
+        complete_ai_usage_failure(
+            event=usage_event,
+            error=evidence_error,
+            metadata=gateway_result.metadata,
+        )
+        evidence_repair_used = True
+        usage_event = start_ai_usage_event(
+            organization=source_document.organization,
+            actor=user,
+            workflow=AIUsageEvent.Workflow.CANDIDATE_PROFILE,
+            target_type=AIUsageEvent.ObjectType.CANDIDATE_DOCUMENT,
+            target_id=source_document.pk,
+        )
+        gateway_result = None
+        try:
+            gateway_result = active_gateway.request_structured(
+                prompt=build_candidate_profile_evidence_repair_prompt(
+                    sanitized_cv_text=sanitized_source,
+                    issues=evidence_error.issues,
+                ),
+                response_type=CandidateProfileExtraction,
+            )
+            output = gateway_result.data.model_copy(
+                update={
+                    "excluded_sensitive_content_detected": (sensitive_content_redacted),
+                }
+            )
+            validate_profile_evidence(
+                output=output,
+                sanitized_source=sanitized_source,
+            )
+        except (AIGatewayError, ValidationError) as repair_error:
+            public_error = (
+                repair_error.after_automatic_repair()
+                if isinstance(repair_error, CandidateProfileEvidenceError)
+                else repair_error
+            )
+            complete_ai_usage_failure(
+                event=usage_event,
+                error=public_error,
+                metadata=(
+                    gateway_result.metadata if gateway_result is not None else None
+                ),
+            )
+            raise public_error from None
 
+    try:
         with transaction.atomic():
             locked_document = (
                 CandidateDocument.objects.select_for_update()
@@ -610,17 +793,18 @@ def extract_candidate_profile(
                 result_type=AIUsageEvent.ObjectType.CANDIDATE_PROFILE,
                 result_id=profile.pk,
             )
-    except (AIGatewayError, ValidationError) as error:
+    except ValidationError as error:
         complete_ai_usage_failure(
             event=usage_event,
             error=error,
-            metadata=gateway_result.metadata if gateway_result is not None else None,
+            metadata=gateway_result.metadata,
         )
         raise
 
     return CandidateProfileExtractionResult(
         profile=profile,
         metadata=gateway_result.metadata,
+        evidence_repair_used=evidence_repair_used,
     )
 
 

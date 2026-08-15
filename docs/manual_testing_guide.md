@@ -545,7 +545,7 @@ Expected result:
   rejects a confirmed version.
 
 Do not use real candidate data for this vacancy-only test. The request produces a
-safe usage event as described in section 18.
+safe usage event as described in section 21.
 
 ## 16. Test AI-assisted candidate-profile extraction
 
@@ -574,6 +574,31 @@ Expected draft result:
   absent from the review page.
 - Creating the draft alone does not publish candidate skills, change deterministic
   filtering, or mark an existing shortlist stale.
+- With `synthetic-arben-testi-cv.pdf`, confirm **Automated testing** is included
+  with the profile sentence mentioning `automated testing systems`, even though
+  it is outside the Skills heading. Confirm **pytest** is also a separate skill
+  with its own exact experience excerpt.
+- A tool does not imply a broader competency. If a synthetic CV mentions only
+  `pytest` and never states automated testing, the profile must not invent an
+  **Automated testing** skill.
+
+If the first schema-valid response paraphrases an excerpt or attaches a fact to
+the wrong excerpt, the application automatically makes one correction request
+using the same redacted CV. When this occurs, the success message says that the
+source evidence was corrected automatically. Confirm that:
+
+- only the corrected, fully grounded profile becomes a draft;
+- the evidence shown is still copied from the CV rather than loosely paraphrased;
+- the failed first request and successful correction appear as separate safe AI
+  usage events; and
+- you still inspect and confirm the profile separately.
+
+The provider may return valid evidence on its first attempt, so the deterministic
+automated test for this path is:
+
+```powershell
+uv run pytest -q tests/test_candidate_ai_extraction.py
+```
 
 Select **Confirm profile** only after checking every fact against its displayed
 source excerpt.
@@ -602,11 +627,14 @@ Expected result:
 
 - A safe error appears on the candidate page without provider text, prompt,
   contact data, or raw output.
+- If the one automatic evidence correction also fails, the error identifies only
+  a safe schema area such as `skill item 1`; it exposes no fact or excerpt and
+  makes no third request.
 - No new profile version or candidate skill is created.
 - Non-CV, failed/textless, deleted, changed-during-request, and oversized source
   documents are also rejected without partial persistence.
 
-Success or bounded failure produces a safe usage event as described in section 20.
+Each actual request produces a safe usage event as described in section 21.
 
 ## 17. Test evidence-based AI match assessment
 
@@ -653,7 +681,7 @@ To test safeguards:
   versions remain intact, and no partial version is created.
 
 Safe request metadata or a bounded failure category is recorded as described in
-section 20. Background bulk assessment remains deferred to `PROD-003`.
+section 21. Background bulk assessment remains deferred to `PROD-003`.
 
 ## 18. Test the recruiter assessment review workflow
 
@@ -955,6 +983,13 @@ The current milestone is behaving correctly when all of these are true:
   exact source evidence, creates a versioned draft, and changes matching only
   after explicit confirmation. Confirmed profile facts remain inspectable,
   unknowns remain eligible for review, and bounded failure creates no profile.
+- A schema-valid profile with paraphrased or misaligned evidence receives at most
+  one automatic correction request; only a fully revalidated replacement is
+  saved, each request has a separate safe usage event, and a second failure makes
+  no third request.
+- Explicit job-relevant skills stated in profile or employment narrative are
+  extracted alongside Skills-section entries, while related tools, methods, and
+  synonyms are not inferred from one another.
 - AI match assessment is POST-only and per candidate, requires current confirmed
   inputs, preserves immutable numbered versions, resolves evidence references,
   keeps unsupported facts uncertain, and never changes the deterministic result

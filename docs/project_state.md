@@ -392,6 +392,26 @@ is the next approved task.
   provider output, match assessments, and AI request metadata are not displayed
   or persisted by this task.
 
+#### Corrective evidence-grounding and skill-completeness pass — 2026-08-15
+
+- Preserved the strict exact-excerpt and fact-to-excerpt checks after live
+  schema-valid responses paraphrased evidence or attached a skill to an excerpt
+  that did not name it.
+- Added exactly one application-owned correction request only for this grounding
+  failure. It reuses the redacted source, supplies privacy-safe schema locations,
+  excludes the failed provider output, and requires a complete replacement.
+- The replacement must pass the unchanged deterministic validator. A second
+  failure makes no third request, reports only bounded areas such as `skill item
+  1`, and creates no profile or published skill.
+- Recorded the failed first request and correction request as separate safe usage
+  events. No toolkit source/API, database model, migration, confirmation rule, or
+  matching behavior changed.
+- Strengthened skill completeness so the structured request scans profile and
+  experience narrative as well as a Skills heading. Distinct explicit facts such
+  as `pytest` and `Automated testing` are requested separately; a tool does not
+  imply an unnamed method, and every returned skill still requires exact source
+  evidence before it can be confirmed and published.
+
 ### `AI-004 — Structured evidence-based match assessments`
 
 - Added a recruiter-triggered, POST-only assessment action to each candidate on
@@ -584,17 +604,19 @@ is the next approved task.
 
 ## Verification
 
-Final `OUT-002` verification completed on 2026-08-14:
+Final corrective evidence-grounding and skill-completeness verification completed
+on 2026-08-15:
 
-- Focused outreach/review/audit regression set: `39 passed`.
-- Complete `python scripts/check.py` quality gate: `390 passed`.
+- Focused candidate-profile and safe-usage regression set: `35 passed`.
+- Complete `python scripts/check.py` quality gate: `395 passed`.
 - Django system and deploy checks passed with no issues.
-- Migration drift check reported no changes.
+- Migration plan and drift checks reported no operations or model changes. This
+  corrective pass adds no migration; `outreach.0002_outreach_workflow` remains
+  the latest project migration.
 - Ruff lint passed and all `142` files were already formatted.
 - Dependency check confirmed all `32` installed packages are compatible.
-- New migration `outreach.0002_outreach_workflow` applied successfully.
-- The complete gate and migration application were repeated successfully from a
-  clean extraction of the restricted final deliverable ZIP.
+- Migration checks and the complete gate were repeated successfully from a clean
+  extraction of the restricted final deliverable ZIP.
 
 ## Not implemented
 

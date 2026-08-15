@@ -57,6 +57,13 @@ extract a versioned candidate-profile draft from a successfully parsed CV. The
 application removes contact and sensitive prefixed lines before the request,
 requires source-verifiable evidence, keeps missing facts explicitly unknown, and
 publishes matching facts and skills only after a separate recruiter confirmation.
+If a schema-valid response paraphrases or misaligns an evidence excerpt, the app
+makes one bounded correction request against the same redacted source and still
+requires the replacement to pass every exact grounding check before saving.
+Extraction scans the complete CV for explicitly named job-relevant skills rather
+than relying only on a Skills heading. Related facts such as `pytest` and
+`Automated testing` remain separate when both are stated, and neither is inferred
+from the other.
 On a current deterministic shortlist, recruiters can request a separate,
 versioned AI match assessment for any candidate with a confirmed profile. The
 assessment evaluates every confirmed requirement, resolves model references back
@@ -64,7 +71,7 @@ to application-owned vacancy and candidate evidence, marks unsupported facts as
 uncertain, derives a red/amber/green band from its separate AI score, and leaves
 the deterministic rank and eligibility unchanged. It provides recruiter review
 focus only; it cannot approve, reject, contact, or rank a candidate.
-Every intentional AI attempt now creates a tenant-scoped usage event after its
+Every intentional AI request now creates a tenant-scoped usage event after its
 domain preconditions pass. Successful events retain only safe request ID, model,
 duration, retry, token, cost, workflow/target/result IDs, actor, and timestamps;
 failed events retain an allow-listed gateway or application-validation category.

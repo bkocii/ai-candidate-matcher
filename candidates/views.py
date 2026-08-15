@@ -116,11 +116,16 @@ def candidate_profile_extract(
             candidate_id=candidate.pk,
         )
 
-    messages.success(
-        request,
-        "AI profile draft created. Review its evidence before confirming it for "
-        "matching.",
+    success_message = (
+        "AI profile draft created after automatically correcting its source "
+        "evidence. Review every excerpt before confirming it for matching."
+        if result.evidence_repair_used
+        else (
+            "AI profile draft created. Review its evidence before confirming it "
+            "for matching."
+        )
     )
+    messages.success(request, success_message)
     return redirect(
         "candidates:candidate-profile-detail",
         organization_slug=organization.slug,

@@ -268,6 +268,21 @@ through `PROD-004`.
   evidence for every returned fact, and requires either grounded facts or an
   explicit ambiguity. A second application check normalizes whitespace and
   verifies that every evidence excerpt occurs in the redacted source.
+- The prompt requires a whole-source skill scan, including profile summaries and
+  employment narrative rather than only headings named Skills or Technologies.
+  It requests every distinctly and explicitly named job-relevant technology,
+  tool, method, or competency using source-supported wording. Related explicit
+  facts remain separate, while synonyms, umbrella skills, and tool-to-method
+  implications are not inferred.
+- If a schema-valid response fails only this application-owned grounding check,
+  the service records that request as an application-validation failure and makes
+  exactly one correction request against the same redacted source. The correction
+  prompt contains privacy-safe field locations but not the failed output, requires
+  a complete replacement with contiguous verbatim excerpts, and cannot relax the
+  deterministic validator. The corrected request has its own safe usage event.
+- A corrected response is saved only if every excerpt and fact-to-excerpt link
+  passes. A second grounding failure names only bounded schema areas, makes no
+  further request, and saves no profile or candidate skill.
 - Successful extraction creates only a new draft version. It stores validated
   structured output but never stores prompts, raw provider responses, or contact
   values. Provider, schema, authorization, stale-source, deletion, and size

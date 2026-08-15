@@ -135,6 +135,22 @@ provider output, contact data, and assessments are not stored or displayed by
 this workflow; only the separate safe AI usage ledger retains operational
 metadata.
 
+A corrective `AI-003` pass on 2026-08-15 handles schema-valid responses that
+paraphrase evidence or attach a fact to an excerpt that does not name it. The
+app records that request as a safe application-validation failure and makes
+exactly one correction request using the same redacted source plus privacy-safe
+field locations, never the failed provider output. The replacement must pass the
+unchanged exact grounding checks. A second failure names only bounded schema
+areas, saves nothing, and makes no third request. Each request has its own safe
+usage event; no migration or toolkit change is required.
+
+The same corrective pass now requires a complete-CV skill scan instead of
+favoring only a Skills heading. Explicit narrative competencies are requested
+using source-supported wording, so the synthetic Arben profile may contain both
+`pytest` and `Automated testing` when both are stated. Related tools, methods,
+synonyms, or umbrella skills are never inferred from one another. Exact evidence
+validation and separate recruiter confirmation remain unchanged.
+
 `AI-004` is complete. Recruiters can explicitly assess one candidate on a
 current deterministic shortlist when that candidate has a confirmed profile.
 The bounded structured request uses opaque IDs for confirmed requirements and
@@ -257,15 +273,17 @@ The next roadmap item is:
 
 ## Current verification
 
-Final source-tree `OUT-002` verification completed on 2026-08-14:
+Final corrective evidence-grounding and skill-completeness verification completed
+on 2026-08-15:
 
-- Focused outreach/review/audit regression set: `39 passed`.
-- Complete `python scripts/check.py` quality gate: `390 passed`.
+- Focused candidate-profile and safe-usage regression set: `35 passed`.
+- Complete `python scripts/check.py` quality gate: `395 passed`.
 - Django system/deploy checks, migration drift, Ruff lint/format (`142` files),
   and dependency compatibility (`32` packages) all passed.
-- New migration `outreach.0002_outreach_workflow` applied successfully.
-- The complete gate and migration application were repeated successfully from a
-  clean extraction of the restricted final deliverable ZIP.
+- This corrective pass adds no migration; the migration plan is empty and
+  `outreach.0002_outreach_workflow` remains the latest project migration.
+- Migration checks and the complete gate were repeated successfully from a clean
+  extraction of the restricted final deliverable ZIP.
 
 ## Immediate next action
 

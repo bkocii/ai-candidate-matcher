@@ -14,9 +14,11 @@ from ai_gateway import (
     AIGatewayUnavailableError,
 )
 from ai_gateway.testing import FakeAIGateway
+from audit.models import AIUsageEvent
 from candidates.ai_extraction import (
     MAX_PROFILE_SOURCE_CHARACTERS,
     CandidateProfileExtraction,
+    build_candidate_profile_prompt,
     confirm_candidate_profile,
     extract_candidate_profile,
     redact_candidate_contact_data,
@@ -51,6 +53,42 @@ BSc Computer Science, University of Prishtina
 Prefers remote full-time work. Available with one month notice.
 Location: Prishtina
 """
+
+ARBEN_CV_TEXT = "\n".join(
+    (
+        "Arben Testi",
+        "arben.testi@example.test | +383 44 111 222 | Prishtina",
+        "SYNTHETIC TEST FIXTURE - This document does not describe a real person.",
+        "Profile",
+        (
+            "Senior backend developer with six years of invented experience "
+            "building secure Python and Django applications, REST APIs, and "
+            "automated testing systems."
+        ),
+        "Experience",
+        "Senior Python Developer - Sample Cloud (2021-2026)",
+        (
+            "Designed Django services, PostgreSQL data models, REST APIs, and "
+            "pytest suites."
+        ),
+        (
+            "Reviewed code, improved CI pipelines, and supported containerized "
+            "deployments."
+        ),
+        "Python Developer - Fictional Tech (2019-2021)",
+        (
+            "Maintained Python applications, implemented validated CSV imports, "
+            "and documented operational procedures."
+        ),
+        "Skills",
+        "Python, Django, Django REST Framework, PostgreSQL, pytest, Git, Docker, CI/CD",
+        "Languages and education",
+        "English (professional), Albanian (native)",
+        "Synthetic BSc in Computer Science - Example University",
+        "Generated only for AI Candidate Matcher manual testing.",
+        "",
+    )
+)
 
 
 def make_workspace(*, username: str = "recruiter"):
@@ -170,6 +208,28 @@ class SuccessfulGateway(RecordingGateway):
 class FailingGateway(RecordingGateway):
     def __init__(self) -> None:
         super().__init__(error=AIGatewayUnavailableError())
+
+
+class SequenceGateway(FakeAIGateway):
+    def __init__(self, *outputs: CandidateProfileExtraction) -> None:
+        self.outputs = outputs
+        super().__init__(responder=self._next_output, metadata=metadata())
+
+    def _next_output(self, _prompt, _response_type):
+        index = len(self.calls) - 1
+        if index >= len(self.outputs):
+            raise AssertionError("The service made an unexpected extra AI request.")
+        return self.outputs[index]
+
+
+class RepairingGateway(SequenceGateway):
+    def __init__(self) -> None:
+        paraphrased = extracted_output(
+            relevant_experience_summary_evidence=(
+                "Senior Python Engineer at Northstar from 2020 to 2025."
+            )
+        )
+        super().__init__(paraphrased, extracted_output())
 
 
 def extraction_url(organization, candidate, document) -> str:
@@ -298,6 +358,212 @@ def test_fact_grounding_preserves_meaningful_skill_punctuation() -> None:
         )
 
 
+def test_prompt_extracts_explicit_skills_from_the_complete_cv() -> None:
+    output = CandidateProfileExtraction.model_validate(
+        {
+            "skills": [
+                {
+                    "name": "Automated testing",
+                    "evidence": (
+                        "building secure Python and Django applications, REST "
+                        "APIs, and automated testing systems."
+                    ),
+                },
+                {
+                    "name": "pytest",
+                    "evidence": (
+                        "Designed Django services, PostgreSQL data models, REST "
+                        "APIs, and pytest suites."
+                    ),
+                },
+            ]
+        }
+    )
+    prompt = build_candidate_profile_prompt(ARBEN_CV_TEXT)
+    normalized_prompt = " ".join(prompt.split())
+
+    validate_profile_evidence(output=output, sanitized_source=ARBEN_CV_TEXT)
+
+    assert "Inspect the entire source" in normalized_prompt
+    assert "do not limit skill extraction" in normalized_prompt
+    assert 'both "pytest" and "automated testing"' in normalized_prompt
+    assert "Do not infer" in normalized_prompt
+    assert "automated testing systems" in prompt
+
+
+def test_narrative_skill_is_published_without_inferring_it_from_pytest() -> None:
+    user, _, candidate, document = make_workspace()
+    candidate.full_name = "Arben Testi"
+    candidate.email = "arben.testi@example.test"
+    candidate.phone = "+383 44 111 222"
+    candidate.save(update_fields=("full_name", "email", "phone"))
+    document.extracted_text = ARBEN_CV_TEXT
+    document.save(update_fields=("extracted_text",))
+    explicit_output = CandidateProfileExtraction.model_validate(
+        {
+            "skills": [
+                {
+                    "name": "Automated testing",
+                    "evidence": (
+                        "building secure Python and Django applications, REST "
+                        "APIs, and automated testing systems."
+                    ),
+                },
+                {
+                    "name": "pytest",
+                    "evidence": (
+                        "Designed Django services, PostgreSQL data models, REST "
+                        "APIs, and pytest suites."
+                    ),
+                },
+            ]
+        }
+    )
+
+    gateway = RecordingGateway(output=explicit_output)
+    profile = extract_candidate_profile(
+        document=document,
+        user=user,
+        gateway=gateway,
+    ).profile
+    confirm_candidate_profile(profile=profile, user=user)
+
+    assert {skill["name"] for skill in profile.skills} == {
+        "Automated testing",
+        "pytest",
+    }
+    assert set(
+        CandidateSkill.objects.filter(candidate=candidate).values_list(
+            "skill__name",
+            flat=True,
+        )
+    ) == {"Automated testing", "pytest"}
+    assert candidate.full_name not in gateway.calls[0].prompt
+    assert candidate.email not in gateway.calls[0].prompt
+    assert candidate.phone not in gateway.calls[0].prompt
+
+    inferred_only = CandidateProfileExtraction.model_validate(
+        {
+            "skills": [
+                {
+                    "name": "Automated testing",
+                    "evidence": "Used pytest suites.",
+                }
+            ]
+        }
+    )
+    with pytest.raises(ValidationError, match="skill.*not supported"):
+        validate_profile_evidence(
+            output=inferred_only,
+            sanitized_source="Used pytest suites.",
+        )
+
+
+def arben_output(
+    *,
+    summary_evidence: str,
+    skill_evidence: str,
+) -> CandidateProfileExtraction:
+    return CandidateProfileExtraction.model_validate(
+        {
+            "relevant_experience_summary": (
+                "Senior backend developer with Python and Django experience."
+            ),
+            "relevant_experience_summary_evidence": summary_evidence,
+            "skills": [
+                {
+                    "name": "Docker",
+                    "evidence": skill_evidence,
+                    "years_experience": None,
+                }
+            ],
+            "ambiguities": ["No availability information is stated"],
+        }
+    )
+
+
+def test_service_repairs_paraphrased_and_misaligned_evidence_once() -> None:
+    user, organization, candidate, document = make_workspace()
+    candidate.full_name = "Arben Testi"
+    candidate.email = "arben.testi@example.test"
+    candidate.phone = "+383 44 111 222"
+    candidate.save(update_fields=("full_name", "email", "phone"))
+    document.extracted_text = ARBEN_CV_TEXT
+    document.save(update_fields=("extracted_text",))
+    invalid = arben_output(
+        summary_evidence=(
+            "Senior backend developer with six years of experience building "
+            "secure Python and Django applications, REST APIs, and automated "
+            "testing systems."
+        ),
+        skill_evidence="supported containerized deployments.",
+    )
+    repaired = arben_output(
+        summary_evidence=(
+            "Senior backend developer with six years of invented experience "
+            "building secure Python and Django applications, REST APIs, and "
+            "automated testing systems."
+        ),
+        skill_evidence=(
+            "Python, Django, Django REST Framework, PostgreSQL, pytest, Git, "
+            "Docker, CI/CD"
+        ),
+    )
+    gateway = SequenceGateway(invalid, repaired)
+
+    result = extract_candidate_profile(
+        document=document,
+        user=user,
+        gateway=gateway,
+    )
+
+    assert result.evidence_repair_used is True
+    assert result.profile.skills[0]["evidence"] == repaired.skills[0].evidence
+    assert len(gateway.calls) == 2
+    repair_prompt = gateway.calls[1].prompt
+    assert "only automatic evidence-correction attempt" in repair_prompt
+    assert "relevant-experience summary" in repair_prompt
+    assert "skill item 1" in repair_prompt
+    assert "six years of experience building secure Python" not in repair_prompt
+    assert candidate.full_name not in repair_prompt
+    assert candidate.email not in repair_prompt
+    assert candidate.phone not in repair_prompt
+    events = list(AIUsageEvent.objects.filter(organization=organization).order_by("id"))
+    assert [event.status for event in events] == [
+        AIUsageEvent.Status.FAILED,
+        AIUsageEvent.Status.SUCCEEDED,
+    ]
+    assert events[0].failure_stage == AIUsageEvent.FailureStage.APPLICATION
+    assert events[1].result_id == result.profile.pk
+
+
+def test_service_stops_after_one_failed_evidence_repair() -> None:
+    user, organization, _, document = make_workspace()
+    invalid = extracted_output(
+        skills=[{"name": "Go", "evidence": "Built production Go services"}]
+    )
+    gateway = SequenceGateway(invalid, invalid)
+
+    with pytest.raises(
+        ValidationError,
+        match=r"automatic correction attempt.*skill item 1",
+    ) as error:
+        extract_candidate_profile(
+            document=document,
+            user=user,
+            gateway=gateway,
+        )
+
+    assert "Built production Go services" not in error.value.messages[0]
+    assert "Go" not in error.value.messages[0]
+    assert len(gateway.calls) == 2
+    assert not CandidateProfile.objects.exists()
+    events = list(AIUsageEvent.objects.filter(organization=organization).order_by("id"))
+    assert len(events) == 2
+    assert all(event.status == AIUsageEvent.Status.FAILED for event in events)
+    assert all(event.failure_code == "ai_application_validation" for event in events)
+
+
 def test_service_creates_versioned_profile_draft_without_matching_changes() -> None:
     user, _, candidate, document = make_workspace()
     gateway = RecordingGateway()
@@ -326,6 +592,7 @@ def test_service_creates_versioned_profile_draft_without_matching_changes() -> N
     assert first.profile.excluded_sensitive_content_detected is True
     assert "Protected or sensitive" in first.profile.ambiguities[-1]
     assert first.metadata.request_id == "profile-request-123"
+    assert first.evidence_repair_used is False
     assert CandidateSkill.objects.filter(candidate=candidate).count() == 0
     prompt, response_type = gateway.calls[0]
     assert response_type is CandidateProfileExtraction
@@ -678,6 +945,27 @@ def test_recruiter_extracts_reviews_and_confirms_profile(client) -> None:
     assert confirmation.status_code == 200
     assert profile.status == CandidateProfile.Status.CONFIRMED
     assert "grounded facts and skill evidence" in confirmation.content.decode()
+
+
+@override_settings(
+    AI_GATEWAY_FACTORY="tests.test_candidate_ai_extraction.RepairingGateway"
+)
+def test_view_reports_automatic_evidence_correction(client) -> None:
+    user, organization, candidate, document = make_workspace()
+    client.force_login(user)
+
+    response = client.post(
+        extraction_url(organization, candidate, document),
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert "automatically correcting its source evidence" in response.content.decode()
+    assert CandidateProfile.objects.count() == 1
+    assert AIUsageEvent.objects.filter(status=AIUsageEvent.Status.FAILED).count() == 1
+    assert (
+        AIUsageEvent.objects.filter(status=AIUsageEvent.Status.SUCCEEDED).count() == 1
+    )
 
 
 @override_settings(

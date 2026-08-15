@@ -47,9 +47,16 @@ prefixed lines, bounds the remaining input to 60,000 characters, and requests an
 extra-forbidding `CandidateProfileExtraction`. Every returned fact must carry an
 exact excerpt that the application can find in the redacted source. A successful
 request creates a versioned draft; recruiter confirmation separately publishes
-matching facts and normalized skills. Python AI Toolkit remains unaware of
+matching facts and normalized skills. The application prompt scans the complete
+CV for explicitly named skills, including narrative sections, while keeping
+related facts separate and prohibiting synonym or tool-to-method inference. When
+a schema-valid response fails this
+domain-specific evidence check, the application may issue exactly one ordinary
+structured correction request using the same redacted source and privacy-safe
+field labels. The replacement must pass the unchanged validator, and each actual
+request receives its own usage event. Python AI Toolkit remains unaware of
 candidate models, redaction policy, tenant authorization, evidence verification,
-profile versioning, and the human-confirmation boundary.
+profile versioning, correction policy, and the human-confirmation boundary.
 
 ### Match assessment
 

@@ -101,4 +101,18 @@ failure metadata is actually needed.
 
 ## Confirmed observations
 
-None yet. Planning hypotheses must not be described as toolkit shortcomings.
+### `APP-001` — Candidate evidence correction — 2026-08-15
+
+Schema-valid candidate-profile responses can still paraphrase evidence or attach
+an exact excerpt that does not contain its claimed fact. This is a recruitment-
+specific post-schema validation failure, not a reproduced toolkit structured-
+response defect. The application keeps its exact grounding validator and makes
+one bounded correction request through the existing public gateway, with a
+separate usage event and no failed provider output in the repair prompt. No
+toolkit source, dependency, API, or retry behavior changed.
+
+The follow-up narrative-skill completeness rule is also application-owned. It
+instructs the same structured request to scan the complete CV for explicitly
+named job-relevant skills instead of favoring a Skills heading, while the
+existing exact-evidence validator prevents synonym or umbrella-skill inference.
+No generic toolkit behavior changed.
