@@ -1,7 +1,7 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`OUT-001`. Use only the synthetic files in `manual_testing/fixtures` or other
+`OUT-002`. Use only the synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
 
@@ -738,7 +738,7 @@ read-only and show the shortlist entry, exact assessment, decision version,
 choice, notes, actor, and timestamp. Candidate deletion removes that candidate's
 decision history together with the private shortlist/assessment history.
 
-## 20. Test approved-only outreach draft generation
+## 20. Test the outreach draft review workflow
 
 Return to a current latest assessment from section 19. If its latest decision is
 **Revisit later** or **Reject**, first record a new individual **Approve** decision
@@ -755,8 +755,9 @@ Expected result:
 - The resulting page shows a bounded subject and plain-text body, the candidate
   name, source decision version, generating recruiter, and timestamp.
 - The page clearly labels the result **Generated only — not approved or sent**.
-- There is no edit, final-approval, copy, export, send, email, or platform-
-  messaging action. Those controls remain `OUT-002`.
+- Editing is available, but final approval, copy, and export remain unavailable
+  until an explicitly permitted candidate source exists. There is no send,
+  email, ATS, or platform-messaging action.
 - The recruiter approval notes, candidate email/phone, raw CV, gaps,
   uncertainties, protected characteristics, prompt, and raw provider response
   were not supplied to or returned from the AI workflow. The application inserts
@@ -767,6 +768,68 @@ Expected result:
 Return to the assessment review page and select **Generate outreach draft**
 again. Expected result: version 2 is added while version 1 remains linked and
 unchanged. Both versions show their exact source decision, actor, and timestamp.
+
+### Edit without overwriting history
+
+Open the latest draft, select **Edit into new version**, change the subject and
+body, and save.
+
+Expected result:
+
+- A new numbered recruiter-edited version is created with the prior version as
+  its parent, your username, and a timestamp.
+- The generated version remains unchanged and inspectable.
+- The edited version is not finally approved, even if its parent was approved.
+- Blank values, overlong values, and unsafe control characters are rejected
+  without creating a version.
+
+### Establish contact permission and approve the exact version
+
+The synthetic candidate created earlier has **Unknown** contact permission.
+Confirm that final approval is blocked and the page explains the permission
+requirement. In Django admin, edit one of that candidate's synthetic **Candidate
+sources** and set:
+
+- Lawful basis: `Legitimate interests`
+- Consent status: `Not required` or `Granted`
+- Contact permission: `Permitted`
+- Permission notes: `Synthetic manual test permission only.`
+
+Return to the latest outreach draft, add approval notes, check the explicit
+contact-permission attestation, and select **Approve exact draft**.
+
+Expected result:
+
+- Approval binds only the exact displayed subject and body.
+- The approval records notes, your username, and a timestamp.
+- The draft is labelled approved but still **not sent**.
+- Missing notes or an unchecked attestation creates no approval.
+- Restricted or withdrawn contact permission, or withdrawn consent on any
+  candidate source, blocks approval.
+
+### Copy and export only after approval
+
+Select **Copy approved text**, paste into a local scratch editor, and confirm the
+subject and body exactly match the approved version. Select **Export approved
+text** and open the downloaded UTF-8 `.txt` file.
+
+Expected result:
+
+- Both actions are explicit POST actions and expose only the exact approved,
+  current draft.
+- The download uses a generic, non-identifying filename and a private no-store
+  response.
+- The action history records copy/export, exact draft version, your username,
+  and timestamp.
+- Nothing is sent and no recipient is selected.
+
+Edit the approved draft into another version. The new version must be
+unapproved, and the older approval must not authorize copying or exporting the
+new text. Approve the new exact version before those controls return.
+
+Finally, change the source permission to **Withdrawn**, refresh the draft page,
+and confirm copy/export is blocked. A direct POST to either action must return no
+draft text or file. Restore the synthetic permission if continuing other tests.
 
 Test the authorization and currentness guards:
 
@@ -780,10 +843,14 @@ Test the authorization and currentness guards:
 4. Remove the API key, restart, and generate from an otherwise eligible approval.
    A bounded error appears, no partial draft is created, and existing versions
    remain unchanged.
+5. After generating a draft, record a newer reject/revisit decision or change a
+   matching input. Confirm editing, final approval, copy, and export are blocked
+   while the historical draft remains inspectable.
 
-In Django admin, open **Outreach drafts** under **Outreach**. Confirm generated
-records are read-only. Deleting a disposable synthetic candidate removes that
-candidate's drafts with the private shortlist, assessment, and decision history.
+In Django admin, open **Outreach drafts**, **Outreach draft approvals**, and
+**Outreach draft actions** under **Outreach**. Confirm all records are read-only.
+Deleting a disposable synthetic candidate removes its drafts, approvals, and
+actions with the private shortlist, assessment, and decision history.
 
 ## 21. Inspect safe AI usage events
 
@@ -815,6 +882,9 @@ Expected failed event:
 Submit an invalid local action that is rejected before gateway construction—for
 example, extraction from a confirmed requirements version. Confirm that no usage
 event is created because no AI attempt occurred.
+
+Editing, final approval, copy, and export are local human actions and therefore
+must not create AI usage events.
 
 ## 22. Run the optional synthetic live gateway smoke test
 
@@ -850,8 +920,9 @@ The following are not defects at this milestone:
   read-only in Django admin.
 - No private CV download route.
 - No OCR for scanned PDFs.
-- No outreach editing, final approval, copy, export, or automatic sending; only
-  approved-current draft generation and inspection are available in `OUT-001`.
+- No automatic outreach sending, recipient selection, email/ATS/platform
+  integration, or normal-workspace contact-permission editor. Manual clipboard
+  copy and plain-text export deliberately stop before transmission.
 
 ## 24. Final acceptance checklist
 
@@ -899,8 +970,17 @@ The current milestone is behaving correctly when all of these are true:
   explicit approval while its assessment/profile/shortlist evidence remains
   current. Each immutable draft version records its source decision, human actor,
   and timestamp; the AI request excludes candidate identity/contact, CV text,
-  recruiter notes, gaps, and uncertainties. No draft can yet be edited, finally
-  approved, copied, exported, or sent.
+  recruiter notes, gaps, and uncertainties.
+- Recruiter edits append immutable versions with parent, actor, and timestamp;
+  exact final approval requires notes, explicit permission attestation, and a
+  currently permitted candidate source.
+- Only the latest exact approved draft can be copied or exported, and every
+  action records the draft, actor, and timestamp after server-side currentness
+  and permission checks.
+- A later edit, decision, assessment, profile/input change, or permission
+  withdrawal blocks use without rewriting historical records.
+- Outreach sending and recipient selection remain unavailable and separate from
+  approval, copy, and export.
 - Every actual AI attempt produces a tenant-scoped immutable usage event with
   safe success metadata or an allow-listed failure category, while rejected
   precondition-only actions produce no event and sensitive request/response data

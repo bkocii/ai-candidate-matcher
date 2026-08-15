@@ -176,6 +176,8 @@ through `PROD-004`.
 - `MatchAssessment`
 - `ReviewDecision`
 - `OutreachDraft`
+- `OutreachDraftApproval`
+- `OutreachDraftAction`
 - `AIUsageEvent`
 - `AuditEvent`
 
@@ -590,6 +592,36 @@ versions so their evidence boundary remains inspectable when inputs later change
   `OUT-001` adds no editing, final draft approval, copy/export, email/platform
   integration, or sending. Those human-controlled actions remain `OUT-002`, and
   sending remains outside the MVP.
+
+### Outreach editing, final approval, copy, and export
+
+- Generated and recruiter-edited outreach content uses one immutable
+  `OutreachDraft` version sequence per shortlist entry. Editing is a deliberate
+  recruiter action that copies the latest current draft into a new version with
+  its creation method, parent version, actor, and timestamp. It never mutates the
+  source version or carries final approval forward.
+- `OutreachDraftApproval` is an immutable one-to-one human approval of one exact
+  draft version. It requires bounded notes, an explicit contact-permission
+  attestation, the approving recruiter, and timestamp. Only the latest draft can
+  be approved, and its source recruiter approval, latest assessment, confirmed
+  profile, and shortlist inputs must still be current.
+- Final approval additionally requires at least one candidate-source record with
+  explicit permitted contact. A restricted or withdrawn contact record, or any
+  withdrawn consent record, blocks approval. The same permission/currentness
+  checks run again before every copy or export, so a later decision correction,
+  new draft, changed evidence, or permission withdrawal disables manual use while
+  preserving history.
+- `OutreachDraftAction` records each approved-draft copy or plain-text export with
+  the exact draft, action type, human actor, and timestamp. The copy endpoint
+  revalidates and records the action before returning the exact text to the
+  browser clipboard workflow. Export is POST-only, returns a private no-store
+  UTF-8 `.txt` attachment with a non-identifying filename, and records the action
+  before returning content.
+- Copy/export never selects or stores a recipient and never opens or calls an
+  email, ATS, or messaging provider. No send action or outbound integration
+  exists. Candidate deletion removes draft, final-approval, and manual-action
+  history with the candidate-specific shortlist; operator inspection remains
+  read-only in Django admin.
 
 ## Matching pipeline
 

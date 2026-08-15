@@ -12,8 +12,8 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 through Sprint 4 are complete. Sprint 5 is in progress: `REV-001`,
-`REV-002`, and `OUT-001` are complete, and `OUT-002` is next.
+Sprint 0 through Sprint 5 are complete. `OUT-002` completes the recruiter review
+and outreach milestone; `PROD-001` is next.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -91,10 +91,14 @@ confirmed profile, and shortlist inputs remain current. The AI request uses a
 candidate-name placeholder and confirmed positive match evidence, excluding
 identity/contact data, raw CV text, recruiter notes, gaps, and uncertainties.
 Every draft records its source approval, actor, and timestamp and remains
-inspectable without any edit, final-approval, copy, export, or send action.
+inspectable. Recruiter edits append immutable versions rather than overwriting
+history. Final approval binds one exact latest version with notes, contact-
+permission attestation, actor, and timestamp. Only an exact approved current
+version with explicit permitted contact can be copied or exported as plain text;
+each action is recorded. No recipient is selected and nothing is sent.
 
-The next approved task is `OUT-002 — Add editing, final approval, copy, and
-export`.
+The next approved task is `PROD-001 — Add private file-delivery controls and
+upload hardening`.
 
 ## Local setup
 
@@ -201,8 +205,10 @@ Corrections append history rather than editing it, and the pending queue updates
 without creating outreach automatically or contacting the candidate. When the
 latest decision is an approval and all evidence is current, the same review page
 offers a separate **Generate outreach draft** POST action. Generated versions are
-inspectable and actor-attributed, but editing, final approval, copy, export, and
-sending are intentionally unavailable until `OUT-002`.
+inspectable and actor-attributed. The latest current version can be edited into a
+new immutable version, then separately approved after explicit contact-permission
+checks. Only that exact approved version exposes manual copy and `.txt` export;
+both actions are actor-attributed, and sending remains unavailable.
 
 ## Production configuration
 

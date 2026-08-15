@@ -14,9 +14,8 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 4 are complete. Sprint 5 is in progress; `REV-001`,
-`REV-002`, and `OUT-001` are complete and `OUT-002` is the next approved roadmap
-task.
+Sprint 0 through Sprint 5 are complete. `REV-001`, `REV-002`, `OUT-001`, and
+`OUT-002` are complete; `PROD-001` is the next approved roadmap task.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -207,11 +206,24 @@ bounded failure. The minimized request uses a candidate-name placeholder plus
 organization-approved vacancy and positive match facts; it excludes candidate
 identity/contact data, raw CV text, recruiter notes, gaps, uncertainties, scores,
 and protected characteristics. The application substitutes the real name only
-after structured safety validation. Recruiters can inspect version history, but
-cannot yet edit, finally approve, copy, export, or send a draft. Safe outreach AI
-usage metadata is recorded without prompts or model responses, cross-organization
-routes are hidden, candidate deletion removes draft history, and Django admin is
-read-only.
+after structured safety validation. At the `OUT-001` milestone, recruiters could
+inspect version history but could not edit, approve, copy, export, or send a
+draft. Safe outreach AI usage metadata is recorded without prompts or model
+responses, cross-organization routes are hidden, candidate deletion removes
+draft history, and Django admin is read-only.
+
+`OUT-002` is complete. Recruiter edits append immutable numbered draft versions
+with parent-version provenance, actor, and timestamp rather than changing
+generated or historical text. Separate final approval binds one exact latest
+subject/body and records required notes, contact-permission attestation, actor,
+and timestamp. Approval and manual use require the source recruiter decision,
+latest assessment, confirmed profile, shortlist inputs, and draft version to
+remain current. At least one candidate source must explicitly permit contact;
+restricted/withdrawn contact or withdrawn consent blocks the workflow. Only the
+exact approved current draft exposes clipboard copy or a no-store plain-text
+export, and each action records the exact draft, actor, and timestamp. The server
+rechecks permission/currentness before returning content. No recipient is chosen,
+no provider or AI request is made by these human steps, and nothing is sent.
 
 ## Recruiter-efficiency requirement for later tasks
 
@@ -228,7 +240,7 @@ outreach generation and final draft approval remain separate actions.
 
 The next roadmap item is:
 
-`OUT-002 — Add editing, final approval, copy, and export.`
+`PROD-001 — Add private file-delivery controls and upload hardening.`
 
 ## Required instructions
 
@@ -245,20 +257,18 @@ The next roadmap item is:
 
 ## Current verification
 
-Verified on 2026-08-14 with Python 3.12.13:
+Final source-tree `OUT-002` verification completed on 2026-08-14:
 
-- Django system and warning-strict production checks passed.
-- 377 ordinary pytest tests passed; the separate live smoke test is excluded.
-- The 26 focused outreach/review/audit tests passed.
-- Ruff lint and format checks passed for 138 files.
-- All 32 installed packages passed dependency compatibility checks.
-- `python-ai-toolkit==1.0.0` imports from `.venv` site-packages.
-- No migration drift was detected. New required migrations
-  `audit.0002_outreach_usage_choices` and `outreach.0001_initial` apply
-  successfully after the existing migration history.
+- Focused outreach/review/audit regression set: `39 passed`.
+- Complete `python scripts/check.py` quality gate: `390 passed`.
+- Django system/deploy checks, migration drift, Ruff lint/format (`142` files),
+  and dependency compatibility (`32` packages) all passed.
+- New migration `outreach.0002_outreach_workflow` applied successfully.
+- The complete gate and migration application were repeated successfully from a
+  clean extraction of the restricted final deliverable ZIP.
 
 ## Immediate next action
 
-Implement only `OUT-002`: add recruiter editing, final approval of the exact
-draft, and manual copy/export. Keep sending unavailable and do not add background
-batch processing (`PROD-003`).
+Implement only `PROD-001`: add private file-delivery controls and upload
+hardening. Keep outreach sending unavailable and do not pull later retention,
+background processing, or observability work forward.

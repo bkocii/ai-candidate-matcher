@@ -83,7 +83,14 @@ notes, gaps, uncertainties, scores, and protected characteristics. After
 structured validation, the application substitutes the candidate name and saves
 an immutable actor-attributed numbered draft with safe usage metadata. The
 toolkit never sees Django outreach models and never approves or sends a message.
-Editing, final approval, copy, and export remain `OUT-002`.
+Generation itself does not edit, finally approve, copy, export, or send.
+
+`OUT-002` completes the application-owned human workflow without another AI
+request. Recruiter edits append immutable draft versions; final approval binds
+the exact subject/body after current-decision, evidence, and recorded contact-
+permission checks; copy and plain-text export are manual audited actions. These
+steps do not call Python AI Toolkit, create AI usage events, select a recipient,
+or send outreach.
 
 ## Application wrapper
 

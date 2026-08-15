@@ -1183,10 +1183,47 @@ tbody tr:last-child td {
     margin-top: 24px;
 }
 
+.outreach-permission {
+    margin-top: 24px;
+}
+
 .outreach-body {
     margin-bottom: 0;
     white-space: pre-wrap;
     line-height: 1.7;
+}
+
+.permission-list {
+    margin: 14px 0 0;
+    padding-left: 20px;
+    line-height: 1.8;
+}
+
+.outreach-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.outreach-action-buttons form {
+    margin: 0;
+}
+
+.success-callout {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
+    padding: 22px 24px;
+    border: 1px solid #9fd0bb;
+    border-radius: 16px;
+    background: #e9f7f0;
+}
+
+.success-callout p:last-child {
+    margin-bottom: 0;
 }
 
 .decision-panel .field:first-of-type ul {
@@ -1309,7 +1346,8 @@ tbody tr:last-child td {
         flex-direction: column;
     }
 
-    .stale-result-callout {
+    .stale-result-callout,
+    .success-callout {
         align-items: stretch;
         flex-direction: column;
     }

@@ -12,10 +12,10 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 ## Current milestone
 
-Sprint 5 — Recruiter review and outreach — is in progress.
+Sprint 5 — Recruiter review and outreach — is complete.
 
-Status: `REV-001`, `REV-002`, and `OUT-001` are complete; `OUT-002` is the next
-approved task.
+Status: `REV-001`, `REV-002`, `OUT-001`, and `OUT-002` are complete; `PROD-001`
+is the next approved task.
 
 ## Decisions made
 
@@ -554,25 +554,54 @@ approved task.
   privacy-minimization, immutability, candidate-deletion, route, and manual test
   coverage. Editing, final approval, copy, export, and sending remain `OUT-002`.
 
+### `OUT-002 — Editing, exact final approval, copy, and export`
+
+- Extended immutable `OutreachDraft` history with creation method and parent-
+  version provenance. Recruiter edits append a numbered version with actor and
+  timestamp; generated or prior versions are never overwritten, and approval is
+  never carried to edited content.
+- Added immutable one-to-one `OutreachDraftApproval` records for the exact latest
+  subject/body. Approval requires bounded recruiter notes, an explicit contact-
+  permission attestation, actor, and timestamp while the source approved decision,
+  assessment, confirmed profile, and shortlist remain current.
+- Required at least one explicitly permitted candidate source before final
+  approval. Restricted or withdrawn contact permission and withdrawn consent
+  block approval; permission and evidence checks repeat before every manual use.
+- Added recruiter-facing edit and final-approval workflows. Historical versions
+  remain inspectable, an approved draft can be edited only into a new unapproved
+  version, and stale/superseded decisions or drafts expose clear blockers.
+- Added manual browser clipboard copy and UTF-8 plain-text export for only the
+  exact approved current draft. The server revalidates before returning copy text
+  or export content; downloads use a private no-store response and non-identifying
+  filename.
+- Added immutable `OutreachDraftAction` copy/export history with exact draft,
+  actor, and timestamp plus read-only Django admin inspection. Candidate deletion
+  removes approval/action history with its private outreach and matching history.
+- Added tenant isolation, method safety, model immutability, exact-version,
+  permission-withdrawal, stale-decision, route, clipboard/export, deletion, and
+  manual browser coverage. No recipient, email/ATS integration, provider send,
+  automatic outreach, or new AI request was added.
+
 ## Verification
 
-Verified on 2026-08-14 with Python 3.12.13:
+Final `OUT-002` verification completed on 2026-08-14:
 
-- Focused outreach/review/audit tests: 26 passed.
-- Normal and warning-strict production Django checks: passed.
-- Migration drift check: passed with no model changes missing migrations.
-- `pytest`: 377 passed; the separate live smoke test is excluded.
-- Ruff lint and formatting: passed for 138 files.
-- Dependency compatibility: all 32 installed packages passed.
-- `python-ai-toolkit==1.0.0` remains installed from `.venv` site-packages.
-- `audit.0002_outreach_usage_choices` and `outreach.0001_initial` apply after
-  existing migrations; both are required new `OUT-001` migrations.
+- Focused outreach/review/audit regression set: `39 passed`.
+- Complete `python scripts/check.py` quality gate: `390 passed`.
+- Django system and deploy checks passed with no issues.
+- Migration drift check reported no changes.
+- Ruff lint passed and all `142` files were already formatted.
+- Dependency check confirmed all `32` installed packages are compatible.
+- New migration `outreach.0002_outreach_workflow` applied successfully.
+- The complete gate and migration application were repeated successfully from a
+  clean extraction of the restricted final deliverable ZIP.
 
 ## Not implemented
 
-Outreach draft generation and inspection are implemented for the latest explicit
-current approval. Draft editing, final approval, copy, export, and any automatic
-sending are not implemented; `OUT-002` owns the remaining MVP draft actions.
+Outreach generation, immutable recruiter editing, exact final approval, manual
+copy, and plain-text export are implemented. Automatic sending, recipient
+selection, email/ATS/platform integrations, and permission-management UI are not
+implemented; sending remains outside the MVP.
 Recruiters can intentionally run structured vacancy extraction for an editable
 requirements draft and candidate-profile extraction for a lawfully stored,
 successfully parsed CV. Both create human-reviewable drafts; only explicit
@@ -609,4 +638,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`OUT-002 — Add editing, final approval, copy, and export.`
+`PROD-001 — Add private file-delivery controls and upload hardening.`

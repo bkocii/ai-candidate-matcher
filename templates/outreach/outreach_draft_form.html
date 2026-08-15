@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Edit outreach draft | {{ candidate.full_name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading" aria-labelledby="outreach-edit-title">
+    <p class="eyebrow">Recruiter edit · {{ vacancy.title }}</p>
+    <h1 id="outreach-edit-title">Edit draft v{{ draft.version }}</h1>
+    <p class="lede">Saving does not overwrite this version. It creates a new immutable version for {{ candidate.full_name }} that must receive separate final approval.</p>
+</section>
+
+<section class="workspace-panel form-panel">
+    <form method="post">
+        {% csrf_token %}
+        {% include "candidates/_form_fields.html" with form=form %}
+        <div class="button-row">
+            <button class="primary-button" type="submit">Save new draft version</button>
+            <a class="secondary-button" href="{% url 'outreach:outreach-draft-detail' organization.slug draft.pk %}">Cancel</a>
+        </div>
+    </form>
+</section>
+
+<p class="human-review-note">Use verified facts only. Saving or cancelling never sends outreach.</p>
+{% endblock %}

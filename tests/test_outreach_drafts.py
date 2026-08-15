@@ -269,8 +269,9 @@ def test_recruiter_generates_and_inspects_draft_but_cannot_send(client):
     assert get_generate.status_code == 405
     assert response.status_code == 200
     assert "Outreach draft version 1 was generated for review" in content
-    assert "Generated only — not approved or sent" in content
-    assert "cannot be edited, finally approved, copied, exported, or sent" in content
+    assert "Not finally approved or sent" in content
+    assert "Edit into new version" in content
+    assert "Approve this exact draft" in content
     assert candidate.full_name in content
     assert "Your Python experience may be relevant" in content
     assert "Send" not in content
