@@ -47,6 +47,13 @@ Hard filters, shortlist construction, AI assessments, evidence, scores, and recr
 
 Editable drafts, approval state, and manual copy/export history.
 
+### operations
+
+Durable application-owned batch jobs, isolated targets, leases, idempotency,
+explicit retry, and tenant-scoped operational status. The worker calls existing
+candidate and matching services; it does not bypass their authorization,
+evidence, freshness, or human-review rules.
+
 ### ai_gateway
 
 Application-level interfaces around Python AI Toolkit. No views or models call the toolkit directly.
@@ -555,7 +562,39 @@ versions so their evidence boundary remains inspectable when inputs later change
   detail route exposes the same application-owned evidence plus assessment
   version history without changing the snapshot.
 - Validated assessment output is persisted separately from its safe
-  `AIUsageEvent`. Background/idempotent bulk processing remains `PROD-003`.
+  `AIUsageEvent`. `PROD-003` invokes this same boundary from isolated durable
+  tasks without changing the assessment contract.
+
+### Durable background batches
+
+- `BackgroundJob` owns an idempotent recruiter batch request through an
+  organization, controlled workflow/scope, SHA-256 idempotency key, aggregate
+  counts, creator, and timestamps. `BackgroundTask` stores only controlled
+  target/result types and numeric IDs, state, attempt count, expiring lease,
+  outcome, and an allow-listed failure code.
+- Profile batch creation selects only each active candidate's newest successful
+  non-deleted CV when that exact source has no profile version. Any existing
+  draft or confirmed profile makes the source reusable; a new corrected CV has a
+  new document ID/hash and is separately eligible.
+- Whole-shortlist creation requires a current non-stale run and creates one task
+  per entry. The same source set or run resolves to the existing job instead of
+  creating duplicate tasks or repeating routine AI work.
+- The separate `run_background_worker` process atomically claims one queued or
+  expired-lease task, then calls the existing extraction or assessment service.
+  A result already saved for the exact source/input snapshot is reused before
+  any AI call, covering interruption after domain persistence but before task
+  completion.
+- One target's provider, authorization, validation, missing-record, or unexpected
+  failure is finalized with a content-free category and does not stop other
+  targets. Explicit recruiter retry requeues only exceptions; successful targets
+  remain complete.
+- Job pages resolve candidate names and result links at read time through
+  tenant-scoped domain querysets rather than copying identity into operational
+  rows. Extraction results are drafts only. Candidate decisions remain
+  individually inspectable POST actions, and outreach remains separate.
+- Cost, latency, retry, token, and failure aggregation across existing safe usage
+  events remains `PROD-004`; the job status surface does not duplicate that
+  observability scope.
 
 ### Recruiter assessment review
 
@@ -580,8 +619,8 @@ versions so their evidence boundary remains inspectable when inputs later change
   application, profile ambiguities, changed-input warnings, recruiter review
   focus, and links to every assessment version for the same shortlist entry.
 - `REV-001` records no approve, reject, revisit, or outreach action. Individual
-  decisions are introduced separately by `REV-002`; background whole-shortlist
-  assessment generation remains `PROD-003`.
+  decisions are introduced separately by `REV-002`; `PROD-003` feeds this same
+  review surface with background whole-shortlist assessment results.
 
 ### Human recruiter decisions
 
@@ -717,11 +756,12 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 - Relevant vacancy or candidate matching-input changes invalidate deterministic
   shortlist freshness without overwriting historical results.
 - AI calls use bounded retries.
-- Per-candidate assessment requests isolate failures; durable resumable batch
-  processing and idempotency are introduced in `PROD-003`.
+- Per-candidate services isolate domain operations. Durable application-owned
+  jobs add batch idempotency, expiring-lease recovery, saved-result reuse, and
+  per-target exception isolation without changing those services.
 - The deterministic shortlist remains inspectable if AI is unavailable.
-- Confirmed profiles are reusable across vacancies. The eventual high-volume
-  path uses exception-focused review plus background batch profile extraction and
+- Confirmed profiles are reusable across vacancies. The high-volume path uses
+  exception-focused review plus background batch profile extraction and
   whole-shortlist assessment generation, while confirmation and final employment
   decisions remain explicit human actions.
 

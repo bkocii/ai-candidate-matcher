@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Background jobs | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading" aria-labelledby="job-list-title">
+    <p class="eyebrow">Operational status</p>
+    <h1 id="job-list-title">Background jobs</h1>
+    <p class="lede">Track durable profile extraction and shortlist assessment batches. Start new work from Candidates or a shortlist.</p>
+</section>
+
+{% if page.object_list %}
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th scope="col">Job</th><th scope="col">Status</th><th scope="col">Progress</th><th scope="col">Exceptions</th><th scope="col">Queued</th></tr></thead>
+            <tbody>
+                {% for job in page.object_list %}
+                    <tr>
+                        <th scope="row"><a href="{% url 'operations:job-detail' organization.slug job.pk %}">{{ job.get_workflow_display }}</a></th>
+                        <td><span class="status-pill status-{{ job.status }}">{{ job.get_status_display }}</span></td>
+                        <td>{{ job.succeeded_count }} / {{ job.total_count }}</td>
+                        <td>{{ job.skipped_count|add:job.failed_count }}</td>
+                        <td>{{ job.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <section class="empty-state"><span class="empty-icon" aria-hidden="true">J</span><h2>No background jobs yet</h2><p>Queue pending candidate profiles or assess a current shortlist.</p></section>
+{% endif %}
+{% endblock %}

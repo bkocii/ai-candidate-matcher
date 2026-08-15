@@ -98,6 +98,7 @@ INSTALLED_APPS = [
     "audit",
     "candidates",
     "matching",
+    "operations",
     "organizations",
     "outreach",
     "vacancies",

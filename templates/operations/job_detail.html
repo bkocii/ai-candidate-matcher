@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Job {{ job.pk }} | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading" aria-labelledby="job-title">
+    <div>
+        <p class="eyebrow">Operational status</p>
+        <h1 id="job-title">{{ job.get_workflow_display }}</h1>
+        <p class="lede">Job {{ job.pk }} · queued {{ job.created_at|date:"Y-m-d H:i" }} · <span class="status-pill status-{{ job.status }}">{{ job.get_status_display }}</span></p>
+    </div>
+    <div class="button-row">
+        <a class="secondary-button" href="{% url 'operations:job-list' organization.slug %}">All jobs</a>
+        {% if job.failed_count or job.skipped_count %}
+            <form method="post" action="{% url 'operations:job-retry' organization.slug job.pk %}">{% csrf_token %}<button class="primary-button" type="submit">Retry exceptions</button></form>
+        {% endif %}
+    </div>
+</section>
+
+<section class="filter-summary" aria-label="Job totals">
+    <article><span>Total</span><strong>{{ job.total_count }}</strong></article>
+    <article><span>Succeeded</span><strong>{{ job.succeeded_count }}</strong></article>
+    <article><span>Needs attention</span><strong>{{ job.skipped_count }}</strong></article>
+    <article><span>Failed</span><strong>{{ job.failed_count }}</strong></article>
+</section>
+
+<p class="human-review-note">Background work creates reviewable drafts or assessments only. Profile confirmation, candidate decisions, and outreach remain separate approved actions.</p>
+
+<div class="table-wrap">
+    <table>
+        <thead><tr><th scope="col">Candidate</th><th scope="col">Status</th><th scope="col">Attempts</th><th scope="col">Outcome</th><th scope="col">Result or exception</th></tr></thead>
+        <tbody>
+            {% for task in tasks %}
+                <tr>
+                    <th scope="row">{% if task.target_url %}<a href="{{ task.target_url }}">{{ task.target_label }}</a>{% else %}{{ task.target_label }}{% endif %}</th>
+                    <td><span class="status-pill status-{{ task.status }}">{{ task.get_status_display }}</span></td>
+                    <td>{{ task.attempt_count }}</td>
+                    <td>{{ task.get_outcome_display|default:"—" }}</td>
+                    <td>
+                        {% if task.result_url %}<a href="{{ task.result_url }}">Inspect {{ task.get_result_type_display|lower }}</a>
+                        {% elif task.failure_code %}{{ task.failure_label }}
+                        {% else %}Waiting for worker{% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

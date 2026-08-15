@@ -84,6 +84,12 @@ completed entries remain usable when another request fails, and background bulk
 orchestration can be added at the application layer in `PROD-003`. No toolkit
 defect or reusable batch API gap was reproduced.
 
+`PROD-003` confirmed this boundary on 2026-08-15. Durable jobs, leases,
+idempotency, saved-result recovery, and per-target failure isolation were added
+entirely in the application while each task continued to use the existing
+ordinary structured-request gateway contract. No toolkit batch API or toolkit
+change was required.
+
 ### `HYP-003` — partial evaluation, 2026-08-12
 
 For successful requests, toolkit v1.0.0 supplies the request ID, model, duration,

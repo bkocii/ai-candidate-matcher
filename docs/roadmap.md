@@ -72,8 +72,8 @@ Sprint acceptance: AI output is schema-valid, evidence is traceable, missing dat
 The safe per-candidate workflow is a foundation, not the intended high-volume
 recruiter experience. Confirmed profiles must be reusable across vacancies and
 should require re-extraction only for a new or corrected CV/profile. `REV-001`
-should provide a compact queue emphasizing gaps, ambiguities, changed facts, and
-evidence exceptions. `PROD-003` should add resumable background batch profile
+provides a compact queue emphasizing gaps, ambiguities, changed facts, and
+evidence exceptions. `PROD-003` adds resumable background batch profile
 extraction and whole-shortlist assessment generation with per-candidate failure
 isolation. Selected profile drafts may be confirmed efficiently only after their
 evidence remains inspectable; no profile is silently auto-confirmed. Final
@@ -95,11 +95,11 @@ Status: Complete.
 
 - `PROD-001` Add private file-delivery controls and upload hardening. **Complete — 2026-08-15.**
 - `PROD-002` Add audit views, retention/deletion workflow, and data minimization checks. **Complete — 2026-08-15.**
-- `PROD-003` Add background processing, idempotency, resumability, and operational status.
+- `PROD-003` Add background processing, idempotency, resumability, and operational status. **Complete — 2026-08-15.**
 - `PROD-004` Add token, cost, latency, retry, and failure reporting.
 - `PROD-005` Add deployment documentation and production checks.
 
-Status: In progress. `PROD-003` is next.
+Status: In progress. `PROD-004` is next.
 
 ## Sprint 7 — Evaluation and showcase release
 

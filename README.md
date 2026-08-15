@@ -12,8 +12,8 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 through Sprint 5, `PROD-001`, and `PROD-002` are complete.
-Production-safeguard work continues with `PROD-003`.
+Sprint 0 through Sprint 5 and `PROD-001` through `PROD-003` are complete.
+Production-safeguard work continues with `PROD-004`.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -120,8 +120,18 @@ candidate records for review—it never auto-purges data. Immutable privacy even
 record controlled IDs/actions/actors/timestamps without copying candidate,
 prompt, decision-note, or outreach content.
 
-The next approved task is `PROD-003 — Add background processing, idempotency,
-resumability, and operational status`.
+Recruiters can queue each active candidate's newest successfully parsed,
+unprofiled CV from **Candidates**, and can queue one assessment target for every
+entry in a current shortlist. A separate durable database-backed worker claims
+targets with expiring leases, isolates failures per candidate, reuses already
+saved results after interruption, and exposes compact tenant-scoped job status
+plus explicit exception retry. Profile jobs create drafts only; profile
+confirmation, approve/reject/revisit decisions, and outreach remain separate
+individual actions. Repeating the same batch request returns the existing job
+instead of repeating routine AI work.
+
+The next approved task is `PROD-004 — Add token, cost, latency, retry, and
+failure reporting`.
 
 ## Local setup
 
@@ -155,6 +165,13 @@ Create a Django superuser and start the development server:
 ```powershell
 uv run python manage.py createsuperuser
 uv run python manage.py runserver
+```
+
+Run the durable worker in a second PowerShell window. `--burst` processes all
+currently queued targets and exits; omit it for a continuous worker:
+
+```powershell
+uv run python manage.py run_background_worker --burst
 ```
 
 Open `http://127.0.0.1:8000/admin/` to create organizations, memberships,

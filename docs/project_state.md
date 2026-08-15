@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 6 — Production safeguards and observability — is in progress.
 
-Status: `PROD-002` is complete; `PROD-003` is the next approved task.
+Status: `PROD-003` is complete; `PROD-004` is the next approved task.
 
 ## Decisions made
 
@@ -656,21 +656,52 @@ Status: `PROD-002` is complete; `PROD-003` is the next approved task.
 - Kept AI/toolkit behavior, outreach separation, final individual candidate
   decisions, and the `PROD-003` background-processing boundary unchanged.
 
+### `PROD-003 — Background processing, idempotency, resumability, and status`
+
+- Added an application-owned `operations` app with durable organization-scoped
+  background jobs and isolated per-target tasks. The database records only
+  controlled workflow/target/result IDs, status, attempts, leases, counts, and
+  allow-listed failure codes; it does not copy candidate, CV, prompt, response,
+  decision-note, or outreach content.
+- Added one recruiter action that queues each active candidate's newest
+  successfully parsed, unprofiled CV. Existing drafts or confirmed profiles for
+  that source are reused, while a newer corrected CV remains independently
+  eligible. Completed extraction creates a draft and never silently confirms it.
+- Added one whole-shortlist action that queues every entry only for a current
+  deterministic run. Each task reuses an assessment already saved for the exact
+  shortlist entry, current confirmed profile, and requirements snapshot; missing
+  profiles and changed inputs remain visible exceptions.
+- Added deterministic batch idempotency keys and organization-level creation
+  serialization. Repeating the same eligible source set or match run returns the
+  existing job and creates no duplicate task or routine AI call.
+- Added a separate `run_background_worker` command with continuous, `--once`,
+  `--burst`, and job-scoped modes. Expiring task leases make interrupted work
+  reclaimable, and saved-result preflight makes post-save recovery idempotent.
+- Isolated provider, authorization, validation, missing-target, and unexpected
+  failures per task using content-free codes. Explicit retry requeues only failed
+  or skipped targets and preserves successful work.
+- Added **Jobs** list/detail status screens and result links resolved from current
+  tenant-scoped records. Profile results remain individually inspectable and
+  confirmable; assessments flow into the existing exception-focused review and
+  individual decision workflow. No batch decision, confirmation, outreach, or
+  send action was added.
+- Kept toolkit integration unchanged: orchestration wraps the existing
+  application services and their ordinary structured-request gateway calls.
+
 ## Verification
 
-`PROD-002` verification completed on 2026-08-15:
+`PROD-003` verification completed on 2026-08-15:
 
-- Focused privacy/retention and affected deletion regression set: `215 passed`.
-- Complete `python scripts/check.py` quality gate: `410 passed`.
+- Focused background and affected AI/review regression set: `92 passed`.
+- Complete `python scripts/check.py` quality gate: `417 passed`.
 - Django system and deploy checks passed with no issues.
-- `audit.0003_auditevent` and
-  `candidates.0005_candidate_deletion_requested_by_and_more` applied
-  successfully; the resulting migration plan is empty and drift is zero.
-- Ruff lint passed and all `151` files were formatted.
+- `PROD-003` adds `operations.0001_initial`; it applied successfully, the
+  resulting migration plan is empty, and drift is zero.
+- Ruff lint passed and all `164` files were formatted.
 - Dependency check confirmed all `32` installed packages are compatible.
 - A clean extraction of the restricted final ZIP installed from the lockfile,
-  applied both migrations from an empty database, reported an empty follow-up
-  plan, and passed the same complete `410`-test quality gate.
+  applied all migrations from an empty database, reported an empty follow-up
+  plan, and passed the same complete `417`-test quality gate.
 
 ## Not implemented
 
@@ -704,10 +735,10 @@ Safe AI usage events are available to operators through read-only Django admin
 and as compact content-free summaries on the privacy dashboard; aggregated
 usage/cost/latency/retry/failure reporting remains deferred to `PROD-004`.
 The review queue now reuses confirmed profiles and provides compact exception-
-focused assessment review and individual decision history. Remaining high-volume work uses `PROD-003` for resumable batch
-profile extraction and whole-shortlist assessment generation. No profile will be
-silently confirmed, and final employment decisions are individual recruiter
-actions with notes, actor, and timestamp.
+focused assessment review and individual decision history. Resumable batch
+profile extraction and whole-shortlist assessment generation are implemented in
+`PROD-003`. No profile is silently confirmed, and final employment decisions
+remain individual recruiter actions with notes, actor, and timestamp.
 
 Recruiters can manage typed hard-constraint records from the normal requirements
 editor while the version is a draft. The older free-text hard-constraint field is
@@ -716,4 +747,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`PROD-003 — Add background processing, idempotency, resumability, and operational status.`
+`PROD-004 — Add token, cost, latency, retry, and failure reporting.`

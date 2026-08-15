@@ -11,6 +11,12 @@
     </div>
     <div class="button-row">
         <a class="secondary-button" href="{% url 'matching:candidate-filter-report' organization.slug vacancy.pk %}">Inspect hard filters</a>
+        {% if not staleness.is_stale and entries %}
+            <form method="post" action="{% url 'operations:shortlist-assessment-batch-queue' organization.slug vacancy.pk run.pk %}">
+                {% csrf_token %}
+                <button class="secondary-button" type="submit">Assess whole shortlist</button>
+            </form>
+        {% endif %}
         <form method="post" action="{% url 'matching:shortlist-generate' organization.slug vacancy.pk %}">
             {% csrf_token %}
             <button class="primary-button" type="submit">Generate new shortlist</button>

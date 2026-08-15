@@ -1,7 +1,7 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`PROD-002`. Use only the synthetic files in `manual_testing/fixtures` or other
+`PROD-003`. Use only the synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
 
@@ -63,7 +63,7 @@ organization isolation.
 2. If prompted, sign in with the superuser.
 3. Confirm that the single active organization opens automatically.
 4. Confirm that the navigation contains **Dashboard**, **Candidates**,
-   **Vacancies**, **Reviews**, **Privacy & audit**, **Django admin**, and
+   **Vacancies**, **Reviews**, **Jobs**, **Privacy & audit**, **Django admin**, and
    **Sign out**.
 5. Confirm the dashboard initially shows zero active candidates and zero open
    vacancies.
@@ -719,7 +719,7 @@ To test safeguards:
   versions remain intact, and no partial version is created.
 
 Safe request metadata or a bounded failure category is recorded as described in
-section 21. Background bulk assessment remains deferred to `PROD-003`.
+section 21. Whole-shortlist background assessment is tested in section 23.
 
 ## 18. Test the recruiter assessment review workflow
 
@@ -1009,7 +1009,78 @@ Run the focused automated coverage:
 uv run pytest -q tests/test_audit_retention.py tests/test_candidate_documents.py tests/test_vacancy_intake.py
 ```
 
-## 23. Run the optional synthetic live gateway smoke test
+## 23. Test background profile and whole-shortlist processing
+
+Start a second PowerShell window in the project root. Keep the web server in the
+first window. For a development walkthrough, process all currently queued work
+and exit after each queue action:
+
+```powershell
+uv run python manage.py run_background_worker --burst
+```
+
+For an ordinary long-running worker, omit `--burst`. `--once` processes at most
+one target, and `--job 12` limits either mode to job 12.
+
+### Batch profile extraction and reusable profiles
+
+1. Ensure at least two active synthetic candidates have successfully parsed CVs.
+2. Confirm that one CV already has a draft or confirmed profile and one newest CV
+   has no profile version.
+3. Open **Candidates** and select **Queue pending profile extraction**.
+4. Open the queued job, run the worker command, then refresh the job page.
+
+Expected result:
+
+- Only the newest successful, unprofiled CV per active candidate is queued.
+- A CV with any existing draft or confirmed profile is reused and is not sent to
+  AI again. Uploading a corrected CV creates a new eligible source.
+- Each successful target links to an individually inspectable candidate-profile
+  draft. No draft is confirmed and no matching skill is published automatically.
+- Selecting the same queue action before inputs change returns the same job and
+  creates no duplicate target or routine AI request. When nothing is pending, the
+  app reports that safely instead of creating an empty job.
+
+Inspect each created draft and use the existing individual **Confirm profile**
+action only after its evidence has been reviewed. Batch profile confirmation is
+intentionally unavailable.
+
+### Whole-shortlist assessment and exception isolation
+
+1. Open a current deterministic shortlist containing synthetic candidates.
+2. Leave at least one entry without a confirmed profile if you want to exercise
+   the exception path.
+3. Select **Assess whole shortlist** and open the created job.
+4. Run the worker command and refresh the job page.
+
+Expected result:
+
+- There is one isolated task for every shortlist entry. Candidates with current
+  confirmed profiles receive evidence-based assessments; a missing confirmed
+  profile appears as **Needs attention** and does not block other candidates.
+- An assessment already saved for the exact shortlist entry, confirmed profile,
+  and requirements snapshot is reused without another AI request.
+- Job totals show succeeded, needs-attention, and failed targets. Candidate names
+  and result links are resolved only in the authorized workspace; operational
+  records and worker output do not copy CV, contact, prompt, response, decision,
+  or outreach content.
+- Assessment links open the existing individual review detail. No candidate is
+  approved, rejected, revisited, contacted, or sent outreach automatically.
+
+If a provider failure is available in a safe development configuration, confirm
+that one target becomes **Failed** while later targets still run. Select **Retry
+exceptions**, rerun the worker, and confirm only failed or skipped targets gain
+another attempt. Successful targets remain complete. A worker interrupted while
+a target is running can reclaim it after its lease expires; if the domain result
+was already saved, recovery marks it reused without another AI call.
+
+Run the focused provider-free coverage:
+
+```powershell
+uv run pytest -q tests/test_background_jobs.py tests/test_candidate_ai_extraction.py tests/test_match_ai_assessment.py tests/test_matching_staleness.py tests/test_recruiter_review.py tests/test_review_decisions.py tests/test_outreach_workflow.py
+```
+
+## 24. Run the optional synthetic live gateway smoke test
 
 This developer test is separate from the browser workflows and ordinary quality
 gate. It may incur one small provider charge. It sends no candidate, vacancy, CV,
@@ -1033,21 +1104,21 @@ Never edit this smoke test to send real recruitment data. A live failure does no
 change any candidate, vacancy, profile, assessment, or audit record because the
 test calls only the application gateway contract.
 
-## 24. What is intentionally unavailable
+## 25. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
 - Manual candidate-skill entry still uses Django admin; confirmed AI profile
   skills are published through the normal candidate workflow.
-- No cost/latency/retry aggregation or operational recovery dashboard yet. The
-  privacy page shows only compact existing workflow history; full observability
-  remains `PROD-004`.
+- No token/cost/latency/retry/failure aggregation dashboard yet. Background job
+  recovery/status is available under **Jobs**; usage observability remains
+  `PROD-004`.
 - No OCR for scanned PDFs.
 - No automatic outreach sending, recipient selection, email/ATS/platform
   integration, or normal-workspace contact-permission editor. Manual clipboard
   copy and plain-text export deliberately stop before transmission.
 
-## 25. Final acceptance checklist
+## 26. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -1096,6 +1167,17 @@ The current milestone is behaving correctly when all of these are true:
 - Explicit job-relevant skills stated in profile or employment narrative are
   extracted alongside Skills-section entries, while related tools, methods, and
   synonyms are not inferred from one another.
+- Profile batches queue only newest unprofiled successful CVs, reuse confirmed or
+  draft profiles for unchanged sources, create drafts without confirmation, and
+  return the same job for the same eligible source set.
+- Whole-shortlist batches require a current deterministic run, isolate every
+  entry, reuse exact-input assessments, expose safe per-target exceptions, and
+  resume expired work without duplicating an already saved result.
+- Explicit retry requeues only failed or skipped targets. Job status contains no
+  copied CV, contact, prompt, raw response, decision-note, or outreach content.
+- Batch work never confirms profiles, records final candidate decisions, creates
+  outreach, or sends messages; those actions remain individually inspectable and
+  separately approved.
 - AI match assessment is POST-only and per candidate, requires current confirmed
   inputs, preserves immutable numbered versions, resolves evidence references,
   keeps unsupported facts uncertain, and never changes the deterministic result
@@ -1134,7 +1216,7 @@ The current milestone is behaving correctly when all of these are true:
   or live AI request; only explicit vacancy extraction, candidate extraction,
   match-assessment, or outreach-generation actions do.
 
-## 26. Reset disposable local test data
+## 27. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

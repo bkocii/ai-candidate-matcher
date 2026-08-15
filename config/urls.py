@@ -24,6 +24,7 @@ urlpatterns = [
     path("", include("audit.urls")),
     path("", include("candidates.urls")),
     path("", include("matching.urls")),
+    path("", include("operations.urls")),
     path("", include("outreach.urls")),
     path("", include("vacancies.urls")),
     path("", include("organizations.urls")),

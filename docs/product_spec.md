@@ -90,6 +90,10 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
   and assessment should use resumable background batches and exception-focused
   review rather than forcing repetitive per-candidate setup, while employment
   decisions remain explicit individual recruiter actions.
+- Repeating the same batch must reuse the existing operational job and saved
+  per-candidate results. Interrupted targets must be reclaimable, one candidate's
+  failure must not block the rest, and safe status must expose exceptions without
+  copying CV, prompt, response, contact, or decision content.
 - Retention expiry is a review signal, not an automatic purge. Candidate deletion
   first freezes the record, and permanent erasure requires a separate,
   individually inspectable administrator action.

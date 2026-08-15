@@ -14,8 +14,8 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 5, `PROD-001`, and `PROD-002` are complete. Sprint 6 is
-in progress; `PROD-003` is the next approved roadmap task.
+Sprint 0 through Sprint 5 and `PROD-001` through `PROD-003` are complete. Sprint
+6 is in progress; `PROD-004` is the next approved roadmap task.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -281,22 +281,45 @@ and vacancy deletion also create controlled audit events. `PROD-002` adds
 toolkit change, background queue, cost/latency aggregation, recipient, or send
 action.
 
-## Recruiter-efficiency requirement for later tasks
+`PROD-003` is complete. The new application-owned `operations` app stores
+durable tenant-scoped `BackgroundJob` and `BackgroundTask` records with
+controlled target/result IDs, deterministic idempotency keys, aggregate status,
+attempt counts, expiring leases, and content-free failure codes. It adds
+`operations.0001_initial`.
+
+From **Candidates**, a recruiter can queue each active candidate's newest
+successful CV only when that source has no draft or confirmed profile. From a
+current shortlist, one action queues every entry. Repeating the same source set
+or match run returns the existing job. The separate
+`run_background_worker` command supports continuous, `--once`, `--burst`, and
+job-scoped processing. It reclaims expired leases, checks for an already saved
+exact-source profile or exact-input assessment before calling AI, and isolates
+each target's provider, authorization, validation, missing-record, or unexpected
+failure. Explicit retry requeues only exceptions.
+
+The tenant-scoped **Jobs** pages expose compact status and resolve candidate and
+result links from current domain records without copying private content into the
+queue. Profile results remain drafts requiring evidence inspection and
+individual confirmation. Assessment results enter the existing review flow;
+approve/reject/revisit and outreach remain separate individual actions.
+
+## Recruiter-efficiency requirement
 
 Do not treat the current per-candidate generation actions as the final high-volume UX.
 Confirmed profiles are reusable across vacancies and should be re-extracted only
 for new or corrected source/profile data. `REV-001` now provides a compact queue
 emphasizing gaps, ambiguities, changed facts, and evidence exceptions.
-`PROD-003` should add resumable background batch profile extraction and one
-whole-shortlist assessment action with per-candidate failure isolation. Selected
-profile drafts may be confirmed efficiently only while evidence remains
-inspectable; no silent auto-confirmation is allowed. Final approve/reject/revisit
-decisions are individual recruiter actions with notes, actor, and timestamp, and
-outreach generation and final draft approval remain separate actions.
+`PROD-003` adds resumable background batch profile extraction and one
+whole-shortlist assessment action with per-candidate failure isolation. Existing
+profiles and exact-input assessments are reused, interrupted leases are
+reclaimable, and safe job status plus explicit exception retry are available.
+Profile drafts still require individually inspectable evidence and explicit
+confirmation. Final approve/reject/revisit decisions remain individual recruiter
+actions with notes, actor, and timestamp, and outreach remains separate.
 
 The next roadmap item is:
 
-`PROD-003 — Add background processing, idempotency, resumability, and operational status.`
+`PROD-004 — Add token, cost, latency, retry, and failure reporting.`
 
 ## Required instructions
 
@@ -313,21 +336,21 @@ The next roadmap item is:
 
 ## Current verification
 
-`PROD-002` verification completed on 2026-08-15:
+`PROD-003` verification completed on 2026-08-15:
 
-- Focused privacy/retention and affected deletion regression set: `215 passed`.
-- Complete `python scripts/check.py` quality gate: `410 passed`.
+- Focused background and affected AI/review regression set: `92 passed`.
+- Complete `python scripts/check.py` quality gate: `417 passed`.
 - Django system/deploy checks passed; migration drift is zero; Ruff lint passed
-  and all `151` files are formatted; all `32` installed packages are compatible.
-- `PROD-002` adds two migrations: `audit.0003_auditevent` and
-  `candidates.0005_candidate_deletion_requested_by_and_more`.
+  and all `164` files are formatted; all `32` installed packages are compatible.
+- `PROD-003` adds one migration: `operations.0001_initial`. It applies cleanly,
+  the follow-up migration plan is empty, and migration drift is zero.
 - A clean extraction of the restricted final ZIP installed from the lockfile,
-  applied both migrations from an empty database, reported an empty follow-up
-  plan, and passed the same complete `410`-test quality gate.
+  applied all migrations from an empty database, reported an empty follow-up
+  plan, and passed the same complete `417`-test quality gate.
 
 ## Immediate next action
 
-Implement only `PROD-003`: add background processing, idempotency, resumability,
-and operational status. Preserve staged deletion and the separate individually
-approved candidate-decision/outreach boundaries; do not pull cost/latency
-reporting from `PROD-004` forward without a concrete reason.
+Implement only `PROD-004`: add aggregate token, cost, latency, retry, and failure
+reporting over existing minimized AI usage events. Preserve the `PROD-003` job
+boundary, staged deletion, and separate individually approved candidate-decision
+and outreach actions.
