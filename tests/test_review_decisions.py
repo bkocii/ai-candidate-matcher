@@ -2,7 +2,7 @@ import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.urls import reverse
 
-from candidates.services import delete_candidate
+from candidates.services import delete_candidate, request_candidate_deletion
 from matching.decisions import (
     assess_review_decision_eligibility,
     record_review_decision,
@@ -231,6 +231,7 @@ def test_candidate_deletion_removes_decisions_with_private_match_history(
         notes="Synthetic deletion test decision.",
     )
 
+    request_candidate_deletion(candidate=candidate, user=user)
     delete_candidate(candidate=candidate, user=user)
 
     assert ReviewDecision.objects.count() == 0

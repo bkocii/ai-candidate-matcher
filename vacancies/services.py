@@ -4,6 +4,8 @@ from django.db.models import Max
 from django.utils import timezone
 
 from accounts.models import User
+from audit.models import AuditEvent
+from audit.services import record_audit_event
 from organizations.models import Organization
 from organizations.permissions import (
     require_organization_access,
@@ -123,6 +125,13 @@ def delete_vacancy(*, vacancy: Vacancy, user: User) -> Vacancy:
     vacancy.deleted_by = user
     vacancy.status = Vacancy.Status.CLOSED
     vacancy.save(update_fields=("deleted_at", "deleted_by", "status", "updated_at"))
+    record_audit_event(
+        organization=vacancy.organization,
+        actor=user,
+        action=AuditEvent.Action.VACANCY_DELETED,
+        object_type=AuditEvent.ObjectType.VACANCY,
+        object_id=vacancy.pk,
+    )
     return vacancy
 
 

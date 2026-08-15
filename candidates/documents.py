@@ -520,10 +520,13 @@ def upload_candidate_cv(
             locked_candidate = Candidate.objects.select_for_update().get(
                 pk=candidate.pk
             )
-            if locked_candidate.status == Candidate.Status.DELETED:
+            if locked_candidate.status in {
+                Candidate.Status.DELETION_REQUESTED,
+                Candidate.Status.DELETED,
+            }:
                 raise CandidateDocumentUploadError(
                     "candidate_unavailable",
-                    "A CV cannot be uploaded for a deleted candidate.",
+                    "A CV cannot be uploaded while candidate deletion is pending.",
                 )
             duplicate = (
                 CandidateDocument.objects.for_organization(

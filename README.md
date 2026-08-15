@@ -12,8 +12,8 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 through Sprint 5 and `PROD-001` are complete. Production-safeguard work
-continues with `PROD-002`.
+Sprint 0 through Sprint 5, `PROD-001`, and `PROD-002` are complete.
+Production-safeguard work continues with `PROD-003`.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -111,9 +111,17 @@ control characters, PDF scripts/launch actions/embedded files, DOCX symlinks,
 duplicate entries, embedded active content, and unsafe external package
 relationships. Organization-level serialization closes the duplicate-upload
 race without preventing another organization from storing the same document.
+Recruiters also have a tenant-scoped privacy and audit dashboard with retention
+exceptions, staged deletion requests, minimized workflow histories, and deleted-
+record integrity checks. Candidate deletion now freezes the record first; a
+separate administrator action cancels the request or permanently purges it.
+The schedulable retention command is a dry run by default and can only flag due
+candidate records for review—it never auto-purges data. Immutable privacy events
+record controlled IDs/actions/actors/timestamps without copying candidate,
+prompt, decision-note, or outreach content.
 
-The next approved task is `PROD-002 — Add audit views, retention/deletion
-workflow, and data minimization checks`.
+The next approved task is `PROD-003 — Add background processing, idempotency,
+resumability, and operational status`.
 
 ## Local setup
 

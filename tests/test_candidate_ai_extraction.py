@@ -25,7 +25,7 @@ from candidates.ai_extraction import (
     validate_profile_evidence,
 )
 from candidates.models import Candidate, CandidateDocument, CandidateProfile
-from candidates.services import delete_candidate
+from candidates.services import delete_candidate, request_candidate_deletion
 from matching.evaluation import RuleOutcome, evaluate_candidate_constraints
 from matching.models import CandidateSkill, HardConstraintRule
 from matching.services import (
@@ -650,7 +650,14 @@ def test_invalid_document_and_deletion_states_are_rejected_before_ai_call() -> N
     document.save(update_fields=("document_type",))
     candidate.status = Candidate.Status.DELETION_REQUESTED
     candidate.deletion_requested_at = timezone.now()
-    candidate.save(update_fields=("status", "deletion_requested_at"))
+    candidate.status_before_deletion_request = Candidate.Status.ACTIVE
+    candidate.save(
+        update_fields=(
+            "status",
+            "deletion_requested_at",
+            "status_before_deletion_request",
+        )
+    )
     with pytest.raises(ValidationError, match="unavailable during deletion"):
         extract_candidate_profile(
             document=document,
@@ -908,6 +915,7 @@ def test_candidate_deletion_purges_profiles_and_published_skill_evidence(
     ).profile
     confirm_candidate_profile(profile=profile, user=user)
 
+    request_candidate_deletion(candidate=candidate, user=user)
     delete_candidate(candidate=candidate, user=user)
 
     assert not CandidateProfile.objects.filter(candidate=candidate).exists()

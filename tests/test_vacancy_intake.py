@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import OrganizationMembership, User
+from audit.models import AuditEvent
 from organizations.models import ClientCompany, Organization
 from vacancies.forms import VacancyCreateForm, VacancyRequirementsForm
 from vacancies.models import Vacancy, VacancyRequirements
@@ -682,6 +683,11 @@ def test_recruiter_soft_deletes_vacancy_after_confirmation(client) -> None:
         reverse("organizations:organization-dashboard", args=[organization.slug])
     )
     assert dashboard.context["open_vacancy_count"] == 0
+    event = AuditEvent.objects.get(action=AuditEvent.Action.VACANCY_DELETED)
+    assert event.organization == organization
+    assert event.actor == user
+    assert event.object_type == AuditEvent.ObjectType.VACANCY
+    assert event.object_id == vacancy.pk
 
 
 def test_vacancy_delete_service_repeats_permission_check() -> None:

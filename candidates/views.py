@@ -10,6 +10,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from ai_gateway import AIGatewayError
+from audit.models import AuditEvent
+from audit.services import record_audit_event
 from candidates.ai_extraction import (
     confirm_candidate_profile,
     extract_candidate_profile,
@@ -34,11 +36,17 @@ from candidates.services import (
     CandidateDeletionError,
     CandidateDuplicateFinder,
     CandidateImportFileError,
+    cancel_candidate_deletion,
     create_candidate_with_source,
     delete_candidate,
     import_candidate_csv,
+    request_candidate_deletion,
 )
 from organizations.models import Organization
+from organizations.permissions import (
+    can_administer_organization,
+    require_organization_admin,
+)
 
 
 def _visible_organization(request, organization_slug: str) -> Organization:
@@ -81,6 +89,7 @@ def candidate_detail(request, organization_slug: str, candidate_id: int):
             "organization": organization,
             "candidate": candidate,
             "documents": documents,
+            "can_administer": can_administer_organization(request.user, organization),
         },
     )
 
@@ -95,7 +104,9 @@ def candidate_profile_extract(
 ):
     organization = _visible_organization(request, organization_slug)
     candidate = get_object_or_404(
-        Candidate.objects.for_organization(organization).not_deleted(),
+        Candidate.objects.for_organization(organization).filter(
+            status__in=[Candidate.Status.ACTIVE, Candidate.Status.INACTIVE]
+        ),
         pk=candidate_id,
     )
     document = get_object_or_404(
@@ -298,6 +309,13 @@ def candidate_document_download(
     response["Cross-Origin-Resource-Policy"] = "same-origin"
     response["Referrer-Policy"] = "no-referrer"
     response["X-Robots-Tag"] = "noindex, nofollow, noarchive"
+    record_audit_event(
+        organization=organization,
+        actor=request.user,
+        action=AuditEvent.Action.CANDIDATE_DOCUMENT_DOWNLOADED,
+        object_type=AuditEvent.ObjectType.CANDIDATE_DOCUMENT,
+        object_id=document.pk,
+    )
     return response
 
 
@@ -349,22 +367,81 @@ def candidate_delete(request, organization_slug: str, candidate_id: int):
         pk=candidate_id,
     )
     if request.method == "POST":
-        candidate_name = candidate.full_name
         try:
-            delete_candidate(candidate=candidate, user=request.user)
-        except CandidateDeletionError as error:
-            messages.error(request, str(error))
+            request_candidate_deletion(candidate=candidate, user=request.user)
+        except ValidationError as error:
+            messages.error(request, "; ".join(error.messages))
         else:
-            messages.success(request, f'Deleted candidate "{candidate_name}".')
+            messages.success(
+                request,
+                "Candidate deletion requested. The record is frozen until the "
+                "request is cancelled or explicitly purged.",
+            )
             return redirect(
-                "candidates:candidate-list",
+                "candidates:candidate-detail",
                 organization_slug=organization.slug,
+                candidate_id=candidate.pk,
             )
 
     return render(
         request,
         "candidates/candidate_confirm_delete.html",
         {"organization": organization, "candidate": candidate},
+    )
+
+
+@login_required
+def candidate_delete_execute(request, organization_slug: str, candidate_id: int):
+    organization = _visible_organization(request, organization_slug)
+    require_organization_admin(request.user, organization)
+    candidate = get_object_or_404(
+        Candidate.objects.for_organization(organization),
+        pk=candidate_id,
+        status=Candidate.Status.DELETION_REQUESTED,
+    )
+    if request.method == "POST":
+        try:
+            delete_candidate(candidate=candidate, user=request.user)
+        except (CandidateDeletionError, ValidationError) as error:
+            public_message = (
+                "; ".join(error.messages)
+                if isinstance(error, ValidationError)
+                else str(error)
+            )
+            messages.error(request, public_message)
+        else:
+            messages.success(request, "Candidate data was permanently purged.")
+            return redirect(
+                "audit:privacy-dashboard",
+                organization_slug=organization.slug,
+            )
+    return render(
+        request,
+        "candidates/candidate_confirm_purge.html",
+        {"organization": organization, "candidate": candidate},
+    )
+
+
+@login_required
+@require_POST
+def candidate_delete_cancel(request, organization_slug: str, candidate_id: int):
+    organization = _visible_organization(request, organization_slug)
+    require_organization_admin(request.user, organization)
+    candidate = get_object_or_404(
+        Candidate.objects.for_organization(organization),
+        pk=candidate_id,
+        status=Candidate.Status.DELETION_REQUESTED,
+    )
+    try:
+        cancel_candidate_deletion(candidate=candidate, user=request.user)
+    except ValidationError as error:
+        messages.error(request, "; ".join(error.messages))
+    else:
+        messages.success(request, "Candidate deletion request cancelled.")
+    return redirect(
+        "candidates:candidate-detail",
+        organization_slug=organization.slug,
+        candidate_id=candidate.pk,
     )
 
 

@@ -61,6 +61,21 @@ class Candidate(models.Model):
     )
     retention_until = models.DateField(null=True, blank=True)
     deletion_requested_at = models.DateTimeField(null=True, blank=True)
+    deletion_requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="requested_candidate_deletions",
+    )
+    status_before_deletion_request = models.CharField(
+        max_length=30,
+        choices=[
+            (Status.ACTIVE, "Active"),
+            (Status.INACTIVE, "Inactive"),
+        ],
+        blank=True,
+    )
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -94,6 +109,15 @@ class Candidate(models.Model):
                     | models.Q(deletion_requested_at__isnull=False)
                 ),
                 name="candidate_deletion_request_has_timestamp",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    ~models.Q(status="deletion_requested")
+                    | models.Q(
+                        status_before_deletion_request__in=["active", "inactive"]
+                    )
+                ),
+                name="candidate_deletion_request_has_prior_status",
             ),
             models.CheckConstraint(
                 condition=(

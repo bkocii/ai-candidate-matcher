@@ -6,7 +6,7 @@ from django.urls import reverse
 
 from accounts.models import OrganizationMembership, User
 from candidates.models import Candidate
-from candidates.services import delete_candidate
+from candidates.services import delete_candidate, request_candidate_deletion
 from matching.models import MatchRun
 from matching.scoring import ALGORITHM_VERSION, SHORTLIST_LIMIT, generate_shortlist
 from matching.services import assign_candidate_skill, sync_requirement_skills
@@ -162,6 +162,7 @@ def test_unrelated_contact_change_does_not_mark_run_stale() -> None:
 def test_candidate_deletion_marks_run_stale_and_keeps_history() -> None:
     user, _, _, candidate, run = make_run()
 
+    request_candidate_deletion(candidate=candidate, user=user)
     delete_candidate(candidate=candidate, user=user)
     staleness = assess_match_run_staleness(run=run, user=user)
 

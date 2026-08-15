@@ -4,7 +4,7 @@ from django.urls import reverse
 
 from ai_gateway.testing import FakeAIGateway
 from candidates.models import CandidateSource
-from candidates.services import delete_candidate
+from candidates.services import delete_candidate, request_candidate_deletion
 from matching.decisions import record_review_decision
 from matching.models import ReviewDecision
 from outreach.generation import generate_outreach_draft
@@ -437,6 +437,7 @@ def test_candidate_deletion_removes_approval_and_manual_action_history(
         action_type=OutreachDraftAction.ActionType.EXPORT,
     )
 
+    request_candidate_deletion(candidate=candidate, user=user)
     delete_candidate(candidate=candidate, user=user)
 
     assert not OutreachDraft.objects.exists()

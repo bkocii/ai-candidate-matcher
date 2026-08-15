@@ -29,12 +29,17 @@ class CandidateAdmin(admin.ModelAdmin):
         "email",
         "status",
         "retention_until",
+        "deletion_requested_at",
         "created_at",
     )
     list_filter = ("status", "organization")
     search_fields = ("full_name", "email", "phone")
     autocomplete_fields = ("organization", "created_by")
     inlines = (CandidateSourceInline,)
+
+    def has_delete_permission(self, request, obj=None):
+        """Require the staged application deletion workflow."""
+        return False
 
 
 @admin.register(CandidateSource)
@@ -93,6 +98,10 @@ class CandidateDocumentAdmin(admin.ModelAdmin):
         """Require the validated recruiter upload service for new documents."""
         return False
 
+    def has_delete_permission(self, request, obj=None):
+        """Stored bytes must be removed through the application workflow."""
+        return False
+
 
 @admin.register(CandidateProfile)
 class CandidateProfileAdmin(admin.ModelAdmin):
@@ -143,4 +152,7 @@ class CandidateProfileAdmin(admin.ModelAdmin):
         return False
 
     def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
         return False

@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from accounts.models import User
 from ai_gateway import AIGatewayError, AIGatewayMetadata
-from audit.models import AIUsageEvent
+from audit.models import AIUsageEvent, AuditEvent
 from organizations.models import Organization
 from organizations.permissions import require_organization_access
 
@@ -18,6 +18,29 @@ KNOWN_GATEWAY_FAILURE_CODES = {
     "ai_request_failed",
     "ai_service_unavailable",
 }
+
+
+def record_audit_event(
+    *,
+    organization: Organization,
+    actor: User | None,
+    action: str,
+    object_type: str,
+    object_id: int,
+    system: bool = False,
+) -> AuditEvent:
+    """Record one minimized event without copying domain text or identity."""
+    if actor is not None:
+        require_organization_access(actor, organization)
+    elif not system:
+        raise ValidationError("Actorless audit events must be system-generated.")
+    return AuditEvent.objects.create(
+        organization=organization,
+        actor=actor,
+        action=action,
+        object_type=object_type,
+        object_id=object_id,
+    )
 
 
 def start_ai_usage_event(

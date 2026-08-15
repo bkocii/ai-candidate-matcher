@@ -16,7 +16,7 @@ from ai_gateway import (
 )
 from ai_gateway.testing import FakeAIGateway
 from candidates.models import Candidate, CandidateDocument, CandidateProfile
-from candidates.services import delete_candidate
+from candidates.services import delete_candidate, request_candidate_deletion
 from matching.ai_assessment import (
     MAX_ASSESSMENT_CONTEXT_CHARACTERS,
     MatchAssessmentOutput,
@@ -546,6 +546,7 @@ def test_candidate_deletion_removes_assessment_with_shortlist_entry(settings, tm
         gateway=RecordingGateway(output_for_context(context)),
     )
 
+    request_candidate_deletion(candidate=candidate, user=user)
     delete_candidate(candidate=candidate, user=user)
 
     assert not ShortlistEntry.objects.filter(pk=entry.pk).exists()

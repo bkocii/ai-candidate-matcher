@@ -12,6 +12,7 @@ from docx import Document as DocxDocument
 from pypdf import PdfWriter
 
 from accounts.models import OrganizationMembership, User
+from audit.models import AuditEvent
 from candidates.documents import (
     DOCX_CONTENT_TYPE,
     CandidateDocumentDuplicateError,
@@ -27,11 +28,16 @@ from organizations.models import Organization
 pytestmark = pytest.mark.django_db
 
 
-def add_member(user: User, organization: Organization) -> None:
+def add_member(
+    user: User,
+    organization: Organization,
+    *,
+    role: str = OrganizationMembership.Role.RECRUITER,
+) -> None:
     OrganizationMembership.objects.create(
         user=user,
         organization=organization,
-        role=OrganizationMembership.Role.RECRUITER,
+        role=role,
     )
 
 
@@ -549,6 +555,13 @@ def test_recruiter_can_privately_download_original_cv(
     assert response["Cross-Origin-Resource-Policy"] == "same-origin"
     assert response["Referrer-Policy"] == "no-referrer"
     assert response["X-Robots-Tag"] == "noindex, nofollow, noarchive"
+    event = AuditEvent.objects.get(
+        action=AuditEvent.Action.CANDIDATE_DOCUMENT_DOWNLOADED
+    )
+    assert event.organization == organization
+    assert event.actor == user
+    assert event.object_type == AuditEvent.ObjectType.CANDIDATE_DOCUMENT
+    assert event.object_id == document.pk
 
 
 def test_private_download_repeats_service_authorization(settings, tmp_path) -> None:
@@ -723,13 +736,13 @@ def test_django_admin_cannot_bypass_validated_document_creation(client) -> None:
     assert response.status_code == 403
 
 
-def test_recruiter_permanently_deletes_candidate_content(
+def test_candidate_deletion_requires_request_then_admin_purge(
     client, settings, tmp_path
 ) -> None:
     settings.MEDIA_ROOT = tmp_path
     user = User.objects.create_user(username="recruiter")
     organization = Organization.objects.create(name="Northstar", slug="northstar")
-    add_member(user, organization)
+    add_member(user, organization, role=OrganizationMembership.Role.ADMIN)
     candidate = Candidate.objects.create(
         organization=organization,
         full_name="Arta Krasniqi",
@@ -759,12 +772,30 @@ def test_recruiter_permanently_deletes_candidate_content(
         args=[organization.slug, candidate.pk],
     )
 
-    confirmation = client.get(route)
-    response = client.post(route)
+    request_confirmation = client.get(route)
+    request_response = client.post(route)
 
     candidate.refresh_from_db()
-    assert confirmation.status_code == 200
-    assert "This cannot be undone" in confirmation.content.decode()
+    assert request_confirmation.status_code == 200
+    assert "does not purge data" in request_confirmation.content.decode()
+    assert request_response.status_code == 302
+    assert candidate.status == Candidate.Status.DELETION_REQUESTED
+    assert candidate.status_before_deletion_request == Candidate.Status.ACTIVE
+    assert candidate.deletion_requested_by == user
+    assert CandidateSource.objects.filter(candidate=candidate).exists()
+    assert CandidateDocument.objects.filter(candidate=candidate).exists()
+    assert storage.exists(stored_name)
+
+    purge_route = reverse(
+        "candidates:candidate-delete-execute",
+        args=[organization.slug, candidate.pk],
+    )
+    purge_confirmation = client.get(purge_route)
+    response = client.post(purge_route)
+
+    candidate.refresh_from_db()
+    assert purge_confirmation.status_code == 200
+    assert "permanently purge" in purge_confirmation.content.decode().lower()
     assert response.status_code == 302
     assert candidate.status == Candidate.Status.DELETED
     assert candidate.full_name == f"Deleted candidate #{candidate.pk}"
@@ -787,6 +818,14 @@ def test_recruiter_permanently_deletes_candidate_content(
         reverse("organizations:organization-dashboard", args=[organization.slug])
     )
     assert dashboard.context["active_candidate_count"] == 0
+    assert list(
+        AuditEvent.objects.filter(object_id=candidate.pk).values_list(
+            "action", flat=True
+        )
+    ) == [
+        AuditEvent.Action.CANDIDATE_DELETED,
+        AuditEvent.Action.CANDIDATE_DELETION_REQUESTED,
+    ]
 
 
 def test_candidate_delete_service_repeats_permission_check() -> None:

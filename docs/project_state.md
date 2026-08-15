@@ -14,7 +14,7 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 6 — Production safeguards and observability — is in progress.
 
-Status: `PROD-001` is complete; `PROD-002` is the next approved task.
+Status: `PROD-002` is complete; `PROD-003` is the next approved task.
 
 ## Decisions made
 
@@ -628,20 +628,49 @@ Status: `PROD-001` is complete; `PROD-002` is the next approved task.
   integrity, and recruiter-browser coverage. No AI/toolkit, audit-event,
   retention scheduler, background task, or observability behavior changed.
 
+### `PROD-002 — Audit views, retention/deletion workflow, and minimization`
+
+- Added immutable organization-owned privacy audit events with controlled
+  actions/object types, numeric IDs, optional actor, schema version, and
+  timestamp only. Candidate request/retention/cancel/purge, private CV download,
+  and vacancy deletion are recorded without copied identity, contact, CV,
+  prompt, response, note, or outreach content.
+- Added a tenant-scoped **Privacy & audit** dashboard. It presents staged
+  deletion requests, candidate/source/document retention exceptions, missing
+  retention dates, deleted-tombstone minimization findings, privacy events, and
+  compact summaries over existing AI/import/assessment/decision/outreach audit
+  records.
+- Replaced immediate candidate purge in the recruiter route with a staged
+  request that freezes new upload, extraction, and matching work. A separate
+  organization-administrator confirmation permanently purges the record; an
+  administrator can instead cancel and restore its exact prior active/inactive
+  status.
+- Added a schedulable `process_retention` command. It reports only organization
+  slug and aggregate due count, defaults to dry-run, and with `--apply` creates
+  idempotent candidate deletion-review requests. It never purges data; source
+  and document dates remain individually inspectable review signals.
+- Tightened the minimized candidate tombstone by clearing request actor and
+  prior-status metadata after purge while preserving request/purge attribution
+  in the content-free ledger. Added checks for retained identity, provenance,
+  documents, skills, or shortlist data after deletion.
+- Kept AI/toolkit behavior, outreach separation, final individual candidate
+  decisions, and the `PROD-003` background-processing boundary unchanged.
+
 ## Verification
 
-`PROD-001` verification completed on 2026-08-15:
+`PROD-002` verification completed on 2026-08-15:
 
-- Focused private-document regression set: `32 passed`.
-- Complete `python scripts/check.py` quality gate: `405 passed`.
+- Focused privacy/retention and affected deletion regression set: `215 passed`.
+- Complete `python scripts/check.py` quality gate: `410 passed`.
 - Django system and deploy checks passed with no issues.
-- Migration plan and drift checks reported no operations or model changes.
-  `PROD-001` adds no migration; `outreach.0002_outreach_workflow` remains the
-  latest project migration.
-- Ruff lint passed and all `142` files were already formatted.
+- `audit.0003_auditevent` and
+  `candidates.0005_candidate_deletion_requested_by_and_more` applied
+  successfully; the resulting migration plan is empty and drift is zero.
+- Ruff lint passed and all `151` files were formatted.
 - Dependency check confirmed all `32` installed packages are compatible.
-- Migration checks and the complete gate were repeated successfully from a clean
-  extraction of the restricted final deliverable ZIP.
+- A clean extraction of the restricted final ZIP installed from the lockfile,
+  applied both migrations from an empty database, reported an empty follow-up
+  plan, and passed the same complete `410`-test quality gate.
 
 ## Not implemented
 
@@ -661,9 +690,9 @@ Stored document bytes are available only through the integrity-checked,
 authenticated private attachment route completed in `PROD-001`. Recruiters
 can manage vacancy status through the normal organization workspace after a
 requirements version is confirmed. Recruiters can also delete vacancies and
-candidates through explicit confirmation pages; scheduled retention enforcement,
-administrative deletion reports, and comprehensive audit views remain in
-`PROD-002`. Recruiters can inspect deterministic rule outcomes for active
+use staged candidate deletion, administrative purge/cancellation, retention
+review, and minimized tenant-scoped audit views completed in `PROD-002`.
+Recruiters can inspect deterministic rule outcomes for active
 candidates using the current confirmed requirements, then generate a persistent
 version-labelled shortlist of up to 20 eligible candidates. Relevant candidate
 or confirmed-requirements changes clearly mark earlier runs stale while retaining
@@ -671,8 +700,9 @@ their immutable historical scores and explanations.
 For each candidate on a current shortlist with a confirmed profile, recruiters
 can request and inspect immutable evidence-based AI assessment versions. These
 are decision support only and cannot change the deterministic shortlist.
-Safe AI usage events are available to operators through read-only Django admin;
-recruiter-facing usage/cost/failure reports remain deferred to `PROD-004`.
+Safe AI usage events are available to operators through read-only Django admin
+and as compact content-free summaries on the privacy dashboard; aggregated
+usage/cost/latency/retry/failure reporting remains deferred to `PROD-004`.
 The review queue now reuses confirmed profiles and provides compact exception-
 focused assessment review and individual decision history. Remaining high-volume work uses `PROD-003` for resumable batch
 profile extraction and whole-shortlist assessment generation. No profile will be
@@ -686,4 +716,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`PROD-002 — Add audit views, retention/deletion workflow, and data minimization checks.`
+`PROD-003 — Add background processing, idempotency, resumability, and operational status.`

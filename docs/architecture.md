@@ -86,10 +86,10 @@ programming error rather than a simulated provider result.
 
 ### audit
 
-Safe AI usage events and, in later production tasks, operational events and
-privacy-relevant access. Audit storage contains no prompts, raw model responses,
-source descriptions, CV text, candidate identity/contact data, provider exception
-messages, or user-visible validation messages.
+Safe AI usage events plus privacy-relevant access and deletion events. Audit
+storage contains no prompts, raw model responses, source descriptions, CV text,
+candidate identity/contact data, recruiter notes, outreach content, provider
+exception messages, or user-visible validation messages.
 
 `AIUsageEvent` belongs directly to an organization and optionally retains the
 actor. It uses controlled workflow/object-type values plus numeric target/result
@@ -113,9 +113,20 @@ Completed usage events are immutable and database constraints keep status,
 completion, result, and failure fields consistent. An unexpected process or
 programming interruption may leave a pending event for later operational
 diagnosis; the application does not hide unrelated programming exceptions.
-Django admin exposes the ledger read-only. Recruiter-facing aggregation, cost/
-latency reporting, retention policy, and operational recovery remain `PROD-002`
-through `PROD-004`.
+Django admin exposes the ledger read-only. `AuditEvent` is a second immutable,
+organization-owned ledger with controlled action/object values, a numeric object
+ID, optional actor, schema version, and timestamp only. It records staged
+candidate deletion, retention flags, cancellation, completed purge, private CV
+download, and vacancy deletion. Model and queryset writes reject mutation or
+deletion, organization deletion is protected, and actor deletion nulls attribution.
+
+The tenant-scoped privacy dashboard combines this minimized ledger with compact
+views over existing immutable AI usage, CSV-source, assessment, decision,
+outreach-approval, and copy/export records. It intentionally omits all copied
+domain content. Candidate/source/document retention exceptions and deleted-
+candidate minimization findings are calculated from organization-scoped records.
+Cost/latency aggregation and operational recovery remain `PROD-004` and
+`PROD-003` respectively.
 
 ## Identity and organization policy
 
@@ -227,7 +238,14 @@ through `PROD-004`.
   text. OCR is a separately approved future capability.
 - Retention/deletion services must remove underlying stored bytes; deleting a
   Django database row alone does not guarantee storage deletion.
-- Recruiter-confirmed candidate deletion removes candidate contact fields,
+- Candidate deletion is staged. An organization member first creates an
+  inspectable request that freezes uploads, extraction, matching, and other new
+  processing while retaining the data for review. An organization administrator
+  can cancel and restore the exact prior active/inactive status, or approve a
+  second irreversible purge action. Candidate-level retention expiry can be
+  reported or scheduled to create the same staged request, but never purges data
+  automatically; source and document expiry remain individual review signals.
+- Administrator-approved candidate purge removes candidate contact fields,
   provenance rows, document database rows, stored document bytes, and extracted
   text. Document deletion cascades its candidate-profile versions and any
   AI-published skill evidence. It retains only the candidate primary key,
@@ -674,7 +692,13 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 - Logs do not contain raw CVs, contact details, prompts, or model responses.
 - AI requests minimize personal data and exclude protected attributes.
 - Candidate records include source, permission/consent notes, retention dates, and deletion status.
-- Deleting a candidate invalidates or removes derived profiles and assessments according to the approved retention policy.
+- Retention processing is dry-run by default and only stages due candidates for
+  individual review when explicitly applied; it never automatically erases data.
+- Deleting a candidate requires a separate request and administrator purge,
+  invalidating or removing derived profiles and assessments according to the
+  approved workflow.
+- Privacy audit summaries retain controlled IDs, actors, actions, and timestamps
+  without copying candidate or workflow content.
 - Secrets come from environment variables or a secret manager and never from committed files.
 - AI failures must not expose provider details or sensitive prompts to ordinary users.
 - `DJANGO_ENVIRONMENT=production` disables development fallbacks and requires an

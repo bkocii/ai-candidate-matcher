@@ -2,6 +2,7 @@ import csv
 import io
 import re
 from dataclasses import dataclass, field
+from datetime import date
 from typing import BinaryIO
 
 from django.core.exceptions import ValidationError
@@ -9,11 +10,14 @@ from django.db import transaction
 from django.utils import timezone
 
 from accounts.models import User
+from audit.models import AuditEvent
+from audit.services import record_audit_event
 from candidates.forms import CandidateCSVRowForm
 from candidates.models import Candidate, CandidateDocument, CandidateSource
 from organizations.models import Organization
 from organizations.permissions import (
     require_organization_access,
+    require_organization_admin,
     require_organization_object_access,
 )
 
@@ -207,13 +211,115 @@ def create_candidate_with_source(
     return candidate
 
 
+def _request_candidate_deletion(
+    *,
+    candidate: Candidate,
+    actor: User | None,
+    action: str,
+) -> Candidate:
+    candidate = Candidate.objects.select_for_update().get(pk=candidate.pk)
+    if candidate.status == Candidate.Status.DELETED:
+        raise ValidationError("This candidate has already been deleted.")
+    if candidate.status == Candidate.Status.DELETION_REQUESTED:
+        raise ValidationError("Candidate deletion has already been requested.")
+    if candidate.status not in {Candidate.Status.ACTIVE, Candidate.Status.INACTIVE}:
+        raise ValidationError("This candidate cannot enter deletion review.")
+
+    candidate.status_before_deletion_request = candidate.status
+    candidate.status = Candidate.Status.DELETION_REQUESTED
+    candidate.deletion_requested_at = timezone.now()
+    candidate.deletion_requested_by = actor
+    candidate.save(
+        update_fields=(
+            "status_before_deletion_request",
+            "status",
+            "deletion_requested_at",
+            "deletion_requested_by",
+            "updated_at",
+        )
+    )
+    record_audit_event(
+        organization=candidate.organization,
+        actor=actor,
+        action=action,
+        object_type=AuditEvent.ObjectType.CANDIDATE,
+        object_id=candidate.pk,
+        system=actor is None,
+    )
+    return candidate
+
+
+@transaction.atomic
+def request_candidate_deletion(*, candidate: Candidate, user: User) -> Candidate:
+    """Freeze a candidate for explicit later deletion review."""
+    require_organization_object_access(user, candidate)
+    return _request_candidate_deletion(
+        candidate=candidate,
+        actor=user,
+        action=AuditEvent.Action.CANDIDATE_DELETION_REQUESTED,
+    )
+
+
+@transaction.atomic
+def flag_candidate_for_expired_retention(
+    *,
+    candidate: Candidate,
+    as_of: date,
+) -> Candidate:
+    """System flag for an expired candidate-level retention date; never purge."""
+    candidate = Candidate.objects.select_for_update().get(pk=candidate.pk)
+    if candidate.retention_until is None or candidate.retention_until > as_of:
+        raise ValidationError("Candidate retention has not expired.")
+    return _request_candidate_deletion(
+        candidate=candidate,
+        actor=None,
+        action=AuditEvent.Action.CANDIDATE_RETENTION_FLAGGED,
+    )
+
+
+@transaction.atomic
+def cancel_candidate_deletion(*, candidate: Candidate, user: User) -> Candidate:
+    """Allow an organization administrator to restore a pending candidate."""
+    require_organization_admin(user, candidate.organization)
+    candidate = Candidate.objects.select_for_update().get(pk=candidate.pk)
+    if candidate.status != Candidate.Status.DELETION_REQUESTED:
+        raise ValidationError("This candidate has no pending deletion request.")
+
+    restored_status = candidate.status_before_deletion_request
+    if restored_status not in {Candidate.Status.ACTIVE, Candidate.Status.INACTIVE}:
+        raise ValidationError("The candidate's prior status cannot be restored.")
+    candidate.status = restored_status
+    candidate.status_before_deletion_request = ""
+    candidate.deletion_requested_at = None
+    candidate.deletion_requested_by = None
+    candidate.save(
+        update_fields=(
+            "status",
+            "status_before_deletion_request",
+            "deletion_requested_at",
+            "deletion_requested_by",
+            "updated_at",
+        )
+    )
+    record_audit_event(
+        organization=candidate.organization,
+        actor=user,
+        action=AuditEvent.Action.CANDIDATE_DELETION_CANCELLED,
+        object_type=AuditEvent.ObjectType.CANDIDATE,
+        object_id=candidate.pk,
+    )
+    return candidate
+
+
 @transaction.atomic
 def delete_candidate(*, candidate: Candidate, user: User) -> Candidate:
-    """Erase candidate content while retaining a minimal organization tombstone."""
+    """Execute a reviewed purge while retaining a minimized tombstone and event."""
     require_organization_object_access(user, candidate)
     candidate = Candidate.objects.select_for_update().get(pk=candidate.pk)
     if candidate.status == Candidate.Status.DELETED:
         raise ValidationError("This candidate has already been deleted.")
+    if candidate.status != Candidate.Status.DELETION_REQUESTED:
+        raise ValidationError("Request candidate deletion before executing the purge.")
 
     documents = list(
         CandidateDocument.objects.select_for_update().filter(candidate=candidate)
@@ -244,6 +350,8 @@ def delete_candidate(*, candidate: Candidate, user: User) -> Candidate:
     candidate.status = Candidate.Status.DELETED
     candidate.retention_until = None
     candidate.deletion_requested_at = candidate.deletion_requested_at or deleted_at
+    candidate.deletion_requested_by = None
+    candidate.status_before_deletion_request = ""
     candidate.deleted_at = deleted_at
     candidate.save(
         update_fields=(
@@ -254,9 +362,18 @@ def delete_candidate(*, candidate: Candidate, user: User) -> Candidate:
             "status",
             "retention_until",
             "deletion_requested_at",
+            "deletion_requested_by",
+            "status_before_deletion_request",
             "deleted_at",
             "updated_at",
         )
+    )
+    record_audit_event(
+        organization=candidate.organization,
+        actor=user,
+        action=AuditEvent.Action.CANDIDATE_DELETED,
+        object_type=AuditEvent.ObjectType.CANDIDATE,
+        object_id=candidate.pk,
     )
     return candidate
 

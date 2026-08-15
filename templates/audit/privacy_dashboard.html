@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy & audit | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading" aria-labelledby="privacy-title">
+    <p class="eyebrow">Production safeguards</p>
+    <h1 id="privacy-title">Privacy, retention, and audit</h1>
+    <p class="lede">Organization-scoped operational history and retention review without copied CV, contact, prompt, decision-note, or outreach content.</p>
+</section>
+
+<section class="metric-grid" aria-label="Retention summary">
+    <article class="metric-card">
+        <span class="metric-label">Pending deletion</span>
+        <strong class="metric-value">{{ retention.pending_deletions|length }}</strong>
+        <span class="metric-detail">Frozen for explicit review</span>
+    </article>
+    <article class="metric-card">
+        <span class="metric-label">Candidate retention due</span>
+        <strong class="metric-value">{{ retention.overdue_candidates|length }}</strong>
+        <span class="metric-detail">As of {{ retention.as_of|date:"Y-m-d" }}</span>
+    </article>
+    <article class="metric-card">
+        <span class="metric-label">Missing retention dates</span>
+        <strong class="metric-value">{{ retention.candidates_without_retention }}</strong>
+        <span class="metric-detail">Candidate-level policy review</span>
+    </article>
+    <article class="metric-card">
+        <span class="metric-label">Minimization issues</span>
+        <strong class="metric-value">{{ retention.minimization_issues|length }}</strong>
+        <span class="metric-detail">Deleted-record integrity checks</span>
+    </article>
+</section>
+
+<section aria-labelledby="deletion-queue-title">
+    <h2 id="deletion-queue-title">Candidate deletion queue</h2>
+    <p class="section-note">Requests freeze new processing. Permanent purge is a separate administrator action.</p>
+    {% if retention.pending_deletions %}
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Candidate</th><th>Requested</th><th>Requester</th><th>Review</th></tr></thead>
+                <tbody>
+                    {% for candidate in retention.pending_deletions %}
+                        <tr>
+                            <th><a href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">{{ candidate.full_name }}</a></th>
+                            <td>{{ candidate.deletion_requested_at|date:"Y-m-d H:i" }}</td>
+                            <td>{{ candidate.deletion_requested_by.username|default:"Scheduled retention" }}</td>
+                            <td>
+                                {% if can_administer %}
+                                    <a href="{% url 'candidates:candidate-delete-execute' organization.slug candidate.pk %}">Review purge</a>
+                                {% else %}
+                                    Administrator action required
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No candidate deletion requests are pending.</p>
+    {% endif %}
+</section>
+
+<section aria-labelledby="retention-due-title">
+    <h2 id="retention-due-title">Retention review</h2>
+    <p class="section-note">A due date is a review signal, not automatic legal advice. Only candidate-level expiry can be scheduled to create a deletion request; source and document dates remain individually inspectable.</p>
+    <div class="card-grid">
+        <article class="detail-panel">
+            <h3>Candidate records due ({{ retention.overdue_candidates|length }})</h3>
+            <ul>
+                {% for candidate in retention.overdue_candidates %}
+                    <li><a href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">{{ candidate.full_name }}</a> · {{ candidate.retention_until|date:"Y-m-d" }}</li>
+                {% empty %}<li>None</li>{% endfor %}
+            </ul>
+        </article>
+        <article class="detail-panel">
+            <h3>Source records due ({{ retention.overdue_sources|length }})</h3>
+            <ul>
+                {% for source in retention.overdue_sources %}
+                    <li><a href="{% url 'candidates:candidate-detail' organization.slug source.candidate_id %}">{{ source.candidate.full_name }}</a> · source #{{ source.pk }} · {{ source.retention_until|date:"Y-m-d" }}</li>
+                {% empty %}<li>None</li>{% endfor %}
+            </ul>
+        </article>
+        <article class="detail-panel">
+            <h3>Documents due ({{ retention.overdue_documents|length }})</h3>
+            <ul>
+                {% for document in retention.overdue_documents %}
+                    <li><a href="{% url 'candidates:candidate-detail' organization.slug document.candidate_id %}">{{ document.candidate.full_name }}</a> · document #{{ document.pk }} · {{ document.retention_until|date:"Y-m-d" }}</li>
+                {% empty %}<li>None</li>{% endfor %}
+            </ul>
+        </article>
+        <article class="detail-panel">
+            <h3>Missing dates</h3>
+            <ul>
+                <li>Candidates: {{ retention.candidates_without_retention }}</li>
+                <li>Sources: {{ retention.sources_without_retention }}</li>
+                <li>Documents: {{ retention.documents_without_retention }}</li>
+            </ul>
+        </article>
+    </div>
+</section>
+
+<section aria-labelledby="minimization-title">
+    <h2 id="minimization-title">Data-minimization integrity</h2>
+    {% if retention.minimization_issues %}
+        <ul>
+            {% for issue in retention.minimization_issues %}
+                <li>{{ issue.code }} · {{ issue.object_type }} #{{ issue.object_id }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No deleted candidate retains identity, source, document, skill, or shortlist data.</p>
+    {% endif %}
+</section>
+
+<section aria-labelledby="privacy-events-title">
+    <h2 id="privacy-events-title">Privacy and deletion events</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Time</th><th>Action</th><th>Object</th><th>Actor</th></tr></thead>
+            <tbody>
+                {% for event in history.privacy_events %}
+                    <tr><td>{{ event.occurred_at|date:"Y-m-d H:i" }}</td><td>{{ event.get_action_display }}</td><td>{{ event.object_type }} #{{ event.object_id }}</td><td>{{ event.actor.username|default:"System" }}</td></tr>
+                {% empty %}<tr><td colspan="4">No privacy events recorded.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section aria-labelledby="workflow-audit-title">
+    <h2 id="workflow-audit-title">Workflow audit summaries</h2>
+    <p class="section-note">These compact histories use existing immutable records and omit source text, CV text, prompts, raw responses, recruiter notes, and outreach content.</p>
+    <div class="card-grid">
+        <article class="detail-panel">
+            <h3>AI attempts</h3>
+            <ul>{% for event in history.ai_usage_events %}<li>{{ event.started_at|date:"Y-m-d H:i" }} · {{ event.get_workflow_display }} · {{ event.get_status_display }} · {{ event.actor.username|default:"Deleted actor" }}</li>{% empty %}<li>None</li>{% endfor %}</ul>
+        </article>
+        <article class="detail-panel">
+            <h3>CSV-created source records</h3>
+            <ul>{% for source in history.csv_import_records %}<li>{{ source.created_at|date:"Y-m-d H:i" }} · candidate #{{ source.candidate_id }} · {{ source.recorded_by.username|default:"Deleted actor" }}</li>{% empty %}<li>None</li>{% endfor %}</ul>
+        </article>
+        <article class="detail-panel">
+            <h3>Match assessments</h3>
+            <ul>{% for assessment in history.assessments %}<li>{{ assessment.created_at|date:"Y-m-d H:i" }} · assessment #{{ assessment.pk }} v{{ assessment.version }} · {{ assessment.created_by.username|default:"Deleted actor" }}</li>{% empty %}<li>None</li>{% endfor %}</ul>
+        </article>
+        <article class="detail-panel">
+            <h3>Recruiter decisions</h3>
+            <ul>{% for decision in history.review_decisions %}<li>{{ decision.created_at|date:"Y-m-d H:i" }} · decision #{{ decision.pk }} v{{ decision.version }} · {{ decision.get_decision_display }} · {{ decision.created_by.username }}</li>{% empty %}<li>None</li>{% endfor %}</ul>
+        </article>
+        <article class="detail-panel">
+            <h3>Outreach approvals</h3>
+            <ul>{% for approval in history.outreach_approvals %}<li>{{ approval.approved_at|date:"Y-m-d H:i" }} · draft #{{ approval.draft_id }} v{{ approval.draft.version }} · {{ approval.approved_by.username }}</li>{% empty %}<li>None</li>{% endfor %}</ul>
+        </article>
+        <article class="detail-panel">
+            <h3>Outreach copy/export</h3>
+            <ul>{% for action in history.outreach_actions %}<li>{{ action.created_at|date:"Y-m-d H:i" }} · draft #{{ action.draft_id }} · {{ action.get_action_type_display }} · {{ action.actor.username }}</li>{% empty %}<li>None</li>{% endfor %}</ul>
+        </article>
+    </div>
+</section>
+{% endblock %}

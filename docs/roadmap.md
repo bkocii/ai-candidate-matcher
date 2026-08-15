@@ -94,12 +94,12 @@ Status: Complete.
 ## Sprint 6 — Production safeguards and observability
 
 - `PROD-001` Add private file-delivery controls and upload hardening. **Complete — 2026-08-15.**
-- `PROD-002` Add audit views, retention/deletion workflow, and data minimization checks.
+- `PROD-002` Add audit views, retention/deletion workflow, and data minimization checks. **Complete — 2026-08-15.**
 - `PROD-003` Add background processing, idempotency, resumability, and operational status.
 - `PROD-004` Add token, cost, latency, retry, and failure reporting.
 - `PROD-005` Add deployment documentation and production checks.
 
-Status: In progress. `PROD-002` is next.
+Status: In progress. `PROD-003` is next.
 
 ## Sprint 7 — Evaluation and showcase release
 

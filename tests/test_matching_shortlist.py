@@ -7,7 +7,7 @@ from django.urls import reverse
 
 from accounts.models import OrganizationMembership, User
 from candidates.models import Candidate
-from candidates.services import delete_candidate
+from candidates.services import delete_candidate, request_candidate_deletion
 from matching.models import MatchRun, ShortlistEntry
 from matching.scoring import ALGORITHM_VERSION, SHORTLIST_LIMIT, generate_shortlist
 from matching.services import (
@@ -382,6 +382,7 @@ def test_candidate_deletion_removes_persisted_score_evidence_but_keeps_run() -> 
     )
     run = generate_shortlist(requirements=requirements, user=user)
 
+    request_candidate_deletion(candidate=candidate, user=user)
     delete_candidate(candidate=candidate, user=user)
 
     assert MatchRun.objects.filter(pk=run.pk).exists()

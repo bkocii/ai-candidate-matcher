@@ -14,8 +14,8 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 5 and `PROD-001` are complete. Sprint 6 is in progress;
-`PROD-002` is the next approved roadmap task.
+Sprint 0 through Sprint 5, `PROD-001`, and `PROD-002` are complete. Sprint 6 is
+in progress; `PROD-003` is the next approved roadmap task.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -49,10 +49,10 @@ A corrective `DATA-005` pass also makes completed CSV imports target the visible
 report section and adds recruiter-facing, POST-only vacancy lifecycle controls.
 Opening requires confirmed requirements; only draft-to-open, open-to-paused or
 closed, paused-to-open or closed, and closed-to-open transitions are accepted.
-The follow-up deletion pass adds confirmation pages for candidates and vacancies.
-Candidate deletion purges contact/provenance/document content and stored CV bytes,
-leaving a minimal tombstone. Vacancy deletion hides and closes the record while
-preserving requirement history with deletion actor/timestamp metadata.
+The follow-up deletion pass added confirmation pages for candidates and
+vacancies. `PROD-002` later replaced immediate candidate purge with the staged
+request/administrator approval described below. Vacancy deletion still hides and
+closes the record while preserving requirement history with deletion actor/time.
 
 `MATCH-001` is also complete. It adds organization-owned normalized skills,
 candidate skill evidence, versioned must-have/nice-to-have requirement links,
@@ -254,6 +254,33 @@ same-organization duplicate check is serialized before save. No AI, toolkit,
 audit view/event, retention scheduler, background task, or observability scope
 was added.
 
+`PROD-002` is complete. Recruiters have a tenant-scoped **Privacy & audit**
+dashboard with candidate/source/document retention exceptions, missing-date
+counts, a staged candidate deletion queue, deleted-tombstone minimization checks,
+immutable privacy events, and compact histories over existing AI usage, CSV
+source, assessment, decision, outreach-approval, and copy/export records. These
+views omit contact fields, CV/source text, prompts, raw responses, decision and
+approval notes, and outreach content.
+
+Candidate deletion now requires two explicit stages. An organization member
+requests deletion, freezing the candidate from new uploads, extraction, and
+matching while preserving data for review. An organization administrator then
+either cancels and restores the exact prior active/inactive status or approves a
+second irreversible purge. Purge removes private bytes and all candidate-owned
+provenance/profile/matching/decision/outreach data, clears temporary request
+metadata, and retains only the minimized candidate tombstone plus content-free
+request/purge events.
+
+The schedulable `process_retention` command reports only organization slug and
+aggregate due count, is dry-run by default, and with `--apply` idempotently stages
+candidate-level expiry for the same review queue. It never auto-purges; source
+and document expiry remain individually inspectable signals. Private CV download
+and vacancy deletion also create controlled audit events. `PROD-002` adds
+`audit.0003_auditevent` and
+`candidates.0005_candidate_deletion_requested_by_and_more`. It adds no AI or
+toolkit change, background queue, cost/latency aggregation, recipient, or send
+action.
+
 ## Recruiter-efficiency requirement for later tasks
 
 Do not treat the current per-candidate generation actions as the final high-volume UX.
@@ -269,7 +296,7 @@ outreach generation and final draft approval remain separate actions.
 
 The next roadmap item is:
 
-`PROD-002 — Add audit views, retention/deletion workflow, and data minimization checks.`
+`PROD-003 — Add background processing, idempotency, resumability, and operational status.`
 
 ## Required instructions
 
@@ -286,19 +313,21 @@ The next roadmap item is:
 
 ## Current verification
 
-`PROD-001` verification completed on 2026-08-15:
+`PROD-002` verification completed on 2026-08-15:
 
-- Focused private-document regression set: `32 passed`.
-- Complete `python scripts/check.py` quality gate: `405 passed`.
-- Django system/deploy checks, migration drift, Ruff lint/format (`142` files),
-  and dependency compatibility (`32` packages) all passed.
-- `PROD-001` adds no migration; the migration plan is empty and
-  `outreach.0002_outreach_workflow` remains the latest project migration.
-- Migration checks and the complete gate were repeated successfully from a clean
-  extraction of the restricted final deliverable ZIP.
+- Focused privacy/retention and affected deletion regression set: `215 passed`.
+- Complete `python scripts/check.py` quality gate: `410 passed`.
+- Django system/deploy checks passed; migration drift is zero; Ruff lint passed
+  and all `151` files are formatted; all `32` installed packages are compatible.
+- `PROD-002` adds two migrations: `audit.0003_auditevent` and
+  `candidates.0005_candidate_deletion_requested_by_and_more`.
+- A clean extraction of the restricted final ZIP installed from the lockfile,
+  applied both migrations from an empty database, reported an empty follow-up
+  plan, and passed the same complete `410`-test quality gate.
 
 ## Immediate next action
 
-Implement only `PROD-002`: add audit views, retention/deletion workflow, and data
-minimization checks. Keep outreach sending unavailable and do not pull background
-processing or observability reporting forward.
+Implement only `PROD-003`: add background processing, idempotency, resumability,
+and operational status. Preserve staged deletion and the separate individually
+approved candidate-decision/outreach boundaries; do not pull cost/latency
+reporting from `PROD-004` forward without a concrete reason.

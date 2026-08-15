@@ -72,6 +72,14 @@ def test_deletion_states_require_their_audit_timestamp() -> None:
     with pytest.raises(IntegrityError), transaction.atomic():
         Candidate.objects.create(
             organization=organization,
+            full_name="Missing Prior Status",
+            status=Candidate.Status.DELETION_REQUESTED,
+            deletion_requested_at=timezone.now(),
+        )
+
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Candidate.objects.create(
+            organization=organization,
             full_name="Missing Deletion Timestamp",
             status=Candidate.Status.DELETED,
         )

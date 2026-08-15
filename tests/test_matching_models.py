@@ -9,7 +9,7 @@ from django.db import IntegrityError, transaction
 
 from accounts.models import OrganizationMembership, User
 from candidates.models import Candidate, CandidateDocument
-from candidates.services import delete_candidate
+from candidates.services import delete_candidate, request_candidate_deletion
 from matching.models import (
     CandidateSkill,
     HardConstraintRule,
@@ -301,6 +301,7 @@ def test_candidate_deletion_removes_derived_skill_evidence() -> None:
         evidence="Private CV evidence",
     )
 
+    request_candidate_deletion(candidate=candidate, user=user)
     delete_candidate(candidate=candidate, user=user)
 
     assert not CandidateSkill.objects.filter(candidate=candidate).exists()

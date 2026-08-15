@@ -27,6 +27,18 @@ urlpatterns = [
     ),
     path(
         "organizations/<slug:organization_slug>/candidates/"
+        "<int:candidate_id>/delete/execute/",
+        views.candidate_delete_execute,
+        name="candidate-delete-execute",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/"
+        "<int:candidate_id>/delete/cancel/",
+        views.candidate_delete_cancel,
+        name="candidate-delete-cancel",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/"
         "<int:candidate_id>/documents/upload/",
         views.candidate_cv_upload,
         name="candidate-cv-upload",

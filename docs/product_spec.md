@@ -56,6 +56,8 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Copy/export only; no automatic sending.
 - AI token, cost, latency, retry, and failure tracking when available.
 - Audit history for imports, assessments, reviews, and draft approval.
+- Tenant-scoped retention/deletion review, minimized privacy events, and
+  deleted-record integrity checks.
 - Django admin for operational management.
 
 ## Non-goals for the MVP
@@ -88,6 +90,12 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
   and assessment should use resumable background batches and exception-focused
   review rather than forcing repetitive per-candidate setup, while employment
   decisions remain explicit individual recruiter actions.
+- Retention expiry is a review signal, not an automatic purge. Candidate deletion
+  first freezes the record, and permanent erasure requires a separate,
+  individually inspectable administrator action.
+- Audit views expose only the minimum identifiers and operational metadata needed
+  for accountability; they do not duplicate CV, contact, prompt, response,
+  recruiter-note, or outreach content.
 
 ## Core structured outputs
 

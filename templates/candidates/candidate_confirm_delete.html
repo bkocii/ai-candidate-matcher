@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}Delete {{ candidate.full_name }} | {{ organization.name }}{% endblock %}
+{% block title %}Request deletion for {{ candidate.full_name }} | {{ organization.name }}{% endblock %}
 
 {% block content %}
 <section class="page-heading" aria-labelledby="delete-candidate-title">
-    <p class="eyebrow">Permanent candidate deletion</p>
-    <h1 id="delete-candidate-title">Delete {{ candidate.full_name }}?</h1>
-    <p class="lede">This action removes the candidate's contact details, provenance records, private document records, stored CV files, and extracted CV text.</p>
+    <p class="eyebrow">Candidate deletion review</p>
+    <h1 id="delete-candidate-title">Request deletion for {{ candidate.full_name }}?</h1>
+    <p class="lede">This first step freezes the candidate from matching and new processing. It does not purge data yet.</p>
 </section>
 
 <section class="detail-panel danger-panel" aria-labelledby="candidate-warning-title">
-    <h2 id="candidate-warning-title">This cannot be undone</h2>
-    <p>Only a minimal organization-owned tombstone with deletion timestamps remains for audit integrity. The candidate will disappear from the recruiter workspace.</p>
+    <h2 id="candidate-warning-title">A separate purge is required</h2>
+    <p>An organization administrator must inspect the request and explicitly execute permanent deletion. The request can be cancelled before that purge.</p>
     <div class="button-row">
         <a class="secondary-button" href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">Cancel</a>
         <form method="post">
             {% csrf_token %}
-            <button class="danger-button" type="submit">Permanently delete candidate</button>
+            <button class="danger-button" type="submit">Request candidate deletion</button>
         </form>
     </div>
 </section>

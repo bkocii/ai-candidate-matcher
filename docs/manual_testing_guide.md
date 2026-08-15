@@ -1,7 +1,7 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`PROD-001`. Use only the synthetic files in `manual_testing/fixtures` or other
+`PROD-002`. Use only the synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
 
@@ -63,7 +63,8 @@ organization isolation.
 2. If prompted, sign in with the superuser.
 3. Confirm that the single active organization opens automatically.
 4. Confirm that the navigation contains **Dashboard**, **Candidates**,
-   **Vacancies**, **Reviews**, **Django admin**, and **Sign out**.
+   **Vacancies**, **Reviews**, **Privacy & audit**, **Django admin**, and
+   **Sign out**.
 5. Confirm the dashboard initially shows zero active candidates and zero open
    vacancies.
 6. Select **Sign out** and confirm you return to the login page.
@@ -204,18 +205,27 @@ uv run pytest -q tests/test_candidate_documents.py
 ### Candidate deletion
 
 Create a disposable synthetic candidate, add a provenance record, and upload one
-of the synthetic CVs. Open the candidate and select **Delete candidate**.
+of the synthetic CVs. Open the candidate and select **Request deletion**.
 
 Expected result:
 
-- A separate confirmation page explains that deletion cannot be undone.
+- A separate confirmation page explains that this first step freezes the
+  candidate but does not purge data.
 - Cancel returns to the unchanged candidate.
-- Confirming deletion returns to the candidate list.
+- Confirming the request returns to the candidate detail. Its source, document,
+  and profile data still exist, but upload, extraction, and matching actions are
+  unavailable.
+- An organization administrator can cancel the request and restore the exact
+  prior `Active` or `Inactive` status.
+- The administrator can instead select **Review purge**, inspect a second
+  irreversible confirmation, and explicitly select **Permanently purge
+  candidate data**.
 - The candidate no longer appears and its former detail URL returns `404`.
 - Contact fields, provenance records, document rows, stored CV bytes, and
   extracted text are removed.
 - Django admin retains only a non-identifying candidate tombstone and deletion
-  timestamps for minimal audit integrity.
+  timestamps. The privacy ledger separately records request and purge actor/time
+  without copying candidate identity, contact, CV, or decision content.
 
 ## 7. Test vacancy creation and requirements version 1
 
@@ -942,7 +952,64 @@ event is created because no AI attempt occurred.
 Editing, final approval, copy, and export are local human actions and therefore
 must not create AI usage events.
 
-## 22. Run the optional synthetic live gateway smoke test
+## 22. Test privacy audit, retention review, and minimization
+
+Open **Privacy & audit** in the organization navigation.
+
+Expected result:
+
+- The summary distinguishes pending deletion requests, active/inactive candidate
+  records whose retention date is due, missing candidate retention dates, and
+  deleted-record minimization issues.
+- Pending requests show candidate identity only where needed for an individual
+  deletion decision. Only an organization administrator sees **Review purge**.
+- Candidate, source, and document retention exceptions are individually linked
+  for review. A due date is shown as a policy-review signal, not legal advice or
+  an automatic purge instruction.
+- Privacy events show controlled action, generic object type/ID, actor, and time.
+  Workflow summaries show safe IDs/status/version/actor information for AI
+  attempts, CSV-created source records, assessments, recruiter decisions,
+  outreach approvals, and copy/export actions.
+- The page contains no source names/references, permission notes, contact fields,
+  CV text, prompts, raw AI responses, recruiter decision notes, approval notes,
+  or outreach subject/body.
+- A member of another organization receives `404` and no names or counts from
+  this organization.
+
+### Retention command
+
+First run a read-only report with a fixed synthetic date:
+
+```powershell
+uv run python manage.py process_retention --as-of 2026-08-15 --organization northstar-test
+```
+
+Expected result: the command prints only the organization slug and aggregate
+candidate count. It prints no candidate name or contact value and explicitly
+says it is a dry run. No status changes.
+
+Then create a disposable active or inactive candidate whose candidate-level
+retention date is on or before the test date and run:
+
+```powershell
+uv run python manage.py process_retention --as-of 2026-08-15 --organization northstar-test --apply
+```
+
+Expected result: the candidate becomes **Deletion requested**, appears in the
+dashboard queue, and receives a system retention-expiry audit event. No source,
+document, candidate, or stored-file data is purged. Running the same command
+again reports zero newly due candidates and creates no duplicate event.
+
+Source- and document-level expiry remain visible exceptions for individual
+review; this command intentionally stages only candidate-level expiry.
+
+Run the focused automated coverage:
+
+```powershell
+uv run pytest -q tests/test_audit_retention.py tests/test_candidate_documents.py tests/test_vacancy_intake.py
+```
+
+## 23. Run the optional synthetic live gateway smoke test
 
 This developer test is separate from the browser workflows and ordinary quality
 gate. It may incur one small provider charge. It sends no candidate, vacancy, CV,
@@ -966,20 +1033,21 @@ Never edit this smoke test to send real recruitment data. A live failure does no
 change any candidate, vacancy, profile, assessment, or audit record because the
 test calls only the application gateway contract.
 
-## 23. What is intentionally unavailable
+## 24. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
 - Manual candidate-skill entry still uses Django admin; confirmed AI profile
   skills are published through the normal candidate workflow.
-- No recruiter-facing AI usage/cost/failure dashboard; safe records are currently
-  read-only in Django admin.
+- No cost/latency/retry aggregation or operational recovery dashboard yet. The
+  privacy page shows only compact existing workflow history; full observability
+  remains `PROD-004`.
 - No OCR for scanned PDFs.
 - No automatic outreach sending, recipient selection, email/ATS/platform
   integration, or normal-workspace contact-permission editor. Manual clipboard
   copy and plain-text export deliberately stop before transmission.
 
-## 24. Final acceptance checklist
+## 25. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -994,8 +1062,16 @@ The current milestone is behaving correctly when all of these are true:
   again without mutating history.
 - Recruiters can open, pause, close, and reopen vacancies only through the
   documented lifecycle transitions.
-- Candidate deletion removes private candidate content and CV files; vacancy
-  deletion hides the vacancy without destroying requirements history.
+- Candidate deletion first freezes an individually inspectable request; only a
+  separate administrator purge removes private candidate content and CV files.
+  Cancellation restores the prior state, while vacancy deletion hides the
+  vacancy without destroying requirements history.
+- Retention scheduling defaults to a content-free dry run and can only stage due
+  candidate records for review; it never auto-purges. Source and document due
+  dates remain individual review exceptions.
+- The tenant-scoped privacy dashboard exposes minimized audit/workflow summaries,
+  deletion and retention queues, and tombstone-integrity findings without copied
+  CV, contact, prompt, response, note, or outreach content.
 - Requirement skills normalize case and spacing without merging meaningful
   punctuation, and typed rules keep unknown candidate facts eligible for review.
 - Deterministic filtering shows inspectable pass/fail/unknown rule outcomes and
@@ -1058,7 +1134,7 @@ The current milestone is behaving correctly when all of these are true:
   or live AI request; only explicit vacancy extraction, candidate extraction,
   match-assessment, or outreach-generation actions do.
 
-## 25. Reset disposable local test data
+## 26. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 
