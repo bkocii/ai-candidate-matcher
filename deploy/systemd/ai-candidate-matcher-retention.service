@@ -1,0 +1,15 @@
+[Unit]
+Description=Stage due AI Candidate Matcher records for retention review
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ai-candidate-matcher
+Group=www-data
+WorkingDirectory=/srv/ai-candidate-matcher/current
+EnvironmentFile=/etc/ai-candidate-matcher.env
+UMask=0027
+ExecStart=/srv/ai-candidate-matcher/current/.venv/bin/python manage.py process_retention --apply
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full

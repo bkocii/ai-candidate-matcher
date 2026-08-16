@@ -21,6 +21,34 @@ The application must not depend directly on an OpenAI or other provider SDK outs
 
 Exact dependency versions will be selected during `FOUND-001` and recorded in the lock or project configuration.
 
+## Production topology
+
+The MVP reference deployment is one Linux application host with Gunicorn behind
+an HTTPS Nginx reverse proxy, PostgreSQL, and persistent private filesystem
+storage. The web service, continuous durable worker, and daily retention-review
+timer are separately supervised by systemd. The worker uses the same locked
+release, production environment, PostgreSQL database, and private storage as the
+web process; it does not run inside a web worker.
+
+Nginx serves only collected static assets. There is deliberately no public media
+route: candidate documents continue through the authenticated, tenant-scoped,
+integrity-checked Django attachment view. The proxy must overwrite
+`X-Forwarded-Proto` before Django is configured to trust it.
+
+Production configuration fails closed without explicit PostgreSQL credentials
+and an absolute persistent media root separate from static assets. The
+`check_production` command combines Django deployment checks with a real
+PostgreSQL query, migration-plan verification, collected project CSS, and a
+private-storage save/read/delete round trip. Content-free liveness and readiness
+endpoints support supervision; readiness performs only `SELECT 1` and returns a
+generic HTTP 503 on database failure.
+
+Deployment, monitoring, paired database/private-media backups, isolated restore
+drills, upgrades, rollback boundaries, and the reference Nginx/systemd artifacts
+are documented in `docs/deployment.md` and `deploy/`. These controls complete
+Sprint 6 but do not satisfy the later evaluation or privacy/security release
+gates by themselves.
+
 ## Application modules
 
 ### accounts
@@ -797,7 +825,8 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
   requires `RUN_LIVE_AI_SMOKE=1`, and may make one low-cost billable API request.
 - An anonymized/synthetic benchmark set measures ranking stability and explanation quality.
 - `scripts/check.py` is the single local and CI quality gate. It includes normal
-  and warning-strict deployment checks, migration-drift detection, tests, lint,
-  formatting, and dependency compatibility.
+  and warning-strict deployment checks, production static collection,
+  migration-drift detection, tests, lint, formatting, and dependency
+  compatibility.
 - GitHub Actions runs the locked environment and shared quality gate on every
   pull request and push to `main` across Python 3.11 through 3.14.

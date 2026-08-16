@@ -31,9 +31,20 @@ def deployment_environment() -> dict[str, str]:
             ),
             "DJANGO_ALLOWED_HOSTS": "example.com",
             "DJANGO_CSRF_TRUSTED_ORIGINS": "https://example.com",
+            "DJANGO_SECURE_SSL_REDIRECT": "true",
+            "DJANGO_SESSION_COOKIE_SECURE": "true",
+            "DJANGO_CSRF_COOKIE_SECURE": "true",
             "DJANGO_SECURE_HSTS_SECONDS": "31536000",
             "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS": "true",
             "DJANGO_SECURE_HSTS_PRELOAD": "true",
+            "DJANGO_MEDIA_ROOT": str(PROJECT_ROOT / ".deployment-check-media"),
+            "DJANGO_STATIC_ROOT": str(PROJECT_ROOT / "staticfiles"),
+            "POSTGRES_DB": "deployment_check",
+            "POSTGRES_USER": "deployment_check",
+            "POSTGRES_PASSWORD": "deployment-check-not-for-real-use",
+            "POSTGRES_HOST": "127.0.0.1",
+            "POSTGRES_PORT": "5432",
+            "POSTGRES_SSLMODE": "prefer",
         }
     )
     return environment
@@ -48,6 +59,18 @@ def main() -> int:
 
     commands: list[tuple[list[str], dict[str, str] | None]] = [
         ([python, "manage.py", "check"], None),
+        (
+            [
+                python,
+                "manage.py",
+                "collectstatic",
+                "--noinput",
+                "--clear",
+                "--verbosity",
+                "0",
+            ],
+            deployment_environment(),
+        ),
         (
             [python, "manage.py", "check", "--deploy", "--fail-level", "WARNING"],
             deployment_environment(),

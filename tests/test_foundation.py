@@ -12,6 +12,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 def test_django_settings_load() -> None:
     assert settings.ROOT_URLCONF == "config.urls"
     assert settings.DEFAULT_AUTO_FIELD == "django.db.models.BigAutoField"
+    assert settings.STATIC_URL == "/static/"
+    assert settings.FILE_UPLOAD_PERMISSIONS == 0o600
+    assert settings.FILE_UPLOAD_DIRECTORY_PERMISSIONS == 0o700
 
 
 def test_published_toolkit_version_is_installed() -> None:

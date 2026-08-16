@@ -10,8 +10,8 @@ machine merely for testing.
 Open PowerShell in the project root (the directory containing `manage.py`):
 
 ```powershell
-uv sync --extra dev
-Copy-Item .env.example .env -ErrorAction SilentlyContinue
+uv sync --extra dev --locked
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 uv run python manage.py migrate
 uv run python scripts/check.py
 ```
@@ -22,8 +22,12 @@ Expected result:
 - Django reports no migration drift.
 - The ordinary test suite makes no live AI request.
 - No OpenAI API key is required.
+- The deployment-check subprocess supplies its own complete production security
+  settings and therefore passes even though the local development `.env` keeps
+  HTTPS redirect and secure cookies disabled.
 
-If `.env` already exists, do not overwrite it. A blank
+The guarded copy command deliberately preserves an existing `.env`; never use an
+unguarded `Copy-Item .env.example .env` against a configured project. A blank
 `DJANGO_SECRET_KEY=` is accepted only in development and uses the local
 development fallback. Production configuration still requires a real secret.
 
@@ -1115,7 +1119,55 @@ Run the focused provider-free coverage:
 uv run pytest -q tests/test_ai_usage_reporting.py tests/test_ai_usage_events.py tests/test_audit_retention.py
 ```
 
-## 25. Run the optional synthetic live gateway smoke test
+## 25. Test production checks and health endpoints
+
+The ordinary quality gate now collects static assets under an isolated synthetic
+production configuration before running Django's warning-strict deployment
+check. It does not connect to a production database or provider.
+
+Run the focused provider-free coverage:
+
+```powershell
+uv run pytest -q tests/test_environment.py tests/test_production_operations.py tests/test_deployment_artifacts.py tests/test_foundation.py
+```
+
+Start the development server and open these URLs:
+
+```text
+http://127.0.0.1:8000/health/live/
+http://127.0.0.1:8000/health/ready/
+```
+
+Expected result:
+
+- Both return only `{"status": "ok"}` with `Cache-Control: no-store` while the
+  development database is available.
+- Liveness does not query application data. Readiness performs only `SELECT 1`.
+- A database outage makes readiness return HTTP 503 with
+  `{"status": "unavailable"}` and no connection, credential, path, candidate,
+  or exception details.
+- Running `uv run python manage.py check_production` in development fails safely
+  because that command is reserved for an actual production-configured runtime.
+
+In an isolated staging environment, follow `docs/deployment.md`: configure
+PostgreSQL and persistent private media, run migrations and `collectstatic`, then
+run:
+
+```powershell
+uv run python manage.py check --deploy --fail-level WARNING
+uv run python manage.py check_production
+```
+
+Expected staging result: both pass. The runtime command verifies PostgreSQL,
+migration state, collected CSS, and a private-media save/read/delete round trip.
+It prints only controlled check names. Verify the web service, continuous worker,
+and retention timer are separately supervised and confirm the reverse proxy has
+no public `/media/` route.
+
+Never point a staging test at production data or media. Backup and restore drills
+must use an isolated destination as described in the deployment guide.
+
+## 26. Run the optional synthetic live gateway smoke test
 
 This developer test is separate from the browser workflows and ordinary quality
 gate. It may incur one small provider charge. It sends no candidate, vacancy, CV,
@@ -1139,7 +1191,7 @@ Never edit this smoke test to send real recruitment data. A live failure does no
 change any candidate, vacancy, profile, assessment, or audit record because the
 test calls only the application gateway contract.
 
-## 26. What is intentionally unavailable
+## 27. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
@@ -1153,7 +1205,7 @@ The following are not defects at this milestone:
   integration, or normal-workspace contact-permission editor. Manual clipboard
   copy and plain-text export deliberately stop before transmission.
 
-## 27. Final acceptance checklist
+## 28. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -1250,12 +1302,17 @@ The current milestone is behaving correctly when all of these are true:
 - The shared fake/toolkit contract tests pass provider-free, the ordinary suite
   excludes `live_tests`, and the explicitly enabled synthetic live smoke returns
   one schema-valid result when valid provider configuration is supplied.
+- Production fails closed without explicit HTTPS, PostgreSQL, and persistent
+  private-media settings. Static collection, Django deployment checks, runtime
+  database/migration/storage checks, generic health endpoints, separately
+  supervised web/worker/retention processes, and backup/restore guidance are
+  available without exposing private recruitment content.
 - Cross-organization URLs do not disclose data.
 - The ordinary test suite and deterministic browser workflow require no AI key
   or live AI request; only explicit vacancy extraction, candidate extraction,
   match-assessment, or outreach-generation actions do.
 
-## 28. Reset disposable local test data
+## 29. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

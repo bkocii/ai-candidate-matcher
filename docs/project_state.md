@@ -12,9 +12,9 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 ## Current milestone
 
-Sprint 6 — Production safeguards and observability — is in progress.
+Sprint 6 — Production safeguards and observability — is complete.
 
-Status: `PROD-004` is complete; `PROD-005` is the next approved task.
+Status: `PROD-005` is complete; `EVAL-001` is the next approved task.
 
 ## Decisions made
 
@@ -706,21 +706,55 @@ Status: `PROD-004` is complete; `PROD-005` is the next approved task.
 - Kept toolkit and schema boundaries unchanged. Existing safe success metadata,
   application timestamps, and failure codes were sufficient, so no toolkit
   change or database migration was needed.
+- Corrected the shared quality gate to override all required HTTPS settings in
+  its isolated deployment-check subprocess. A normal development `.env` can
+  therefore retain secure-cookie values as false without contaminating the
+  production configuration check.
+
+### `PROD-005 — Deployment documentation and production checks`
+
+- Replaced production SQLite with fail-closed explicit PostgreSQL configuration,
+  connection health checks, configurable SSL mode, and locked Psycopg support.
+  Development and ordinary tests continue to use SQLite.
+- Added an explicit production private-media root, separate static root,
+  restrictive uploaded-file permissions, and production validation that rejects
+  missing, relative, equal, or nested private/static paths.
+- Added locked Gunicorn support plus version-controlled reference Nginx and
+  systemd units for web, continuous durable worker, release preparation, and the
+  safe daily retention-review timer. Private media is never exposed by Nginx.
+- Added content-free liveness and database-readiness endpoints. Database failure
+  returns only a generic unavailable response and no credentials, paths,
+  exception details, or recruitment content.
+- Added `check_production`, which verifies Django deployment checks, PostgreSQL
+  connectivity, fully applied migrations, collected project CSS, and a private-
+  storage save/read/delete round trip with controlled operator output.
+- Extended the shared quality gate to collect production static assets under its
+  isolated deployment environment before the warning-strict deployment check.
+- Added a complete deployment runbook covering prerequisites, secret handling,
+  release installation, migrations/static/readiness, worker initialization,
+  HTTPS, monitoring, retention scheduling, paired database/private-media
+  backups, isolated restore drills, upgrades, rollback, and acceptance checks.
+- Corrected local setup guidance so `.env.example` is copied only when `.env`
+  does not already exist. No AI workflow, toolkit contract, recruiter decision,
+  or outreach boundary changed.
 
 ## Verification
 
-`PROD-004` verification completed on 2026-08-15:
+`PROD-005` verification completed on 2026-08-15:
 
-- Focused reporting and affected AI/privacy regression set: `100 passed`.
-- Complete `python scripts/check.py` quality gate: `422 passed`.
+- Focused environment, health, deployment-command, artifact, and foundation set:
+  `42 passed`.
+- Complete `python scripts/check.py` quality gate: `441 passed`.
 - Django system and deploy checks passed with no issues.
-- `PROD-004` adds no migration. All existing migrations applied successfully
+- Production static collection completed successfully.
+- `PROD-005` adds no migration. All existing migrations applied successfully
   from an empty database, the resulting plan is empty, and drift is zero.
-- Ruff lint passed and all `166` files were formatted.
-- Dependency check confirmed all `32` installed packages are compatible.
+- Ruff lint passed and all `172` files were formatted.
+- Dependency check confirmed all `35` installed packages are compatible.
 - A clean extraction of the restricted final ZIP installed from the lockfile,
   applied all migrations from an empty database, reported an empty follow-up
-  plan, and passed the same complete `422`-test quality gate.
+  plan, copied the development `.env.example` to `.env`, and passed the same
+  complete `441`-test quality gate.
 
 ## Not implemented
 
@@ -766,4 +800,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`PROD-005 — Add deployment documentation and production checks.`
+`EVAL-001 — Create synthetic/anonymized candidates and vacancies with expected matches.`

@@ -1,0 +1,19 @@
+[Unit]
+Description=Prepare and validate an AI Candidate Matcher release
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ai-candidate-matcher
+Group=www-data
+WorkingDirectory=/srv/ai-candidate-matcher/current
+EnvironmentFile=/etc/ai-candidate-matcher.env
+UMask=0027
+ExecStart=/srv/ai-candidate-matcher/current/.venv/bin/python manage.py migrate --plan
+ExecStart=/srv/ai-candidate-matcher/current/.venv/bin/python manage.py migrate --noinput
+ExecStart=/srv/ai-candidate-matcher/current/.venv/bin/python manage.py collectstatic --noinput --clear
+ExecStart=/srv/ai-candidate-matcher/current/.venv/bin/python manage.py check_production
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full

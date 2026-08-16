@@ -12,8 +12,8 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 through Sprint 5 and `PROD-001` through `PROD-004` are complete.
-Production-safeguard work continues with `PROD-005`.
+Sprint 0 through Sprint 6 are complete. Evaluation and showcase work continues
+with `EVAL-001`.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -137,16 +137,24 @@ failure categories, and bounded daily trends. Missing provider metadata is shown
 as unavailable instead of being estimated, and the report contains no prompts,
 responses, CV/contact data, recruiter notes, or outreach content.
 
-The next approved task is `PROD-005 — Add deployment documentation and
-production checks`.
+Production now has a documented single-server reference topology: PostgreSQL,
+Gunicorn behind Nginx, a separately supervised durable worker, a safe daily
+retention-review timer, persistent private media, backups/restore drills, and
+generic liveness/readiness endpoints. Production startup rejects missing
+database/private-storage configuration, and `check_production` verifies Django
+deployment settings, PostgreSQL/migrations, collected static assets, and a
+private-media round trip without printing secrets or recruitment content.
+
+The next approved task is `EVAL-001 — Create synthetic/anonymized candidates and
+vacancies with expected matches`.
 
 ## Local setup
 
 Python 3.11 through 3.14 and [uv](https://docs.astral.sh/uv/) are supported.
 
 ```powershell
-uv sync --extra dev
-Copy-Item .env.example .env
+uv sync --extra dev --locked
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 uv run python manage.py migrate
 uv run python scripts/check.py
 ```
@@ -260,17 +268,17 @@ new immutable version, then separately approved after explicit contact-permissio
 checks. Only that exact approved version exposes manual copy and `.txt` export;
 both actions are actor-attributed, and sending remains unavailable.
 
-## Production configuration
+## Production deployment
 
-Set `DJANGO_ENVIRONMENT=production` to disable development defaults. Production
-startup then requires an explicit secret key and allowed hosts, rejects debug
-mode and wildcard hosts, requires HTTPS redirect plus secure cookies, and
-accepts only HTTPS CSRF trusted origins.
+The supported reference deployment is PostgreSQL plus Gunicorn behind an HTTPS
+reverse proxy, with a separate continuously supervised background worker and
+persistent private media storage. Follow [docs/deployment.md](docs/deployment.md)
+and adapt the version-controlled examples under `deploy/`.
 
-Use `.env.example` as the complete variable reference. Enable
-`DJANGO_TRUST_X_FORWARDED_PROTO` only when a trusted reverse proxy overwrites
-that header. HSTS remains explicit because enabling it before HTTPS is stable
-can make a deployment unreachable.
+Production fails closed without explicit security, PostgreSQL, and private-media
+settings. `check_production` verifies Django deployment checks, PostgreSQL
+connectivity and migration state, collected static assets, and private-media
+read/write/delete access before a service restart.
 
 ## Quality gate
 
@@ -293,3 +301,4 @@ tests, Ruff lint/format checks, and dependency compatibility verification.
 - `docs/toolkit_feedback.md`
 - `docs/future_backlog.md`
 - `docs/session_handoff.md`
+- `docs/deployment.md`

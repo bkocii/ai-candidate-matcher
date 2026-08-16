@@ -97,9 +97,14 @@ Status: Complete.
 - `PROD-002` Add audit views, retention/deletion workflow, and data minimization checks. **Complete — 2026-08-15.**
 - `PROD-003` Add background processing, idempotency, resumability, and operational status. **Complete — 2026-08-15.**
 - `PROD-004` Add token, cost, latency, retry, and failure reporting. **Complete — 2026-08-15.**
-- `PROD-005` Add deployment documentation and production checks.
+- `PROD-005` Add deployment documentation and production checks. **Complete — 2026-08-15.**
 
-Status: In progress. `PROD-005` is next.
+Sprint acceptance: private files remain non-public, durable jobs are recoverable,
+safe operational reporting is available, and the documented PostgreSQL web/
+worker deployment passes static, security, migration, database, and private-
+storage readiness checks without weakening human review.
+
+Status: Complete.
 
 ## Sprint 7 — Evaluation and showcase release
 

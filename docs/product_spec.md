@@ -59,6 +59,9 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Tenant-scoped retention/deletion review, minimized privacy events, and
   deleted-record integrity checks.
 - Django admin for operational management.
+- Documented PostgreSQL/Gunicorn/Nginx deployment, separately supervised durable
+  worker and retention timer, content-free health endpoints, production runtime
+  checks, and paired database/private-media recovery guidance.
 
 ## Non-goals for the MVP
 

@@ -14,8 +14,8 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 5 and `PROD-001` through `PROD-004` are complete. Sprint
-6 is in progress; `PROD-005` is the next approved roadmap task.
+Sprint 0 through Sprint 6 are complete. Sprint 7 is next; `EVAL-001` is the next
+approved roadmap task.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -311,6 +311,21 @@ coverage is explicit, and absent provider metadata remains unavailable rather
 than being estimated. The report contains no request IDs or private recruitment
 content. No toolkit or database migration change was needed.
 
+The shared quality gate also supplies every required HTTPS value to its isolated
+production-check subprocess. This prevents a normal development `.env` with
+secure cookies disabled from overriding the deployment check.
+
+`PROD-005` is complete. Production now requires explicit PostgreSQL and an
+absolute persistent private-media root separate from static assets. Gunicorn,
+Psycopg, generic health endpoints, `check_production`, and reference Nginx and
+systemd artifacts cover web serving, the separate continuous worker, release
+preparation, and safe retention scheduling. The deployment runbook documents
+secrets, TLS/proxy trust, migrations/static, monitoring, paired database/media
+backups, isolated restore drills, upgrades, rollback, and acceptance checks.
+The quality gate also collects static assets under its isolated production
+configuration. Local setup now guards `.env` from accidental overwrite. No AI,
+toolkit, recruiter-decision, or outreach behavior changed.
+
 ## Recruiter-efficiency requirement
 
 Do not treat the current per-candidate generation actions as the final high-volume UX.
@@ -327,7 +342,7 @@ actions with notes, actor, and timestamp, and outreach remains separate.
 
 The next roadmap item is:
 
-`PROD-005 — Add deployment documentation and production checks.`
+`EVAL-001 — Create synthetic/anonymized candidates and vacancies with expected matches.`
 
 ## Required instructions
 
@@ -344,21 +359,24 @@ The next roadmap item is:
 
 ## Current verification
 
-`PROD-004` verification completed on 2026-08-15:
+`PROD-005` verification completed on 2026-08-15:
 
-- Focused reporting and affected AI/privacy regression set: `100 passed`.
-- Complete `python scripts/check.py` quality gate: `422 passed`.
+- Focused environment, health, deployment-command, artifact, and foundation set:
+  `42 passed`.
+- Complete `python scripts/check.py` quality gate: `441 passed`.
 - Django system/deploy checks passed; migration drift is zero; Ruff lint passed
-  and all `166` files are formatted; all `32` installed packages are compatible.
-- `PROD-004` adds no migration. All existing migrations apply cleanly from an
+  and all `172` files are formatted; production static collection passed; all
+  `35` installed packages are compatible.
+- `PROD-005` adds no migration. All existing migrations apply cleanly from an
   empty database, the follow-up migration plan is empty, and drift is zero.
 - A clean extraction of the restricted final ZIP installed from the lockfile,
   applied all migrations from an empty database, reported an empty follow-up
-  plan, and passed the same complete `422`-test quality gate.
+  plan, copied the development `.env.example` to `.env`, and passed the same
+  complete `441`-test quality gate.
 
 ## Immediate next action
 
-Implement only `PROD-005`: add deployment documentation and production checks.
-Preserve the minimized `PROD-004` reporting boundary, the `PROD-003` job
-boundary, staged deletion, and separate individually approved candidate-decision
-and outreach actions.
+Implement only `EVAL-001`: create synthetic/anonymized candidates and vacancies
+with expected matches. Preserve the production/deployment boundary, minimized
+usage reporting, durable jobs, staged deletion, and separate individually
+approved candidate-decision and outreach actions.

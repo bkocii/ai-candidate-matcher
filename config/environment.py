@@ -57,6 +57,14 @@ def env_choice(name: str, *, default: str, choices: set[str]) -> str:
     return value
 
 
+def env_required(name: str) -> str:
+    """Read a required non-blank production setting."""
+    value = os.getenv(name, "").strip()
+    if not value:
+        raise ImproperlyConfigured(f"{name} is required in production.")
+    return value
+
+
 def secret_key(*, production: bool) -> str:
     """Return a development fallback, but require an explicit production key."""
     value = os.getenv("DJANGO_SECRET_KEY", "")

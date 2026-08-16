@@ -1,0 +1,21 @@
+[Unit]
+Description=AI Candidate Matcher background worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ai-candidate-matcher
+Group=www-data
+WorkingDirectory=/srv/ai-candidate-matcher/current
+EnvironmentFile=/etc/ai-candidate-matcher.env
+UMask=0027
+ExecStart=/srv/ai-candidate-matcher/current/.venv/bin/python manage.py run_background_worker --poll-interval 2
+Restart=on-failure
+RestartSec=5
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

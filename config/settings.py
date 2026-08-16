@@ -16,7 +16,14 @@ from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
-from config.environment import env_bool, env_choice, env_int, env_list, secret_key
+from config.environment import (
+    env_bool,
+    env_choice,
+    env_int,
+    env_list,
+    env_required,
+    secret_key,
+)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -143,12 +150,40 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if IS_PRODUCTION:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env_required("POSTGRES_DB"),
+            "USER": env_required("POSTGRES_USER"),
+            "PASSWORD": env_required("POSTGRES_PASSWORD"),
+            "HOST": env_required("POSTGRES_HOST"),
+            "PORT": env_int("POSTGRES_PORT", default=5432, minimum=1),
+            "CONN_MAX_AGE": env_int("POSTGRES_CONN_MAX_AGE", default=60, minimum=0),
+            "CONN_HEALTH_CHECKS": True,
+            "OPTIONS": {
+                "sslmode": env_choice(
+                    "POSTGRES_SSLMODE",
+                    default="prefer",
+                    choices={
+                        "allow",
+                        "disable",
+                        "prefer",
+                        "require",
+                        "verify-ca",
+                        "verify-full",
+                    },
+                )
+            },
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 
 # Password validation
@@ -187,12 +222,37 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = Path(
+    os.getenv("DJANGO_STATIC_ROOT", BASE_DIR / "staticfiles")
+).expanduser()
 
 # Candidate documents are private application data. No public media URL serves
 # this directory; PROD-001 delivery goes through an authorized Django view.
-MEDIA_ROOT = BASE_DIR / "media"
+media_root_value = os.getenv("DJANGO_MEDIA_ROOT", "").strip()
+if IS_PRODUCTION and not media_root_value:
+    raise ImproperlyConfigured("DJANGO_MEDIA_ROOT is required in production.")
+MEDIA_ROOT = (
+    Path(media_root_value).expanduser() if media_root_value else BASE_DIR / "media"
+)
+if IS_PRODUCTION and not MEDIA_ROOT.is_absolute():
+    raise ImproperlyConfigured(
+        "DJANGO_MEDIA_ROOT must be an absolute path in production."
+    )
+resolved_media_root = MEDIA_ROOT.resolve()
+resolved_static_root = STATIC_ROOT.resolve()
+if IS_PRODUCTION and (
+    resolved_media_root == resolved_static_root
+    or resolved_media_root in resolved_static_root.parents
+    or resolved_static_root in resolved_media_root.parents
+):
+    raise ImproperlyConfigured(
+        "DJANGO_MEDIA_ROOT and DJANGO_STATIC_ROOT must be separate directories."
+    )
+
+FILE_UPLOAD_PERMISSIONS = 0o600
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o700
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
