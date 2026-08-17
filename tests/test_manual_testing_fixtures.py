@@ -73,6 +73,11 @@ def test_candidate_csv_fixtures_match_documented_reports() -> None:
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "Backend developer with five years",
         ),
+        (
+            "synthetic-drita-shembull-cv.docx",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "Backend developer with invented experience",
+        ),
     ],
 )
 def test_accepted_cv_fixtures_extract_text(

@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Intake #{{ batch.pk }} | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading">
+    <div>
+        <p class="eyebrow">Bulk CV intake</p>
+        <h1>Intake #{{ batch.pk }}</h1>
+        <p class="lede">{{ batch.source_name }} · {{ batch.get_status_display }}</p>
+    </div>
+    <div class="button-row">
+        <a class="secondary-button" href="{% url 'candidates:candidate-intake-list' organization.slug %}">All intake batches</a>
+        <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Candidates</a>
+    </div>
+</section>
+
+<section class="metric-grid intake-summary" aria-label="Intake summary">
+    <article class="metric-card"><span>Pending review</span><strong>{{ pending_count }}</strong></article>
+    <article class="metric-card"><span>Candidates created</span><strong>{{ created_count }}</strong></article>
+    <article class="metric-card"><span>Discarded</span><strong>{{ skipped_count }}</strong></article>
+</section>
+
+{% if queued_job %}
+<section class="success-callout">
+    <div>
+        <p class="eyebrow">Background work queued</p>
+        <p>The newly created CVs are queued for evidence-based AI profile drafts. No profile is confirmed automatically.</p>
+    </div>
+    <a class="secondary-button" href="{% url 'operations:job-detail' organization.slug queued_job.pk %}">Open job #{{ queued_job.pk }}</a>
+</section>
+{% endif %}
+
+<section class="workspace-panel intake-provenance" aria-labelledby="intake-source-title">
+    <div>
+        <p class="eyebrow">Shared provenance</p>
+        <h2 id="intake-source-title">{{ batch.source_name }}</h2>
+        <p>{{ batch.get_lawful_basis_display }} · {{ batch.get_consent_status_display }} · Contact {{ batch.get_contact_permission_display|lower }}</p>
+    </div>
+    <div>
+        <p><strong>Candidate retention:</strong> {{ batch.candidate_retention_until|default:"Not set" }}</p>
+        <p><strong>Source retention:</strong> {{ batch.source_retention_until|default:"Not set" }}</p>
+        <p><strong>Document retention:</strong> {{ batch.document_retention_until|default:"Not set" }}</p>
+    </div>
+</section>
+
+{% if batch.status == "open" %}
+<section class="form-panel intake-upload" aria-labelledby="intake-upload-title">
+    <h2 id="intake-upload-title">Add CVs</h2>
+    <p>Every file is checked independently with the existing private PDF/DOCX safety rules. Failed files store neither a row nor private bytes.</p>
+    <form class="stacked-form" method="post" enctype="multipart/form-data" action="{% url 'candidates:candidate-intake-upload' organization.slug batch.pk %}">
+        {% csrf_token %}
+        {% if upload_form.non_field_errors %}<div class="form-error">{{ upload_form.non_field_errors }}</div>{% endif %}
+        {% for field in upload_form %}
+        <div class="field">
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+            {% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        <button class="primary-button" type="submit">Validate and add CVs</button>
+    </form>
+</section>
+{% endif %}
+
+{% if review_rows %}
+<section class="report-section" aria-labelledby="intake-review-title">
+    <p class="eyebrow">Exception-focused review</p>
+    <h2 id="intake-review-title">Review proposed candidate identities</h2>
+    <p>The application found these fields locally. Edit anything uncertain, select the rows to create, and leave unresolved rows pending or discard them.</p>
+    <form method="post" action="{% url 'candidates:candidate-intake-create-selected' organization.slug batch.pk %}">
+        {% csrf_token %}
+        <div class="table-wrap intake-review-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Create</th>
+                        <th scope="col">CV / exceptions</th>
+                        <th scope="col">Full name</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Phone</th>
+                        <th scope="col">Location</th>
+                        <th scope="col">Source reference</th>
+                        <th scope="col">Discard</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in review_rows %}
+                    <tr>
+                        <td>{{ row.form.selected }}</td>
+                        <th scope="row">
+                            {{ row.item.original_filename }}
+                            {% if row.flag_labels %}
+                            <ul class="compact-flags">
+                                {% for label in row.flag_labels %}<li>{{ label }}</li>{% endfor %}
+                            </ul>
+                            {% else %}<span class="status-pill import-created">Routine</span>{% endif %}
+                            {% if row.duplicate %}
+                            <p class="field-errors">Possible duplicate: <a href="{% url 'candidates:candidate-detail' organization.slug row.duplicate.candidate.pk %}">{{ row.duplicate.candidate.full_name }}</a> ({{ row.duplicate.reasons|join:", " }}).</p>
+                            {% endif %}
+                            {% if row.form.non_field_errors %}<div class="field-errors">{{ row.form.non_field_errors }}</div>{% endif %}
+                        </th>
+                        <td>{{ row.form.full_name }}{{ row.form.full_name.errors }}</td>
+                        <td>{{ row.form.email }}{{ row.form.email.errors }}</td>
+                        <td>{{ row.form.phone }}{{ row.form.phone.errors }}</td>
+                        <td>{{ row.form.location }}{{ row.form.location.errors }}</td>
+                        <td>{{ row.form.source_reference }}{{ row.form.source_reference.errors }}</td>
+                        <td><button class="secondary-button" type="submit" form="skip-item-{{ row.item.pk }}">Discard</button></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <label class="checkbox-row">
+            <input type="checkbox" name="queue_profiles" checked>
+            Queue only newly created CVs for background AI profile drafts
+        </label>
+        <p class="help-text">The worker creates evidence-based drafts only. Every profile still requires human evidence review and confirmation; every match decision remains individual.</p>
+        <button class="primary-button" type="submit">Create selected candidates</button>
+    </form>
+    {% for row in review_rows %}
+    <form id="skip-item-{{ row.item.pk }}" method="post" action="{% url 'candidates:candidate-intake-skip' organization.slug batch.pk row.item.pk %}">
+        {% csrf_token %}
+    </form>
+    {% endfor %}
+</section>
+{% endif %}
+
+{% if created_items %}
+<section class="report-section" aria-labelledby="created-candidates-title">
+    <h2 id="created-candidates-title">Created candidates</h2>
+    <ul class="record-list">
+        {% for item in created_items %}
+        <li>
+            {% if item.candidate %}<a href="{% url 'candidates:candidate-detail' organization.slug item.candidate.pk %}">{{ item.candidate.full_name }}</a>{% else %}Candidate record later removed{% endif %}
+            <span>Created {{ item.processed_at }}{% if item.processed_by %} by {{ item.processed_by }}{% endif %}</span>
+        </li>
+        {% endfor %}
+    </ul>
+</section>
+{% endif %}
+
+{% if batch.status == "open" %}
+<section class="danger-zone">
+    <h2>Close this intake</h2>
+    <p>Discarding the batch clears every remaining temporary CV, extracted text, and identity proposal. Candidates already created are unchanged.</p>
+    <form method="post" action="{% url 'candidates:candidate-intake-discard' organization.slug batch.pk %}">
+        {% csrf_token %}
+        <button class="danger-button" type="submit">Discard remaining intake items</button>
+    </form>
+</section>
+{% elif not review_rows and not created_items %}
+<section class="empty-state inline-empty">
+    <h2>No retained intake content</h2>
+    <p>This batch is closed and its temporary private data has been cleared.</p>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Start bulk CV intake | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">Bulk CV intake</p>
+    <h1>Record batch provenance</h1>
+    <p class="lede">These values are copied to every candidate source created from the batch. They document the organization’s assertion and are never inferred by AI.</p>
+</section>
+
+<form class="form-panel stacked-form" method="post">
+    {% csrf_token %}
+    {% include "candidates/_form_fields.html" %}
+    <div class="button-row">
+        <button class="primary-button" type="submit">Create intake batch</button>
+        <a class="secondary-button" href="{% url 'candidates:candidate-intake-list' organization.slug %}">Cancel</a>
+    </div>
+</form>
+{% endblock %}

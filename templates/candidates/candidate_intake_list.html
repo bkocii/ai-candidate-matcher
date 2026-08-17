@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk CV intake | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading">
+    <div>
+        <p class="eyebrow">Candidate pool</p>
+        <h1>Bulk CV intake</h1>
+        <p class="lede">Upload several CVs, review locally proposed identity fields, and explicitly create only the selected candidates.</p>
+    </div>
+    <div class="button-row">
+        <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Candidates</a>
+        <a class="primary-button button-link" href="{% url 'candidates:candidate-intake-create' organization.slug %}">Start intake</a>
+    </div>
+</section>
+
+{% if page.object_list %}
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th scope="col">Batch</th>
+                <th scope="col">Source</th>
+                <th scope="col">Status</th>
+                <th scope="col">Pending</th>
+                <th scope="col">Created</th>
+                <th scope="col">Started</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for batch in page.object_list %}
+            <tr>
+                <th scope="row"><a href="{% url 'candidates:candidate-intake-detail' organization.slug batch.pk %}">Intake #{{ batch.pk }}</a></th>
+                <td>{{ batch.source_name }}</td>
+                <td><span class="status-pill status-{{ batch.status }}">{{ batch.get_status_display }}</span></td>
+                <td>{{ batch.pending_count }}</td>
+                <td>{{ batch.created_count }}</td>
+                <td>{{ batch.created_at }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if page.paginator.num_pages > 1 %}
+<nav class="pagination" aria-label="Intake pages">
+    {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">Previous</a>{% endif %}
+    <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a href="?page={{ page.next_page_number }}">Next</a>{% endif %}
+</nav>
+{% endif %}
+{% else %}
+<section class="empty-state inline-empty">
+    <div class="empty-icon" aria-hidden="true">B</div>
+    <h2>No intake batches yet</h2>
+    <p>Start one batch to record shared provenance and review several CVs.</p>
+</section>
+{% endif %}
+{% endblock %}

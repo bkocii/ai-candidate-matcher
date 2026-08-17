@@ -143,6 +143,55 @@ def queue_candidate_profile_batch(
     )
 
 
+def queue_candidate_profile_documents(
+    *,
+    organization: Organization,
+    user: User,
+    document_ids: list[int],
+) -> QueueResult:
+    """Queue an explicit validated CV set, such as newly accepted intake items."""
+    require_organization_access(user, organization)
+    requested_ids = sorted(set(document_ids))
+    if not requested_ids:
+        raise ValidationError("No candidate CVs were selected for profile extraction.")
+    documents = list(
+        CandidateDocument.objects.for_organization(organization)
+        .filter(
+            pk__in=requested_ids,
+            candidate__status=Candidate.Status.ACTIVE,
+            document_type=CandidateDocument.DocumentType.CV,
+            extraction_status=CandidateDocument.ExtractionStatus.SUCCEEDED,
+            deleted_at__isnull=True,
+        )
+        .order_by("id")
+    )
+    if [document.pk for document in documents] != requested_ids:
+        raise ValidationError(
+            "One or more selected CVs are unavailable for profile extraction."
+        )
+    key = _idempotency_key(
+        {
+            "schema": "candidate_profile_documents.v1",
+            "organization_id": organization.pk,
+            "documents": [
+                {"id": document.pk, "sha256": document.sha256} for document in documents
+            ],
+        }
+    )
+    return _create_job(
+        organization=organization,
+        user=user,
+        workflow=BackgroundJob.Workflow.CANDIDATE_PROFILE_BATCH,
+        scope_type=BackgroundJob.ScopeType.ORGANIZATION,
+        scope_id=organization.pk,
+        key=key,
+        targets=[
+            (BackgroundTask.TargetType.CANDIDATE_DOCUMENT, document.pk)
+            for document in documents
+        ],
+    )
+
+
 def queue_shortlist_assessment_batch(*, run: MatchRun, user: User) -> QueueResult:
     """Queue one isolated assessment target for every entry in a current run."""
     require_organization_object_access(user, run)

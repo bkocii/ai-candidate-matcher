@@ -61,7 +61,8 @@ Organization settings and optional agency client companies.
 
 ### candidates
 
-Candidate records, uploaded documents, consent/lawful-source metadata, structured profiles, and retention state.
+Candidate records, reviewed bulk-intake staging, uploaded documents,
+consent/lawful-source metadata, structured profiles, and retention state.
 
 ### vacancies
 
@@ -233,6 +234,8 @@ migration.
 - `OrganizationMembership`
 - `ClientCompany`
 - `Candidate`
+- `CandidateIntakeBatch`
+- `CandidateIntakeItem`
 - `CandidateDocument`
 - `CandidateProfile`
 - `Vacancy`
@@ -248,6 +251,17 @@ migration.
 
 ### Candidate intake records
 
+- `CandidateIntakeBatch` belongs to one organization and records the source,
+  lawful-basis assertion, consent/contact-permission state, permission notes,
+  and candidate/source/document retention defaults once for a reviewed group of
+  CVs. It is open, completed, or discarded and retains actor/time attribution.
+- `CandidateIntakeItem` temporarily holds one validated private PDF/DOCX plus
+  local identity proposals and controlled review flags. Its opaque private path
+  is separate from accepted candidate-document paths. Pending items contain the
+  minimum bytes/text needed for review; created or discarded items are forced to
+  clear the temporary file, extracted text, identity proposals, hash, and file
+  metadata while retaining only minimized processing status and an optional
+  candidate link.
 - `Candidate` belongs to exactly one organization and holds only the minimum
   identity/contact fields needed before structured profile extraction.
 - Candidate lifecycle metadata distinguishes active, inactive, deletion-requested,
@@ -316,6 +330,34 @@ migration.
 - Manual entry creates the candidate and its source/provenance row in one database
   transaction. Consent, lawful-basis, and contact-permission values default to
   explicit unknown/not-recorded states rather than inferred permission.
+- Reviewed bulk intake creates one tenant-scoped batch before any candidate.
+  Shared source, lawful-basis, consent, contact-permission, notes, and retention
+  defaults are recruiter assertions and are never inferred by AI.
+- Each upload request accepts at most ten files and 10 MB combined, and a batch
+  accepts at most fifty items. Existing per-file 10 MB PDF/DOCX signature,
+  active-content, archive, resource, and text-extraction limits run independently;
+  one rejected file stores no row or bytes and does not roll back valid files.
+- Candidate name, email, phone, and header location are proposed only by bounded
+  local parsing. Missing, multiple, or filename-derived values receive explicit
+  review flags. Contact data and identity are not sent to the provider, and the
+  recruiter can edit every proposed field before selecting a row.
+- Exact document hashes and stable email/phone/source-reference identity checks
+  are organization-local. Exact-file duplicates are rejected before intake
+  persistence; possible identity duplicates remain pending with an authorized
+  link and cannot create a second candidate silently.
+- Selected rows create the candidate, `DOCUMENT_UPLOAD` provenance, and accepted
+  private `CandidateDocument` in one database transaction after the staged file
+  is revalidated and integrity-checked. One row's validation or duplicate error
+  does not block other selected rows. Candidate/source/document retention values
+  come from the batch.
+- Successful or explicitly discarded rows clear their temporary file, extracted
+  CV text, identity/contact proposals, and file metadata. Discarding an open
+  batch performs the same minimization for every remaining pending item without
+  changing candidates already created.
+- An explicit checked action queues only the newly accepted CV IDs through the
+  existing durable candidate-profile workflow. Queueing makes no provider call
+  in the web request and creates no profile confirmation, candidate decision, or
+  outreach action. The worker continues to create evidence-validated drafts only.
 - CSV import accepts UTF-8 comma-separated data with a required `full_name` column
   and optional `email`, `phone`, `location`, `source_reference`, and
   `retention_until` columns. A project-provided header template and on-page format
@@ -623,6 +665,10 @@ versions so their evidence boundary remains inspectable when inputs later change
   non-deleted CV when that exact source has no profile version. Any existing
   draft or confirmed profile makes the source reusable; a new corrected CV has a
   new document ID/hash and is separately eligible.
+- Reviewed intake may queue the exact newly accepted CV set through the same job
+  and task types. Its idempotency key includes the organization plus ordered
+  document IDs and hashes; repeating the same set returns the existing job, and
+  the worker retains saved-profile reuse and per-target failure isolation.
 - Whole-shortlist creation requires a current non-stale run and creates one task
   per entry. The same source set or run resolves to the existing job instead of
   creating duplicate tasks or repeating routine AI work.
@@ -772,6 +818,10 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 
 - Authorization checks are organization-scoped at the query layer and view/service boundary.
 - Candidate documents are private and never served by guessable public paths.
+- Pending intake CVs use the same private storage backend and tenant boundaries.
+  They have no delivery route and are deleted when accepted or discarded; their
+  extracted text and identity proposals are never shown outside the authorized
+  review form or copied into operational jobs.
 - Upload type, size, package structure, active content, and resource use are
   validated before persistence. Private delivery repeats authorization and
   verifies byte integrity before returning a non-cacheable attachment.
@@ -799,6 +849,9 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 ## Reliability
 
 - Imports are idempotent where a stable source identifier exists.
+- Reviewed intake serializes organization-local exact-file and identity checks,
+  independently validates each file/selected row, and minimizes processed
+  temporary payloads.
 - File hashes help detect duplicate CVs.
 - Relevant vacancy or candidate matching-input changes invalidate deterministic
   shortlist freshness without overwriting historical results.
@@ -820,6 +873,9 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 - Shared contract tests exercise both the fake and toolkit-backed adapters for
   normalized input validation and the application-owned result/metadata envelope.
 - Integration tests for import-to-review workflows.
+- Integration tests for multi-file intake isolation, local identity proposals,
+  duplicate prevention, transactional candidate/source/document creation,
+  temporary-file minimization, and targeted job idempotency.
 - Security tests for cross-organization access and private documents.
 - A separate synthetic smoke test lives outside ordinary pytest `testpaths`,
   requires `RUN_LIVE_AI_SMOKE=1`, and may make one low-cost billable API request.

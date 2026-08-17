@@ -31,10 +31,16 @@ Sprint acceptance: two organizations in tests cannot access each other's objects
 - `DATA-003` Add manual candidate entry and CSV import with validation and duplicate reporting. **Complete — 2026-08-10.**
 - `DATA-004` Add private CV upload and safe PDF/DOCX text extraction. **Complete — 2026-08-10.**
 - `DATA-005` Add vacancy-description entry and recruiter-editable requirements. **Complete — 2026-08-10; corrective workflow and deletion passes complete.**
+- `INTAKE-001` Add reviewed bulk CV candidate intake with shared provenance,
+  local identity proposals, isolated file validation, explicit selected creation,
+  temporary-data minimization, and targeted background profile queuing.
+  **Complete — 2026-08-17 as a user-approved corrective intake task before
+  `EVAL-001`.**
 
 Status: Complete.
 
-Sprint acceptance: a recruiter can import an anonymized candidate set and create a vacancy without developer help.
+Sprint acceptance: a recruiter can import an anonymized candidate set through
+CSV or reviewed bulk CV intake and create a vacancy without developer help.
 
 ## Sprint 3 — Deterministic search and shortlist
 

@@ -66,6 +66,14 @@ class ExtractedCV:
 
 
 @dataclass(frozen=True)
+class ValidatedCVUpload:
+    raw: bytes
+    original_filename: str
+    extracted: ExtractedCV
+    sha256: str
+
+
+@dataclass(frozen=True)
 class PrivateCandidateDocument:
     content: bytes
     filename: str
@@ -479,6 +487,27 @@ def extract_cv_text(
     )
 
 
+def validate_candidate_cv_upload(
+    *,
+    uploaded_file,
+    max_bytes: int = DEFAULT_MAX_DOCUMENT_BYTES,
+) -> ValidatedCVUpload:
+    """Read and validate one upload without persisting private bytes."""
+    original_filename = _safe_original_filename(getattr(uploaded_file, "name", ""))
+    raw = _read_bounded(uploaded_file, max_bytes)
+    extracted = extract_cv_text(
+        raw=raw,
+        filename=original_filename,
+        declared_content_type=getattr(uploaded_file, "content_type", ""),
+    )
+    return ValidatedCVUpload(
+        raw=raw,
+        original_filename=original_filename,
+        extracted=extracted,
+        sha256=hashlib.sha256(raw).hexdigest(),
+    )
+
+
 def upload_candidate_cv(
     *,
     candidate: Candidate,
@@ -488,25 +517,21 @@ def upload_candidate_cv(
     max_bytes: int = DEFAULT_MAX_DOCUMENT_BYTES,
 ) -> CandidateDocument:
     require_organization_object_access(user, candidate)
-    original_filename = _safe_original_filename(getattr(uploaded_file, "name", ""))
-    raw = _read_bounded(uploaded_file, max_bytes)
-    extracted = extract_cv_text(
-        raw=raw,
-        filename=original_filename,
-        declared_content_type=getattr(uploaded_file, "content_type", ""),
+    validated = validate_candidate_cv_upload(
+        uploaded_file=uploaded_file,
+        max_bytes=max_bytes,
     )
-    digest = hashlib.sha256(raw).hexdigest()
 
     document = CandidateDocument(
         candidate=candidate,
         document_type=CandidateDocument.DocumentType.CV,
-        original_filename=original_filename,
-        file=ContentFile(raw, name=original_filename),
-        content_type=extracted.content_type,
-        size_bytes=len(raw),
-        sha256=digest,
+        original_filename=validated.original_filename,
+        file=ContentFile(validated.raw, name=validated.original_filename),
+        content_type=validated.extracted.content_type,
+        size_bytes=len(validated.raw),
+        sha256=validated.sha256,
         extraction_status=CandidateDocument.ExtractionStatus.SUCCEEDED,
-        extracted_text=extracted.text,
+        extracted_text=validated.extracted.text,
         extracted_at=timezone.now(),
         retention_until=retention_until,
         uploaded_by=user,
@@ -532,7 +557,7 @@ def upload_candidate_cv(
                 CandidateDocument.objects.for_organization(
                     locked_candidate.organization
                 )
-                .filter(sha256=digest, deleted_at__isnull=True)
+                .filter(sha256=validated.sha256, deleted_at__isnull=True)
                 .select_related("candidate")
                 .first()
             )
@@ -547,7 +572,7 @@ def upload_candidate_cv(
             document.save()
     except Exception:
         stored_name = document.file.name
-        if stored_name and stored_name != original_filename:
+        if stored_name and stored_name != validated.original_filename:
             document.file.storage.delete(stored_name)
         raise
 

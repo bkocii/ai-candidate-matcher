@@ -1316,6 +1316,43 @@ tbody tr:last-child td {
     line-height: 1.8;
 }
 
+.intake-summary {
+    margin-bottom: 24px;
+}
+
+.intake-provenance,
+.intake-upload {
+    margin-bottom: 24px;
+}
+
+.intake-review-table input[type="text"],
+.intake-review-table input[type="email"] {
+    min-width: 11rem;
+}
+
+.compact-flags {
+    display: grid;
+    gap: 4px;
+    margin: 10px 0 0;
+    padding-left: 18px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.checkbox-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 20px 0 8px;
+    font-weight: 700;
+}
+
+.checkbox-row input {
+    width: auto;
+    margin-top: 4px;
+}
+
 @media (max-width: 700px) {
     .site-nav,
     .dashboard-heading,

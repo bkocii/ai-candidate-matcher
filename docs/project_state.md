@@ -14,7 +14,8 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 6 — Production safeguards and observability — is complete.
 
-Status: `PROD-005` is complete; `EVAL-001` is the next approved task.
+Status: the user-approved corrective `INTAKE-001` task is complete after
+`PROD-005`; `EVAL-001` is the next approved task.
 
 ## Decisions made
 
@@ -34,6 +35,10 @@ Status: `PROD-005` is complete; `EVAL-001` is the next approved task.
 - Later recruiter UX must replace repetitive high-volume actions with
   exception-focused review and resumable background batches while keeping final
   approve/reject/revisit decisions individual and human-controlled.
+- Bulk CV candidate creation uses reviewed local identity proposals and shared
+  recruiter-supplied provenance. AI may create later evidence-based profile
+  drafts, but it does not determine identity, lawful basis, consent, or contact
+  permission and never creates candidates without an explicit selected action.
 
 ## Implemented
 
@@ -738,6 +743,37 @@ Status: `PROD-005` is complete; `EVAL-001` is the next approved task.
   does not already exist. No AI workflow, toolkit contract, recruiter decision,
   or outreach boundary changed.
 
+### `INTAKE-001 — Reviewed bulk CV candidate intake`
+
+- Added organization-scoped intake batches that record shared source,
+  lawful-basis, consent, contact-permission, notes, and candidate/source/document
+  retention defaults once before any candidate is created.
+- Added multi-file PDF/DOCX intake with at most ten files and 10 MB combined per
+  request and fifty items per batch. Every file independently reuses the existing
+  hardened CV validator, so rejected files store no row or private bytes while
+  valid files remain reviewable.
+- Added conservative local name/email/phone/header-location proposals and clear
+  missing, multiple, and filename-derived review flags. Identity/contact data is
+  not sent to AI, and every proposed field remains recruiter-editable.
+- Added compact selected-row creation. Each accepted row revalidates and
+  integrity-checks its staged CV, repeats organization-local stable-identifier
+  duplicate checks, and transactionally creates the active candidate,
+  `DOCUMENT_UPLOAD` provenance, and private extracted CV.
+- Exact-file duplicates are rejected before staging; possible identity duplicates
+  cannot silently create a second candidate. Cross-organization candidates,
+  documents, batches, and routes remain isolated.
+- Created and discarded items clear their temporary file, extracted text,
+  identity/contact proposals, hash, and file metadata. Discarding a batch clears
+  every remaining pending item without changing already-created candidates.
+- An explicit checked action queues only newly accepted CVs through the existing
+  durable candidate-profile workflow. Repeating the same CV set reuses the job;
+  the worker still creates drafts only, and profile confirmation, final candidate
+  decisions, and outreach remain separate human actions.
+- Added `candidates.0006_candidateintakebatch_candidateintakeitem_and_more` plus
+  focused service, form, route, tenant, private-storage, duplicate, minimization,
+  and background-job tests. No AI gateway, toolkit dependency, prompt, or
+  operations schema changed.
+
 ## Verification
 
 `PROD-005` verification completed on 2026-08-15:
@@ -755,6 +791,20 @@ Status: `PROD-005` is complete; `EVAL-001` is the next approved task.
   applied all migrations from an empty database, reported an empty follow-up
   plan, copied the development `.env.example` to `.env`, and passed the same
   complete `441`-test quality gate.
+
+`INTAKE-001` verification completed on 2026-08-17:
+
+- Focused bulk-intake, candidate-intake, private-document, background-job, and
+  synthetic-fixture set: `77 passed`.
+- Complete `python scripts/check.py` quality gate: `451 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `176`
+  files are formatted; all `35` installed packages are compatible.
+- `INTAKE-001` adds
+  `candidates.0006_candidateintakebatch_candidateintakeitem_and_more`. It
+  applies successfully after the existing migrations; the follow-up migration
+  plan is empty and model-to-migration drift is zero. No `operations`, AI,
+  toolkit, or other app migration was added.
 
 ## Not implemented
 

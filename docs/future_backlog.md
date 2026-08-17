@@ -6,6 +6,8 @@ The approved recruiter-efficiency work—reusable confirmed profiles,
 exception-focused review, background batch extraction, and whole-shortlist
 assessment generation—is part of the existing `REV-001`, `REV-002`, and
 `PROD-003` roadmap scope. It is intentionally not placed in this future backlog.
+Reviewed bulk CV candidate intake was separately approved and completed as
+`INTAKE-001`; it is also not a future-backlog item.
 
 - Authorized ATS integrations such as customer-approved Greenhouse or Lever access.
 - Approved external candidate-source connectors.

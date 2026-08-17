@@ -27,7 +27,8 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 ## MVP user journey
 
 1. An administrator creates recruiter accounts and organization settings.
-2. A recruiter imports candidates through CSV and supported CV documents.
+2. A recruiter imports candidates through CSV or a reviewed bulk intake of
+   supported CV documents.
 3. The recruiter pastes a vacancy description and confirms the extracted requirements.
 4. Deterministic rules remove candidates who fail explicit hard constraints.
 5. The application ranks the remaining candidates.
@@ -42,7 +43,8 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Secure recruiter login.
 - One organization with multiple recruiter accounts.
 - Optional client companies for agency use.
-- Candidate creation and CSV import.
+- Candidate creation, CSV import, and reviewed bulk CV intake with shared
+  provenance and explicit selected-row creation.
 - Hardened PDF and DOCX CV upload, safe text extraction, and authorized private
   attachment delivery.
 - Vacancy creation from pasted text.
@@ -93,6 +95,11 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
   and assessment should use resumable background batches and exception-focused
   review rather than forcing repetitive per-candidate setup, while employment
   decisions remain explicit individual recruiter actions.
+- Bulk CV intake proposes candidate identity locally, keeps uncertain fields and
+  possible duplicates visible, and never asks AI to determine identity, lawful
+  basis, consent, or contact permission. Only explicitly selected reviewed rows
+  create candidates; accepted CVs may then enter the existing background AI
+  profile-draft workflow.
 - Repeating the same batch must reuse the existing operational job and saved
   per-candidate results. Interrupted targets must be reclaimable, one candidate's
   failure must not block the rest, and safe status must expose exceptions without

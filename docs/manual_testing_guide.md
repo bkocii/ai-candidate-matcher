@@ -1,7 +1,8 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`PROD-004`. Use only the synthetic files in `manual_testing/fixtures` or other
+`PROD-005` and `INTAKE-001`. Use only the synthetic files in
+`manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
 
@@ -150,7 +151,68 @@ characters are ignored. A local number such as `044 123 456` is not yet assumed
 to be the same as `+383 44 123 456`; country-aware normalization requires a
 future organization-country setting.
 
-## 6. Test private CV upload and extraction
+## 6. Test reviewed bulk CV candidate intake
+
+Open **Candidates** > **Bulk CV intake** > **Start intake batch**. Enter:
+
+- Source name: `Synthetic reviewed bulk intake`
+- Lawful basis: `Not recorded`
+- Consent status: `Unknown`
+- Contact permission: `Unknown`
+- Permission notes: `Synthetic fixtures only; no real people.`
+- Candidate, source, and document retention dates: leave blank for this test
+
+Expected result: an open tenant-scoped batch is created. Its shared provenance
+and retention values are visible before any candidate exists; none of these
+values is inferred by AI.
+
+Select these three files together in **Add CVs**:
+
+- `synthetic-drita-shembull-cv.docx`
+- `synthetic-arben-testi-cv.pdf`
+- `rejected-invalid-signature.pdf`
+
+Expected result:
+
+- The valid DOCX and PDF become separate pending review rows.
+- The invalid PDF is rejected independently and stores neither a review row nor
+  private bytes; it does not roll back the valid files.
+- Drita's proposed name, email, phone, and location come from local deterministic
+  parsing and are editable. The page exposes no extracted CV text or storage
+  path.
+- Arben is visibly marked as a possible email/phone duplicate because section 4
+  already created that candidate. The application does not merge or overwrite
+  the existing record.
+
+Select only Drita's row. Keep **Queue only newly created CVs for background AI
+profile drafts** checked, then select **Create selected candidates**.
+
+Expected result:
+
+- Exactly one candidate, one shared-provenance source record, and one private CV
+  record are committed together for Drita.
+- The created row no longer retains its temporary extracted text or staging file.
+- A targeted background job contains only Drita's newly created CV. Run
+  `uv run python manage.py run_background_worker --burst` to process it when an
+  AI provider is configured; otherwise leave the job queued for section 24.
+- Any resulting profile is a draft requiring individual evidence review and
+  confirmation. No match decision or outreach action occurs.
+- Selecting Arben for creation remains blocked as a duplicate. Use **Discard**
+  on that row, or **Discard remaining intake items**, and confirm the pending
+  temporary file, extracted text, and identity proposal are cleared without
+  changing Drita or Arben.
+
+Start another batch and upload `synthetic-drita-shembull-cv.docx` again.
+Expected result: the exact tenant-local document is blocked before staging.
+A member of another organization cannot open either batch URL or use its items.
+
+Run the focused provider-free coverage:
+
+```powershell
+uv run pytest -q tests/test_candidate_bulk_intake.py tests/test_candidate_intake.py tests/test_candidate_documents.py tests/test_background_jobs.py
+```
+
+## 7. Test private CV upload and extraction
 
 Open `Arben Testi`, select **Upload CV**, and upload
 `synthetic-arben-testi-cv.pdf`.
@@ -231,7 +293,7 @@ Expected result:
   timestamps. The privacy ledger separately records request and purge actor/time
   without copying candidate identity, contact, CV, or decision content.
 
-## 7. Test vacancy creation and requirements version 1
+## 8. Test vacancy creation and requirements version 1
 
 Open **Vacancies** and select **Add vacancy**. Use:
 
@@ -256,7 +318,7 @@ Expected result:
 - The draft is not described as current matching input.
 - Version 1 remains editable until confirmed.
 
-## 8. Test confirmation and immutable corrections
+## 9. Test confirmation and immutable corrections
 
 On the vacancy detail page, select **Confirm version 1**.
 
@@ -287,7 +349,7 @@ Expected result:
 Also create a second vacancy with no client company. Expected result: it is
 accepted as a direct-employer vacancy.
 
-## 9. Test blank confirmation protection
+## 10. Test blank confirmation protection
 
 Create another vacancy, do not enter any structured requirements, return to its
 detail page, and select **Confirm version 1**.
@@ -295,7 +357,7 @@ detail page, and select **Confirm version 1**.
 Expected result: confirmation is refused with a message asking for at least one
 structured requirement. The version remains a draft.
 
-## 10. Test vacancy lifecycle and dashboard count
+## 11. Test vacancy lifecycle and dashboard count
 
 New vacancies remain `Draft`; confirming requirements alone does not make the
 dashboard's **Open vacancies** count increase.
@@ -335,10 +397,10 @@ Expected result:
 - Django admin still contains the closed vacancy, its requirements history, and
   the deletion actor/timestamp.
 
-## 11. Inspect skills, typed rules, and deterministic filtering
+## 12. Inspect skills, typed rules, and deterministic filtering
 
 Use only synthetic evidence. Candidate skills can be published by confirming an
-AI-extracted profile as described in section 16; Django admin remains useful for
+AI-extracted profile as described in section 17; Django admin remains useful for
 precise manual test setup. Vacancy hard-constraint rules are managed in the
 normal recruiter application.
 
@@ -431,7 +493,7 @@ does not prove the candidate's total experience is lower. Work mode, language,
 education, certification, and employment-type rules also remain unknown until a
 later structured candidate profile records those facts.
 
-## 12. Test deterministic scoring and bounded shortlist
+## 13. Test deterministic scoring and bounded shortlist
 
 Continue with the confirmed vacancy and synthetic candidates from the previous
 section. In Django admin, add the following normalized requirement skills before
@@ -473,7 +535,7 @@ To test the bound, create more than 20 active eligible synthetic candidates and
 generate again. Expected result: exactly 20 entries appear, while the summary and
 note retain the full eligible count and report how many fell outside the bound.
 
-## 13. Test stale-result detection and regeneration
+## 14. Test stale-result detection and regeneration
 
 Keep the shortlist from the previous section open in one browser tab.
 
@@ -526,7 +588,7 @@ Expected result:
 - Opening the earlier run still shows its stale warning and original history.
 - No AI request, approval/rejection, outreach, or automatic hiring action occurs.
 
-## 14. Test organization isolation
+## 15. Test organization isolation
 
 In Django admin:
 
@@ -547,7 +609,7 @@ Expected result:
 - Django staff/superuser status alone still does not bypass the normal app's
   membership requirement.
 
-## 15. Test AI-assisted vacancy extraction
+## 16. Test AI-assisted vacancy extraction
 
 This is the first optional live-provider workflow. Ordinary tests and all
 deterministic features still work without an API key.
@@ -587,9 +649,9 @@ Expected result:
   rejects a confirmed version.
 
 Do not use real candidate data for this vacancy-only test. The request produces a
-safe usage event as described in section 21.
+safe usage event as described in section 22.
 
-## 16. Test AI-assisted candidate-profile extraction
+## 17. Test AI-assisted candidate-profile extraction
 
 This is an optional live-provider workflow. Use only a synthetic candidate and
 one of the supplied synthetic CVs. Ordinary tests and deterministic matching
@@ -676,9 +738,9 @@ Expected result:
 - Non-CV, failed/textless, deleted, changed-during-request, and oversized source
   documents are also rejected without partial persistence.
 
-Each actual request produces a safe usage event as described in section 21.
+Each actual request produces a safe usage event as described in section 22.
 
-## 17. Test evidence-based AI match assessment
+## 18. Test evidence-based AI match assessment
 
 This is an optional live-provider workflow for one shortlisted candidate at a
 time. Use a synthetic candidate whose latest AI profile is confirmed and a
@@ -723,9 +785,9 @@ To test safeguards:
   versions remain intact, and no partial version is created.
 
 Safe request metadata or a bounded failure category is recorded as described in
-section 21. Whole-shortlist background assessment is tested in section 23.
+section 22. Whole-shortlist background assessment is tested in section 24.
 
-## 18. Test the recruiter assessment review workflow
+## 19. Test the recruiter assessment review workflow
 
 After generating assessments for at least two synthetic shortlisted candidates,
 open **Reviews** in the organization navigation.
@@ -764,7 +826,7 @@ return to **Reviews**. Confirm that the item appears under **Changed inputs** an
 the saved assessment remains readable as history. Confirm that no profile is
 re-extracted or reconfirmed merely by opening either review screen.
 
-## 19. Test individual recruiter decisions
+## 20. Test individual recruiter decisions
 
 Use a current latest assessment from section 18 and select **Inspect and decide**.
 The page must show the full evidence before the decision form.
@@ -808,7 +870,7 @@ read-only and show the shortlist entry, exact assessment, decision version,
 choice, notes, actor, and timestamp. Candidate deletion removes that candidate's
 decision history together with the private shortlist/assessment history.
 
-## 20. Test the outreach draft review workflow
+## 21. Test the outreach draft review workflow
 
 Return to a current latest assessment from section 19. If its latest decision is
 **Revisit later** or **Reject**, first record a new individual **Approve** decision
@@ -922,11 +984,11 @@ In Django admin, open **Outreach drafts**, **Outreach draft approvals**, and
 Deleting a disposable synthetic candidate removes its drafts, approvals, and
 actions with the private shortlist, assessment, and decision history.
 
-## 21. Inspect safe AI usage events
+## 22. Inspect safe AI usage events
 
 Sign in to Django admin and open **AI usage events** under **Audit** after running
 at least one successful and one deliberately failed synthetic AI action from
-sections 15 through 17 or section 20.
+sections 16 through 18 or section 21.
 
 Expected successful event:
 
@@ -956,7 +1018,7 @@ event is created because no AI attempt occurred.
 Editing, final approval, copy, and export are local human actions and therefore
 must not create AI usage events.
 
-## 22. Test privacy audit, retention review, and minimization
+## 23. Test privacy audit, retention review, and minimization
 
 Open **Privacy & audit** in the organization navigation.
 
@@ -1013,7 +1075,7 @@ Run the focused automated coverage:
 uv run pytest -q tests/test_audit_retention.py tests/test_candidate_documents.py tests/test_vacancy_intake.py
 ```
 
-## 23. Test background profile and whole-shortlist processing
+## 24. Test background profile and whole-shortlist processing
 
 Start a second PowerShell window in the project root. Keep the web server in the
 first window. For a development walkthrough, process all currently queued work
@@ -1084,10 +1146,10 @@ Run the focused provider-free coverage:
 uv run pytest -q tests/test_background_jobs.py tests/test_candidate_ai_extraction.py tests/test_match_ai_assessment.py tests/test_matching_staleness.py tests/test_recruiter_review.py tests/test_review_decisions.py tests/test_outreach_workflow.py
 ```
 
-## 24. Test organization AI usage reporting
+## 25. Test organization AI usage reporting
 
 After creating successful and deliberately failed synthetic AI attempts in
-sections 15 through 17, 20, or 23, open **AI usage** in the organization
+sections 16 through 18, 21, or 24, open **AI usage** in the organization
 navigation.
 
 Expected result:
@@ -1119,7 +1181,7 @@ Run the focused provider-free coverage:
 uv run pytest -q tests/test_ai_usage_reporting.py tests/test_ai_usage_events.py tests/test_audit_retention.py
 ```
 
-## 25. Test production checks and health endpoints
+## 26. Test production checks and health endpoints
 
 The ordinary quality gate now collects static assets under an isolated synthetic
 production configuration before running Django's warning-strict deployment
@@ -1167,7 +1229,7 @@ no public `/media/` route.
 Never point a staging test at production data or media. Backup and restore drills
 must use an isolated destination as described in the deployment guide.
 
-## 26. Run the optional synthetic live gateway smoke test
+## 27. Run the optional synthetic live gateway smoke test
 
 This developer test is separate from the browser workflows and ordinary quality
 gate. It may incur one small provider charge. It sends no candidate, vacancy, CV,
@@ -1191,7 +1253,7 @@ Never edit this smoke test to send real recruitment data. A live failure does no
 change any candidate, vacancy, profile, assessment, or audit record because the
 test calls only the application gateway contract.
 
-## 27. What is intentionally unavailable
+## 28. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
@@ -1199,18 +1261,21 @@ The following are not defects at this milestone:
   skills are published through the normal candidate workflow.
 - No external monitoring integration, alert delivery, usage export, or billing
   system. **AI usage** is a read-only in-application operational report;
-  production deployment and monitoring guidance remains `PROD-005`.
+  production deployment and monitoring guidance is documented by `PROD-005`.
 - No OCR for scanned PDFs.
 - No automatic outreach sending, recipient selection, email/ATS/platform
   integration, or normal-workspace contact-permission editor. Manual clipboard
   copy and plain-text export deliberately stop before transmission.
 
-## 28. Final acceptance checklist
+## 29. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
 - `uv run python scripts/check.py` passes.
 - Manual candidate entry and both CSV reports match the expectations above.
+- Reviewed bulk intake validates each CV independently, proposes only local
+  identity fields, blocks exact/identity duplicates, creates only selected rows
+  transactionally, clears staging data, and queues only targeted profile drafts.
 - Valid PDF and DOCX CVs extract successfully; unsafe fixtures are rejected.
 - Authorized CV downloads return the exact integrity-checked original only as a
   private/no-store attachment; signed-out, cross-organization, mismatched,
@@ -1312,7 +1377,7 @@ The current milestone is behaving correctly when all of these are true:
   or live AI request; only explicit vacancy extraction, candidate extraction,
   match-assessment, or outreach-generation actions do.
 
-## 29. Reset disposable local test data
+## 30. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

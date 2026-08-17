@@ -10,6 +10,7 @@
         <p class="lede">Organization-controlled candidate records and their current intake status.</p>
     </div>
     <div class="button-row">
+        <a class="secondary-button" href="{% url 'candidates:candidate-intake-list' organization.slug %}">Bulk CV intake</a>
         <form method="post" action="{% url 'operations:candidate-profile-batch-queue' organization.slug %}">
             {% csrf_token %}
             <button class="secondary-button" type="submit">Queue pending profile extraction</button>

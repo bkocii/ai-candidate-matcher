@@ -1,6 +1,23 @@
 from django import forms
 
-from candidates.models import CandidateSource
+from candidates.models import CandidateIntakeBatch, CandidateSource
+
+MAX_INTAKE_FILES_PER_UPLOAD = 10
+MAX_INTAKE_UPLOAD_BYTES = 10 * 1024 * 1024
+
+
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleFileField(forms.FileField):
+    widget = MultipleFileInput
+
+    def clean(self, data, initial=None):
+        single_clean = super().clean
+        if isinstance(data, (list, tuple)):
+            return [single_clean(item, initial) for item in data]
+        return [single_clean(data, initial)]
 
 
 class CandidateCVUploadForm(forms.Form):
@@ -98,6 +115,98 @@ class CandidateCSVImportForm(forms.Form):
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
     )
+
+
+class CandidateIntakeBatchForm(forms.ModelForm):
+    class Meta:
+        model = CandidateIntakeBatch
+        fields = (
+            "source_name",
+            "lawful_basis",
+            "consent_status",
+            "contact_permission",
+            "permission_notes",
+            "candidate_retention_until",
+            "source_retention_until",
+            "document_retention_until",
+        )
+        widgets = {
+            "permission_notes": forms.Textarea(attrs={"rows": 3}),
+            "candidate_retention_until": forms.DateInput(attrs={"type": "date"}),
+            "source_retention_until": forms.DateInput(attrs={"type": "date"}),
+            "document_retention_until": forms.DateInput(attrs={"type": "date"}),
+        }
+        help_texts = {
+            "source_name": "Where every CV in this batch was obtained.",
+            "candidate_retention_until": (
+                "Optional review/removal date applied to created candidates."
+            ),
+            "source_retention_until": (
+                "Optional retention date applied to each provenance record."
+            ),
+            "document_retention_until": (
+                "Optional retention date applied to each accepted CV."
+            ),
+        }
+
+
+class CandidateIntakeUploadForm(forms.Form):
+    cv_files = MultipleFileField(
+        label="CV files",
+        help_text=(
+            "Select up to 10 PDF/DOCX files per upload. The combined request and "
+            "each file must remain within 10 MB; repeat uploads can add up to 50 "
+            "items to the batch."
+        ),
+        widget=MultipleFileInput(
+            attrs={
+                "accept": (
+                    ".pdf,.docx,application/pdf,"
+                    "application/vnd.openxmlformats-officedocument."
+                    "wordprocessingml.document"
+                )
+            }
+        ),
+    )
+
+    def clean_cv_files(self):
+        files = self.cleaned_data["cv_files"]
+        if len(files) > MAX_INTAKE_FILES_PER_UPLOAD:
+            raise forms.ValidationError(
+                f"Select no more than {MAX_INTAKE_FILES_PER_UPLOAD} files at once."
+            )
+        total_bytes = sum(getattr(uploaded, "size", 0) for uploaded in files)
+        if total_bytes > MAX_INTAKE_UPLOAD_BYTES:
+            raise forms.ValidationError(
+                "The combined upload exceeds the 10 MB request limit. Upload "
+                "fewer files and repeat."
+            )
+        return files
+
+
+class CandidateIntakeReviewForm(forms.Form):
+    selected = forms.BooleanField(required=False)
+    full_name = forms.CharField(max_length=200, required=False)
+    email = forms.EmailField(required=False)
+    phone = forms.CharField(max_length=50, required=False)
+    location = forms.CharField(max_length=200, required=False)
+    source_reference = forms.CharField(max_length=500, required=False)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        for field_name in (
+            "full_name",
+            "email",
+            "phone",
+            "location",
+            "source_reference",
+        ):
+            value = cleaned_data.get(field_name)
+            if isinstance(value, str):
+                cleaned_data[field_name] = value.strip()
+        if cleaned_data.get("selected") and not cleaned_data.get("full_name"):
+            self.add_error("full_name", "A full name is required before creation.")
+        return cleaned_data
 
 
 class CandidateCSVRowForm(forms.Form):

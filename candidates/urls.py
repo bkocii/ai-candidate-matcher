@@ -1,6 +1,6 @@
 from django.urls import path
 
-from candidates import views
+from candidates import intake_views, views
 
 app_name = "candidates"
 
@@ -14,6 +14,45 @@ urlpatterns = [
         "organizations/<slug:organization_slug>/candidates/new/",
         views.candidate_create,
         name="candidate-create",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/intake/",
+        intake_views.candidate_intake_list,
+        name="candidate-intake-list",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/intake/new/",
+        intake_views.candidate_intake_create,
+        name="candidate-intake-create",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/intake/<int:batch_id>/",
+        intake_views.candidate_intake_detail,
+        name="candidate-intake-detail",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/intake/"
+        "<int:batch_id>/upload/",
+        intake_views.candidate_intake_upload,
+        name="candidate-intake-upload",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/intake/"
+        "<int:batch_id>/create-selected/",
+        intake_views.candidate_intake_create_selected,
+        name="candidate-intake-create-selected",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/intake/"
+        "<int:batch_id>/items/<int:item_id>/skip/",
+        intake_views.candidate_intake_skip,
+        name="candidate-intake-skip",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/intake/"
+        "<int:batch_id>/discard/",
+        intake_views.candidate_intake_discard,
+        name="candidate-intake-discard",
     ),
     path(
         "organizations/<slug:organization_slug>/candidates/<int:candidate_id>/",

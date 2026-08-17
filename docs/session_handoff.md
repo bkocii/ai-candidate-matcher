@@ -14,8 +14,8 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 6 are complete. Sprint 7 is next; `EVAL-001` is the next
-approved roadmap task.
+Sprint 0 through Sprint 6 and the user-approved corrective `INTAKE-001` task are
+complete. Sprint 7 is next; `EVAL-001` is the next approved roadmap task.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -326,6 +326,24 @@ The quality gate also collects static assets under its isolated production
 configuration. Local setup now guards `.env` from accidental overwrite. No AI,
 toolkit, recruiter-decision, or outreach behavior changed.
 
+`INTAKE-001` is complete. Recruiters can create a tenant-scoped bulk intake with
+shared source, lawful-basis, consent, contact-permission, notes, and retention
+defaults, then upload several PDF/DOCX CVs for isolated validation. The app
+proposes name, email, phone, and header location locally, marks missing/multiple/
+filename-derived values for compact review, and sends no identity/contact data to
+AI. Exact-file duplicates are rejected before staging, stable-identifier
+duplicates block creation, and only explicitly selected edited rows create an
+active candidate, `DOCUMENT_UPLOAD` source, and private CV transactionally.
+
+Processed or discarded intake items clear their temporary file, extracted text,
+identity/contact proposals, hash, and file metadata. A checked action queues only
+the newly accepted CVs through the existing durable profile-extraction job; the
+worker still creates evidence-validated drafts only. Profile confirmation, final
+candidate decisions, outreach approval, and sending boundaries are unchanged.
+`INTAKE-001` adds
+`candidates.0006_candidateintakebatch_candidateintakeitem_and_more`; it changes
+no AI gateway, toolkit dependency, prompt, or operations schema.
+
 ## Recruiter-efficiency requirement
 
 Do not treat the current per-candidate generation actions as the final high-volume UX.
@@ -374,9 +392,29 @@ The next roadmap item is:
   plan, copied the development `.env.example` to `.env`, and passed the same
   complete `441`-test quality gate.
 
+`INTAKE-001` verification completed on 2026-08-17:
+
+- Focused bulk-intake, candidate-intake, private-document, background-job, and
+  synthetic-fixture set: `77 passed`.
+- Complete `python scripts/check.py` quality gate: `451 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `176`
+  files are formatted; all `35` installed packages are compatible.
+- `INTAKE-001` adds
+  `candidates.0006_candidateintakebatch_candidateintakeitem_and_more`. It
+  applies successfully after the existing migrations, the follow-up migration
+  plan is empty, and model-to-migration drift is zero. No `operations`, AI,
+  toolkit, or other app migration was added.
+
+The focused command is:
+
+```text
+uv run pytest -q tests/test_candidate_bulk_intake.py tests/test_candidate_intake.py tests/test_candidate_documents.py tests/test_background_jobs.py tests/test_manual_testing_fixtures.py
+```
+
 ## Immediate next action
 
 Implement only `EVAL-001`: create synthetic/anonymized candidates and vacancies
-with expected matches. Preserve the production/deployment boundary, minimized
-usage reporting, durable jobs, staged deletion, and separate individually
-approved candidate-decision and outreach actions.
+with expected matches. Preserve reviewed bulk intake, production/deployment,
+minimized usage reporting, durable jobs, staged deletion, and separate
+individually approved candidate-decision and outreach actions.

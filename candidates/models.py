@@ -38,6 +38,34 @@ class CandidateRelatedQuerySet(models.QuerySet):
         ).distinct()
 
 
+class CandidateIntakeBatchQuerySet(models.QuerySet):
+    def for_organization(self, organization: Organization):
+        return self.filter(organization=organization)
+
+    def visible_to(self, user: object):
+        if not _user_can_query_candidates(user):
+            return self.none()
+        return self.filter(
+            organization__is_active=True,
+            organization__memberships__user=user,
+            organization__memberships__is_active=True,
+        ).distinct()
+
+
+class CandidateIntakeItemQuerySet(models.QuerySet):
+    def for_organization(self, organization: Organization):
+        return self.filter(batch__organization=organization)
+
+    def visible_to(self, user: object):
+        if not _user_can_query_candidates(user):
+            return self.none()
+        return self.filter(
+            batch__organization__is_active=True,
+            batch__organization__memberships__user=user,
+            batch__organization__memberships__is_active=True,
+        ).distinct()
+
+
 class Candidate(models.Model):
     class Status(models.TextChoices):
         ACTIVE = "active", "Active"
@@ -270,6 +298,281 @@ class CandidateSource(models.Model):
 
     def __str__(self) -> str:
         return f"{self.candidate} — {self.source_name}"
+
+
+class CandidateIntakeBatch(models.Model):
+    """Shared provenance and lifecycle for one reviewed bulk-CV intake."""
+
+    class Status(models.TextChoices):
+        OPEN = "open", "Open"
+        COMPLETED = "completed", "Completed"
+        DISCARDED = "discarded", "Discarded"
+
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="candidate_intake_batches",
+    )
+    source_name = models.CharField(max_length=200)
+    lawful_basis = models.CharField(
+        max_length=30,
+        choices=CandidateSource.LawfulBasis.choices,
+        default=CandidateSource.LawfulBasis.NOT_RECORDED,
+    )
+    consent_status = models.CharField(
+        max_length=20,
+        choices=CandidateSource.ConsentStatus.choices,
+        default=CandidateSource.ConsentStatus.UNKNOWN,
+    )
+    contact_permission = models.CharField(
+        max_length=20,
+        choices=CandidateSource.ContactPermission.choices,
+        default=CandidateSource.ContactPermission.UNKNOWN,
+    )
+    permission_notes = models.TextField(blank=True)
+    candidate_retention_until = models.DateField(null=True, blank=True)
+    source_retention_until = models.DateField(null=True, blank=True)
+    document_retention_until = models.DateField(null=True, blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.OPEN,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_candidate_intake_batches",
+    )
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = CandidateIntakeBatchQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-created_at", "-id")
+        indexes = [
+            models.Index(
+                fields=("organization", "status"),
+                name="cand_intake_org_status_idx",
+            )
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=["open", "completed", "discarded"]),
+                name="candidate_intake_batch_valid_status",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    lawful_basis__in=[
+                        "not_recorded",
+                        "consent",
+                        "contract",
+                        "legitimate_interests",
+                        "legal_obligation",
+                        "other",
+                    ]
+                ),
+                name="candidate_intake_batch_valid_lawful_basis",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    consent_status__in=[
+                        "unknown",
+                        "not_required",
+                        "granted",
+                        "withdrawn",
+                    ]
+                ),
+                name="candidate_intake_batch_valid_consent",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    contact_permission__in=[
+                        "unknown",
+                        "permitted",
+                        "restricted",
+                        "withdrawn",
+                    ]
+                ),
+                name="candidate_intake_batch_valid_contact",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(status="open", completed_at__isnull=True)
+                    | models.Q(
+                        status__in=["completed", "discarded"],
+                        completed_at__isnull=False,
+                    )
+                ),
+                name="candidate_intake_batch_completion_consistent",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Candidate intake {self.pk or 'new'} — {self.source_name}"
+
+
+def candidate_intake_upload_to(instance: "CandidateIntakeItem", filename: str) -> str:
+    suffix = Path(filename).suffix.lower()
+    return (
+        f"candidate_intake/{instance.batch.organization_id}/"
+        f"{instance.batch_id}/{instance.storage_key}{suffix}"
+    )
+
+
+class CandidateIntakeItem(models.Model):
+    """Temporary private CV and human-review proposal inside an intake batch."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending review"
+        CREATED = "created", "Candidate created"
+        SKIPPED = "skipped", "Discarded"
+
+    batch = models.ForeignKey(
+        CandidateIntakeBatch,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    original_filename = models.CharField(max_length=255, blank=True)
+    file = models.FileField(
+        upload_to=candidate_intake_upload_to,
+        max_length=500,
+        blank=True,
+    )
+    storage_key = models.UUIDField(default=uuid4, unique=True, editable=False)
+    content_type = models.CharField(max_length=100, blank=True)
+    size_bytes = models.PositiveBigIntegerField(null=True, blank=True)
+    sha256 = models.CharField(
+        max_length=64,
+        blank=True,
+        validators=[
+            RegexValidator(
+                regex=r"\A[0-9a-f]{64}\Z",
+                message="SHA-256 must contain 64 lowercase hexadecimal characters.",
+            )
+        ],
+    )
+    extracted_text = models.TextField(blank=True)
+    proposed_full_name = models.CharField(max_length=200, blank=True)
+    proposed_email = models.EmailField(blank=True)
+    proposed_phone = models.CharField(max_length=50, blank=True)
+    proposed_location = models.CharField(max_length=200, blank=True)
+    proposed_source_reference = models.CharField(max_length=500, blank=True)
+    review_flags = models.JSONField(default=list, blank=True)
+    candidate = models.ForeignKey(
+        Candidate,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="intake_items",
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="uploaded_candidate_intake_items",
+    )
+    processed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="processed_candidate_intake_items",
+    )
+    processed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = CandidateIntakeItemQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("id",)
+        indexes = [
+            models.Index(
+                fields=("batch", "status"),
+                name="cand_intake_item_status_idx",
+            ),
+            models.Index(
+                fields=("sha256",),
+                name="candidate_intake_sha256_idx",
+            ),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(status__in=["pending", "created", "skipped"]),
+                name="candidate_intake_item_valid_status",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        status="pending",
+                        candidate__isnull=True,
+                        processed_at__isnull=True,
+                    )
+                    | models.Q(
+                        status="created",
+                        processed_at__isnull=False,
+                    )
+                    | models.Q(
+                        status="skipped",
+                        candidate__isnull=True,
+                        processed_at__isnull=False,
+                    )
+                ),
+                name="candidate_intake_item_processing_consistent",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(status="pending")
+                    & ~models.Q(original_filename="")
+                    & ~models.Q(file="")
+                    & ~models.Q(sha256="")
+                    & ~models.Q(extracted_text="")
+                    | models.Q(
+                        status__in=["created", "skipped"],
+                        original_filename="",
+                        file="",
+                        content_type="",
+                        size_bytes__isnull=True,
+                        sha256="",
+                        extracted_text="",
+                        proposed_full_name="",
+                        proposed_email="",
+                        proposed_phone="",
+                        proposed_location="",
+                        proposed_source_reference="",
+                    )
+                ),
+                name="candidate_intake_item_payload_consistent",
+            ),
+        ]
+
+    @property
+    def organization(self) -> Organization:
+        return self.batch.organization
+
+    def clean(self) -> None:
+        super().clean()
+        if (
+            self.candidate_id
+            and self.batch_id
+            and self.candidate.organization_id != self.batch.organization_id
+        ):
+            raise ValidationError(
+                {"candidate": "Candidate and intake batch must share an organization."}
+            )
+
+    def __str__(self) -> str:
+        return f"Candidate intake item {self.pk or 'new'}"
 
 
 def candidate_document_upload_to(instance: "CandidateDocument", filename: str) -> str:
