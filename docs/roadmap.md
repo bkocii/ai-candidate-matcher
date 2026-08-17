@@ -114,7 +114,10 @@ Status: Complete.
 
 ## Sprint 7 — Evaluation and showcase release
 
-- `EVAL-001` Create synthetic/anonymized candidates and vacancies with expected matches.
+Status: In progress.
+
+- `EVAL-001` Create synthetic/anonymized candidates and vacancies with expected
+  matches. **Complete — 2026-08-17.**
 - `EVAL-002` Measure deterministic and AI-assisted ranking quality separately.
 - `EVAL-003` Review explanations for evidence, unsupported claims, and protected-attribute leakage.
 - `DEMO-001` Create a reproducible demo and screenshots.

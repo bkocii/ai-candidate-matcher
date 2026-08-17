@@ -12,10 +12,11 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 ## Current milestone
 
-Sprint 6 — Production safeguards and observability — is complete.
+Sprint 7 — Evaluation and showcase release — is in progress after the completed
+`EVAL-001` synthetic baseline.
 
-Status: the user-approved corrective `INTAKE-001` task is complete after
-`PROD-005`; `EVAL-001` is the next approved task.
+Status: the user-approved corrective `INTAKE-001` task and `EVAL-001` are
+complete after `PROD-005`; `EVAL-002` is the next approved task.
 
 ## Decisions made
 
@@ -774,6 +775,31 @@ Status: the user-approved corrective `INTAKE-001` task is complete after
   and background-job tests. No AI gateway, toolkit dependency, prompt, or
   operations schema changed.
 
+### `EVAL-001 — Synthetic candidates, vacancies, and expected matches`
+
+- Added the strict version-controlled `eval-001.synthetic-multirole.v1`
+  manifest with 20 obviously synthetic candidates, 3 synthetic vacancies,
+  exact expected deterministic top-five ranks/scores, and a complete 0–3
+  relevance judgment for every candidate/vacancy pair.
+- Added a safe management command that installs the fixtures under one new
+  isolated organization owned by an existing active user. It refuses to replace
+  any existing organization or recruitment data.
+- Generated one private DOCX CV per candidate from the manifest and passed every
+  document through the existing hardened upload service. Each synthetic profile
+  is schema-validated, exactly grounded in that generated document, individually
+  confirmed, and publishes its normal inspectable skill evidence.
+- Created each vacancy through the existing draft/edit/confirm/open services and
+  generated one ordinary deterministic shortlist. A frozen rank or score
+  mismatch rolls back the database operation and removes generated private
+  files.
+- Kept synthetic contact fields empty and every source contact permission
+  restricted. Installation makes no provider request, AI usage event,
+  assessment, recruiter decision, outreach draft, copy/export, or send action.
+- Added focused manifest, command, private-file cleanup, evidence-grounding,
+  frozen-ranking, and no-side-effect coverage. No model, migration, matching
+  algorithm, prompt, AI gateway, toolkit dependency, or production behavior
+  changed.
+
 ## Verification
 
 `PROD-005` verification completed on 2026-08-15:
@@ -805,6 +831,18 @@ Status: the user-approved corrective `INTAKE-001` task is complete after
   applies successfully after the existing migrations; the follow-up migration
   plan is empty and model-to-migration drift is zero. No `operations`, AI,
   toolkit, or other app migration was added.
+
+`EVAL-001` verification completed on 2026-08-17:
+
+- Focused evaluation-dataset, deterministic-shortlist, staleness,
+  candidate-profile, and private-document set: `95 passed`.
+- Complete `python scripts/check.py` quality gate: `455 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `184`
+  files are formatted; all `35` installed packages are compatible.
+- EVAL-001 adds no migration. All existing candidate and matching migrations are
+  applied, the follow-up migration plan is empty, and model-to-migration drift is
+  zero.
 
 ## Not implemented
 
@@ -850,4 +888,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`EVAL-001 — Create synthetic/anonymized candidates and vacancies with expected matches.`
+`EVAL-002 — Measure deterministic and AI-assisted ranking quality separately.`

@@ -14,8 +14,9 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 ## Current status
 
-Sprint 0 through Sprint 6 and the user-approved corrective `INTAKE-001` task are
-complete. Sprint 7 is next; `EVAL-001` is the next approved roadmap task.
+Sprint 0 through Sprint 6, the user-approved corrective `INTAKE-001` task, and
+`EVAL-001` are complete. Sprint 7 is in progress; `EVAL-002` is the next
+approved roadmap task.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -344,6 +345,23 @@ candidate decisions, outreach approval, and sending boundaries are unchanged.
 `candidates.0006_candidateintakebatch_candidateintakeitem_and_more`; it changes
 no AI gateway, toolkit dependency, prompt, or operations schema.
 
+`EVAL-001` is complete. The strict version-controlled
+`eval-001.synthetic-multirole.v1` manifest contains 20 obviously synthetic
+candidates, 3 synthetic vacancies, exact deterministic top-five ranks/scores,
+and a complete 0–3 relevance judgment for every candidate/vacancy pair. A safe
+management command installs it only into a new isolated organization for an
+existing active user and refuses to overwrite existing data.
+
+The installer generates private DOCX CVs from the manifest, validates them
+through the normal hardened document service, creates schema-valid profiles with
+evidence exactly present in each generated document, and confirms those profiles
+without a provider call. It creates, edits, confirms, and opens each vacancy
+through existing services, generates its deterministic shortlist, and verifies
+the frozen expected ranks and scores. Any mismatch rolls back database changes
+and removes generated files. Synthetic contacts are empty and contact permission
+is restricted. No usage event, assessment, decision, outreach, model, migration,
+algorithm, prompt, gateway, toolkit, or production behavior was added or changed.
+
 ## Recruiter-efficiency requirement
 
 Do not treat the current per-candidate generation actions as the final high-volume UX.
@@ -360,7 +378,7 @@ actions with notes, actor, and timestamp, and outreach remains separate.
 
 The next roadmap item is:
 
-`EVAL-001 — Create synthetic/anonymized candidates and vacancies with expected matches.`
+`EVAL-002 — Measure deterministic and AI-assisted ranking quality separately.`
 
 ## Required instructions
 
@@ -412,9 +430,28 @@ The focused command is:
 uv run pytest -q tests/test_candidate_bulk_intake.py tests/test_candidate_intake.py tests/test_candidate_documents.py tests/test_background_jobs.py tests/test_manual_testing_fixtures.py
 ```
 
+`EVAL-001` verification completed on 2026-08-17:
+
+- Focused evaluation-dataset, deterministic-shortlist, staleness,
+  candidate-profile, and private-document set: `95 passed`.
+- Complete `python scripts/check.py` quality gate: `455 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `184`
+  files are formatted; all `35` installed packages are compatible.
+- EVAL-001 adds no migration. All existing candidate and matching migrations are
+  applied, the follow-up migration plan is empty, and model-to-migration drift is
+  zero.
+
+The focused command is:
+
+```text
+uv run pytest -q tests/test_evaluation_dataset.py tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_candidate_ai_extraction.py tests/test_candidate_documents.py
+```
+
 ## Immediate next action
 
-Implement only `EVAL-001`: create synthetic/anonymized candidates and vacancies
-with expected matches. Preserve reviewed bulk intake, production/deployment,
-minimized usage reporting, durable jobs, staged deletion, and separate
-individually approved candidate-decision and outreach actions.
+Implement only `EVAL-002`: measure deterministic and AI-assisted ranking quality
+separately against the frozen EVAL-001 relevance judgments. Preserve the frozen
+dataset, reviewed bulk intake, production/deployment, minimized usage reporting,
+durable jobs, staged deletion, and separate individually approved candidate-
+decision and outreach actions.

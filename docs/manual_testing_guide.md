@@ -1,7 +1,7 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`PROD-005` and `INTAKE-001`. Use only the synthetic files in
+`PROD-005`, `INTAKE-001`, and `EVAL-001`. Use only the synthetic files in
 `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
@@ -1253,7 +1253,54 @@ Never edit this smoke test to send real recruitment data. A live failure does no
 change any candidate, vacancy, profile, assessment, or audit record because the
 test calls only the application gateway contract.
 
-## 28. What is intentionally unavailable
+## 28. Load and inspect the EVAL-001 synthetic dataset
+
+This provider-free test creates a separate organization containing exactly 20
+invented candidates, generated private DOCX CVs, grounded confirmed profiles, 3
+invented vacancies, and 3 already-verified deterministic shortlists. Replace
+`admin` below with an existing active Django username:
+
+```powershell
+uv run python manage.py load_evaluation_dataset --username admin --organization-slug synthetic-eval-001
+```
+
+Expected command result:
+
+- `20 candidates, 3 vacancies, and 3 verified shortlists` is reported.
+- No API key, provider request, usage event, assessment, decision, outreach
+  draft, or send action is created.
+- Running the same command with the same organization slug is refused without
+  changing the existing fixtures. Use a new slug for a separate clean run.
+
+Sign in as that user and select **Synthetic Evaluation —
+eval-001.synthetic-multirole.v1**. Confirm **Candidates** contains 20 obvious
+`Synthetic Candidate` records. Each candidate has one private DOCX, one
+confirmed source-grounded profile, no email or phone, and a restricted-contact
+synthetic source.
+
+Open each vacancy and its latest deterministic shortlist. The first five rows
+must match the source references and scores below; the candidate source
+reference contains the displayed `Cxx` code:
+
+| Vacancy | Expected top five |
+| --- | --- |
+| Synthetic Senior Django Backend Engineer | C01 100.00, C02 85.72, C03 71.43, C04 71.42, C14 57.14 |
+| Synthetic Data Analyst | C06 100.00, C07 85.71, C09 71.43, C10 71.43, C08 57.14 |
+| Synthetic React Frontend Engineer | C11 100.00, C12 85.72, C14 85.72, C13 71.43, C15 57.15 |
+
+The management command generates private media. Use only a disposable local or
+isolated evaluation database/storage location. It never deletes or replaces an
+existing organization. The complete frozen data and relevance judgments are in
+`evaluation/datasets/eval-001.json`; do not silently adjust them to make a later
+measurement look better.
+
+Run the focused provider-free coverage:
+
+```powershell
+uv run pytest -q tests/test_evaluation_dataset.py tests/test_matching_shortlist.py tests/test_matching_staleness.py
+```
+
+## 29. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
@@ -1267,11 +1314,15 @@ The following are not defects at this milestone:
   integration, or normal-workspace contact-permission editor. Manual clipboard
   copy and plain-text export deliberately stop before transmission.
 
-## 29. Final acceptance checklist
+## 30. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
 - `uv run python scripts/check.py` passes.
+- EVAL-001 loads exactly 20 synthetic candidates and 3 synthetic vacancies into
+  a new isolated organization, reproduces all frozen top-five scores, grounds
+  every confirmed profile in its generated CV, and creates no AI request,
+  decision, or outreach action.
 - Manual candidate entry and both CSV reports match the expectations above.
 - Reviewed bulk intake validates each CV independently, proposes only local
   identity fields, blocks exact/identity duplicates, creates only selected rows
@@ -1377,7 +1428,7 @@ The current milestone is behaving correctly when all of these are true:
   or live AI request; only explicit vacancy extraction, candidate extraction,
   match-assessment, or outreach-generation actions do.
 
-## 30. Reset disposable local test data
+## 31. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

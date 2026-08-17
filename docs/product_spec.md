@@ -162,6 +162,12 @@ Using an anonymized or synthetic set of at least 20 candidates and 3 vacancies, 
 6. Approve a candidate and produce an editable outreach draft.
 7. Complete the workflow without any message being sent automatically.
 
+`EVAL-001` supplies the reproducible baseline for this test: 20 entirely
+synthetic candidates with private generated CVs and grounded confirmed profiles,
+3 synthetic vacancies, frozen deterministic top-five results, and a complete
+0–3 relevance judgment matrix. The dataset is isolated from real recruitment
+records, permits no contact, and makes no AI request merely by being installed.
+
 ## Validation gate
 
 Before positioning this as a SaaS, interview 3–5 agencies. Proceed toward a hosted product only if at least two want to test the workflow and at least one can provide anonymized sample data or a realistic schema.

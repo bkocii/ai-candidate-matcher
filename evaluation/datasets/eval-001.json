@@ -1,0 +1,212 @@
+{
+  "dataset_id": "eval-001.synthetic-multirole.v1",
+  "schema_version": "evaluation_dataset.v1",
+  "notice": "Entirely invented software-test data. No record describes a real person, employer, or vacancy.",
+  "candidates": [
+    {
+      "code": "C01",
+      "full_name": "Synthetic Candidate 01",
+      "location": "Prishtina",
+      "summary": "Synthetic senior backend engineer focused on Python and Django services.",
+      "skills": ["Python", "Django", "PostgreSQL", "Docker", "pytest", "Git"]
+    },
+    {
+      "code": "C02",
+      "full_name": "Synthetic Candidate 02",
+      "location": "Prishtina",
+      "summary": "Synthetic backend API engineer with Django and container experience.",
+      "skills": ["Python", "Django", "PostgreSQL", "Docker", "Git"]
+    },
+    {
+      "code": "C03",
+      "full_name": "Synthetic Candidate 03",
+      "location": "Peja",
+      "summary": "Synthetic Python API engineer using FastAPI and automated tests.",
+      "skills": ["Python", "FastAPI", "PostgreSQL", "Docker", "pytest", "Git"]
+    },
+    {
+      "code": "C04",
+      "full_name": "Synthetic Candidate 04",
+      "location": "Gjilan",
+      "summary": "Synthetic junior Django developer with test-suite experience.",
+      "skills": ["Python", "Django", "Git", "pytest"]
+    },
+    {
+      "code": "C05",
+      "full_name": "Synthetic Candidate 05",
+      "location": "Prizren",
+      "summary": "Synthetic platform engineer working with containers and cloud infrastructure.",
+      "skills": ["Python", "Docker", "Kubernetes", "AWS", "Git"]
+    },
+    {
+      "code": "C06",
+      "full_name": "Synthetic Candidate 06",
+      "location": "Prishtina",
+      "summary": "Synthetic senior data analyst covering Python, SQL, BI, and spreadsheets.",
+      "skills": ["Python", "SQL", "Pandas", "Power BI", "Excel", "Git"]
+    },
+    {
+      "code": "C07",
+      "full_name": "Synthetic Candidate 07",
+      "location": "Mitrovica",
+      "summary": "Synthetic analytics specialist using Python, SQL, and tabular analysis.",
+      "skills": ["SQL", "Python", "Pandas", "Excel", "Tableau"]
+    },
+    {
+      "code": "C08",
+      "full_name": "Synthetic Candidate 08",
+      "location": "Prishtina",
+      "summary": "Synthetic business-intelligence analyst focused on dashboards and Excel.",
+      "skills": ["SQL", "Power BI", "Excel", "Tableau"]
+    },
+    {
+      "code": "C09",
+      "full_name": "Synthetic Candidate 09",
+      "location": "Ferizaj",
+      "summary": "Synthetic data engineer with Python, SQL, pipelines, and dataframe work.",
+      "skills": ["Python", "SQL", "PostgreSQL", "Airflow", "Pandas", "Git"]
+    },
+    {
+      "code": "C10",
+      "full_name": "Synthetic Candidate 10",
+      "location": "Gjakova",
+      "summary": "Synthetic reporting analyst using SQL, spreadsheets, and BI dashboards.",
+      "skills": ["SQL", "Excel", "Power BI", "Pandas"]
+    },
+    {
+      "code": "C11",
+      "full_name": "Synthetic Candidate 11",
+      "location": "Prishtina",
+      "summary": "Synthetic senior React engineer with TypeScript and component testing.",
+      "skills": ["JavaScript", "React", "TypeScript", "CSS", "Vitest", "Git"]
+    },
+    {
+      "code": "C12",
+      "full_name": "Synthetic Candidate 12",
+      "location": "Peja",
+      "summary": "Synthetic React frontend engineer building typed user interfaces.",
+      "skills": ["JavaScript", "React", "TypeScript", "CSS", "Git"]
+    },
+    {
+      "code": "C13",
+      "full_name": "Synthetic Candidate 13",
+      "location": "Prizren",
+      "summary": "Synthetic web developer using React, CSS, and JavaScript tests.",
+      "skills": ["JavaScript", "React", "CSS", "Jest", "Git"]
+    },
+    {
+      "code": "C14",
+      "full_name": "Synthetic Candidate 14",
+      "location": "Prishtina",
+      "summary": "Synthetic full-stack engineer spanning React and Django applications.",
+      "skills": ["JavaScript", "React", "TypeScript", "CSS", "Python", "Django", "Git"]
+    },
+    {
+      "code": "C15",
+      "full_name": "Synthetic Candidate 15",
+      "location": "Gjilan",
+      "summary": "Synthetic Vue developer with transferable typed frontend skills.",
+      "skills": ["JavaScript", "Vue", "TypeScript", "CSS", "Git"]
+    },
+    {
+      "code": "C16",
+      "full_name": "Synthetic Candidate 16",
+      "location": "Mitrovica",
+      "summary": "Synthetic quality engineer automating browser and Python tests.",
+      "skills": ["Python", "pytest", "Selenium", "Git"]
+    },
+    {
+      "code": "C17",
+      "full_name": "Synthetic Candidate 17",
+      "location": "Prishtina",
+      "summary": "Synthetic Java backend engineer using Spring and relational databases.",
+      "skills": ["Java", "Spring", "PostgreSQL", "Docker", "Git"]
+    },
+    {
+      "code": "C18",
+      "full_name": "Synthetic Candidate 18",
+      "location": "Ferizaj",
+      "summary": "Synthetic .NET engineer using C sharp, SQL, and Azure services.",
+      "skills": ["C#", ".NET", "SQL", "Azure", "Git"]
+    },
+    {
+      "code": "C19",
+      "full_name": "Synthetic Candidate 19",
+      "location": "Gjakova",
+      "summary": "Synthetic generalist developer with Python, JavaScript, SQL, and containers.",
+      "skills": ["Python", "JavaScript", "SQL", "Git", "Docker"]
+    },
+    {
+      "code": "C20",
+      "full_name": "Synthetic Candidate 20",
+      "location": "Prishtina",
+      "summary": "Synthetic operations analyst with spreadsheet and basic SQL skills.",
+      "skills": ["Excel", "SQL", "Git"]
+    }
+  ],
+  "vacancies": [
+    {
+      "code": "V01",
+      "title": "Synthetic Senior Django Backend Engineer",
+      "description": "Synthetic vacancy requiring Python and Django. PostgreSQL, Docker, and pytest are useful additional skills.",
+      "summary": "Build and maintain synthetic Django backend services.",
+      "must_have_skills": ["Python", "Django"],
+      "nice_to_have_skills": ["PostgreSQL", "Docker", "pytest"],
+      "expected_top": [
+        {"candidate_code": "C01", "score": "100.00"},
+        {"candidate_code": "C02", "score": "85.72"},
+        {"candidate_code": "C03", "score": "71.43"},
+        {"candidate_code": "C04", "score": "71.42"},
+        {"candidate_code": "C14", "score": "57.14"}
+      ],
+      "relevance_judgments": {
+        "C01": 3, "C02": 3, "C03": 2, "C04": 2, "C05": 1,
+        "C06": 0, "C07": 0, "C08": 0, "C09": 1, "C10": 0,
+        "C11": 0, "C12": 0, "C13": 0, "C14": 2, "C15": 0,
+        "C16": 1, "C17": 1, "C18": 0, "C19": 1, "C20": 0
+      }
+    },
+    {
+      "code": "V02",
+      "title": "Synthetic Data Analyst",
+      "description": "Synthetic vacancy requiring Python and SQL. Pandas, Power BI, and Excel are useful additional skills.",
+      "summary": "Analyze synthetic operational data and communicate findings.",
+      "must_have_skills": ["SQL", "Python"],
+      "nice_to_have_skills": ["Pandas", "Power BI", "Excel"],
+      "expected_top": [
+        {"candidate_code": "C06", "score": "100.00"},
+        {"candidate_code": "C07", "score": "85.71"},
+        {"candidate_code": "C09", "score": "71.43"},
+        {"candidate_code": "C10", "score": "71.43"},
+        {"candidate_code": "C08", "score": "57.14"}
+      ],
+      "relevance_judgments": {
+        "C01": 1, "C02": 1, "C03": 1, "C04": 0, "C05": 0,
+        "C06": 3, "C07": 3, "C08": 2, "C09": 2, "C10": 2,
+        "C11": 0, "C12": 0, "C13": 0, "C14": 0, "C15": 0,
+        "C16": 0, "C17": 0, "C18": 1, "C19": 1, "C20": 1
+      }
+    },
+    {
+      "code": "V03",
+      "title": "Synthetic React Frontend Engineer",
+      "description": "Synthetic vacancy requiring JavaScript and React. TypeScript, CSS, and Vitest are useful additional skills.",
+      "summary": "Build synthetic accessible React interfaces and component tests.",
+      "must_have_skills": ["JavaScript", "React"],
+      "nice_to_have_skills": ["TypeScript", "CSS", "Vitest"],
+      "expected_top": [
+        {"candidate_code": "C11", "score": "100.00"},
+        {"candidate_code": "C12", "score": "85.72"},
+        {"candidate_code": "C14", "score": "85.72"},
+        {"candidate_code": "C13", "score": "71.43"},
+        {"candidate_code": "C15", "score": "57.15"}
+      ],
+      "relevance_judgments": {
+        "C01": 0, "C02": 0, "C03": 0, "C04": 0, "C05": 0,
+        "C06": 0, "C07": 0, "C08": 0, "C09": 0, "C10": 0,
+        "C11": 3, "C12": 3, "C13": 2, "C14": 2, "C15": 1,
+        "C16": 0, "C17": 0, "C18": 0, "C19": 1, "C20": 0
+      }
+    }
+  ]
+}

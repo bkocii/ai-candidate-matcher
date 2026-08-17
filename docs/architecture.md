@@ -83,6 +83,16 @@ explicit retry, and tenant-scoped operational status. The worker calls existing
 candidate and matching services; it does not bypass their authorization,
 evidence, freshness, or human-review rules.
 
+### evaluation
+
+Version-controlled synthetic fixture schemas, candidate/vacancy data, frozen
+expected deterministic ranks, and complete relevance judgments for release
+evaluation. This is a plain support package, not a Django app or production data
+model. Its loader uses existing candidate, private-document, profile,
+requirements, and shortlist services inside one isolated organization; it makes
+no provider request and rolls back database and generated-file writes when a
+frozen expectation does not reproduce.
+
 ### ai_gateway
 
 Application-level interfaces around Python AI Toolkit. No views or models call the toolkit directly.
@@ -880,6 +890,10 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 - A separate synthetic smoke test lives outside ordinary pytest `testpaths`,
   requires `RUN_LIVE_AI_SMOKE=1`, and may make one low-cost billable API request.
 - An anonymized/synthetic benchmark set measures ranking stability and explanation quality.
+- `EVAL-001` freezes 20 entirely synthetic grounded profiles, 3 vacancies, exact
+  deterministic top-five scores, and graded judgments for every candidate/
+  vacancy pair. Installation is isolated, refuses overwrite, and produces no AI
+  usage event, decision, or outreach action.
 - `scripts/check.py` is the single local and CI quality gate. It includes normal
   and warning-strict deployment checks, production static collection,
   migration-drift detection, tests, lint, formatting, and dependency
