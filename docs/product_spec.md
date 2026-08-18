@@ -175,6 +175,15 @@ stale AI coverage is unavailable rather than treated as zero or a partial
 quality result, and running the measurement makes no provider request or hiring
 decision.
 
+`EVAL-003` reviews current stored AI assessment explanations separately from
+ranking quality. It requires exact application-owned requirement/evidence
+snapshots and complete requirement coverage, flags explicit protected or
+sensitive attribute terminology and high-confidence unsupported measured or
+quoted claims, and highlights match citations that require human inspection.
+Incomplete assessment coverage is unavailable, never a passing result. The
+review makes no AI request, changes no assessment or score, and cannot approve,
+reject, rank, contact, or generate outreach for a candidate.
+
 ## Validation gate
 
 Before positioning this as a SaaS, interview 3–5 agencies. Proceed toward a hosted product only if at least two want to test the workflow and at least one can provide anonymized sample data or a realistic schema.

@@ -68,3 +68,30 @@ Reports contain only dataset identity, organization slug, vacancy codes,
 metrics, and coverage counts. They contain no candidate names/contact data, CV
 text, evidence, prompts, raw responses, decisions, or outreach content. The
 measurement is read-only and creates no AI usage event.
+
+## EVAL-003 explanation safety review
+
+Review the latest current stored assessment for every synthetic shortlist entry
+without making a provider request:
+
+```powershell
+uv run python manage.py review_evaluation_explanations --username admin --organization-slug synthetic-eval-001
+```
+
+The review reconstructs the current application-owned requirement and candidate
+evidence references, verifies each stored finding snapshot and exact requirement
+coverage, and flags explicit protected-attribute language, unsupported measured
+or quoted claims, or a match citation with no direct lexical support. It does not
+infer whether a synonym is valid or make a candidate decision; flagged findings
+remain individually inspectable review signals.
+
+Coverage is complete only when all 60 entries have a latest assessment tied to
+the current confirmed profile and requirements. Partial coverage is reported as
+`unavailable`, not clean. Use `--require-complete` or `--require-clean` for
+strict gates and `--format json` for stable machine-readable output.
+
+The output contains only dataset identity, organization slug, synthetic
+vacancy/candidate codes, assessment versions, safe issue locations/codes, and
+counts. It contains no candidate identity/contact data, CV text, evidence,
+provider explanation text, prompt, raw response, recruiter decision, or outreach
+content. The command is read-only and creates no AI usage event.

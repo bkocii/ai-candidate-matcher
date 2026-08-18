@@ -1,8 +1,8 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`PROD-005`, `INTAKE-001`, `EVAL-001`, and `EVAL-002`. Use only the synthetic files in
-`manual_testing/fixtures` or other
+`PROD-005`, `INTAKE-001`, and `EVAL-001` through `EVAL-003`. Use only the
+synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
 
@@ -1350,7 +1350,68 @@ Run the focused provider-free automated coverage:
 uv run pytest -q tests/test_evaluation_measurement.py tests/test_evaluation_dataset.py tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_match_ai_assessment.py
 ```
 
-## 30. What is intentionally unavailable
+## 30. Review EVAL-003 assessment explanations safely
+
+Immediately after EVAL-001 is loaded, run the provider-free read-only review:
+
+```powershell
+uv run python manage.py review_evaluation_explanations --username admin --organization-slug synthetic-eval-001
+```
+
+Expected initial result:
+
+- Coverage is `0/60 current assessments` and status is `unavailable`.
+- Clean and flagged counts are both zero; missing coverage is not called clean.
+- The command says no AI request was made and no score, assessment, decision, or
+  outreach changed.
+- The output contains no candidate name, email, phone, CV text, evidence,
+  provider-authored explanation, prompt, raw response, recruiter decision, or
+  outreach content.
+
+Confirm that both strict gates report the same safe result and then fail. Neither
+command generates the missing assessments:
+
+```powershell
+uv run python manage.py review_evaluation_explanations --username admin --organization-slug synthetic-eval-001 --require-complete
+uv run python manage.py review_evaluation_explanations --username admin --organization-slug synthetic-eval-001 --require-clean
+```
+
+To exercise complete real-provider coverage, first generate a current assessment
+for all 20 entries in each of V01–V03 through **Assess entire shortlist** and the
+separately configured background worker. This is optional and may incur provider
+cost. Then rerun the review. Expected result:
+
+- Coverage is complete only at `60/60`; any older assessment tied to a replaced
+  confirmed profile or requirements version does not count.
+- Every assessment is checked for exact requirement coverage and for stored
+  requirement/evidence snapshots that still equal the current application-owned
+  references.
+- Explicit protected/sensitive attribute terminology and unsupported measured or
+  quoted claims are flagged by safe issue code/location only.
+- A match citation with no direct lexical support is flagged for individual human
+  inspection; the command does not infer synonyms, change the assessment, or make
+  a candidate decision.
+- `--require-clean` succeeds only with complete coverage and zero flagged current
+  assessments.
+
+Machine-readable output is available without additional side effects:
+
+```powershell
+uv run python manage.py review_evaluation_explanations --username admin --organization-slug synthetic-eval-001 --format json
+```
+
+Newly generated match-assessment output that explicitly mentions a protected or
+sensitive personal attribute is rejected before an assessment version is saved.
+The failed AI attempt retains only the existing safe usage-event failure category;
+provider text is not copied into the usage ledger.
+
+Run the focused provider-free automated coverage:
+
+```powershell
+uv run pytest -q tests/test_evaluation_explanation_review.py tests/test_evaluation_measurement.py tests/test_evaluation_dataset.py tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_match_ai_assessment.py
+```
+
+## 31. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
@@ -1364,7 +1425,7 @@ The following are not defects at this milestone:
   integration, or normal-workspace contact-permission editor. Manual clipboard
   copy and plain-text export deliberately stop before transmission.
 
-## 31. Final acceptance checklist
+## 32. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -1377,6 +1438,11 @@ The current milestone is behaving correctly when all of these are true:
   AI coverage as unavailable, measures only complete current AI-assessment
   ordering, never blends scores, makes no provider request, and exposes no
   private candidate or assessment content in its report.
+- EVAL-003 audits only current stored assessment explanations, verifies exact
+  application-owned evidence snapshots and requirement coverage, reports partial
+  coverage as unavailable, flags protected or high-confidence unsupported
+  content without copying it, makes no provider request or domain write, and
+  rejects new explicit protected/sensitive output before persistence.
 - Manual candidate entry and both CSV reports match the expectations above.
 - Reviewed bulk intake validates each CV independently, proposes only local
   identity fields, blocks exact/identity duplicates, creates only selected rows
@@ -1482,7 +1548,7 @@ The current milestone is behaving correctly when all of these are true:
   or live AI request; only explicit vacancy extraction, candidate extraction,
   match-assessment, or outreach-generation actions do.
 
-## 32. Reset disposable local test data
+## 33. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

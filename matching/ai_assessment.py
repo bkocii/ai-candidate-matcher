@@ -35,6 +35,7 @@ from audit.services import (
     start_ai_usage_event,
 )
 from candidates.models import Candidate, CandidateProfile
+from matching.explanation_safety import contains_protected_attribute_language
 from matching.models import (
     MatchAssessment,
     ShortlistEntry,
@@ -572,6 +573,17 @@ def assess_shortlist_entry(
         )
         output = gateway_result.data
         validate_assessment_references(output=output, context=context)
+        if contains_protected_attribute_language(
+            [
+                output.summary,
+                output.review_recommendation,
+                *(item.explanation for item in output.requirement_assessments),
+            ]
+        ):
+            raise ValidationError(
+                "The AI assessment included protected or sensitive personal "
+                "content. No assessment was saved."
+            )
         if _decision_language_present(output):
             raise ValidationError(
                 "The AI assessment attempted to make a recruitment decision. No "

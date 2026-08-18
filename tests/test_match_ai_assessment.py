@@ -408,6 +408,23 @@ def test_gateway_failure_and_decision_language_save_nothing():
     assert MatchAssessment.objects.count() == 0
 
 
+def test_protected_attribute_language_saves_no_assessment():
+    user, _, _, _, profile, _, _, entry = make_workspace()
+    context = build_assessment_context(entry=entry, profile=profile)
+    unsafe = output_for_context(context).model_copy(
+        update={"summary": "The candidate's age supports the assessment."}
+    )
+
+    with pytest.raises(ValidationError, match="protected or sensitive"):
+        assess_shortlist_entry(
+            entry=entry,
+            user=user,
+            gateway=RecordingGateway(unsafe),
+        )
+
+    assert MatchAssessment.objects.count() == 0
+
+
 def test_missing_profile_and_stale_run_are_rejected_before_gateway():
     user, _, candidate, _, profile, _, run, entry = make_workspace()
     profile.delete()

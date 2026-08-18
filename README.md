@@ -12,8 +12,8 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 through Sprint 6, `EVAL-001`, and `EVAL-002` are complete. Evaluation
-and showcase work continues with `EVAL-003`.
+Sprint 0 through Sprint 6 and `EVAL-001` through `EVAL-003` are complete.
+Evaluation and showcase work continues with `DEMO-001`.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -145,13 +145,18 @@ database/private-storage configuration, and `check_production` verifies Django
 deployment settings, PostgreSQL/migrations, collected static assets, and a
 private-media round trip without printing secrets or recruitment content.
 
-`EVAL-002` is complete. A provider-free management command now measures frozen
+`EVAL-002` is complete. A provider-free management command measures frozen
 deterministic and complete-current AI-assisted rankings separately at cutoff 5
 using nDCG, precision, expected-top overlap, and explicit AI coverage. The
 systems are never blended, partial AI coverage is unavailable, stale inputs are
-refused, and reports copy no private recruitment content. The next approved task
-is `EVAL-003 — Review explanations for evidence, unsupported claims, and
-protected-attribute leakage`.
+refused, and reports copy no private recruitment content. `EVAL-003` adds a
+second provider-free, read-only command that verifies stored evidence snapshots
+and requirement coverage, flags explicit protected-attribute language and
+high-confidence unsupported claims, and reports incomplete assessment coverage
+as unavailable. New assessment output with explicit protected/sensitive
+attribute language is rejected before persistence. Neither evaluation changes
+scores, assessments, decisions, or outreach. The next approved task is
+`DEMO-001 — Create a reproducible demo and screenshots`.
 
 ## Local setup
 

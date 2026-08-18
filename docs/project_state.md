@@ -13,10 +13,12 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 ## Current milestone
 
 Sprint 7 — Evaluation and showcase release — is in progress after the completed
-`EVAL-001` synthetic baseline and `EVAL-002` ranking measurement.
+`EVAL-001` synthetic baseline, `EVAL-002` ranking measurement, and `EVAL-003`
+explanation review.
 
 Status: the user-approved corrective `INTAKE-001` task, `EVAL-001`, and
-`EVAL-002` are complete after `PROD-005`; `EVAL-003` is the next approved task.
+`EVAL-002` and `EVAL-003` are complete after `PROD-005`; `DEMO-001` is the next
+approved task.
 
 ## Decisions made
 
@@ -823,6 +825,32 @@ Status: the user-approved corrective `INTAKE-001` task, `EVAL-001`, and
   side effect, and the strict coverage gate. No model, migration, prompt, AI
   gateway, toolkit dependency, or production behavior changed.
 
+### `EVAL-003 — Explanation evidence and protected-attribute review`
+
+- Added a read-only explanation-review service and management command over the
+  exact installed EVAL-001 workspace and each entry's latest assessment tied to
+  its current confirmed profile and requirements.
+- Reconstructs application-owned requirement and candidate-evidence references,
+  verifies exact stored snapshots and complete requirement coverage, and flags
+  invalid or missing evidence links without trusting stored provider text.
+- Flags explicit protected/sensitive attribute terminology, unsupported measured
+  or quoted claims, and match citations with no direct lexical support. The last
+  remains a human-review signal; the evaluator never turns it into a candidate
+  decision.
+- Reports partial current-assessment coverage as unavailable. Strict complete and
+  clean gates fail only after the same content-minimized report is produced.
+- Limits reports to frozen dataset identity, organization slug, synthetic
+  vacancy/candidate codes, assessment version, safe issue location/code, and
+  counts. It copies no source evidence, provider explanation, candidate identity,
+  contact, CV, prompt/response, decision, or outreach content.
+- Reuses the explicit protected/sensitive detector at the match-assessment write
+  boundary so new unsafe provider output is rejected before persistence. No
+  ranking, assessment score, recruiter decision, or outreach behavior is added.
+- Added provider-free clean/partial coverage, unsupported-claim, protected-term,
+  snapshot-integrity, citation-mismatch, minimized-command, strict-gate, and
+  runtime no-save coverage. No model, migration, AI request, toolkit dependency,
+  or background-job schema changed.
+
 ## Verification
 
 `PROD-005` verification completed on 2026-08-15:
@@ -878,6 +906,18 @@ Status: the user-approved corrective `INTAKE-001` task, `EVAL-001`, and
 - EVAL-002 adds no migration. Every existing migration is applied, the follow-up
   migration plan is empty, and model-to-migration drift is zero.
 
+`EVAL-003` verification completed on 2026-08-18:
+
+- Focused explanation-review, ranking-measurement, dataset, deterministic-
+  shortlist, staleness, and AI-assessment set: `65 passed`.
+- Complete `python scripts/check.py` quality gate: `466 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `191`
+  files are formatted; installed dependency compatibility passed.
+- EVAL-003 adds no migration. Every existing migration applies successfully from
+  an empty database, the follow-up migration plan is empty, and model-to-
+  migration drift is zero.
+
 ## Not implemented
 
 Outreach generation, immutable recruiter editing, exact final approval, manual
@@ -922,5 +962,4 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`EVAL-003 — Review explanations for evidence, unsupported claims, and
-protected-attribute leakage.`
+`DEMO-001 — Create a reproducible demo and screenshots.`

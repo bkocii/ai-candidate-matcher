@@ -104,6 +104,20 @@ coverage is reported unavailable, and the report exposes only dataset identity,
 vacancy codes, aggregate metrics, and counts. It creates no persistence,
 provider request, usage event, decision, or outreach action.
 
+The read-only EVAL-003 explanation-review service uses the same exact workspace
+binding and audits only each shortlist entry's latest assessment tied to its
+current confirmed profile and requirements. It reconstructs application-owned
+requirement/evidence references, verifies the stored snapshots and full
+requirement coverage, and flags explicit protected-attribute terminology,
+unsupported measured or quoted claims, and match citations with no direct
+lexical support. Partial coverage remains unavailable rather than being treated
+as clean. Reports expose only synthetic vacancy/candidate codes, versions,
+locations, issue codes, and counts; they copy no evidence or provider text and
+make no provider request or domain write. The same high-confidence protected-
+attribute detector rejects new assessment output before persistence, while
+lower-confidence support findings remain review signals rather than automatic
+candidate decisions.
+
 ### ai_gateway
 
 Application-level interfaces around Python AI Toolkit. No views or models call the toolkit directly.
@@ -909,6 +923,10 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
   at cutoff 5. Provider-free tests cover frozen deterministic results, complete
   and partial AI coverage, stale-input refusal, degraded AI ordering, safe JSON,
   and the strict complete-coverage gate.
+- `EVAL-003` audits complete-current stored assessment explanations against
+  reconstructed application-owned evidence. Provider-free tests cover clean and
+  partial coverage, protected terminology, unsupported explicit claims,
+  snapshot integrity, citation mismatch, minimized output, and strict gates.
 - `scripts/check.py` is the single local and CI quality gate. It includes normal
   and warning-strict deployment checks, production static collection,
   migration-drift detection, tests, lint, formatting, and dependency

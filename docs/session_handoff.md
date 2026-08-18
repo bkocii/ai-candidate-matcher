@@ -15,8 +15,8 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 ## Current status
 
 Sprint 0 through Sprint 6, the user-approved corrective `INTAKE-001` task, and
-`EVAL-001` and `EVAL-002` are complete. Sprint 7 is in progress; `EVAL-003` is the next
-approved roadmap task.
+`EVAL-001` through `EVAL-003` are complete. Sprint 7 is in progress; `DEMO-001`
+is the next approved roadmap task.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -378,6 +378,21 @@ reports contain only dataset identity, organization slug, vacancy codes,
 metrics, and counts. It stores no report, usage event, decision, or outreach
 action and adds no model or migration.
 
+`EVAL-003` is complete. Its read-only service and management command audit only
+the latest assessment tied to each evaluation entry's current confirmed profile
+and requirements. The service reconstructs application-owned requirement and
+candidate-evidence references, verifies exact stored snapshots and full
+requirement coverage, and reports partial coverage as unavailable.
+
+It flags explicit protected/sensitive terminology, unsupported measured or
+quoted claims, and match citations without direct lexical support. Reports are
+limited to dataset identity, organization slug, synthetic vacancy/candidate
+codes, assessment versions, safe locations/codes, and counts; provider text and
+source evidence are never copied. The command makes no provider request and
+changes no score, assessment, decision, or outreach action. New assessment
+output with explicit protected/sensitive language is rejected before persistence;
+lower-confidence support findings remain individually inspectable review signals.
+
 ## Recruiter-efficiency requirement
 
 Do not treat the current per-candidate generation actions as the final high-volume UX.
@@ -394,8 +409,7 @@ actions with notes, actor, and timestamp, and outreach remains separate.
 
 The next roadmap item is:
 
-`EVAL-003 — Review explanations for evidence, unsupported claims, and
-protected-attribute leakage.`
+`DEMO-001 — Create a reproducible demo and screenshots.`
 
 ## Required instructions
 
@@ -482,11 +496,28 @@ The focused command is:
 uv run pytest -q tests/test_evaluation_measurement.py tests/test_evaluation_dataset.py tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_match_ai_assessment.py
 ```
 
+`EVAL-003` verification completed on 2026-08-18:
+
+- Focused explanation-review, ranking-measurement, dataset, shortlist,
+  staleness, and assessment set: `65 passed`.
+- Complete `python scripts/check.py` quality gate: `466 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `191`
+  files are formatted; installed dependency compatibility passed.
+- EVAL-003 adds no migration. Every existing migration applies from an empty
+  database, the follow-up migration plan is empty, and model-to-migration drift
+  is zero.
+
+The focused command is:
+
+```text
+uv run pytest -q tests/test_evaluation_explanation_review.py tests/test_evaluation_measurement.py tests/test_evaluation_dataset.py tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_match_ai_assessment.py
+```
+
 ## Immediate next action
 
-Implement only `EVAL-003`: review match-assessment explanations against the
-frozen synthetic evidence for supported claims and protected-attribute leakage.
-Preserve the frozen dataset, separate ranking measurements, reviewed bulk
+Implement only `DEMO-001`: create a reproducible demonstration and screenshots
+without weakening the frozen evaluation, explanation-review, reviewed bulk
 intake, production/deployment, minimized usage reporting, durable jobs, staged
-deletion, and separate individually approved candidate-decision and outreach
+deletion, or separate individually approved candidate-decision and outreach
 actions.
