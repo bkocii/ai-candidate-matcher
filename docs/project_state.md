@@ -13,10 +13,10 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 ## Current milestone
 
 Sprint 7 — Evaluation and showcase release — is in progress after the completed
-`EVAL-001` synthetic baseline.
+`EVAL-001` synthetic baseline and `EVAL-002` ranking measurement.
 
-Status: the user-approved corrective `INTAKE-001` task and `EVAL-001` are
-complete after `PROD-005`; `EVAL-002` is the next approved task.
+Status: the user-approved corrective `INTAKE-001` task, `EVAL-001`, and
+`EVAL-002` are complete after `PROD-005`; `EVAL-003` is the next approved task.
 
 ## Decisions made
 
@@ -800,6 +800,29 @@ complete after `PROD-005`; `EVAL-002` is the next approved task.
   algorithm, prompt, AI gateway, toolkit dependency, or production behavior
   changed.
 
+### `EVAL-002 — Separate deterministic and AI-assisted ranking quality`
+
+- Added a read-only measurement service and management command over the frozen
+  EVAL-001 workspace. It resolves exact synthetic candidates/vacancies, requires
+  a complete current candidate pool and non-stale deterministic runs, and never
+  changes the manifest or recruitment records.
+- Measures each vacancy and the macro average at cutoff 5 using graded nDCG,
+  grade-2-or-3 precision, and expected-top-set overlap. The frozen deterministic
+  baseline is nDCG `1.0000`, precision `0.9333`, and overlap `1.0000`.
+- Measures AI-assisted ordering only from each shortlist entry's latest current
+  assessment score. Deterministic rank is only a reproducible equal-score
+  tie-break; deterministic and AI scores are never blended.
+- Reports incomplete or profile-stale AI assessment coverage as unavailable.
+  A strict command option can fail the gate after reporting; it never fills the
+  missing coverage or makes a provider request.
+- Keeps output content-minimized to dataset identity, organization slug, vacancy
+  codes, metrics, and coverage counts. No candidate identity/contact, CV,
+  evidence, prompt/response, decision, or outreach content is copied.
+- Added provider-free tests for frozen metrics, complete and partial AI coverage,
+  degraded independent AI ordering, stale-run refusal, safe JSON, no usage-event
+  side effect, and the strict coverage gate. No model, migration, prompt, AI
+  gateway, toolkit dependency, or production behavior changed.
+
 ## Verification
 
 `PROD-005` verification completed on 2026-08-15:
@@ -843,6 +866,17 @@ complete after `PROD-005`; `EVAL-002` is the next approved task.
 - EVAL-001 adds no migration. All existing candidate and matching migrations are
   applied, the follow-up migration plan is empty, and model-to-migration drift is
   zero.
+
+`EVAL-002` verification completed on 2026-08-17:
+
+- Focused evaluation-measurement, dataset, deterministic-shortlist, staleness,
+  and AI-assessment set: `60 passed`.
+- Complete `python scripts/check.py` quality gate: `461 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `187`
+  files are formatted; all `35` installed packages are compatible.
+- EVAL-002 adds no migration. Every existing migration is applied, the follow-up
+  migration plan is empty, and model-to-migration drift is zero.
 
 ## Not implemented
 
@@ -888,4 +922,5 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`EVAL-002 — Measure deterministic and AI-assisted ranking quality separately.`
+`EVAL-003 — Review explanations for evidence, unsupported claims, and
+protected-attribute leakage.`

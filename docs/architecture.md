@@ -93,6 +93,17 @@ requirements, and shortlist services inside one isolated organization; it makes
 no provider request and rolls back database and generated-file writes when a
 frozen expectation does not reproduce.
 
+The read-only EVAL-002 measurement service binds that manifest to the exact
+isolated organization through synthetic source references and vacancy titles,
+then rejects incomplete candidate/vacancy sets or stale deterministic runs. It
+computes nDCG@5, precision@5, and expected-top overlap independently for the
+deterministic shortlist ordering and for a complete current assessment-score
+ordering. Deterministic rank is only a stable tie-break for equal AI scores; no
+deterministic and AI score is blended. Missing or profile-stale assessment
+coverage is reported unavailable, and the report exposes only dataset identity,
+vacancy codes, aggregate metrics, and counts. It creates no persistence,
+provider request, usage event, decision, or outreach action.
+
 ### ai_gateway
 
 Application-level interfaces around Python AI Toolkit. No views or models call the toolkit directly.
@@ -894,6 +905,10 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
   deterministic top-five scores, and graded judgments for every candidate/
   vacancy pair. Installation is isolated, refuses overwrite, and produces no AI
   usage event, decision, or outreach action.
+- `EVAL-002` measures deterministic and complete-current AI orderings separately
+  at cutoff 5. Provider-free tests cover frozen deterministic results, complete
+  and partial AI coverage, stale-input refusal, degraded AI ordering, safe JSON,
+  and the strict complete-coverage gate.
 - `scripts/check.py` is the single local and CI quality gate. It includes normal
   and warning-strict deployment checks, production static collection,
   migration-drift detection, tests, lint, formatting, and dependency

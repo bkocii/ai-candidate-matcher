@@ -1,7 +1,7 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`PROD-005`, `INTAKE-001`, and `EVAL-001`. Use only the synthetic files in
+`PROD-005`, `INTAKE-001`, `EVAL-001`, and `EVAL-002`. Use only the synthetic files in
 `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
@@ -1300,7 +1300,57 @@ Run the focused provider-free coverage:
 uv run pytest -q tests/test_evaluation_dataset.py tests/test_matching_shortlist.py tests/test_matching_staleness.py
 ```
 
-## 29. What is intentionally unavailable
+## 29. Measure EVAL-002 ranking quality separately
+
+Run the content-minimized provider-free report against the organization loaded
+in the previous section:
+
+```powershell
+uv run python manage.py measure_evaluation_dataset --username admin --organization-slug synthetic-eval-001
+```
+
+Expected initial result:
+
+- Each V01–V03 deterministic line reports `nDCG@5`, `precision@5`, and
+  `expected-top overlap@5`.
+- The deterministic macro reports `nDCG@5 1.0000`, `precision@5 0.9333`, and
+  `expected-top overlap@5 1.0000` for the unchanged frozen dataset.
+- AI coverage is `0/60` immediately after loading EVAL-001, and every
+  AI-assisted metric is explicitly unavailable.
+- The command says that rankings were measured separately, no scores were
+  blended, and no AI request was made.
+- The output contains no candidate name, email, phone, CV text, evidence,
+  prompt, raw response, decision, or outreach content.
+
+Confirm that the strict AI gate reports the same results and then exits with an
+incomplete-coverage error; it must not generate the missing assessments:
+
+```powershell
+uv run python manage.py measure_evaluation_dataset --username admin --organization-slug synthetic-eval-001 --require-complete-ai
+```
+
+To exercise real AI-assisted coverage, intentionally queue **Assess entire
+shortlist** for one or more evaluation vacancies and run the separately
+configured background worker. This is optional, requires valid provider
+configuration, and may incur provider cost. Partial coverage must continue to
+show AI quality as unavailable for that vacancy. Only after all 20 current
+entries for every vacancy have current assessments may the command report the
+three AI-assisted vacancy metrics and macro. Every assessment remains
+individually inspectable and still requires a separate recruiter decision.
+
+Machine-readable output is available without extra side effects:
+
+```powershell
+uv run python manage.py measure_evaluation_dataset --username admin --organization-slug synthetic-eval-001 --format json
+```
+
+Run the focused provider-free automated coverage:
+
+```powershell
+uv run pytest -q tests/test_evaluation_measurement.py tests/test_evaluation_dataset.py tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_match_ai_assessment.py
+```
+
+## 30. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
@@ -1314,7 +1364,7 @@ The following are not defects at this milestone:
   integration, or normal-workspace contact-permission editor. Manual clipboard
   copy and plain-text export deliberately stop before transmission.
 
-## 30. Final acceptance checklist
+## 31. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -1323,6 +1373,10 @@ The current milestone is behaving correctly when all of these are true:
   a new isolated organization, reproduces all frozen top-five scores, grounds
   every confirmed profile in its generated CV, and creates no AI request,
   decision, or outreach action.
+- EVAL-002 reproduces separate deterministic metrics, reports partial or stale
+  AI coverage as unavailable, measures only complete current AI-assessment
+  ordering, never blends scores, makes no provider request, and exposes no
+  private candidate or assessment content in its report.
 - Manual candidate entry and both CSV reports match the expectations above.
 - Reviewed bulk intake validates each CV independently, proposes only local
   identity fields, blocks exact/identity duplicates, creates only selected rows
@@ -1428,7 +1482,7 @@ The current milestone is behaving correctly when all of these are true:
   or live AI request; only explicit vacancy extraction, candidate extraction,
   match-assessment, or outreach-generation actions do.
 
-## 31. Reset disposable local test data
+## 32. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

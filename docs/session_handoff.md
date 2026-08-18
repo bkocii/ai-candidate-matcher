@@ -15,7 +15,7 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 ## Current status
 
 Sprint 0 through Sprint 6, the user-approved corrective `INTAKE-001` task, and
-`EVAL-001` are complete. Sprint 7 is in progress; `EVAL-002` is the next
+`EVAL-001` and `EVAL-002` are complete. Sprint 7 is in progress; `EVAL-003` is the next
 approved roadmap task.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
@@ -362,6 +362,22 @@ and removes generated files. Synthetic contacts are empty and contact permission
 is restricted. No usage event, assessment, decision, outreach, model, migration,
 algorithm, prompt, gateway, toolkit, or production behavior was added or changed.
 
+`EVAL-002` is complete. Its read-only service and management command bind the
+frozen manifest to the exact isolated workspace, reject incomplete fixture sets
+or stale deterministic runs, and measure each vacancy plus macro quality at
+cutoff 5. Metrics are graded nDCG, grade-2-or-3 precision, and expected-top-set
+overlap. The unchanged deterministic baseline is `1.0000`, `0.9333`, and
+`1.0000` respectively.
+
+AI-assisted ordering is independently derived from each entry's latest current
+assessment score; deterministic rank is used only to break equal AI scores.
+There is no blended score. A vacancy has AI quality only with 20/20 current
+assessments, the macro requires 60/60, and partial or profile-stale coverage is
+reported unavailable. The command makes no provider request and its text/JSON
+reports contain only dataset identity, organization slug, vacancy codes,
+metrics, and counts. It stores no report, usage event, decision, or outreach
+action and adds no model or migration.
+
 ## Recruiter-efficiency requirement
 
 Do not treat the current per-candidate generation actions as the final high-volume UX.
@@ -378,7 +394,8 @@ actions with notes, actor, and timestamp, and outreach remains separate.
 
 The next roadmap item is:
 
-`EVAL-002 — Measure deterministic and AI-assisted ranking quality separately.`
+`EVAL-003 — Review explanations for evidence, unsupported claims, and
+protected-attribute leakage.`
 
 ## Required instructions
 
@@ -448,10 +465,28 @@ The focused command is:
 uv run pytest -q tests/test_evaluation_dataset.py tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_candidate_ai_extraction.py tests/test_candidate_documents.py
 ```
 
+`EVAL-002` verification completed on 2026-08-17:
+
+- Focused evaluation-measurement, dataset, deterministic-shortlist, staleness,
+  and AI-assessment set: `60 passed`.
+- Complete `python scripts/check.py` quality gate: `461 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `187`
+  files are formatted; all `35` installed packages are compatible.
+- EVAL-002 adds no migration. Every existing migration is applied, the follow-up
+  migration plan is empty, and model-to-migration drift is zero.
+
+The focused command is:
+
+```text
+uv run pytest -q tests/test_evaluation_measurement.py tests/test_evaluation_dataset.py tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_match_ai_assessment.py
+```
+
 ## Immediate next action
 
-Implement only `EVAL-002`: measure deterministic and AI-assisted ranking quality
-separately against the frozen EVAL-001 relevance judgments. Preserve the frozen
-dataset, reviewed bulk intake, production/deployment, minimized usage reporting,
-durable jobs, staged deletion, and separate individually approved candidate-
-decision and outreach actions.
+Implement only `EVAL-003`: review match-assessment explanations against the
+frozen synthetic evidence for supported claims and protected-attribute leakage.
+Preserve the frozen dataset, separate ranking measurements, reviewed bulk
+intake, production/deployment, minimized usage reporting, durable jobs, staged
+deletion, and separate individually approved candidate-decision and outreach
+actions.

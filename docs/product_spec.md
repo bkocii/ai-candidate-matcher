@@ -168,6 +168,13 @@ synthetic candidates with private generated CVs and grounded confirmed profiles,
 0–3 relevance judgment matrix. The dataset is isolated from real recruitment
 records, permits no contact, and makes no AI request merely by being installed.
 
+`EVAL-002` measures deterministic and AI-assisted ordering separately at cutoff
+5 using graded nDCG, relevant-result precision, expected-top overlap, and honest
+assessment coverage. It never blends deterministic and AI scores. Incomplete or
+stale AI coverage is unavailable rather than treated as zero or a partial
+quality result, and running the measurement makes no provider request or hiring
+decision.
+
 ## Validation gate
 
 Before positioning this as a SaaS, interview 3–5 agencies. Proceed toward a hosted product only if at least two want to test the workflow and at least one can provide anonymized sample data or a realistic schema.

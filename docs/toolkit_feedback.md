@@ -43,7 +43,7 @@ Do not patch a local copy of the toolkit inside the app. Confirmed toolkit work 
 | `HYP-002` | Batch structured requests may need a reusable API or documented pattern. | `AI-003`, `AI-004` | Evaluated — app-owned orchestration sufficient |
 | `HYP-003` | Available result metadata may not cover all app usage-reporting needs. | `AI-005`, `PROD-004` | Fully evaluated — explicit availability is sufficient; no toolkit change |
 | `HYP-004` | Generic PDF/DOCX loaders could be useful, but safe CV extraction may belong in the app or a separate package. | `DATA-004` | Evaluated — app-owned |
-| `HYP-005` | Persistent vector-store integration may be useful if embedding retrieval is adopted. | `EVAL-002` | Unverified |
+| `HYP-005` | Persistent vector-store integration may be useful if embedding retrieval is adopted. | `EVAL-002` | Evaluated — not adopted for the bounded baseline |
 
 ## Evaluated hypotheses
 
@@ -107,6 +107,18 @@ workflow, and allow-listed failure stage/code while provider-only metrics are
 shown as unavailable rather than inferred. This preserves honest coverage and
 supports useful failure reporting without storing exception detail or expanding
 the gateway contract. No toolkit defect or API change is proposed.
+
+### `HYP-005` — evaluated, 2026-08-17
+
+`EVAL-002` measures the existing bounded 20-candidate deterministic shortlist
+and current AI-assessment ordering directly against complete relevance
+judgments. This baseline needs no semantic retrieval layer: all candidates are
+already evaluated, the two ranking systems remain independently inspectable,
+and the measurement adds no provider or embedding request. The current dataset
+therefore provides no evidence that embedding retrieval would improve recall or
+quality, and a persistent vector store is not adopted. Revisit only with an
+approved larger retrieval benchmark that demonstrates a measurable gain. No
+toolkit defect, API gap, dependency change, or vector-store work is proposed.
 
 ## Confirmed observations
 

@@ -12,8 +12,8 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 through Sprint 6 and `EVAL-001` are complete. Evaluation and showcase
-work continues with `EVAL-002`.
+Sprint 0 through Sprint 6, `EVAL-001`, and `EVAL-002` are complete. Evaluation
+and showcase work continues with `EVAL-003`.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -145,8 +145,13 @@ database/private-storage configuration, and `check_production` verifies Django
 deployment settings, PostgreSQL/migrations, collected static assets, and a
 private-media round trip without printing secrets or recruitment content.
 
-`EVAL-001` is complete. The next approved task is `EVAL-002 — Measure
-deterministic and AI-assisted ranking quality separately`.
+`EVAL-002` is complete. A provider-free management command now measures frozen
+deterministic and complete-current AI-assisted rankings separately at cutoff 5
+using nDCG, precision, expected-top overlap, and explicit AI coverage. The
+systems are never blended, partial AI coverage is unavailable, stale inputs are
+refused, and reports copy no private recruitment content. The next approved task
+is `EVAL-003 — Review explanations for evidence, unsupported claims, and
+protected-attribute leakage`.
 
 ## Local setup
 

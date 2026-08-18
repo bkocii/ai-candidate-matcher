@@ -119,6 +119,7 @@ Status: In progress.
 - `EVAL-001` Create synthetic/anonymized candidates and vacancies with expected
   matches. **Complete — 2026-08-17.**
 - `EVAL-002` Measure deterministic and AI-assisted ranking quality separately.
+  **Complete — 2026-08-17.**
 - `EVAL-003` Review explanations for evidence, unsupported claims, and protected-attribute leakage.
 - `DEMO-001` Create a reproducible demo and screenshots.
 - `DEMO-002` Prepare a client-facing README and Upwork Project Catalog positioning.

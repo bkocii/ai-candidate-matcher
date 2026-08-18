@@ -1,4 +1,4 @@
-# EVAL-001 Synthetic Evaluation Dataset
+# Synthetic Evaluation Dataset and Ranking Measurement
 
 This directory contains the version-controlled source of truth for the first
 product evaluation dataset. Every person, organization, vacancy, document, and
@@ -39,7 +39,32 @@ set to restricted.
 | V02 — Data analyst | C06 100.00, C07 85.71, C09 71.43, C10 71.43, C08 57.14 |
 | V03 — React frontend | C11 100.00, C12 85.72, C14 85.72, C13 71.43, C15 57.15 |
 
-`EVAL-002` may measure deterministic and AI-assisted quality against the frozen
-judgments, but it must not silently rewrite this dataset or combine the two
-systems into one unexplained score.
+## EVAL-002 ranking quality
 
+Measure the installed workspace without making an AI request:
+
+```powershell
+uv run python manage.py measure_evaluation_dataset --username admin --organization-slug synthetic-eval-001
+```
+
+The report measures each vacancy and the macro average at cutoff 5 using:
+
+- graded `nDCG@5` against the complete 0–3 relevance judgments;
+- `precision@5`, where grades 2 and 3 count as relevant; and
+- overlap between the measured and frozen expected top-five candidate sets.
+
+The deterministic ordering comes only from the latest current shortlist. The
+AI-assisted ordering comes only from each entry's latest assessment score, with
+the deterministic rank used solely as a stable tie-break. The two scores are
+never added, averaged, or otherwise blended.
+
+AI quality is available for a vacancy only when every one of its 20 shortlist
+entries has a latest assessment tied to the current confirmed profile and
+requirements. Partial or stale coverage is reported as unavailable, never as a
+zero or a partial quality estimate. Use `--require-complete-ai` when complete AI
+coverage is a required gate, and `--format json` for machine-readable output.
+
+Reports contain only dataset identity, organization slug, vacancy codes,
+metrics, and coverage counts. They contain no candidate names/contact data, CV
+text, evidence, prompts, raw responses, decisions, or outreach content. The
+measurement is read-only and creates no AI usage event.
