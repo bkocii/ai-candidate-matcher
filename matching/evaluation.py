@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 from accounts.models import User
 from candidates.models import Candidate, CandidateProfile
 from matching.models import CandidateSkill, HardConstraintRule, normalize_taxonomy_value
+from matching.skill_matching import candidate_skills_by_canonical_key
+from matching.skill_taxonomy import canonical_skill_key
 from organizations.permissions import require_organization_object_access
 from vacancies.models import VacancyRequirements
 
@@ -112,9 +114,9 @@ def _unknown(
 
 def _evaluate_required_skill(
     rule: HardConstraintRule,
-    candidate_skills: dict[int, CandidateSkill],
+    candidate_skills: dict[str, CandidateSkill],
 ) -> RuleEvaluation:
-    candidate_skill = candidate_skills.get(rule.skill_id)
+    candidate_skill = candidate_skills.get(canonical_skill_key(rule.skill.name))
     if candidate_skill is None:
         return _unknown(
             rule,
@@ -138,7 +140,7 @@ def _evaluate_required_skill(
 
 def _evaluate_minimum_experience(
     rule: HardConstraintRule,
-    candidate_skills: dict[int, CandidateSkill],
+    candidate_skills: dict[str, CandidateSkill],
 ) -> RuleEvaluation:
     known_years = [
         record
@@ -307,7 +309,7 @@ def evaluate_rule(
     *,
     rule: HardConstraintRule,
     candidate: Candidate,
-    candidate_skills: dict[int, CandidateSkill],
+    candidate_skills: dict[str, CandidateSkill],
     candidate_profile: CandidateProfile | None = None,
 ) -> RuleEvaluation:
     if rule.rule_type == HardConstraintRule.RuleType.REQUIRED_SKILL:
@@ -332,7 +334,7 @@ def _evaluate_candidate(
     candidate: Candidate,
     rules: tuple[HardConstraintRule, ...],
 ) -> CandidateFilterResult:
-    skills = {record.skill_id: record for record in candidate.skill_records.all()}
+    skills = candidate_skills_by_canonical_key(candidate.skill_records.all())
     profile = next(
         (
             item

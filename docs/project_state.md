@@ -14,11 +14,13 @@ Build an AI-assisted candidate rediscovery and shortlisting application for smal
 
 Sprint 7 — Evaluation and showcase release — is in progress after the completed
 `EVAL-001` synthetic baseline, `EVAL-002` ranking measurement, and `EVAL-003`
-explanation review.
+explanation review, and `DEMO-001` reproducible showcase.
 
 Status: the user-approved corrective `INTAKE-001` task, `EVAL-001`, and
-`EVAL-002` and `EVAL-003` are complete after `PROD-005`; `DEMO-001` is the next
-approved task.
+`EVAL-002`, `EVAL-003`, and `DEMO-001` are complete after `PROD-005`; `DEMO-002`
+remains the next release-roadmap task. The user approved a pre-release
+functionality pass before styling/positioning; `DEF-001` is complete and the
+remaining approved items are recorded in `docs/change_review.md`.
 
 ## Decisions made
 
@@ -28,6 +30,9 @@ approved task.
 - The MVP supports one organization per deployment and multiple recruiter accounts.
 - Agency deployments can associate vacancies with optional client companies.
 - Deterministic filtering precedes AI assessment.
+- Deterministic skill matching uses a small controlled alias policy, preserves
+  original source wording/evidence, and never uses unrestricted substring
+  matching.
 - AI provides evidence-based decision support and never makes the final hiring decision.
 - Outreach is editable and copy/export only in the MVP.
 - The app is a separate repository from Python AI Toolkit.
@@ -315,6 +320,25 @@ approved task.
   service.
 - Kept all AI requests, assessment persistence, review decisions, and outreach
   outside this task.
+
+### `DEF-001 — Canonical skill matching`
+
+- Added a deliberately small, reviewable application-owned alias policy for
+  unambiguous Python and Django developer/development wording.
+- New candidate and vacancy skill links use canonical identities while retaining
+  their original extracted or recruiter-entered labels and evidence.
+- Hard filtering and shortlist scoring canonicalize both sides again at runtime,
+  so existing confirmed records such as candidate `Python` versus vacancy
+  `Python development` match without re-extraction or immutable-data rewriting.
+- Existing duplicate aliases count at most once per canonical requirement;
+  must-have remains authoritative over a duplicate nice-to-have entry.
+- Unsafe near-matches such as `Java` and `JavaScript` remain distinct, and
+  unknown terms receive no guessed substring or automatic AI match.
+- Advanced the deterministic algorithm marker to v3 so earlier runs become
+  inspectably stale and require explicit regeneration rather than silent edits.
+- Added focused coverage for aliases, case/spacing/punctuation variation, new and
+  saved-version behavior, source-label preservation, hard rules, shortlist
+  scoring, and unsafe near-matches. No model or migration was required.
 
 ### `AI-001 — Application AI gateway`
 
@@ -851,6 +875,26 @@ approved task.
   runtime no-save coverage. No model, migration, AI request, toolkit dependency,
   or background-job schema changed.
 
+### `DEMO-001 — Reproducible synthetic demo and screenshots`
+
+- Added `prepare_demo`, which installs the frozen EVAL-001 fixture into a new
+  isolated organization and refuses to overwrite an existing slug.
+- Uses the normal assessment, individual-decision, and outreach-generation
+  services with schema-validated deterministic fake-gateway responses. It makes
+  no provider or network request and is explicitly not an AI-quality measure.
+- Creates 20 current assessments for the V01 Django shortlist, one each approve,
+  revisit, and reject decision, and one inspectable outreach draft tied to the
+  approved decision.
+- Preserves all safety boundaries: profiles are already evidence-confirmed,
+  missing requirement evidence remains uncertain, decisions are individual, and
+  outreach remains a separate unapproved action. Restricted synthetic contact
+  permission visibly blocks final approval, copy, and export; nothing is sent.
+- Added a five-minute walkthrough and four 1440 × 1080 reference screenshots
+  generated from the authenticated Django templates and repository CSS.
+- Added provider-free command, state, minimized-output, overwrite-refusal,
+  explanation-cleanliness, and tenant-scoped page coverage. No model, migration,
+  scoring algorithm, prompt, toolkit dependency, or production topology changed.
+
 ## Verification
 
 `PROD-005` verification completed on 2026-08-15:
@@ -918,6 +962,28 @@ approved task.
   an empty database, the follow-up migration plan is empty, and model-to-
   migration drift is zero.
 
+`DEMO-001` verification completed on 2026-08-20:
+
+- Focused demo, dataset, explanation-review, recruiter-review, and outreach-
+  workflow set: `30 passed`.
+- Complete `python scripts/check.py` quality gate: `470 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `195`
+  files are formatted; installed dependency compatibility passed.
+- DEMO-001 adds no migration. Every existing migration applies successfully,
+  the follow-up migration plan is empty, and model-to-migration drift is zero.
+
+`DEF-001` verification completed on 2026-08-24:
+
+- Focused canonical-skill, matching-model, hard-filter, shortlist, staleness,
+  vacancy-extraction, profile-extraction, and evaluation-dataset set: `138 passed`.
+- Complete `python scripts/check.py` quality gate: `481 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `199`
+  files are formatted; installed dependency compatibility passed.
+- DEF-001 adds no migration. Every existing migration is applied, the follow-up
+  migration plan is empty, and model-to-migration drift is zero.
+
 ## Not implemented
 
 Outreach generation, immutable recruiter editing, exact final approval, manual
@@ -962,4 +1028,6 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`DEMO-001 — Create a reproducible demo and screenshots.`
+Wait for the user's next selection from the approved functionality items in
+`docs/change_review.md`. `DEMO-002 — Prepare a client-facing README and Upwork
+Project Catalog positioning` remains pending until that pass is complete.

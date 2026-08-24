@@ -95,3 +95,21 @@ vacancy/candidate codes, assessment versions, safe issue locations/codes, and
 counts. It contains no candidate identity/contact data, CV text, evidence,
 provider explanation text, prompt, raw response, recruiter decision, or outreach
 content. The command is read-only and creates no AI usage event.
+
+## DEMO-001 provider-free showcase
+
+Create a workflow-complete showcase in a new organization:
+
+```powershell
+uv run python manage.py prepare_demo --username admin --organization-slug synthetic-demo-001
+```
+
+The command reuses this exact frozen dataset and its verified deterministic
+shortlists. It then calls the normal application services with deterministic,
+schema-validated fake-gateway output to create V01 assessments, three individual
+recruiter decisions, and one unapproved outreach draft. No provider/network
+request is made. Restricted synthetic contact remains unchanged, final outreach
+approval/copy/export stays unavailable, and nothing is sent.
+
+This fixture demonstrates the product workflow and safety boundaries; it is not
+a live-model evaluation. See `docs/demo.md` for the walkthrough and screenshots.

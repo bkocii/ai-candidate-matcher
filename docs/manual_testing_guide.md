@@ -1,7 +1,8 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`PROD-005`, `INTAKE-001`, and `EVAL-001` through `EVAL-003`. Use only the
+`PROD-005`, `INTAKE-001`, `EVAL-001` through `EVAL-003`, `DEMO-001`, and
+`DEF-001`. Use only the
 synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
@@ -417,6 +418,35 @@ organization-owned canonical record for each name. Changing case or surrounding
 spaces in the draft does not create another skill, while `C`, `C#`, and `C++`
 remain different skills.
 
+### Canonical skill wording correction
+
+Create a fresh draft using the vacancy text in
+`manual_testing/fixtures/vacancy-description.txt`, or enter `Python development`
+as a must-have skill. Save the draft and inspect its requirement skills.
+
+Expected result:
+
+- Recruiter-facing requirements retain `Python development` as the original
+  source wording.
+- The linked canonical skill is `Python`.
+- A candidate with a grounded `Python` skill passes a typed required-skill rule
+  based on that requirement and receives its Python shortlist points.
+- Existing confirmed records that separately saved `Python` and `Python
+  development` also match after regenerating the shortlist; no profile or
+  vacancy re-extraction is required.
+- `PYTHON DEVELOPMENT`, extra whitespace, and the controlled
+  `Python-development` wording behave the same.
+- `Java` does not match `JavaScript`, and unlisted phrases remain distinct rather
+  than being guessed through substring or AI matching.
+- The shortlist still displays the vacancy's original skill wording, the
+  candidate's recorded wording, and evidence.
+
+Run the focused provider-free regression:
+
+```powershell
+uv run pytest -q tests/test_skill_canonicalization.py tests/test_matching_models.py tests/test_matching_filtering.py tests/test_matching_shortlist.py tests/test_matching_staleness.py
+```
+
 To record synthetic candidate evidence, open **Matching → Candidate skills** and
 add:
 
@@ -512,6 +542,8 @@ Expected result:
   count, and fixed limit of 20.
 - Every must-have skill has two weight units and every nice-to-have skill has one;
   the combined weights are apportioned to exactly `100.00` points.
+- Algorithm v3 matches controlled canonical skill identities while preserving
+  the existing two-to-one weighting and original evidence display.
 - With two must-have and two nice-to-have skills, a candidate matching one of
   each receives `50.00`: `33.33` must-have points plus `16.67` nice-to-have
   points.
@@ -572,9 +604,10 @@ Expected result:
 - Confirming or editing only a draft does not replace the current matching input;
   confirmation is the point at which the old run becomes stale.
 
-A shortlist created with scoring algorithm v1 is also labelled stale after this
-upgrade. Its saved 70/30 score remains unchanged as historical evidence, and
-regeneration creates a separate v2 run using per-skill 2:1 weighting.
+A shortlist created with scoring algorithm v1 or v2 is also labelled stale after
+this upgrade. Its saved score remains unchanged as historical evidence, and
+regeneration creates a separate v3 run using controlled canonical skill matching
+and the existing per-skill 2:1 weighting.
 
 ### Regeneration
 
@@ -1411,7 +1444,50 @@ Run the focused provider-free automated coverage:
 uv run pytest -q tests/test_evaluation_explanation_review.py tests/test_evaluation_measurement.py tests/test_evaluation_dataset.py tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_match_ai_assessment.py
 ```
 
-## 31. What is intentionally unavailable
+## 31. Run the DEMO-001 reproducible showcase
+
+Use an existing active username and a new organization slug:
+
+```powershell
+uv run python manage.py prepare_demo --username admin --organization-slug synthetic-demo-001
+uv run python manage.py runserver
+```
+
+Expected command result:
+
+- 20 synthetic candidates, 3 vacancies, and 3 deterministic shortlists are
+  reported.
+- V01 has 20 current assessments and exactly 3 individual decisions: one
+  approve, one reject, and one revisit. The remaining 17 decisions are pending.
+- Exactly one unapproved outreach draft exists for the approved entry.
+- The command explicitly says no provider/network request, final approval,
+  copy, export, or send occurred and that contact remains restricted.
+- Output contains no candidate name/contact data, CV/evidence text, assessment
+  explanation, decision note, outreach body, prompt, or raw response.
+
+Open each route printed by the command and follow `docs/demo.md`. In particular:
+
+1. Confirm the deterministic shortlist is current and its score/evidence is
+   inspectable.
+2. Confirm **Reviews** with `?scope=all` shows 20 latest assessments, 17 pending,
+   and one each approved, rejected, and revisit.
+3. Open the approved assessment and confirm its exact evidence plus immutable
+   individual decision remain inspectable.
+4. Open the outreach draft and confirm **Not finally approved or sent** appears.
+5. Confirm final approval is unavailable because candidate contact permission is
+   restricted; copy/export is also unavailable and no action event exists.
+
+Run the command again with the same slug. Expected result: it refuses to
+overwrite the organization and does not add candidates, documents, assessments,
+decisions, or drafts. Use a new slug to repeat the demo.
+
+Run the focused provider-free coverage:
+
+```powershell
+uv run pytest -q tests/test_demo.py tests/test_evaluation_dataset.py tests/test_evaluation_explanation_review.py tests/test_recruiter_review.py tests/test_outreach_workflow.py
+```
+
+## 32. What is intentionally unavailable
 
 The following are not defects at this milestone:
 
@@ -1425,7 +1501,7 @@ The following are not defects at this milestone:
   integration, or normal-workspace contact-permission editor. Manual clipboard
   copy and plain-text export deliberately stop before transmission.
 
-## 32. Final acceptance checklist
+## 33. Final acceptance checklist
 
 The current milestone is behaving correctly when all of these are true:
 
@@ -1443,6 +1519,10 @@ The current milestone is behaving correctly when all of these are true:
   coverage as unavailable, flags protected or high-confidence unsupported
   content without copying it, makes no provider request or domain write, and
   rejects new explicit protected/sensitive output before persistence.
+- DEMO-001 creates only an isolated synthetic workspace, refuses overwrite,
+  makes no provider/network request, uses normal validated workflow services,
+  preserves clean evidence-linked explanations, records decisions individually,
+  stops at an unapproved contact-restricted draft, and sends nothing.
 - Manual candidate entry and both CSV reports match the expectations above.
 - Reviewed bulk intake validates each CV independently, proposes only local
   identity fields, blocks exact/identity duplicates, creates only selected rows
@@ -1467,7 +1547,9 @@ The current milestone is behaving correctly when all of these are true:
   deletion and retention queues, and tombstone-integrity findings without copied
   CV, contact, prompt, response, note, or outreach content.
 - Requirement skills normalize case and spacing without merging meaningful
-  punctuation, and typed rules keep unknown candidate facts eligible for review.
+  punctuation; controlled unambiguous aliases match at runtime without merging
+  unsafe near-matches, and typed rules keep unknown candidate facts eligible for
+  review.
 - Deterministic filtering shows inspectable pass/fail/unknown rule outcomes and
   excludes only candidates with an explicit failed fact.
 - Shortlist generation is POST-only, excludes explicit failures, shows the
@@ -1548,7 +1630,7 @@ The current milestone is behaving correctly when all of these are true:
   or live AI request; only explicit vacancy extraction, candidate extraction,
   match-assessment, or outreach-generation actions do.
 
-## 33. Reset disposable local test data
+## 34. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

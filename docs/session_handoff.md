@@ -15,8 +15,13 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 ## Current status
 
 Sprint 0 through Sprint 6, the user-approved corrective `INTAKE-001` task, and
-`EVAL-001` through `EVAL-003` are complete. Sprint 7 is in progress; `DEMO-001`
-is the next approved roadmap task.
+`EVAL-001` through `EVAL-003` plus `DEMO-001` are complete. Sprint 7 is in
+progress; `DEMO-002` is the next approved roadmap task.
+
+The user has chosen to complete approved functionality corrections before the
+final styling/positioning pass. `DEF-001` is now complete; the remaining approved
+change items are tracked in `docs/change_review.md`, and the next one must be
+selected explicitly before implementation.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -93,6 +98,15 @@ skill/experience/evidence changes clearly mark the historical run stale. Facts
 unused by deterministic matching do not trigger false invalidation. Stale scores
 remain immutable, regeneration creates a separate run, and pre-signature runs
 are explicitly treated as stale.
+
+`DEF-001` is complete. New vacancy and candidate skill links use a small
+controlled canonical vocabulary while preserving original source labels and
+evidence. Filtering and scoring canonicalize saved records again at comparison
+time, so `Python` matches `Python development` without re-extraction. Unknown
+terms remain separate, `Java` does not match `JavaScript`, and no unrestricted
+substring or automatic AI override was added. Deterministic algorithm v3 keeps
+the existing per-skill 2:1 weighting and makes older runs stale until a recruiter
+explicitly regenerates them. No model or migration was added.
 
 Typed hard-constraint rules are managed in the normal recruiter application while
 a requirements version is still a draft. The editor limits required-skill rules
@@ -393,6 +407,16 @@ changes no score, assessment, decision, or outreach action. New assessment
 output with explicit protected/sensitive language is rejected before persistence;
 lower-confidence support findings remain individually inspectable review signals.
 
+`DEMO-001` is complete. `prepare_demo` installs the frozen EVAL-001 workspace
+under a new slug, refuses overwrite, and uses normal application services with
+schema-validated deterministic fake-gateway output. It creates 20 current V01
+assessments, three individual recruiter decisions, and one unapproved outreach
+draft without a provider/network request. Synthetic contact permission remains
+restricted, so final approval, copy/export, and send remain unavailable. The
+walkthrough and four authenticated-page reference screenshots are in
+`docs/demo.md` and `docs/demo/screenshots/`. This fixture demonstrates workflow
+state and safety boundaries, not live-model quality.
+
 ## Recruiter-efficiency requirement
 
 Do not treat the current per-candidate generation actions as the final high-volume UX.
@@ -407,9 +431,12 @@ Profile drafts still require individually inspectable evidence and explicit
 confirmation. Final approve/reject/revisit decisions remain individual recruiter
 actions with notes, actor, and timestamp, and outreach remains separate.
 
-The next roadmap item is:
+The next release-roadmap item remains:
 
-`DEMO-001 — Create a reproducible demo and screenshots.`
+`DEMO-002 — Prepare a client-facing README and Upwork Project Catalog positioning.`
+
+However, do not begin it until the user finishes selecting the approved
+pre-release functionality items in `docs/change_review.md`.
 
 ## Required instructions
 
@@ -514,10 +541,45 @@ The focused command is:
 uv run pytest -q tests/test_evaluation_explanation_review.py tests/test_evaluation_measurement.py tests/test_evaluation_dataset.py tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_match_ai_assessment.py
 ```
 
+`DEMO-001` verification completed on 2026-08-20:
+
+- Focused demo, dataset, explanation-review, recruiter-review, and outreach-
+  workflow set: `30 passed`.
+- Complete `python scripts/check.py` quality gate: `470 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `195`
+  files are formatted; installed dependency compatibility passed.
+- DEMO-001 adds no migration. Every existing migration applies, the follow-up
+  migration plan is empty, and model-to-migration drift is zero.
+
+The focused command is:
+
+```text
+uv run pytest -q tests/test_demo.py tests/test_evaluation_dataset.py tests/test_evaluation_explanation_review.py tests/test_recruiter_review.py tests/test_outreach_workflow.py
+```
+
+`DEF-001` verification completed on 2026-08-24:
+
+- Focused canonical-skill, matching-model, hard-filter, shortlist, staleness,
+  vacancy-extraction, profile-extraction, and evaluation-dataset set: `138 passed`.
+- Complete `python scripts/check.py` quality gate: `481 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `199`
+  files are formatted; installed dependency compatibility passed.
+- DEF-001 adds no migration. Every existing migration is applied, the follow-up
+  migration plan is empty, and model-to-migration drift is zero.
+
+The focused command is:
+
+```text
+uv run pytest -q tests/test_skill_canonicalization.py tests/test_matching_models.py tests/test_matching_filtering.py tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_vacancy_ai_extraction.py tests/test_candidate_ai_extraction.py tests/test_evaluation_dataset.py
+```
+
 ## Immediate next action
 
-Implement only `DEMO-001`: create a reproducible demonstration and screenshots
-without weakening the frozen evaluation, explanation-review, reviewed bulk
-intake, production/deployment, minimized usage reporting, durable jobs, staged
-deletion, or separate individually approved candidate-decision and outreach
-actions.
+Wait for the user's next approved pre-release functionality selection. Preserve
+`DEF-001`, the reproducible demo, frozen evaluation, explanation review, reviewed
+bulk intake, production/deployment, minimized usage reporting, durable jobs,
+staged deletion, and separate individually approved candidate-decision and
+outreach actions. Resume `DEMO-002` only when the user finishes the functionality
+pass.

@@ -81,6 +81,9 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 ## Matching principles
 
 - Explicit rules run before AI to reduce cost and make hard constraints understandable.
+- Deterministic skill matching uses a small controlled alias vocabulary while
+  retaining the original vacancy and candidate wording as inspectable evidence.
+  Unrecognized terms remain distinct; unrestricted substring matching is not used.
 - AI assessments are decision support, not employment decisions.
 - Every substantive positive or negative conclusion must point to candidate or vacancy evidence.
 - Missing information is reported as unknown, not treated as proof that a candidate lacks a skill.
@@ -183,6 +186,14 @@ quoted claims, and highlights match citations that require human inspection.
 Incomplete assessment coverage is unavailable, never a passing result. The
 review makes no AI request, changes no assessment or score, and cannot approve,
 reject, rank, contact, or generate outreach for a candidate.
+
+`DEMO-001` turns the same frozen synthetic baseline into a reproducible product
+walkthrough without a provider key. It demonstrates confirmed-profile reuse,
+inspectable deterministic ranking, compact exception-focused review, individual
+human decisions, and a separate outreach draft. The synthetic source remains
+contact-restricted, so final outreach approval and manual use are visibly blocked
+and nothing can be sent. Deterministic fixture responses demonstrate workflow
+state only and are not presented as live-model quality evidence.
 
 ## Validation gate
 

@@ -542,17 +542,24 @@ versions so their evidence boundary remains inspectable when inputs later change
 
 ### Deterministic matching definitions
 
-- `matching.Skill` is an organization-owned canonical identity. Its key uses
-  Unicode NFKC, collapsed whitespace, and case folding while preserving
-  punctuation. This removes formatting duplicates without claiming that
-  organization-specific synonyms such as `Postgres` and `PostgreSQL` are equal.
+- `matching.Skill` is an organization-owned canonical identity. Its stored key
+  uses Unicode NFKC, collapsed whitespace, and case folding while preserving
+  punctuation. An application-owned, versioned matching policy adds only a
+  small controlled alias set for unambiguous role/activity wording such as
+  `Python development` to `Python`. Unknown terms remain distinct, and
+  unrestricted substring matching is forbidden, so `Java` and `JavaScript`
+  cannot match.
 - `RequirementSkill` links a skill to one vacancy-requirements version as either
   must-have or nice-to-have, retaining the recruiter/source label and list order.
   The same canonical skill cannot appear twice in one version; must-have wins if
   duplicate raw values occur across both legacy list fields.
-- Saving through the recruiter requirements service synchronizes normalized
-  skill links. Confirmation rechecks them, and the initial matching migration
-  backfills existing versions without changing original recruiter input.
+- Saving through the recruiter requirements service synchronizes canonical
+  skill links while `RequirementSkill.source_label` retains the original
+  recruiter/provider wording. Confirmation rechecks them, and the initial
+  matching migration backfills existing versions without changing original
+  recruiter input. Filtering and scoring canonicalize both sides again at
+  runtime so confirmed records created before a controlled alias was introduced
+  benefit without data rewriting or re-extraction.
 - `CandidateSkill` records a candidate skill assertion with its source label,
   optional years, evidence, and optional source document. Evidence remains
   inspectable application data and is removed when the candidate is deleted.
@@ -607,10 +614,11 @@ versions so their evidence boundary remains inspectable when inputs later change
   the vacancy's current confirmed requirements. It runs the hard-filter stage
   first and excludes every candidate with an explicit failure. Passed and
   needs-review candidates remain eligible for scoring.
-- Relevance scoring uses only normalized requirement-skill links and recorded
-  candidate-skill assertions. Algorithm v2 gives each must-have skill two weight
-  units and each nice-to-have skill one, then uses deterministic largest-remainder
-  apportionment to distribute exactly 100.00 points. Cent-level rounding is
+- Relevance scoring uses only canonical requirement-skill links and recorded
+  candidate-skill assertions. Algorithm v3 preserves the v2 two-to-one
+  must-have/nice-to-have weighting and deterministic largest-remainder
+  apportionment, while comparing controlled canonical identities and counting
+  at most one weighted row per canonical requirement. Cent-level rounding is
   stable by requirement order. Missing skill evidence earns zero points but is
   never converted into a hard-filter failure.
 - Ranking sorts by score descending, uses passed-before-review only as an equal-
@@ -927,6 +935,12 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
   reconstructed application-owned evidence. Provider-free tests cover clean and
   partial coverage, protected terminology, unsupported explicit claims,
   snapshot integrity, citation mismatch, minimized output, and strict gates.
+- `DEMO-001` composes the frozen EVAL-001 installer with existing assessment,
+  individual-decision, and outreach services. Schema-validated deterministic
+  fake-gateway responses keep setup provider-free; the fixture is a workflow
+  showcase, not an AI-quality measurement. An outer transaction and private-file
+  cleanup preserve all-or-nothing setup, existing slugs are never overwritten,
+  and restricted synthetic contact keeps final outreach approval unavailable.
 - `scripts/check.py` is the single local and CI quality gate. It includes normal
   and warning-strict deployment checks, production static collection,
   migration-drift detection, tests, lint, formatting, and dependency

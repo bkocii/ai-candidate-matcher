@@ -13,6 +13,11 @@ from matching.models import (
     ShortlistEntry,
 )
 from matching.scoring_policy import ALGORITHM_VERSION
+from matching.skill_matching import (
+    candidate_skills_by_canonical_key,
+    unique_requirement_skills,
+)
+from matching.skill_taxonomy import canonical_skill_key
 from matching.staleness import (
     INPUT_SNAPSHOT_VERSION,
     candidate_input_signature,
@@ -109,10 +114,10 @@ def score_candidate_relevance(
     requirement_skills: tuple[RequirementSkill, ...],
 ) -> CandidateRelevanceScore:
     """Score recorded skill matches without treating missing evidence as failure."""
-    candidate_skills = {
-        record.skill_id: record
-        for record in filter_result.candidate.skill_records.all()
-    }
+    requirement_skills = unique_requirement_skills(requirement_skills)
+    candidate_skills = candidate_skills_by_canonical_key(
+        filter_result.candidate.skill_records.all()
+    )
     must_have = tuple(
         record
         for record in requirement_skills
@@ -127,7 +132,9 @@ def score_candidate_relevance(
 
     skill_scores = []
     for requirement_skill in requirement_skills:
-        candidate_skill = candidate_skills.get(requirement_skill.skill_id)
+        candidate_skill = candidate_skills.get(
+            canonical_skill_key(requirement_skill.skill.name)
+        )
         possible_points = per_skill_weights[requirement_skill.pk]
         awarded_points = possible_points if candidate_skill else Decimal("0")
         skill_scores.append(

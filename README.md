@@ -12,8 +12,8 @@ python-ai-toolkit[django]==1.0.0
 
 ## Current status
 
-Sprint 0 through Sprint 6 and `EVAL-001` through `EVAL-003` are complete.
-Evaluation and showcase work continues with `DEMO-001`.
+Sprint 0 through Sprint 6, `EVAL-001` through `EVAL-003`, and `DEMO-001` are
+complete. Evaluation and showcase work continues with `DEMO-002`.
 
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
@@ -155,8 +155,26 @@ and requirement coverage, flags explicit protected-attribute language and
 high-confidence unsupported claims, and reports incomplete assessment coverage
 as unavailable. New assessment output with explicit protected/sensitive
 attribute language is rejected before persistence. Neither evaluation changes
-scores, assessments, decisions, or outreach. The next approved task is
-`DEMO-001 — Create a reproducible demo and screenshots`.
+scores, assessments, decisions, or outreach. `DEMO-001` adds a provider-free
+synthetic setup command, a safety-bound walkthrough, and real reference
+screenshots of the shortlist, review, assessment, and blocked outreach workflow.
+The next approved task is `DEMO-002 — Prepare a client-facing README and Upwork
+Project Catalog positioning`.
+
+## Reproducible demo
+
+After creating an active user, build an isolated showcase without an AI key:
+
+```powershell
+uv run python manage.py prepare_demo --username admin --organization-slug synthetic-demo-001
+uv run python manage.py runserver
+```
+
+The command refuses to overwrite an existing organization and prints the exact
+dashboard, shortlist, review, assessment, and draft routes. It creates only
+synthetic EVAL-001 records, stops before final outreach approval, and keeps
+contact permission restricted. See [`docs/demo.md`](docs/demo.md) for the
+five-minute walkthrough and verified screenshots.
 
 ## Local setup
 

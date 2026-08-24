@@ -11,8 +11,8 @@ from matching.models import (
     HardConstraintRule,
     RequirementSkill,
     Skill,
-    normalize_taxonomy_value,
 )
+from matching.skill_taxonomy import canonical_skill_key, canonicalize_skill
 from organizations.models import Organization
 from organizations.permissions import (
     require_organization_access,
@@ -33,16 +33,29 @@ def get_or_create_skill(
 ) -> Skill:
     """Resolve one skill inside the authorized organization's vocabulary."""
     require_organization_access(user, organization)
-    normalized_name = normalize_taxonomy_value(label)
+    canonical = canonicalize_skill(label)
     skill = Skill.objects.filter(
         organization=organization,
-        normalized_name=normalized_name,
+        normalized_name=canonical.key,
     ).first()
     if skill:
         return skill
+
+    # Existing confirmed versions may predate controlled aliases. Reuse an
+    # equivalent organization-owned identity without rewriting saved evidence.
+    skill = next(
+        (
+            item
+            for item in Skill.objects.filter(organization=organization).order_by("id")
+            if canonical_skill_key(item.name) == canonical.key
+        ),
+        None,
+    )
+    if skill is not None:
+        return skill
     return Skill.objects.create(
         organization=organization,
-        name=_clean_display_value(label),
+        name=canonical.display_name,
         created_by=user,
     )
 
@@ -106,10 +119,10 @@ def sync_requirement_skills(
     for importance, labels in groups:
         position = 0
         for label in labels:
-            normalized_name = normalize_taxonomy_value(label)
-            if normalized_name in seen:
+            canonical_key = canonical_skill_key(label)
+            if canonical_key in seen:
                 continue
-            seen.add(normalized_name)
+            seen.add(canonical_key)
             position += 1
             skill = get_or_create_skill(
                 organization=requirements.organization,

@@ -48,11 +48,20 @@ CSV or reviewed bulk CV intake and create a vacancy without developer help.
 - `MATCH-002` Implement inspectable deterministic candidate filtering. **Complete — 2026-08-11.**
 - `MATCH-003` Implement relevance scoring and a bounded shortlist. **Complete — 2026-08-11; corrective per-skill 2:1 weighting pass complete.**
 - `MATCH-004` Add stale-result invalidation when candidate or vacancy data changes. **Complete — 2026-08-11.**
+- `DEF-001` Correct deterministic canonical skill matching while preserving
+  source wording and evidence. **Complete — 2026-08-24 as a user-approved
+  correctness task before the remaining pre-release functionality pass.**
 
 Corrective workflow pass: recruiters can now create, edit, and confirmation-delete
 typed hard-constraint rules in the normal draft requirements editor. Confirmed
 versions remain immutable, and free-text hard-constraint notes remain explicitly
 non-executable.
+
+Corrective canonical-matching pass: controlled aliases such as `Python
+development` resolve to the canonical `Python` identity for filtering and
+scoring. Existing saved versions are canonicalized again at comparison time,
+unsafe near-matches such as `Java`/`JavaScript` remain distinct, and historical
+v2 runs become stale rather than being rewritten.
 
 Status: Complete.
 
@@ -122,7 +131,7 @@ Status: In progress.
   **Complete — 2026-08-17.**
 - `EVAL-003` Review explanations for evidence, unsupported claims, and protected-attribute leakage.
   **Complete — 2026-08-18.**
-- `DEMO-001` Create a reproducible demo and screenshots.
+- `DEMO-001` Create a reproducible demo and screenshots. **Complete — 2026-08-20.**
 - `DEMO-002` Prepare a client-facing README and Upwork Project Catalog positioning.
 
 ## Release gate
