@@ -2,7 +2,7 @@
 
 This guide verifies the application from the Django foundation through
 `PROD-005`, `INTAKE-001`, `EVAL-001` through `EVAL-003`, `DEMO-001`, and
-`DEF-001`. Use only the
+`DEF-001`, and `CR-004`. Use only the
 synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
@@ -83,7 +83,7 @@ Expected security behavior:
 
 ## 4. Test manual candidate entry
 
-Open **Candidates** and select **Add candidate**. Enter:
+Open **Candidates** and select **Quick add**. Enter:
 
 - Full name: `Arben Testi`
 - Email: `arben.testi@example.test`
@@ -95,12 +95,20 @@ Open **Candidates** and select **Add candidate**. Enter:
 - Consent status: `Unknown`
 - Contact permission: `Unknown`
 - Permission notes: `Synthetic test record; no real person.`
+- CV file: optionally select `synthetic-arben-testi-cv.pdf`
 
 Expected result:
 
 - The candidate is created and appears in the organization candidate list.
-- The provenance record is created in the same operation.
+- The provenance record and optional validated private CV are created in the
+  same action. An invalid CV rolls back the candidate and source instead of
+  leaving a partial record.
 - Unknown permission/consent remains explicitly unknown.
+
+Only the full name is required identity data. The prefilled source name and safe
+not-recorded/unknown values can be accepted without completing every optional
+contact, retention, or permission field. Use **Create candidates from CVs** for
+the normal CV-first path instead of repeating quick-add for several people.
 
 Repeat the entry using the same email or the same source reference.
 
@@ -154,7 +162,9 @@ future organization-country setting.
 
 ## 6. Test reviewed bulk CV candidate intake
 
-Open **Candidates** > **Bulk CV intake** > **Start intake batch**. Enter:
+Open **Candidates** and confirm **Create candidates from CVs** is the primary
+creation action. Select it and record the shared source details below. The same
+flow supports one CV or several CVs:
 
 - Source name: `Synthetic reviewed bulk intake`
 - Lawful basis: `Not recorded`
@@ -185,6 +195,19 @@ Expected result:
   already created that candidate. The application does not merge or overwrite
   the existing record.
 
+Before creating candidates, upload
+`manual_testing/fixtures/candidate-cv-mapping.csv` under **Apply candidate
+details from CSV**.
+
+Expected result:
+
+- Each row maps only to the pending CV whose `cv_filename` is an exact match.
+- Drita and Arben's editable identity/source-reference fields use the CSV values.
+- A missing filename, repeated CSV filename, duplicate pending filename, or
+  invalid row appears as unresolved/invalid and is not guessed by name.
+- The CSV report shows mapped, unresolved, and invalid counts. It does not create
+  a candidate by itself.
+
 Select only Drita's row. Keep **Queue only newly created CVs for background AI
 profile drafts** checked, then select **Create selected candidates**.
 
@@ -210,8 +233,29 @@ A member of another organization cannot open either batch URL or use its items.
 Run the focused provider-free coverage:
 
 ```powershell
-uv run pytest -q tests/test_candidate_bulk_intake.py tests/test_candidate_intake.py tests/test_candidate_documents.py tests/test_background_jobs.py
+uv run pytest -q tests/test_candidate_unified_intake.py tests/test_candidate_bulk_intake.py tests/test_candidate_intake.py tests/test_candidate_documents.py tests/test_candidate_ai_extraction.py tests/test_background_jobs.py
 ```
+
+### Batch-confirm clean profile drafts
+
+After the background worker creates profile drafts, return to the intake batch
+and select **Review profile confirmation**.
+
+Expected result:
+
+- The screen shows included and excluded counts before any confirmation.
+- A clean evidence-validated draft with no ambiguity, sensitive-content flag,
+  source change, duplicate conflict, or candidate-state exception is included.
+- Pending/failed extraction, ambiguities, sensitive-content flags, changed CVs,
+  inactive/deleting candidates, missing exact accepted-CV links, and already
+  confirmed profiles are excluded with a bounded reason.
+- Every available profile has an individual link and can be opened before the
+  batch action.
+- **Confirm all eligible profiles** is one explicit POST action. Each included
+  profile separately becomes confirmed with the acting recruiter and timestamp;
+  excluded drafts remain unchanged.
+- The action publishes grounded profile facts only. It does not approve, reject,
+  revisit, assess, contact, create outreach, or send anything for a candidate.
 
 ## 7. Test private CV upload and extraction
 
@@ -1140,9 +1184,11 @@ Expected result:
   creates no duplicate target or routine AI request. When nothing is pending, the
   app reports that safely instead of creating an empty job.
 
-Inspect each created draft and use the existing individual **Confirm profile**
-action only after its evidence has been reviewed. Batch profile confirmation is
-intentionally unavailable.
+Inspect exception drafts individually. For CV-first intake batches, the intake's
+**Review profile confirmation** screen can explicitly confirm all clean eligible
+drafts together after showing included/excluded counts. Every result still has
+its own confirmed profile version, actor, timestamp, and detail page; exceptions
+remain individual.
 
 ### Whole-shortlist assessment and exception isolation
 
@@ -1525,8 +1571,9 @@ The current milestone is behaving correctly when all of these are true:
   stops at an unapproved contact-restricted draft, and sends nothing.
 - Manual candidate entry and both CSV reports match the expectations above.
 - Reviewed bulk intake validates each CV independently, proposes only local
-  identity fields, blocks exact/identity duplicates, creates only selected rows
-  transactionally, clears staging data, and queues only targeted profile drafts.
+  identity fields, applies CSV data only by exact `cv_filename`, blocks exact/
+  identity duplicates, creates only selected rows transactionally, clears
+  staging data, and queues only targeted profile drafts.
 - Valid PDF and DOCX CVs extract successfully; unsafe fixtures are rejected.
 - Authorized CV downloads return the exact integrity-checked original only as a
   private/no-store attachment; signed-out, cross-organization, mismatched,
@@ -1581,7 +1628,9 @@ The current milestone is behaving correctly when all of these are true:
 - Explicit retry requeues only failed or skipped targets. Job status contains no
   copied CV, contact, prompt, raw response, decision-note, or outreach content.
 - Batch work never confirms profiles, records final candidate decisions, creates
-  outreach, or sends messages; those actions remain individually inspectable and
+  outreach, or sends messages. A separate explicit intake review action may
+  confirm only clean eligible profile drafts, recording each profile's actor and
+  timestamp; final candidate decisions and outreach remain individual and
   separately approved.
 - AI match assessment is POST-only and per candidate, requires current confirmed
   inputs, preserves immutable numbered versions, resolves evidence references,

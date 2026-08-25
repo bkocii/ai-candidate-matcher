@@ -10,13 +10,14 @@
         <p class="lede">Organization-controlled candidate records and their current intake status.</p>
     </div>
     <div class="button-row">
-        <a class="secondary-button" href="{% url 'candidates:candidate-intake-list' organization.slug %}">Bulk CV intake</a>
+        <a class="primary-button button-link" href="{% url 'candidates:candidate-intake-create' organization.slug %}">Create candidates from CVs</a>
+        <a class="secondary-button" href="{% url 'candidates:candidate-intake-list' organization.slug %}">Intake history</a>
         <form method="post" action="{% url 'operations:candidate-profile-batch-queue' organization.slug %}">
             {% csrf_token %}
             <button class="secondary-button" type="submit">Queue pending profile extraction</button>
         </form>
         <a class="secondary-button" href="{% url 'candidates:candidate-import' organization.slug %}">Import CSV</a>
-        <a class="primary-button button-link" href="{% url 'candidates:candidate-create' organization.slug %}">Add candidate</a>
+        <a class="secondary-button" href="{% url 'candidates:candidate-create' organization.slug %}">Quick add</a>
     </div>
 </section>
 
@@ -59,7 +60,7 @@
     <section class="empty-state inline-empty">
         <div class="empty-icon" aria-hidden="true">C</div>
         <h2>No candidates yet</h2>
-        <p>Add one candidate manually or import a validated CSV file.</p>
+        <p>Create candidates from CVs, quick-add one record, or import a validated CSV file.</p>
     </section>
 {% endif %}
 {% endblock %}

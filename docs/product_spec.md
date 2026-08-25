@@ -43,8 +43,12 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Secure recruiter login.
 - One organization with multiple recruiter accounts.
 - Optional client companies for agency use.
-- Candidate creation, CSV import, and reviewed bulk CV intake with shared
-  provenance and explicit selected-row creation.
+- Primary CV-first candidate creation for one or several documents, reviewed
+  local identity proposals, shared provenance, exact CSV-to-CV mapping, and
+  explicit selected-row creation.
+- Lightweight manual quick-add with an optional CV in the same action.
+- Explicit batch confirmation of only clean evidence-validated profile drafts,
+  with included/excluded review and individual profile approval history.
 - Hardened PDF and DOCX CV upload, safe text extraction, and authorized private
   attachment delivery.
 - Vacancy creation from pasted text.
@@ -103,6 +107,15 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
   basis, consent, or contact permission. Only explicitly selected reviewed rows
   create candidates; accepted CVs may then enter the existing background AI
   profile-draft workflow.
+- CSV-assisted CV intake joins rows only by an exact `cv_filename` supplied by
+  the recruiter. Missing, repeated, and conflicting mappings remain unresolved;
+  candidate names are never used as a fuzzy join key.
+- A batch confirmation action may confirm only saved drafts whose evidence
+  already passed deterministic grounding and which have no ambiguity,
+  sensitive-content, changed-source, identity/duplicate, or lifecycle exception.
+  Every confirmed version records its own human actor and timestamp and remains
+  individually inspectable. This is profile confirmation only, never a final
+  candidate decision or outreach approval.
 - Repeating the same batch must reuse the existing operational job and saved
   per-candidate results. Interrupted targets must be reclaimable, one candidate's
   failure must not block the rest, and safe status must expose exceptions without

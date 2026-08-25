@@ -8,6 +8,9 @@ assessment generation—is part of the existing `REV-001`, `REV-002`, and
 `PROD-003` roadmap scope. It is intentionally not placed in this future backlog.
 Reviewed bulk CV candidate intake was separately approved and completed as
 `INTAKE-001`; it is also not a future-backlog item.
+The unified CV-first intake, exact CSV-to-CV mapping, optional-CV quick-add, and
+explicit clean-profile batch confirmation were completed as `CR-004`; they are
+also not future-backlog items.
 
 - Authorized ATS integrations such as customer-approved Greenhouse or Lever access.
 - Approved external candidate-source connectors.

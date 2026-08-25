@@ -37,7 +37,7 @@ from candidates.services import (
     CandidateDuplicateFinder,
     CandidateImportFileError,
     cancel_candidate_deletion,
-    create_candidate_with_source,
+    create_candidate_quick_add,
     delete_candidate,
     import_candidate_csv,
     request_candidate_deletion,
@@ -322,7 +322,7 @@ def candidate_document_download(
 @login_required
 def candidate_create(request, organization_slug: str):
     organization = _visible_organization(request, organization_slug)
-    form = CandidateManualEntryForm(request.POST or None)
+    form = CandidateManualEntryForm(request.POST or None, request.FILES or None)
 
     if request.method == "POST" and form.is_valid():
         candidate_values = candidate_values_from_manual_form(form)
@@ -340,17 +340,29 @@ def candidate_create(request, organization_slug: str):
                 f"(matched by {reasons}). No record was created.",
             )
         else:
-            candidate = create_candidate_with_source(
-                organization=organization,
-                user=request.user,
-                candidate_values=candidate_values,
-                source_values=source_values,
-            )
-            messages.success(request, f"Created candidate {candidate.full_name}.")
-            return redirect(
-                "candidates:candidate-list",
-                organization_slug=organization.slug,
-            )
+            try:
+                result = create_candidate_quick_add(
+                    organization=organization,
+                    user=request.user,
+                    candidate_values=candidate_values,
+                    source_values=source_values,
+                    cv_file=form.cleaned_data["cv_file"],
+                    document_retention_until=form.cleaned_data[
+                        "document_retention_until"
+                    ],
+                )
+            except CandidateDocumentUploadError as error:
+                form.add_error("cv_file", error.public_message)
+            else:
+                suffix = " with a private CV" if result.document else ""
+                messages.success(
+                    request,
+                    f"Created candidate {result.candidate.full_name}{suffix}.",
+                )
+                return redirect(
+                    "candidates:candidate-list",
+                    organization_slug=organization.slug,
+                )
 
     return render(
         request,

@@ -38,6 +38,12 @@ urlpatterns = [
     ),
     path(
         "organizations/<slug:organization_slug>/candidates/intake/"
+        "<int:batch_id>/apply-csv/",
+        intake_views.candidate_intake_apply_csv,
+        name="candidate-intake-apply-csv",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/intake/"
         "<int:batch_id>/create-selected/",
         intake_views.candidate_intake_create_selected,
         name="candidate-intake-create-selected",
@@ -53,6 +59,12 @@ urlpatterns = [
         "<int:batch_id>/discard/",
         intake_views.candidate_intake_discard,
         name="candidate-intake-discard",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/intake/"
+        "<int:batch_id>/confirm-profiles/",
+        intake_views.candidate_intake_confirm_profiles,
+        name="candidate-intake-confirm-profiles",
     ),
     path(
         "organizations/<slug:organization_slug>/candidates/<int:candidate_id>/",

@@ -5,11 +5,11 @@
 {% block content %}
 <section class="page-heading">
     <p class="eyebrow">Candidate pool</p>
-    <h1>Add candidate</h1>
-    <p class="lede">Create the candidate and record where the information came from. Unknown permission or consent is preserved as unknown.</p>
+    <h1>Quick add candidate</h1>
+    <p class="lede">A full name is the only required identity field. Add contact details and a CV now when available; source and permission defaults remain explicit and editable.</p>
 </section>
 
-<form class="form-panel stacked-form" method="post">
+<form class="form-panel stacked-form" method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {% include "candidates/_form_fields.html" %}
     <div class="button-row">

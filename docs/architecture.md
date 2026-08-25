@@ -295,8 +295,10 @@ migration.
   is separate from accepted candidate-document paths. Pending items contain the
   minimum bytes/text needed for review; created or discarded items are forced to
   clear the temporary file, extracted text, identity proposals, hash, and file
-  metadata while retaining only minimized processing status and an optional
-  candidate link.
+  metadata while retaining only minimized processing status, an optional
+  candidate link, and an exact nullable link to the accepted private document.
+  The document link enables later batch profile review without retaining or
+  guessing from staging filenames or identity data.
 - `Candidate` belongs to exactly one organization and holds only the minimum
   identity/contact fields needed before structured profile extraction.
 - Candidate lifecycle metadata distinguishes active, inactive, deletion-requested,
@@ -363,8 +365,11 @@ migration.
   membership and return `404` for inaccessible organizations. Intake services
   repeat the membership check so non-view callers cannot cross the tenant boundary.
 - Manual entry creates the candidate and its source/provenance row in one database
-  transaction. Consent, lawful-basis, and contact-permission values default to
-  explicit unknown/not-recorded states rather than inferred permission.
+  transaction and may validate and attach one private CV in that same action.
+  A failed CV rolls the candidate/source write back. Only the full name and the
+  prefilled source label are required; consent, lawful-basis, and contact-
+  permission values default to explicit unknown/not-recorded states rather than
+  inferred permission.
 - Reviewed bulk intake creates one tenant-scoped batch before any candidate.
   Shared source, lawful-basis, consent, contact-permission, notes, and retention
   defaults are recruiter assertions and are never inferred by AI.
@@ -385,6 +390,11 @@ migration.
   is revalidated and integrity-checked. One row's validation or duplicate error
   does not block other selected rows. Candidate/source/document retention values
   come from the batch.
+- An optional UTF-8 candidate mapping CSV can populate pending review fields in
+  the same workflow. It requires `cv_filename` and `full_name`, permits bounded
+  contact/location/source-reference fields, and joins only when exactly one
+  pending item has the exact filename. Missing, repeated, or conflicting names
+  remain unresolved; neither candidate name nor fuzzy similarity is used.
 - Successful or explicitly discarded rows clear their temporary file, extracted
   CV text, identity/contact proposals, and file metadata. Discarding an open
   batch performs the same minimization for every remaining pending item without
@@ -393,6 +403,16 @@ migration.
   existing durable candidate-profile workflow. Queueing makes no provider call
   in the web request and creates no profile confirmation, candidate decision, or
   outreach action. The worker continues to create evidence-validated drafts only.
+- A separate intake profile-review action resolves drafts only through each
+  created item's exact accepted-document link. It includes a draft only after
+  ordinary evidence validation and when there is no profile ambiguity,
+  sensitive-content flag, changed source, inactive/deleting candidate, missing
+  link, or newer-confirmed-profile exception. The recruiter sees included and
+  excluded counts and can open every available profile before one explicit POST
+  confirms all eligible rows. The existing per-profile confirmation transaction
+  creates each actor/timestamp record and grounded matching facts; exception
+  drafts remain unchanged, and no assessment, candidate decision, outreach, or
+  send action is created.
 - CSV import accepts UTF-8 comma-separated data with a required `full_name` column
   and optional `email`, `phone`, `location`, `source_reference`, and
   `retention_until` columns. A project-provided header template and on-page format

@@ -10,6 +10,7 @@
         <p class="lede">{{ batch.source_name }} · {{ batch.get_status_display }}</p>
     </div>
     <div class="button-row">
+        {% if created_count %}<a class="primary-button button-link" href="{% url 'candidates:candidate-intake-confirm-profiles' organization.slug batch.pk %}">Review profile confirmation</a>{% endif %}
         <a class="secondary-button" href="{% url 'candidates:candidate-intake-list' organization.slug %}">All intake batches</a>
         <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Candidates</a>
     </div>
@@ -61,6 +62,40 @@
         {% endfor %}
         <button class="primary-button" type="submit">Validate and add CVs</button>
     </form>
+</section>
+
+<section class="form-panel intake-upload" aria-labelledby="intake-csv-title">
+    <h2 id="intake-csv-title">Apply candidate details from CSV</h2>
+    <p>Use an exact <code>cv_filename</code> for each pending CV. The system never guesses by candidate name; missing, repeated, or conflicting filenames remain unresolved.</p>
+    <form class="stacked-form" method="post" enctype="multipart/form-data" action="{% url 'candidates:candidate-intake-apply-csv' organization.slug batch.pk %}">
+        {% csrf_token %}
+        {% for field in mapping_form %}
+        <div class="field">
+            {{ field.label_tag }}
+            {{ field }}
+            {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+            {% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        <button class="secondary-button" type="submit">Apply exact CSV mappings</button>
+    </form>
+</section>
+{% endif %}
+
+{% if mapping_result %}
+<section class="report-section" aria-labelledby="mapping-results-title">
+    <h2 id="mapping-results-title">CSV mapping report</h2>
+    <p>{{ mapping_result.mapped_count }} mapped · {{ mapping_result.unresolved_count }} unresolved · {{ mapping_result.invalid_count }} invalid</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>CSV row</th><th>Exact CV filename</th><th>Result</th><th>Details</th></tr></thead>
+            <tbody>
+                {% for row in mapping_result.rows %}
+                <tr><td>{{ row.row_number }}</td><th>{{ row.cv_filename|default:"—" }}</th><td>{{ row.status|title }}</td><td>{{ row.details|join:", "|default:"—" }}</td></tr>
+                {% empty %}<tr><td colspan="4">The CSV contained no data rows.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
 </section>
 {% endif %}
 
@@ -138,6 +173,15 @@
         </li>
         {% endfor %}
     </ul>
+</section>
+
+<section class="review-callout">
+    <div>
+        <p class="eyebrow">Profile confirmation</p>
+        <h2>{{ profile_review.eligible_rows|length }} eligible · {{ profile_review.excluded_rows|length }} excluded</h2>
+        <p>Clean evidence-validated drafts can be confirmed together through one explicit recruiter action. Exceptions remain individual, and every confirmed profile keeps its own actor and timestamp.</p>
+    </div>
+    <a class="primary-button button-link" href="{% url 'candidates:candidate-intake-confirm-profiles' organization.slug batch.pk %}">Review included and excluded profiles</a>
 </section>
 {% endif %}
 

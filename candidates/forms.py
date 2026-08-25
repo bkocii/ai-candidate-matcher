@@ -46,6 +46,23 @@ class CandidateManualEntryForm(forms.Form):
     email = forms.EmailField(required=False)
     phone = forms.CharField(max_length=50, required=False)
     location = forms.CharField(max_length=200, required=False)
+    cv_file = forms.FileField(
+        required=False,
+        label="CV file (optional)",
+        help_text=(
+            "Add a PDF or DOCX now, up to 10 MB, or upload one from the candidate "
+            "record later."
+        ),
+        widget=forms.ClearableFileInput(
+            attrs={
+                "accept": (
+                    ".pdf,.docx,application/pdf,"
+                    "application/vnd.openxmlformats-officedocument."
+                    "wordprocessingml.document"
+                )
+            }
+        ),
+    )
     candidate_retention_until = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
@@ -81,6 +98,11 @@ class CandidateManualEntryForm(forms.Form):
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
         help_text="Optional retention date for this provenance record.",
+    )
+    document_retention_until = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text="Optional review/removal date for the attached CV.",
     )
 
 
@@ -182,6 +204,41 @@ class CandidateIntakeUploadForm(forms.Form):
                 "fewer files and repeat."
             )
         return files
+
+
+class CandidateIntakeCSVMappingForm(forms.Form):
+    csv_file = forms.FileField(
+        label="Candidate CSV",
+        help_text=(
+            "UTF-8 CSV with exact cv_filename and full_name columns. Optional "
+            "columns: email, phone, location, and source_reference."
+        ),
+        widget=forms.ClearableFileInput(attrs={"accept": ".csv,text/csv"}),
+    )
+
+
+class CandidateIntakeCSVRowForm(forms.Form):
+    cv_filename = forms.CharField(max_length=255)
+    full_name = forms.CharField(max_length=200)
+    email = forms.EmailField(required=False)
+    phone = forms.CharField(max_length=50, required=False)
+    location = forms.CharField(max_length=200, required=False)
+    source_reference = forms.CharField(max_length=500, required=False)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        for field_name in (
+            "cv_filename",
+            "full_name",
+            "email",
+            "phone",
+            "location",
+            "source_reference",
+        ):
+            value = cleaned_data.get(field_name)
+            if isinstance(value, str):
+                cleaned_data[field_name] = value.strip()
+        return cleaned_data
 
 
 class CandidateIntakeReviewForm(forms.Form):

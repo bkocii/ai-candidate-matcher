@@ -259,6 +259,7 @@ def test_selected_review_creates_candidate_source_document_and_targeted_job(
     assert document.retention_until == date(2027, 8, 17)
     assert item.status == CandidateIntakeItem.Status.CREATED
     assert item.candidate == candidate
+    assert item.accepted_document == document
     assert item.file.name == ""
     assert item.extracted_text == ""
     assert item.proposed_email == ""

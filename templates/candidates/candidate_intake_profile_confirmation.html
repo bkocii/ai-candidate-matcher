@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Confirm intake profiles | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading">
+    <div>
+        <p class="eyebrow">Intake #{{ batch.pk }} · profile review</p>
+        <h1>Confirm all eligible profiles</h1>
+        <p class="lede">One explicit action confirms only clean, evidence-validated drafts. Every profile remains individually inspectable and records this recruiter and confirmation time.</p>
+    </div>
+    <a class="secondary-button" href="{% url 'candidates:candidate-intake-detail' organization.slug batch.pk %}">Back to intake</a>
+</section>
+
+<section class="metric-grid" aria-label="Profile confirmation summary">
+    <article class="metric-card"><span>Included</span><strong>{{ review.eligible_rows|length }}</strong></article>
+    <article class="metric-card"><span>Excluded</span><strong>{{ review.excluded_rows|length }}</strong></article>
+</section>
+
+<section class="report-section" aria-labelledby="profile-review-rows-title">
+    <h2 id="profile-review-rows-title">Individual profile results</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Candidate</th><th>Profile</th><th>Batch status</th><th>Reason</th></tr></thead>
+            <tbody>
+                {% for row in review.rows %}
+                <tr>
+                    <th>{% if row.item.candidate %}<a href="{% url 'candidates:candidate-detail' organization.slug row.item.candidate.pk %}">{{ row.item.candidate.full_name }}</a>{% else %}Candidate unavailable{% endif %}</th>
+                    <td>{% if row.profile %}<a href="{% url 'candidates:candidate-profile-detail' organization.slug row.item.candidate.pk row.profile.pk %}">Profile v{{ row.profile.version }}</a>{% else %}—{% endif %}</td>
+                    <td>{% if row.eligible %}<span class="status-pill import-created">Included</span>{% else %}<span class="status-pill status-inactive">Excluded</span>{% endif %}</td>
+                    <td>{{ row.reason }}</td>
+                </tr>
+                {% empty %}<tr><td colspan="4">No candidates were created from this intake.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% if review.eligible_rows %}
+<section class="review-callout">
+    <div>
+        <h2>Confirm {{ review.eligible_rows|length }} eligible profile(s)</h2>
+        <p>This confirms extracted candidate information only. Approve/reject/revisit decisions remain individual, and outreach remains separately generated and approved.</p>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <button class="primary-button" type="submit">Confirm all eligible profiles</button>
+    </form>
+</section>
+{% else %}
+<section class="empty-state inline-empty">
+    <h2>No eligible profile drafts</h2>
+    <p>Run the queued extraction job or open excluded profiles to resolve their exceptions.</p>
+</section>
+{% endif %}
+{% endblock %}

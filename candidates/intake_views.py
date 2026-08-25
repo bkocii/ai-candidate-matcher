@@ -20,10 +20,20 @@ from candidates.bulk_intake import (
 from candidates.documents import CandidateDocumentUploadError
 from candidates.forms import (
     CandidateIntakeBatchForm,
+    CandidateIntakeCSVMappingForm,
     CandidateIntakeReviewForm,
     CandidateIntakeUploadForm,
 )
+from candidates.intake_mapping import (
+    CandidateIntakeCSVError,
+    CandidateIntakeMappingResult,
+    apply_candidate_intake_csv,
+)
 from candidates.models import CandidateIntakeBatch, CandidateIntakeItem
+from candidates.profile_batch import (
+    confirm_all_eligible_intake_profiles,
+    review_intake_profiles,
+)
 from candidates.services import CandidateDuplicateFinder
 from operations.models import BackgroundJob
 from operations.services import queue_candidate_profile_documents
@@ -132,12 +142,15 @@ def _render_batch(
     upload_form: CandidateIntakeUploadForm | None = None,
     bound_forms: dict[int, CandidateIntakeReviewForm] | None = None,
     queued_job: BackgroundJob | None = None,
+    mapping_form: CandidateIntakeCSVMappingForm | None = None,
+    mapping_result: CandidateIntakeMappingResult | None = None,
 ):
     batch.refresh_from_db()
     items = batch.items.select_related("candidate", "processed_by")
     pending_count = items.filter(status=CandidateIntakeItem.Status.PENDING).count()
     created_items = items.filter(status=CandidateIntakeItem.Status.CREATED)
     skipped_count = items.filter(status=CandidateIntakeItem.Status.SKIPPED).count()
+    profile_review = review_intake_profiles(batch=batch, user=request.user)
     return render(
         request,
         "candidates/candidate_intake_detail.html",
@@ -145,12 +158,15 @@ def _render_batch(
             "organization": organization,
             "batch": batch,
             "upload_form": upload_form or CandidateIntakeUploadForm(),
+            "mapping_form": mapping_form or CandidateIntakeCSVMappingForm(),
+            "mapping_result": mapping_result,
             "review_rows": _review_rows(batch=batch, bound_forms=bound_forms),
             "pending_count": pending_count,
             "created_items": created_items,
             "created_count": created_items.count(),
             "skipped_count": skipped_count,
             "queued_job": queued_job,
+            "profile_review": profile_review,
         },
     )
 
@@ -272,6 +288,52 @@ def candidate_intake_upload(request, organization_slug: str, batch_id: int):
         "candidates:candidate-intake-detail",
         organization.slug,
         batch.pk,
+    )
+
+
+@login_required
+@require_POST
+def candidate_intake_apply_csv(request, organization_slug: str, batch_id: int):
+    organization = _organization(request, organization_slug)
+    batch = _batch(organization, batch_id)
+    form = CandidateIntakeCSVMappingForm(request.POST, request.FILES)
+    if not form.is_valid():
+        return _render_batch(
+            request,
+            organization=organization,
+            batch=batch,
+            mapping_form=form,
+        )
+    try:
+        result = apply_candidate_intake_csv(
+            batch=batch,
+            user=request.user,
+            uploaded_file=form.cleaned_data["csv_file"],
+        )
+    except CandidateIntakeCSVError as error:
+        form.add_error("csv_file", str(error))
+        return _render_batch(
+            request,
+            organization=organization,
+            batch=batch,
+            mapping_form=form,
+        )
+    if result.mapped_count:
+        messages.success(
+            request,
+            f"Applied {result.mapped_count} exact CSV-to-CV mapping(s).",
+        )
+    if result.unresolved_count or result.invalid_count:
+        messages.warning(
+            request,
+            "Unresolved or invalid CSV rows were not guessed and remain in the "
+            "report for recruiter review.",
+        )
+    return _render_batch(
+        request,
+        organization=organization,
+        batch=batch,
+        mapping_result=result,
     )
 
 
@@ -413,4 +475,40 @@ def candidate_intake_discard(request, organization_slug: str, batch_id: int):
         "candidates:candidate-intake-detail",
         organization.slug,
         batch.pk,
+    )
+
+
+@login_required
+def candidate_intake_confirm_profiles(request, organization_slug: str, batch_id: int):
+    organization = _organization(request, organization_slug)
+    batch = _batch(organization, batch_id)
+    if request.method == "POST":
+        try:
+            confirmed = confirm_all_eligible_intake_profiles(
+                batch=batch,
+                user=request.user,
+            )
+        except ValidationError as error:
+            messages.error(request, "; ".join(error.messages))
+        else:
+            messages.success(
+                request,
+                f"Confirmed {len(confirmed)} individually recorded profile(s). "
+                "Candidate decisions and outreach remain separate actions.",
+            )
+        return redirect(
+            "candidates:candidate-intake-confirm-profiles",
+            organization.slug,
+            batch.pk,
+        )
+
+    review = review_intake_profiles(batch=batch, user=request.user)
+    return render(
+        request,
+        "candidates/candidate_intake_profile_confirmation.html",
+        {
+            "organization": organization,
+            "batch": batch,
+            "review": review,
+        },
     )

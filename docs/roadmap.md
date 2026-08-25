@@ -36,11 +36,17 @@ Sprint acceptance: two organizations in tests cannot access each other's objects
   temporary-data minimization, and targeted background profile queuing.
   **Complete — 2026-08-17 as a user-approved corrective intake task before
   `EVAL-001`.**
+- `CR-004` Unify CV-first candidate creation, exact CSV-to-CV mapping, optional
+  CV quick-add, and explicit batch confirmation of only clean eligible profile
+  drafts. **Complete — 2026-08-24 as a user-approved pre-release workflow
+  correction.**
 
 Status: Complete.
 
 Sprint acceptance: a recruiter can import an anonymized candidate set through
-CSV or reviewed bulk CV intake and create a vacancy without developer help.
+CSV or reviewed CV-first intake, attach a CV during quick-add, confirm clean
+profile drafts efficiently while inspecting exceptions, and create a vacancy
+without developer help.
 
 ## Sprint 3 — Deterministic search and shortlist
 

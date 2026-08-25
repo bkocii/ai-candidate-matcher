@@ -444,6 +444,7 @@ def create_candidate_from_intake_item(
 
             locked_item.status = CandidateIntakeItem.Status.CREATED
             locked_item.candidate = candidate
+            locked_item.accepted_document = created_document
             locked_item.processed_by = user
             locked_item.processed_at = timezone.now()
             staging_name = _clear_private_intake_payload(locked_item)

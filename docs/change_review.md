@@ -121,7 +121,7 @@ Status: **Approved for implementation — 2026-08-23**
 
 ## CR-004 — Unified candidate intake and batch profile confirmation
 
-Status: **Approved for implementation — 2026-08-24**
+Status: **Complete — 2026-08-24**
 
 Candidate creation should be CV-first and exception-focused. Manual entry and
 CSV migration remain available, but recruiters should not repeatedly type data
@@ -169,6 +169,17 @@ step.
 - Vacancy-specific application forms or email inboxes may create candidate
   intake records automatically, while retaining the same duplicate, provenance,
   consent, evidence, and review controls.
+
+Implementation note: **Create candidates from CVs** is now the primary candidate
+action and reuses the reviewed intake batch for one or several CVs. The same
+screen accepts exact `cv_filename` CSV mappings without fuzzy name matching.
+Quick-add accepts an optional CV in the same transaction. Each accepted intake
+item retains a safe exact link to its accepted private CV after temporary data is
+cleared. The intake profile-review page derives included/excluded rows from that
+link and confirms only grounded drafts with no ambiguities, sensitive-content
+flag, stale source, or candidate-state exception. Existing profile confirmation
+actor/time fields remain the individual approval record; candidate decisions and
+outreach are unchanged and separate.
 
 ## CR-005 — Practical candidate privacy and source fields
 

@@ -474,6 +474,13 @@ class CandidateIntakeItem(models.Model):
         blank=True,
         related_name="intake_items",
     )
+    accepted_document = models.OneToOneField(
+        "CandidateDocument",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="intake_item",
+    )
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -570,6 +577,27 @@ class CandidateIntakeItem(models.Model):
             raise ValidationError(
                 {"candidate": "Candidate and intake batch must share an organization."}
             )
+        if self.accepted_document_id:
+            if self.candidate_id != self.accepted_document.candidate_id:
+                raise ValidationError(
+                    {
+                        "accepted_document": (
+                            "The accepted document must belong to the intake candidate."
+                        )
+                    }
+                )
+            if self.batch_id and (
+                self.accepted_document.candidate.organization_id
+                != self.batch.organization_id
+            ):
+                raise ValidationError(
+                    {
+                        "accepted_document": (
+                            "The accepted document and intake batch must share an "
+                            "organization."
+                        )
+                    }
+                )
 
     def __str__(self) -> str:
         return f"Candidate intake item {self.pk or 'new'}"

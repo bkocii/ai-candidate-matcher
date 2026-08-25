@@ -20,7 +20,8 @@ Status: the user-approved corrective `INTAKE-001` task, `EVAL-001`, and
 `EVAL-002`, `EVAL-003`, and `DEMO-001` are complete after `PROD-005`; `DEMO-002`
 remains the next release-roadmap task. The user approved a pre-release
 functionality pass before styling/positioning; `DEF-001` is complete and the
-remaining approved items are recorded in `docs/change_review.md`.
+CV-first `CR-004` workflow is complete. The remaining approved items are
+recorded in `docs/change_review.md`.
 
 ## Decisions made
 
@@ -47,6 +48,11 @@ remaining approved items are recorded in `docs/change_review.md`.
   recruiter-supplied provenance. AI may create later evidence-based profile
   drafts, but it does not determine identity, lawful basis, consent, or contact
   permission and never creates candidates without an explicit selected action.
+- Candidate creation is CV-first for one or several documents. Optional CSV data
+  maps only by exact `cv_filename`; quick-add can include one validated CV; and
+  one explicit batch action confirms only clean evidence-validated profile drafts
+  after showing included/excluded rows. Every confirmed profile retains its own
+  actor/time record, while candidate decisions and outreach remain separate.
 
 ## Implemented
 
@@ -801,6 +807,35 @@ remaining approved items are recorded in `docs/change_review.md`.
   and background-job tests. No AI gateway, toolkit dependency, prompt, or
   operations schema changed.
 
+### `CR-004 — Unified candidate intake and batch profile confirmation`
+
+- Made **Create candidates from CVs** the primary creation action and reused the
+  hardened reviewed intake for either one CV or several CVs.
+- Added a bounded UTF-8 mapping CSV to the intake screen. It requires exact
+  `cv_filename` plus `full_name`, accepts optional contact/location/source-
+  reference values, and reports missing, repeated, conflicting, or invalid rows
+  without fuzzy name matching or candidate creation.
+- Converted manual creation into **Quick add**: full name remains the only
+  required identity field, safe provenance/permission defaults remain explicit,
+  and one optional PDF/DOCX CV is validated and committed in the same action. A
+  failed CV rolls back the candidate and source.
+- Linked each processed intake item to its exact accepted private document after
+  clearing staging bytes, extracted text, identity proposals, filenames, and
+  hashes. Historical items without a provable link remain safe exclusions.
+- Added an intake profile-confirmation review with included/excluded counts and
+  individual profile links. Only evidence-validated drafts without ambiguity,
+  sensitive-content, changed-source, lifecycle, missing-link, or newer-confirmed
+  exceptions are eligible.
+- **Confirm all eligible profiles** is an explicit recruiter POST action that
+  reuses the existing per-profile confirmation transaction. Each profile records
+  its own actor/timestamp and publishes grounded matching facts; exception drafts
+  remain unchanged and no assessment, candidate decision, outreach draft, or
+  send action is created.
+- Added `candidates.0007_intake_accepted_document` plus focused mapping,
+  quick-add, batch-confirmation, rollback, safety-boundary, and tenant tests. No
+  AI gateway, prompt, toolkit dependency, operations schema, matching model, or
+  outreach behavior changed.
+
 ### `EVAL-001 — Synthetic candidates, vacancies, and expected matches`
 
 - Added the strict version-controlled `eval-001.synthetic-multirole.v1`
@@ -984,6 +1019,24 @@ remaining approved items are recorded in `docs/change_review.md`.
 - DEF-001 adds no migration. Every existing migration is applied, the follow-up
   migration plan is empty, and model-to-migration drift is zero.
 
+`CR-004` verification completed on 2026-08-24:
+
+- Focused unified-intake, bulk-intake, manual/CSV intake, private-document,
+  profile-extraction, background-job, filtering, shortlist, staleness, review,
+  decision, outreach, and retention set: `190 passed`.
+- Complete `python scripts/check.py` quality gate: `488 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `203`
+  files are formatted; installed dependency compatibility passed.
+- CR-004 adds `candidates.0007_intake_accepted_document`. It applied successfully
+  after every existing migration, the follow-up migration plan is empty, and
+  model-to-migration drift is zero. No AI, toolkit, operations, matching, or
+  outreach migration was added.
+- The exact restricted final ZIP was extracted into an empty directory, installed
+  from `uv.lock`, migrated from an empty database through `candidates.0007`,
+  reported an empty follow-up plan and zero drift, and passed the same complete
+  `488`-test quality gate.
+
 ## Not implemented
 
 Outreach generation, immutable recruiter editing, exact final approval, manual
@@ -1028,6 +1081,9 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-Wait for the user's next selection from the approved functionality items in
-`docs/change_review.md`. `DEMO-002 — Prepare a client-facing README and Upwork
-Project Catalog positioning` remains pending until that pass is complete.
+`CR-005 — Practical candidate privacy and source fields` is the next recommended
+approved functionality item because it simplifies the same intake screens while
+retaining their existing internal data and safety rules. Do not begin it without
+the user's next instruction. `DEMO-002 — Prepare a client-facing README and
+Upwork Project Catalog positioning` remains pending until the functionality pass
+is complete.

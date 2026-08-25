@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Bulk CV intake | {{ organization.name }}{% endblock %}
+{% block title %}Create candidates from CVs | {{ organization.name }}{% endblock %}
 
 {% block content %}
 <section class="page-heading action-heading">
     <div>
         <p class="eyebrow">Candidate pool</p>
-        <h1>Bulk CV intake</h1>
-        <p class="lede">Upload several CVs, review locally proposed identity fields, and explicitly create only the selected candidates.</p>
+        <h1>Create candidates from CVs</h1>
+        <p class="lede">Upload one or several CVs, optionally apply exact CSV details, review exceptions, and explicitly create only selected candidates.</p>
     </div>
     <div class="button-row">
         <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Candidates</a>

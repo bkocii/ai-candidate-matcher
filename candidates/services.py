@@ -49,6 +49,12 @@ class DuplicateMatch:
 
 
 @dataclass(frozen=True)
+class CandidateQuickAddResult:
+    candidate: Candidate
+    document: CandidateDocument | None
+
+
+@dataclass(frozen=True)
 class CandidateImportRowResult:
     row_number: int
     status: str
@@ -209,6 +215,36 @@ def create_candidate_with_source(
         source.save()
 
     return candidate
+
+
+@transaction.atomic
+def create_candidate_quick_add(
+    *,
+    organization: Organization,
+    user: User,
+    candidate_values: dict,
+    source_values: dict,
+    cv_file=None,
+    document_retention_until=None,
+) -> CandidateQuickAddResult:
+    """Create a minimal candidate and optionally attach one validated CV."""
+    candidate = create_candidate_with_source(
+        organization=organization,
+        user=user,
+        candidate_values=candidate_values,
+        source_values=source_values,
+    )
+    document = None
+    if cv_file is not None:
+        from candidates.documents import upload_candidate_cv
+
+        document = upload_candidate_cv(
+            candidate=candidate,
+            user=user,
+            uploaded_file=cv_file,
+            retention_until=document_retention_until,
+        )
+    return CandidateQuickAddResult(candidate=candidate, document=document)
 
 
 def _request_candidate_deletion(

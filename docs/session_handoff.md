@@ -20,8 +20,9 @@ progress; `DEMO-002` is the next approved roadmap task.
 
 The user has chosen to complete approved functionality corrections before the
 final styling/positioning pass. `DEF-001` is now complete; the remaining approved
-change items are tracked in `docs/change_review.md`, and the next one must be
-selected explicitly before implementation.
+functionality pass now also includes completed `CR-004`. Remaining approved
+change items are tracked in `docs/change_review.md`; `CR-005` is the next
+recommended item but must not begin without the user's instruction.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -359,6 +360,27 @@ candidate decisions, outreach approval, and sending boundaries are unchanged.
 `candidates.0006_candidateintakebatch_candidateintakeitem_and_more`; it changes
 no AI gateway, toolkit dependency, prompt, or operations schema.
 
+`CR-004` is complete. **Create candidates from CVs** is the primary candidate
+action and uses the same reviewed intake for one or several PDF/DOCX files. The
+intake screen can apply an optional bounded CSV only through exact
+`cv_filename` mappings; missing, repeated, conflicting, and invalid mappings are
+reported without fuzzy candidate-name guessing or automatic creation. Manual
+**Quick add** requires only a full name plus its prefilled source label and can
+validate/attach one CV in the same transaction; CV failure leaves no partial
+candidate or source.
+
+Each newly processed intake item now retains a minimized exact link to its
+accepted private document after its temporary file/text/identity payload is
+cleared. A new intake profile-review screen derives included/excluded rows from
+that link and permits one explicit **Confirm all eligible profiles** action only
+for grounded drafts with no ambiguity, sensitive-content, changed-source,
+lifecycle, missing-link, or newer-confirmed-profile exception. Every included
+profile still records its own confirmation actor/time and remains individually
+inspectable. Exceptions remain drafts for individual review; no assessment,
+approve/reject/revisit decision, outreach, or send action is created. `CR-004`
+adds `candidates.0007_intake_accepted_document`; it changes no AI/toolkit,
+operations, matching, decision, or outreach contract.
+
 `EVAL-001` is complete. The strict version-controlled
 `eval-001.synthetic-multirole.v1` manifest contains 20 obviously synthetic
 candidates, 3 synthetic vacancies, exact deterministic top-five ranks/scores,
@@ -428,15 +450,19 @@ whole-shortlist assessment action with per-candidate failure isolation. Existing
 profiles and exact-input assessments are reused, interrupted leases are
 reclaimable, and safe job status plus explicit exception retry are available.
 Profile drafts still require individually inspectable evidence and explicit
-confirmation. Final approve/reject/revisit decisions remain individual recruiter
-actions with notes, actor, and timestamp, and outreach remains separate.
+confirmation. CV-first intake may confirm all clean eligible drafts only after an
+explicit included/excluded review; each confirmation remains an individual
+version with actor and timestamp, and exceptions stay individual. Final
+approve/reject/revisit decisions remain individual recruiter actions with notes,
+actor, and timestamp, and outreach remains separate.
 
 The next release-roadmap item remains:
 
 `DEMO-002 — Prepare a client-facing README and Upwork Project Catalog positioning.`
 
-However, do not begin it until the user finishes selecting the approved
-pre-release functionality items in `docs/change_review.md`.
+However, do not begin it until the user finishes the approved pre-release
+functionality items in `docs/change_review.md`. `CR-005` is the next recommended
+item and still requires the user's instruction.
 
 ## Required instructions
 
@@ -575,11 +601,33 @@ The focused command is:
 uv run pytest -q tests/test_skill_canonicalization.py tests/test_matching_models.py tests/test_matching_filtering.py tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_vacancy_ai_extraction.py tests/test_candidate_ai_extraction.py tests/test_evaluation_dataset.py
 ```
 
+`CR-004` verification completed on 2026-08-24:
+
+- Focused unified-intake, bulk-intake, manual/CSV intake, private-document,
+  profile-extraction, background-job, filtering, shortlist, staleness, review,
+  decision, outreach, and retention set: `190 passed`.
+- Complete `python scripts/check.py` quality gate: `488 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `203`
+  files are formatted; installed dependency compatibility passed.
+- CR-004 adds `candidates.0007_intake_accepted_document`. It applies after every
+  existing migration, the follow-up plan is empty, and model-to-migration drift
+  is zero. No AI, toolkit, operations, matching, or outreach migration was added.
+- The exact restricted final ZIP installed from `uv.lock` in a clean extraction,
+  applied every migration from an empty database through `candidates.0007`,
+  reported an empty follow-up plan and zero drift, and passed the same complete
+  `488`-test quality gate.
+
+The focused command is:
+
+```text
+uv run pytest -q tests/test_candidate_unified_intake.py tests/test_candidate_bulk_intake.py tests/test_candidate_intake.py tests/test_candidate_documents.py tests/test_candidate_ai_extraction.py tests/test_background_jobs.py tests/test_matching_filtering.py tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_recruiter_review.py tests/test_review_decisions.py tests/test_outreach_workflow.py tests/test_audit_retention.py
+```
+
 ## Immediate next action
 
-Wait for the user's next approved pre-release functionality selection. Preserve
-`DEF-001`, the reproducible demo, frozen evaluation, explanation review, reviewed
-bulk intake, production/deployment, minimized usage reporting, durable jobs,
-staged deletion, and separate individually approved candidate-decision and
-outreach actions. Resume `DEMO-002` only when the user finishes the functionality
-pass.
+Wait for the user's instruction before starting recommended `CR-005`. Preserve
+`CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
+review, production/deployment, minimized usage reporting, durable jobs, staged
+deletion, and separate individually approved candidate-decision and outreach
+actions. Resume `DEMO-002` only when the functionality pass is complete.
