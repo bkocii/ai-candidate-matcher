@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Organization recovery | AI Candidate Matcher{% endblock %}
+
+{% block content %}
+<section class="page-heading" aria-labelledby="recovery-title">
+    <p class="eyebrow">Suspended workspaces</p><h1 id="recovery-title">Organization recovery</h1>
+    <p class="lede">An organization administrator can restore access before the purge deadline.</p>
+</section>
+{% if organizations %}
+<div class="card-grid">
+{% for item in organizations %}<article class="organization-card"><span class="organization-initial" aria-hidden="true">{{ item.name|first|upper }}</span><span><strong>{{ item.name }}</strong><small>Purge after {{ item.purge_after|date:"Y-m-d H:i" }}</small><form method="post" action="{% url 'organizations:organization-recover' item.pk %}">{% csrf_token %}<button class="primary-button" type="submit">Restore access</button></form></span></article>{% endfor %}
+</div>
+{% else %}<section class="empty-state"><h2>No recoverable organizations</h2><p>No suspended workspace is available to this account.</p><a class="secondary-button button-link" href="{% url 'organizations:dashboard' %}">Back to organizations</a></section>{% endif %}
+{% endblock %}

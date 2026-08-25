@@ -1,5 +1,5 @@
 [Unit]
-Description=Stage due AI Candidate Matcher records for retention review
+Description=Run AI Candidate Matcher retention and lifecycle services
 After=network-online.target
 
 [Service]
@@ -10,6 +10,8 @@ WorkingDirectory=/srv/ai-candidate-matcher/current
 EnvironmentFile=/etc/ai-candidate-matcher.env
 UMask=0027
 ExecStart=/srv/ai-candidate-matcher/current/.venv/bin/python manage.py process_retention --apply
+ExecStart=/srv/ai-candidate-matcher/current/.venv/bin/python manage.py process_data_lifecycle --apply --confirm "PURGE ELIGIBLE DATA"
+ExecStart=/srv/ai-candidate-matcher/current/.venv/bin/python manage.py process_organization_deletions --apply --confirm "PURGE ORGANIZATIONS"
 PrivateTmp=true
 NoNewPrivileges=true
 ProtectSystem=full

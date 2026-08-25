@@ -1177,6 +1177,63 @@ Run the focused automated coverage:
 uv run pytest -q tests/test_audit_retention.py tests/test_candidate_documents.py tests/test_vacancy_intake.py
 ```
 
+### Organization lifecycle policy (CR-002)
+
+Sign in as an organization administrator, open the organization dashboard, and
+select **Open retention settings**.
+
+Expected result:
+
+- The dry-run shows separate counts for abandoned pending intake, completed
+  jobs, obsolete shortlists, abandoned outreach chains, old metadata, and
+  blocked records. It shows only counts/IDs and an estimated temporary-byte
+  total, never CV text, contact data, decision notes, or outreach content.
+- Defaults are 7/90/180/365 days with a 30-day organization recovery window.
+- A recruiter membership receives `403`; a member of another organization gets
+  no counts or object access.
+- Enabling **Pause all scheduled deletion (legal hold)** makes every purgeable
+  count zero and moves otherwise eligible rows to blocked. A scoped exception
+  protects either its entered object ID or the full group when ID is blank.
+- Applying cleanup requires the exact phrase `PURGE ELIGIBLE DATA`. A fresh or
+  current shortlist, any run with a recruiter decision/outreach, and any outreach
+  chain with final approval/copy/export remain untouched.
+
+Preview the scheduled dependency cleanup without changing data:
+
+```powershell
+uv run python manage.py process_data_lifecycle --organization northstar-test
+```
+
+For disposable synthetic data only, apply the recalculated safe plan:
+
+```powershell
+uv run python manage.py process_data_lifecycle --organization northstar-test --apply --confirm "PURGE ELIGIBLE DATA"
+```
+
+From the retention page, review **Delete organization**. The exact phrase
+`DELETE ORGANIZATION` immediately suspends access and sends the administrator to
+the recovery page. Select **Restore access** before the displayed deadline and
+confirm the workspace returns. Do not test expiry/purge against needed data.
+
+The scheduled whole-organization command is dry-run by default:
+
+```powershell
+uv run python manage.py process_organization_deletions
+```
+
+Its apply form is intended for the supervised daily service after backup and
+recovery procedures are verified:
+
+```powershell
+uv run python manage.py process_organization_deletions --apply --confirm "PURGE ORGANIZATIONS"
+```
+
+Run the CR-002 automated coverage:
+
+```powershell
+uv run pytest -q tests/test_data_lifecycle.py tests/test_audit_retention.py tests/test_dashboard.py tests/test_organization_permissions.py tests/test_background_jobs.py tests/test_matching_shortlist.py tests/test_outreach_workflow.py
+```
+
 ## 24. Test background profile and whole-shortlist processing
 
 Start a second PowerShell window in the project root. Keep the web server in the

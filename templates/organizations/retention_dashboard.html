@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Retention settings | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading" aria-labelledby="retention-title">
+    <div>
+        <p class="eyebrow">Organization administration</p>
+        <h1 id="retention-title">Retention and deletion</h1>
+        <p class="lede">Preview and remove only expired, dependency-safe bundles. Current workflows and decision-bearing history remain protected.</p>
+    </div>
+    <a class="secondary-button button-link" href="{% url 'organizations:organization-dashboard' organization.slug %}">Back to dashboard</a>
+</section>
+
+{% if policy.legal_hold %}<div class="notice warning"><strong>Legal hold active.</strong> All scheduled cleanup and organization purge are blocked.</div>{% endif %}
+
+<section class="metric-grid" aria-label="Retention dry-run preview">
+    <article class="metric-card"><span class="metric-label">Temporary intake</span><strong class="metric-value">{{ plan.temporary_intake_item_ids|length }}</strong><span class="metric-detail">abandoned pending items</span></article>
+    <article class="metric-card"><span class="metric-label">Completed jobs</span><strong class="metric-value">{{ plan.completed_job_ids|length }}</strong><span class="metric-detail">jobs and task history</span></article>
+    <article class="metric-card"><span class="metric-label">Obsolete shortlists</span><strong class="metric-value">{{ plan.obsolete_match_run_ids|length }}</strong><span class="metric-detail">no decisions or outreach</span></article>
+    <article class="metric-card"><span class="metric-label">Outreach chains</span><strong class="metric-value">{{ plan.abandoned_outreach_entry_ids|length }}</strong><span class="metric-detail">never approved, copied, or exported</span></article>
+    <article class="metric-card"><span class="metric-label">Metadata</span><strong class="metric-value">{{ plan.metadata_count }}</strong><span class="metric-detail">old usage and audit rows</span></article>
+    <article class="metric-card"><span class="metric-label">Blocked</span><strong class="metric-value">{{ plan.blocked_count }}</strong><span class="metric-detail">legal hold or exceptions</span></article>
+</section>
+
+<section class="workspace-panel" aria-labelledby="policy-title">
+    <div><p class="eyebrow">Policy v{{ policy.policy_version }}</p><h2 id="policy-title">Retention limits</h2></div>
+    <form class="stacked-form" method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="update_policy">
+        {{ policy_form.as_p }}
+        <button class="primary-button" type="submit">Save policy</button>
+    </form>
+</section>
+
+<section class="workspace-panel" aria-labelledby="exception-title">
+    <div><p class="eyebrow">Deletion blocks</p><h2 id="exception-title">Retention exceptions</h2></div>
+    <p>Use an object ID to protect one bundle, or leave it blank to protect the full group. Do not put private content in the reason.</p>
+    {% if exceptions %}
+    <div class="table-wrap"><table><thead><tr><th>Scope</th><th>Object</th><th>Expires</th><th>Action</th></tr></thead><tbody>
+        {% for exception in exceptions %}<tr><td>{{ exception.get_scope_display }}</td><td>{{ exception.object_id|default:"Entire group" }}</td><td>{{ exception.expires_at|default:"No expiry" }}</td><td><form method="post">{% csrf_token %}<input type="hidden" name="action" value="deactivate_exception"><input type="hidden" name="exception_id" value="{{ exception.pk }}"><button class="secondary-button" type="submit">Remove</button></form></td></tr>{% endfor %}
+    </tbody></table></div>
+    {% endif %}
+    <form class="stacked-form" method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="add_exception">
+        {{ exception_form.as_p }}
+        <button class="secondary-button" type="submit">Add exception</button>
+    </form>
+</section>
+
+<section class="workspace-panel" aria-labelledby="cleanup-title">
+    <div><p class="eyebrow">Explicit action</p><h2 id="cleanup-title">Apply current dry-run</h2></div>
+    <p>{{ plan.purgeable_count }} record bundle(s) are eligible. Estimated temporary private file bytes: {{ plan.estimated_private_bytes }}. The service recalculates eligibility inside the transaction before deleting.</p>
+    <form class="stacked-form" method="post">
+        {% csrf_token %}<input type="hidden" name="action" value="apply_cleanup">
+        {{ apply_form.as_p }}
+        <button class="danger-button" type="submit"{% if policy.legal_hold %} disabled{% endif %}>Purge eligible bundles</button>
+    </form>
+</section>
+
+<section class="workspace-panel" aria-labelledby="organization-delete-title">
+    <div><p class="eyebrow">Staged tenant deletion</p><h2 id="organization-delete-title">Delete organization</h2></div>
+    <p>Deletion first suspends access and opens a {{ policy.organization_recovery_days }}-day recovery window. A scheduled service later removes the full tenant graph and private files, leaving content-free lifecycle evidence.</p>
+    <p><a class="danger-button button-link" href="{% url 'organizations:organization-delete-request' organization.slug %}">Review organization deletion</a></p>
+</section>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Delete {{ organization.name }} | AI Candidate Matcher{% endblock %}
+
+{% block content %}
+<section class="page-heading" aria-labelledby="delete-title">
+    <p class="eyebrow">Organization administration</p>
+    <h1 id="delete-title">Suspend and schedule deletion</h1>
+    <p class="lede">This immediately blocks workspace access. Recovery remains available until the policy deadline; after that, the scheduled purge removes the complete tenant dependency tree and private files.</p>
+</section>
+<form class="form-panel stacked-form" method="post">
+    {% csrf_token %}{{ form.as_p }}
+    <div class="form-actions"><button class="danger-button" type="submit">Suspend organization</button><a class="secondary-button" href="{% url 'organizations:retention-dashboard' organization.slug %}">Cancel</a></div>
+</form>
+{% endblock %}

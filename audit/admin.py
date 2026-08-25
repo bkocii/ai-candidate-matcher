@@ -1,6 +1,11 @@
 from django.contrib import admin
 
-from audit.models import AIUsageEvent, AuditEvent
+from audit.models import (
+    AIUsageEvent,
+    AuditEvent,
+    DataLifecycleEvent,
+    OrganizationTombstone,
+)
 
 
 @admin.register(AuditEvent)
@@ -71,6 +76,49 @@ class AIUsageEventAdmin(admin.ModelAdmin):
         "started_at",
         "completed_at",
     )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(DataLifecycleEvent)
+class DataLifecycleEventAdmin(admin.ModelAdmin):
+    list_display = (
+        "action",
+        "organization_id_snapshot",
+        "object_type",
+        "object_id",
+        "policy_version",
+        "occurred_at",
+    )
+    list_filter = ("action", "object_type")
+    readonly_fields = tuple(field.name for field in DataLifecycleEvent._meta.fields)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(OrganizationTombstone)
+class OrganizationTombstoneAdmin(admin.ModelAdmin):
+    list_display = (
+        "organization_id_snapshot",
+        "policy_version",
+        "deletion_requested_at",
+        "purged_at",
+    )
+    readonly_fields = tuple(field.name for field in OrganizationTombstone._meta.fields)
 
     def has_add_permission(self, request):
         return False

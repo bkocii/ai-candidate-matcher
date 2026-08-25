@@ -47,6 +47,23 @@ def require_organization_admin(user: object, organization: Organization) -> None
         raise PermissionDenied("Organization administrator access is required.")
 
 
+def can_recover_organization(user: object, organization: Organization) -> bool:
+    """Allow an active admin member to recover a deletion-suspended tenant."""
+    if not (
+        getattr(user, "is_authenticated", False)
+        and getattr(user, "is_active", False)
+        and not organization.is_active
+        and organization.deletion_requested_at is not None
+    ):
+        return False
+    return OrganizationMembership.objects.filter(
+        user=user,
+        organization=organization,
+        role=OrganizationMembership.Role.ADMIN,
+        is_active=True,
+    ).exists()
+
+
 def has_organization_object_access(user: object, instance: object) -> bool:
     """Check an object exposing an ``organization`` ownership relation."""
     organization = getattr(instance, "organization", None)

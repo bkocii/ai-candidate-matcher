@@ -20,8 +20,9 @@ Status: the user-approved corrective `INTAKE-001` task, `EVAL-001`, and
 `EVAL-002`, `EVAL-003`, and `DEMO-001` are complete after `PROD-005`; `DEMO-002`
 remains the next release-roadmap task. The user approved a pre-release
 functionality pass before styling/positioning; `DEF-001` is complete and the
-CV-first `CR-004` workflow and plain-language `CR-005` privacy/source pass are
-complete. The remaining approved items are recorded in
+CV-first `CR-004` workflow, plain-language `CR-005` privacy/source pass, and
+dependency-aware `CR-002` lifecycle controls are complete. The remaining
+approved items are recorded in
 `docs/change_review.md`.
 
 ## Decisions made
@@ -58,6 +59,10 @@ complete. The remaining approved items are recorded in
   default consent or contact permission to approval. Rediscovery outreach needs
   a recorded reason, Future roles allowed, and Given consent when consent is the
   selected reason.
+- Organization lifecycle cleanup is dry-run first and removes complete,
+  policy-expired dependency bundles only. Current workflows, recruiter decisions,
+  and finally approved/copied/exported outreach remain protected; legal holds
+  and tenant-scoped exceptions block scheduled deletion.
 
 ## Implemented
 
@@ -857,9 +862,10 @@ complete. The remaining approved items are recorded in
 - Tightened final outreach approval and every later copy/export recheck. Every
   source needs a recorded reason, only Future roles allowed permits rediscovery
   outreach, and consent selected as the reason requires Consent = Given.
-- Left delete/review dates blank when there is no organization retention policy.
-  The separately approved CR-002 task will provide policy-derived dates; CR-005
-  does not invent a universal retention period.
+- Left candidate/source/document delete-review dates explicit rather than
+  inventing a universal default. CR-002 separately supplies organization policy
+  limits for abandoned intake, jobs, uncommitted workflow history, minimized
+  metadata, and staged organization deletion.
 - Added focused form, safe-default, display, tenant, and outreach eligibility
   tests. No model field, migration, AI gateway, prompt, toolkit, matching,
   decision, or send boundary changed.
@@ -957,6 +963,30 @@ complete. The remaining approved items are recorded in
 - Added provider-free command, state, minimized-output, overwrite-refusal,
   explanation-cleanliness, and tenant-scoped page coverage. No model, migration,
   scoring algorithm, prompt, toolkit dependency, or production topology changed.
+
+### `CR-002 — Dependency-aware data lifecycle and storage control`
+
+- Added one versioned retention policy per organization with 7-day temporary
+  intake, 90-day completed job, 180-day uncommitted workflow, 365-day minimized
+  metadata, and 30-day organization recovery defaults.
+- Added organization-admin policy controls, legal hold, whole-group or object-ID
+  exceptions, content-minimized dry-run counts, temporary private-byte estimate,
+  and exact confirmation before applying cleanup.
+- Added dependency-safe services that minimize expired pending intake payloads,
+  remove completed job/task history, delete only non-current old match runs with
+  no decisions/outreach, and delete only complete old outreach chains with no
+  final approval/copy/export. Candidate expiry remains the existing separate
+  staged individual-review workflow.
+- Added minimized immutable lifecycle events with organization/object IDs,
+  actor/system attribution, policy version, and time. They copy no candidate,
+  CV, prompt, decision-note, or outreach content.
+- Added staged organization deletion: immediate access suspension, policy-based
+  recovery deadline, a dedicated administrator recovery route, private-file
+  removal verification, complete tenant dependency purge, and a content-free
+  organization tombstone.
+- Added dry-run-first scheduled commands for dependency cleanup and expired
+  organization purge, then integrated both after candidate retention staging in
+  the daily systemd retention service.
 
 ## Verification
 
@@ -1081,6 +1111,20 @@ complete. The remaining approved items are recorded in
   an empty follow-up plan and zero drift, and passed the same complete
   `495`-test quality gate.
 
+`CR-002` verification completed on 2026-08-25:
+
+- Focused lifecycle, audit/retention, organization access/dashboard, background
+  job, shortlist, and outreach regression set: `72 passed`.
+- Complete `python scripts/check.py` quality gate: `503 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `212`
+  files are formatted; installed dependency compatibility passed.
+- CR-002 adds
+  `organizations.0003_organizationretentionpolicy_retentionexception_and_more`
+  and `audit.0004_organizationtombstone_datalifecycleevent`. Both apply after
+  every existing migration; the follow-up plan is empty and model-to-migration
+  drift is zero.
+
 ## Not implemented
 
 Outreach generation, immutable recruiter editing, exact final approval, manual
@@ -1127,8 +1171,8 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`CR-002 — Dependency-aware data lifecycle and storage control` is the next
-approved change-review task in document order. Begin its read-only counts and
-dependency-aware dry-run phase only with the user's next instruction. `CR-003`
-and `DEMO-002 — Prepare a client-facing README and Upwork Project Catalog
-positioning` remain pending until their respective functionality/styling pass.
+`CR-003 — In-app client-company management` is the next approved change-review
+task in document order. `CR-001` remains an approved direction that needs its own
+implementation approval. `DEMO-002 — Prepare a client-facing README and Upwork
+Project Catalog positioning` remains pending until the functionality/styling
+pass is complete.

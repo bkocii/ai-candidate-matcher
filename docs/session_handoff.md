@@ -19,10 +19,9 @@ Sprint 0 through Sprint 6, the user-approved corrective `INTAKE-001` task, and
 progress; `DEMO-002` is the next approved roadmap task.
 
 The user has chosen to complete approved functionality corrections before the
-final styling/positioning pass. `DEF-001`, `CR-004`, and `CR-005` are now
-complete. Remaining approved change items are tracked in
-`docs/change_review.md`; `CR-002` is next in document order but must not begin
-without the user's instruction.
+final styling/positioning pass. `DEF-001`, `CR-004`, `CR-005`, and `CR-002` are
+now complete. Remaining approved change items are tracked in
+`docs/change_review.md`; `CR-003` is next in document order.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -392,9 +391,28 @@ approval and each later copy/export recheck also require a recorded reason for
 every source and Consent = Given whenever consent is that reason. Application
 only, Do not contact, Not confirmed, missing reason, withdrawn consent, or
 unrecorded required consent remains a clear blocker. CR-005 intentionally leaves
-dates blank without an organization retention policy; CR-002 owns policy-derived
-dates. No model or migration, AI/toolkit, matching, decision, or sending boundary
-changed.
+candidate/source/document dates explicit; CR-002 separately owns policy limits
+for abandoned intake, jobs, uncommitted workflow history, metadata, and tenant
+deletion. No CR-005 model or migration, AI/toolkit, matching, decision, or
+sending boundary changed.
+
+`CR-002` is complete. Every organization now has an on-demand versioned
+retention policy with conservative 7/90/180/365-day lifecycle defaults and a
+30-day organization recovery window. Organization administrators can open a
+tenant-scoped retention dashboard, inspect content-minimized dependency counts
+and estimated pending-intake bytes, set a legal hold, add group/object
+exceptions, and explicitly confirm cleanup. The cleanup service recalculates
+eligibility inside its transaction: it minimizes abandoned intake, removes
+completed job/task history, deletes only non-current old shortlists with no
+decision/outreach, and deletes only complete outreach chains whose every version
+was never finally approved/copied/exported. Current and decision-bearing history
+stays linked. Candidate expiry retains its separate staged individual-review
+workflow. Organization deletion immediately suspends access, remains recoverable
+to an active administrator membership through the policy deadline, then a
+separate scheduled service verifies private-file removal, deletes the complete
+tenant graph, and retains only content-free lifecycle evidence and a numeric
+organization tombstone. The daily systemd service runs candidate staging,
+dependency cleanup, and expired-organization purge as explicit commands.
 
 `EVAL-001` is complete. The strict version-controlled
 `eval-001.synthetic-multirole.v1` manifest contains 20 obviously synthetic
@@ -476,7 +494,7 @@ The next release-roadmap item remains:
 `DEMO-002 — Prepare a client-facing README and Upwork Project Catalog positioning.`
 
 However, do not begin it until the user finishes the approved pre-release
-functionality items in `docs/change_review.md`. `CR-002` is the next approved
+functionality items in `docs/change_review.md`. `CR-003` is the next approved
 item in document order and still requires the user's instruction.
 
 ## Required instructions
@@ -660,10 +678,30 @@ The focused command is:
 uv run pytest -q tests/test_candidate_privacy_fields.py tests/test_candidate_intake.py tests/test_candidate_bulk_intake.py tests/test_candidate_unified_intake.py tests/test_outreach_workflow.py tests/test_audit_retention.py
 ```
 
+`CR-002` verification completed on 2026-08-25:
+
+- Focused lifecycle, audit/retention, organization access/dashboard, background
+  job, shortlist, and outreach regression set: `72 passed`.
+- Complete `python scripts/check.py` quality gate: `503 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `212`
+  files are formatted; installed dependency compatibility passed.
+- CR-002 adds
+  `organizations.0003_organizationretentionpolicy_retentionexception_and_more`
+  and `audit.0004_organizationtombstone_datalifecycleevent`. Both apply after
+  all existing migrations; the follow-up plan is empty and model-to-migration
+  drift is zero.
+
+The focused command is:
+
+```text
+uv run pytest -q tests/test_data_lifecycle.py tests/test_audit_retention.py tests/test_dashboard.py tests/test_organization_permissions.py tests/test_background_jobs.py tests/test_matching_shortlist.py tests/test_outreach_workflow.py
+```
+
 ## Immediate next action
 
-Wait for the user's instruction before starting `CR-002`. Preserve `CR-005`,
-`CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
-review, production/deployment, minimized usage reporting, durable jobs, staged
-deletion, and separate individually approved candidate-decision and outreach
-actions. Resume `DEMO-002` only when the functionality pass is complete.
+Wait for the user's instruction before starting `CR-003`. Preserve `CR-002`,
+`CR-005`, `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation,
+explanation review, production/deployment, minimized usage reporting, durable
+jobs, staged deletion, and separate individually approved candidate-decision and
+outreach actions. Resume `DEMO-002` only when the functionality pass is complete.

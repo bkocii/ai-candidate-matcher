@@ -67,6 +67,9 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Audit history for imports, assessments, reviews, and draft approval.
 - Tenant-scoped retention/deletion review, minimized privacy events, and
   deleted-record integrity checks.
+- Organization-admin retention policies with dependency-aware previews, legal
+  holds/exceptions, safe cleanup of abandoned operational bundles, and staged
+  organization suspension, recovery, and content-free tombstoning.
 - Django admin for operational management.
 - Documented PostgreSQL/Gunicorn/Nginx deployment, separately supervised durable
   worker and retention timer, content-free health endpoints, production runtime

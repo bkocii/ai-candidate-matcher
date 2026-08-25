@@ -42,4 +42,15 @@
     </div>
     <p>Candidate intake, private CV extraction, recruiter-confirmed requirements, deterministic matching, evidence-linked review, and separately approved outreach are available.</p>
 </section>
+
+{% if can_administer %}
+<section class="workspace-panel" aria-labelledby="retention-settings-title">
+    <div>
+        <p class="eyebrow">Administrator controls</p>
+        <h2 id="retention-settings-title">Data lifecycle</h2>
+    </div>
+    <p>Preview retention impact, add exceptions or a legal hold, and manage staged organization deletion.</p>
+    <p><a class="secondary-button button-link" href="{% url 'organizations:retention-dashboard' organization.slug %}">Open retention settings</a></p>
+</section>
+{% endif %}
 {% endblock %}

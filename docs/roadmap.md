@@ -124,6 +124,9 @@ Status: Complete.
 - `PROD-003` Add background processing, idempotency, resumability, and operational status. **Complete — 2026-08-15.**
 - `PROD-004` Add token, cost, latency, retry, and failure reporting. **Complete — 2026-08-15.**
 - `PROD-005` Add deployment documentation and production checks. **Complete — 2026-08-15.**
+- `CR-002` Add organization retention policies, dependency-aware dry-run and
+  cleanup, legal holds/exceptions, and staged organization recovery/purge.
+  **Complete — 2026-08-25 as an approved pre-release lifecycle correction.**
 
 Sprint acceptance: private files remain non-public, durable jobs are recoverable,
 safe operational reporting is available, and the documented PostgreSQL web/

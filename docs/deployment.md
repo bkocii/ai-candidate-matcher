@@ -121,8 +121,20 @@ leases are reclaimable and exact saved results are reused. Profile drafts still
 require explicit evidence review and confirmation, candidate decisions remain
 individual, and outreach remains a separate approved action.
 
-The daily timer runs `process_retention --apply`. That command only stages due
-candidates for the existing administrator review workflow; it never purges data.
+The daily timer runs three explicit services in order:
+
+```bash
+.venv/bin/python manage.py process_retention --apply
+.venv/bin/python manage.py process_data_lifecycle --apply --confirm "PURGE ELIGIBLE DATA"
+.venv/bin/python manage.py process_organization_deletions --apply --confirm "PURGE ORGANIZATIONS"
+```
+
+The first command only stages due candidates for individual administrator
+review. The second applies the organization policy only to dependency-safe
+temporary/job/uncommitted/metadata bundles. The third purges only suspended
+organizations whose recovery window has ended. Legal holds and active exceptions
+block the applicable scheduled deletion. All commands are dry-run by default;
+the committed systemd unit supplies their explicit apply/confirmation options.
 
 ## 7. Configure HTTPS reverse proxy
 

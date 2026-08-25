@@ -7,6 +7,7 @@
     <p class="eyebrow">Production safeguards</p>
     <h1 id="privacy-title">Privacy, retention, and audit</h1>
     <p class="lede">Organization-scoped operational history and retention review without copied CV, contact, prompt, decision-note, or outreach content.</p>
+    {% if can_administer %}<p><a class="secondary-button button-link" href="{% url 'organizations:retention-dashboard' organization.slug %}">Open retention settings</a></p>{% endif %}
 </section>
 
 <section class="metric-grid" aria-label="Retention summary">

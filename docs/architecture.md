@@ -200,6 +200,42 @@ Operational recovery is implemented in `PROD-003`. Aggregate AI usage reporting
 is implemented in `PROD-004`; production deployment and monitoring guidance
 remains `PROD-005`.
 
+`CR-002` adds a separate content-free `DataLifecycleEvent` ledger because an
+organization purge must remove the organization foreign-key graph while still
+retaining the policy action's organization/object IDs, actor-or-system marker,
+policy version, and time. It never copies domain content. An immutable
+`OrganizationTombstone` retains only the former numeric organization ID, policy
+version, request time, and purge time.
+
+### Dependency-aware data lifecycle
+
+- Each organization has a versioned retention policy with conservative defaults:
+  7 days for abandoned pending intake, 90 days for completed job history, 180
+  days for uncommitted workflow history, 365 days for minimized metadata, and a
+  30-day organization recovery window.
+- A legal hold blocks all scheduled lifecycle deletion. Active tenant-scoped
+  exceptions can block a whole retention group or one generic object ID.
+- The administrator dashboard is a dry-run first: it shows only aggregate bundle
+  counts, blocked counts, and estimated temporary private bytes. Applying it
+  requires an exact confirmation phrase and recalculates eligibility inside a
+  transaction.
+- Expired pending intake is marked discarded only after its private file and
+  extracted/proposed payload are removed. Completed jobs are deleted with their
+  task rows. No AI/domain result is deleted through the job-history cleanup.
+- An obsolete match run is eligible only if it is older than policy, is not the
+  latest run for its vacancy, and has no recruiter decision or outreach. An
+  abandoned outreach chain is eligible only when its newest version is older
+  than policy and no version was finally approved, copied, or exported. The
+  complete chain is removed; a middle parent is never selected alone.
+- Candidate/source/document dates retain the existing staged individual review
+  and candidate dependency purge. CR-002 does not silently convert those dates
+  into automatic candidate decisions.
+- Organization deletion first sets the organization inactive and records its
+  recovery deadline. A still-active organization administrator membership can
+  recover it before that deadline through a dedicated route. After the deadline,
+  the scheduled service verifies private-file deletion, removes the full tenant
+  dependency graph, and retains only the content-free lifecycle evidence.
+
 ### AI usage reporting
 
 The organization **AI usage** page is a read-only derived query over

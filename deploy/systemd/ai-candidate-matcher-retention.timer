@@ -1,5 +1,5 @@
 [Unit]
-Description=Run AI Candidate Matcher retention review daily
+Description=Run AI Candidate Matcher retention lifecycle daily
 
 [Timer]
 OnCalendar=daily

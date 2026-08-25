@@ -36,7 +36,7 @@ Important boundaries:
 
 ## CR-002 — Dependency-aware data lifecycle and storage control
 
-Status: **Approved for implementation — 2026-08-23**
+Status: **Complete — 2026-08-25**
 
 Problem: immutable profiles, shortlist runs, assessments, decisions, outreach
 versions, usage events, background jobs, and private documents can accumulate.
@@ -102,6 +102,19 @@ legally required.
 3. Add scheduled cleanup for temporary data, completed jobs, and safe obsolete
    workflow bundles.
 4. Add staged whole-organization suspension, recovery, and purge.
+
+Implementation note: organization administrators now have an application
+retention dashboard with versioned limits, dry-run bundle counts, estimated
+temporary private bytes, legal hold, scoped exceptions, and exact confirmation.
+The daily lifecycle service minimizes abandoned intake payloads, deletes expired
+completed jobs, removes only obsolete shortlists with no decision/outreach, and
+removes only complete outreach chains with no final approval/copy/export. Current
+runs and decision-bearing history remain protected. Organization deletion now
+suspends access immediately, supports administrator recovery during the policy
+window, and is completed by a separate scheduled whole-tenant purge with private-
+file deletion verification. Content-free lifecycle events and an organization
+tombstone survive the tenant purge. Existing candidate-level expiry continues to
+use its separate staged individual-review command.
 
 ## CR-003 — In-app client-company management
 
@@ -230,8 +243,10 @@ into the approved plain language. **Future roles allowed** is the only state tha
 permits rediscovery outreach; **Application only**, **Do not contact**, and **Not
 confirmed** remain safe blockers. Final approval also requires a recorded reason
 for every source and, when that reason is consent, consent recorded as **Given**.
-Dates remain blank when no organization retention policy exists; CR-002 will
-supply policy-derived dates instead of CR-005 inventing a universal default.
+Candidate/source/document dates remain explicit delete-or-review dates rather
+than receiving an invented universal default. CR-002 separately supplies
+organization policy limits for abandoned intake, jobs, uncommitted workflow
+history, minimized metadata, and staged organization deletion.
 
 ## DEF-001 — Canonical skill matching
 

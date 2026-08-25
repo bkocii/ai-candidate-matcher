@@ -400,3 +400,97 @@ class AIUsageEvent(models.Model):
 
     def __str__(self) -> str:
         return f"{self.get_workflow_display()} — {self.get_status_display()}"
+
+
+class DataLifecycleEventQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise ValidationError("Data lifecycle events are immutable.")
+
+    def delete(self):
+        raise ValidationError("Data lifecycle events are immutable.")
+
+
+class DataLifecycleEvent(models.Model):
+    """Content-free evidence that a policy action occurred."""
+
+    class Action(models.TextChoices):
+        TEMPORARY_INTAKE_PURGED = "temporary_intake_purged", "Intake purged"
+        COMPLETED_JOB_PURGED = "completed_job_purged", "Job purged"
+        MATCH_RUN_PURGED = "match_run_purged", "Match run purged"
+        OUTREACH_CHAIN_PURGED = "outreach_chain_purged", "Outreach chain purged"
+        METADATA_PURGED = "metadata_purged", "Metadata purged"
+        ORGANIZATION_DELETION_REQUESTED = (
+            "organization_deletion_requested",
+            "Organization deletion requested",
+        )
+        ORGANIZATION_DELETION_CANCELLED = (
+            "organization_deletion_cancelled",
+            "Organization deletion cancelled",
+        )
+        ORGANIZATION_PURGED = "organization_purged", "Organization purged"
+
+    class ObjectType(models.TextChoices):
+        INTAKE_ITEM = "intake_item", "Intake item"
+        BACKGROUND_JOB = "background_job", "Background job"
+        MATCH_RUN = "match_run", "Match run"
+        SHORTLIST_ENTRY = "shortlist_entry", "Shortlist entry"
+        METADATA_GROUP = "metadata_group", "Metadata group"
+        ORGANIZATION = "organization", "Organization"
+
+    SCHEMA_VERSION = "data_lifecycle_event.v1"
+
+    organization_id_snapshot = models.PositiveBigIntegerField()
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="data_lifecycle_events",
+    )
+    action = models.CharField(max_length=50, choices=Action.choices)
+    object_type = models.CharField(max_length=30, choices=ObjectType.choices)
+    object_id = models.PositiveBigIntegerField()
+    policy_version = models.PositiveIntegerField()
+    schema_version = models.CharField(max_length=50, default=SCHEMA_VERSION)
+    occurred_at = models.DateTimeField(auto_now_add=True)
+
+    objects = DataLifecycleEventQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-occurred_at", "-id")
+        indexes = [
+            models.Index(
+                fields=("organization_id_snapshot", "occurred_at"),
+                name="lifecycle_event_org_time_idx",
+            )
+        ]
+
+    def save(self, *args, **kwargs) -> None:
+        if self.pk:
+            raise ValidationError("Data lifecycle events are immutable.")
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Data lifecycle events are immutable.")
+
+
+class OrganizationTombstone(models.Model):
+    """Content-free marker retained after an organization dependency purge."""
+
+    organization_id_snapshot = models.PositiveBigIntegerField(unique=True)
+    policy_version = models.PositiveIntegerField()
+    deletion_requested_at = models.DateTimeField()
+    purged_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-purged_at", "-id")
+
+    def save(self, *args, **kwargs) -> None:
+        if self.pk:
+            raise ValidationError("Organization tombstones are immutable.")
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Organization tombstones are immutable.")
