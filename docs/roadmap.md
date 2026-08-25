@@ -40,13 +40,18 @@ Sprint acceptance: two organizations in tests cannot access each other's objects
   CV quick-add, and explicit batch confirmation of only clean eligible profile
   drafts. **Complete — 2026-08-24 as a user-approved pre-release workflow
   correction.**
+- `CR-005` Replace legalistic candidate privacy/source wording with practical
+  recruiter labels and safe defaults, expose inspectable source records, and
+  enforce reason/consent/allowed-contact checks at final outreach approval.
+  **Complete — 2026-08-25 as a user-approved pre-release workflow correction.**
 
 Status: Complete.
 
 Sprint acceptance: a recruiter can import an anonymized candidate set through
 CSV or reviewed CV-first intake, attach a CV during quick-add, confirm clean
 profile drafts efficiently while inspecting exceptions, and create a vacancy
-without developer help.
+without developer help. Candidate source/privacy fields use plain language and
+incomplete or restricted permissions cannot authorize outreach.
 
 ## Sprint 3 — Deterministic search and shortlist
 

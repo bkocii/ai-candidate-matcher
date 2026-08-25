@@ -260,7 +260,8 @@ class OutreachDraftApproval(models.Model):
             raise ValidationError(
                 {
                     "contact_permission_confirmed": (
-                        "Confirm contact permission before final approval."
+                        "Confirm the recorded source, consent when required, and "
+                        "allowed contact before final approval."
                     )
                 }
             )

@@ -36,12 +36,12 @@
     <div>
         <p class="eyebrow">Shared provenance</p>
         <h2 id="intake-source-title">{{ batch.source_name }}</h2>
-        <p>{{ batch.get_lawful_basis_display }} · {{ batch.get_consent_status_display }} · Contact {{ batch.get_contact_permission_display|lower }}</p>
+        <p>Reason for storing data: {{ batch.recruiter_lawful_basis }} · Consent: {{ batch.recruiter_consent_status }} · Allowed contact: {{ batch.recruiter_contact_permission }}</p>
     </div>
     <div>
-        <p><strong>Candidate retention:</strong> {{ batch.candidate_retention_until|default:"Not set" }}</p>
-        <p><strong>Source retention:</strong> {{ batch.source_retention_until|default:"Not set" }}</p>
-        <p><strong>Document retention:</strong> {{ batch.document_retention_until|default:"Not set" }}</p>
+        <p><strong>Delete or review candidate on:</strong> {{ batch.candidate_retention_until|default:"Not set" }}</p>
+        <p><strong>Delete or review source on:</strong> {{ batch.source_retention_until|default:"Not set" }}</p>
+        <p><strong>Delete or review CV on:</strong> {{ batch.document_retention_until|default:"Not set" }}</p>
     </div>
 </section>
 
@@ -104,6 +104,7 @@
     <p class="eyebrow">Exception-focused review</p>
     <h2 id="intake-review-title">Review proposed candidate identities</h2>
     <p>The application found these fields locally. Edit anything uncertain, select the rows to create, and leave unresolved rows pending or discard them.</p>
+    <p class="help-text"><strong>Source reference:</strong> Optional stable ID or reference from the original source.</p>
     <form method="post" action="{% url 'candidates:candidate-intake-create-selected' organization.slug batch.pk %}">
         {% csrf_token %}
         <div class="table-wrap intake-review-table">

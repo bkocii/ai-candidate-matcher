@@ -49,6 +49,9 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Lightweight manual quick-add with an optional CV in the same action.
 - Explicit batch confirmation of only clean evidence-validated profile drafts,
   with included/excluded review and individual profile approval history.
+- Plain-language candidate source/privacy controls with safe not-recorded
+  defaults, shared bulk values, inspectable provenance, and explicit outreach
+  permission enforcement.
 - Hardened PDF and DOCX CV upload, safe text extraction, and authorized private
   attachment delivery.
 - Vacancy creation from pasted text.
@@ -107,6 +110,11 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
   basis, consent, or contact permission. Only explicitly selected reviewed rows
   create candidates; accepted CVs may then enter the existing background AI
   profile-draft workflow.
+- Candidate intake displays **Reason for storing data**, **Consent**, **Allowed
+  contact**, and **Delete or review on** while preserving controlled internal
+  values. Consent never defaults to Given. Rediscovery outreach requires Future
+  roles allowed, a recorded reason for every source, and Given consent whenever
+  consent is the selected reason.
 - CSV-assisted CV intake joins rows only by an exact `cv_filename` supplied by
   the recruiter. Missing, repeated, and conflicting mappings remain unresolved;
   candidate names are never used as a fuzzy join key.

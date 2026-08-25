@@ -154,22 +154,22 @@ def test_final_approval_is_exact_actor_attributed_and_immutable():
         (
             CandidateSource.ContactPermission.UNKNOWN,
             CandidateSource.ConsentStatus.NOT_REQUIRED,
-            "explicitly permit contact",
+            "Reason for storing data",
         ),
         (
             CandidateSource.ContactPermission.RESTRICTED,
             CandidateSource.ConsentStatus.NOT_REQUIRED,
-            "restricted",
+            "Application only",
         ),
         (
             CandidateSource.ContactPermission.WITHDRAWN,
             CandidateSource.ConsentStatus.NOT_REQUIRED,
-            "withdrawn",
+            "Do not contact",
         ),
         (
             CandidateSource.ContactPermission.PERMITTED,
             CandidateSource.ConsentStatus.WITHDRAWN,
-            "consent is recorded as withdrawn",
+            "Consent is Withdrawn",
         ),
     ],
 )
@@ -212,7 +212,7 @@ def test_approval_requires_recruiter_attestation_and_notes():
             notes="   ",
             contact_permission_confirmed=True,
         )
-    with pytest.raises(ValidationError, match="Confirm contact permission"):
+    with pytest.raises(ValidationError, match="Confirm the recorded source"):
         approve_outreach_draft(
             draft=draft,
             user=user,
@@ -305,7 +305,47 @@ def test_new_version_or_changed_source_boundary_blocks_prior_approved_actions():
     )
     permission = assess_contact_permission(candidate=candidate)
     assert permission.can_proceed is False
-    assert "withdrawn" in permission.reason
+    assert "Do not contact" in permission.reason
+
+
+def test_final_approval_blocks_missing_reason_even_when_future_contact_is_allowed():
+    user, _, candidate, _, _, _, _, _, _, _, draft = workflow_workspace(permitted=False)
+    CandidateSource.objects.create(
+        candidate=candidate,
+        source_type=CandidateSource.SourceType.MANUAL_ENTRY,
+        source_name="Synthetic source without reason",
+        lawful_basis=CandidateSource.LawfulBasis.NOT_RECORDED,
+        consent_status=CandidateSource.ConsentStatus.UNKNOWN,
+        contact_permission=CandidateSource.ContactPermission.PERMITTED,
+        recorded_by=user,
+    )
+
+    eligibility = assess_final_approval_eligibility(draft=draft, user=user)
+
+    assert eligibility.can_proceed is False
+    assert "Reason for storing data" in eligibility.reason
+
+
+def test_final_approval_requires_given_consent_when_consent_is_reason():
+    user, _, candidate, _, _, _, _, _, _, _, draft = workflow_workspace(permitted=False)
+    source = CandidateSource.objects.create(
+        candidate=candidate,
+        source_type=CandidateSource.SourceType.MANUAL_ENTRY,
+        source_name="Synthetic consent source",
+        lawful_basis=CandidateSource.LawfulBasis.CONSENT,
+        consent_status=CandidateSource.ConsentStatus.UNKNOWN,
+        contact_permission=CandidateSource.ContactPermission.PERMITTED,
+        recorded_by=user,
+    )
+
+    blocked = assess_final_approval_eligibility(draft=draft, user=user)
+    source.consent_status = CandidateSource.ConsentStatus.GRANTED
+    source.save(update_fields=["consent_status"])
+    allowed = assess_final_approval_eligibility(draft=draft, user=user)
+
+    assert blocked.can_proceed is False
+    assert "Consent is not recorded as Given" in blocked.reason
+    assert allowed.can_proceed is True
 
 
 def test_recruiter_edit_approve_copy_and_export_routes(client):
@@ -389,7 +429,7 @@ def test_copy_endpoint_returns_no_text_after_permission_is_withdrawn(client):
     response = client.post(copy_url(organization, draft))
 
     assert response.status_code == 400
-    assert "withdrawn" in response.json()["error"]
+    assert "Do not contact" in response.json()["error"]
     assert "copy_text" not in response.json()
     assert response["Cache-Control"] == "private, no-store"
     assert not OutreachDraftAction.objects.exists()

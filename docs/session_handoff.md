@@ -19,10 +19,10 @@ Sprint 0 through Sprint 6, the user-approved corrective `INTAKE-001` task, and
 progress; `DEMO-002` is the next approved roadmap task.
 
 The user has chosen to complete approved functionality corrections before the
-final styling/positioning pass. `DEF-001` is now complete; the remaining approved
-functionality pass now also includes completed `CR-004`. Remaining approved
-change items are tracked in `docs/change_review.md`; `CR-005` is the next
-recommended item but must not begin without the user's instruction.
+final styling/positioning pass. `DEF-001`, `CR-004`, and `CR-005` are now
+complete. Remaining approved change items are tracked in
+`docs/change_review.md`; `CR-002` is next in document order but must not begin
+without the user's instruction.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -381,6 +381,21 @@ approve/reject/revisit decision, outreach, or send action is created. `CR-004`
 adds `candidates.0007_intake_accepted_document`; it changes no AI/toolkit,
 operations, matching, decision, or outreach contract.
 
+`CR-005` is complete. Quick-add, CSV import, reviewed CV intake, candidate source
+review, and outreach now display the stable source values as **Reason for storing
+data**, **Consent**, **Allowed contact**, and **Delete or review on**. Consent
+defaults to Not recorded, allowed contact defaults to Not confirmed, and the
+candidate page makes source assertions inspectable in the normal workspace.
+
+Only Future roles allowed permits this app's rediscovery outreach. Final draft
+approval and each later copy/export recheck also require a recorded reason for
+every source and Consent = Given whenever consent is that reason. Application
+only, Do not contact, Not confirmed, missing reason, withdrawn consent, or
+unrecorded required consent remains a clear blocker. CR-005 intentionally leaves
+dates blank without an organization retention policy; CR-002 owns policy-derived
+dates. No model or migration, AI/toolkit, matching, decision, or sending boundary
+changed.
+
 `EVAL-001` is complete. The strict version-controlled
 `eval-001.synthetic-multirole.v1` manifest contains 20 obviously synthetic
 candidates, 3 synthetic vacancies, exact deterministic top-five ranks/scores,
@@ -461,8 +476,8 @@ The next release-roadmap item remains:
 `DEMO-002 — Prepare a client-facing README and Upwork Project Catalog positioning.`
 
 However, do not begin it until the user finishes the approved pre-release
-functionality items in `docs/change_review.md`. `CR-005` is the next recommended
-item and still requires the user's instruction.
+functionality items in `docs/change_review.md`. `CR-002` is the next approved
+item in document order and still requires the user's instruction.
 
 ## Required instructions
 
@@ -624,9 +639,30 @@ The focused command is:
 uv run pytest -q tests/test_candidate_unified_intake.py tests/test_candidate_bulk_intake.py tests/test_candidate_intake.py tests/test_candidate_documents.py tests/test_candidate_ai_extraction.py tests/test_background_jobs.py tests/test_matching_filtering.py tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_recruiter_review.py tests/test_review_decisions.py tests/test_outreach_workflow.py tests/test_audit_retention.py
 ```
 
+`CR-005` verification completed on 2026-08-25:
+
+- Focused privacy/source forms, manual/CSV intake, reviewed bulk intake,
+  CV-first confirmation, outreach approval, and retention set: `64 passed`.
+- Complete `python scripts/check.py` quality gate: `495 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `205`
+  files are formatted; all `35` clean-environment packages are compatible.
+- CR-005 adds no migration. The current plan is empty and model-to-migration
+  drift is zero.
+- The restricted ZIP installed from `uv.lock` in an empty extraction, applied
+  every migration from an empty database through `candidates.0007`, reported an
+  empty follow-up plan and zero drift, and passed the same complete `495`-test
+  quality gate.
+
+The focused command is:
+
+```text
+uv run pytest -q tests/test_candidate_privacy_fields.py tests/test_candidate_intake.py tests/test_candidate_bulk_intake.py tests/test_candidate_unified_intake.py tests/test_outreach_workflow.py tests/test_audit_retention.py
+```
+
 ## Immediate next action
 
-Wait for the user's instruction before starting recommended `CR-005`. Preserve
+Wait for the user's instruction before starting `CR-002`. Preserve `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
 review, production/deployment, minimized usage reporting, durable jobs, staged
 deletion, and separate individually approved candidate-decision and outreach

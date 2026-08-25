@@ -370,6 +370,11 @@ migration.
   prefilled source label are required; consent, lawful-basis, and contact-
   permission values default to explicit unknown/not-recorded states rather than
   inferred permission.
+- Recruiter forms translate the stable internal source fields into **Reason for
+  storing data**, **Consent**, **Allowed contact**, and **Delete or review on**.
+  Consent defaults to Not recorded and allowed contact defaults to Not confirmed;
+  neither AI nor the interface silently grants permission. Candidate detail and
+  outreach review use the same plain-language translations.
 - Reviewed bulk intake creates one tenant-scoped batch before any candidate.
   Shared source, lawful-basis, consent, contact-permission, notes, and retention
   defaults are recruiter assertions and are never inferred by AI.
@@ -846,11 +851,14 @@ versions so their evidence boundary remains inspectable when inputs later change
   be approved, and its source recruiter approval, latest assessment, confirmed
   profile, and shortlist inputs must still be current.
 - Final approval additionally requires at least one candidate-source record with
-  explicit permitted contact. A restricted or withdrawn contact record, or any
-  withdrawn consent record, blocks approval. The same permission/currentness
-  checks run again before every copy or export, so a later decision correction,
-  new draft, changed evidence, or permission withdrawal disables manual use while
-  preserving history.
+  explicit permitted contact. In recruiter language, only **Future roles
+  allowed** permits rediscovery outreach; **Application only**, **Do not
+  contact**, and **Not confirmed** block it. Every source must have a recorded
+  reason for storing data, and a source using consent as that reason must record
+  consent as **Given**. Any withdrawn consent still blocks approval. The same
+  permission/currentness checks run again before every copy or export, so a
+  later decision correction, new draft, changed evidence, or permission change
+  disables manual use while preserving history.
 - `OutreachDraftAction` records each approved-draft copy or plain-text export with
   the exact draft, action type, human actor, and timestamp. The copy endpoint
   revalidates and records the action before returning the exact text to the
@@ -891,6 +899,9 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 - Logs do not contain raw CVs, contact details, prompts, or model responses.
 - AI requests minimize personal data and exclude protected attributes.
 - Candidate records include source, permission/consent notes, retention dates, and deletion status.
+- Retention dates are presented as delete-or-review dates. They remain blank
+  when no organization policy exists; the separately approved CR-002 policy
+  work, not an arbitrary application default, will calculate them when possible.
 - Retention processing is dry-run by default and only stages due candidates for
   individual review when explicitly applied; it never automatically erases data.
 - Deleting a candidate requires a separate request and administrator purge,

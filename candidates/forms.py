@@ -1,6 +1,18 @@
 from django import forms
 
 from candidates.models import CandidateIntakeBatch, CandidateSource
+from candidates.privacy import (
+    CONSENT_HELP_TEXT,
+    CONSENT_STATUS_LABELS,
+    CONTACT_PERMISSION_HELP_TEXT,
+    CONTACT_PERMISSION_LABELS,
+    LAWFUL_BASIS_HELP_TEXT,
+    LAWFUL_BASIS_LABELS,
+    RETENTION_HELP_TEXT,
+    SOURCE_NAME_HELP_TEXT,
+    SOURCE_REFERENCE_HELP_TEXT,
+    form_choices,
+)
 
 MAX_INTAKE_FILES_PER_UPLOAD = 10
 MAX_INTAKE_UPLOAD_BYTES = 10 * 1024 * 1024
@@ -35,9 +47,10 @@ class CandidateCVUploadForm(forms.Form):
         ),
     )
     retention_until = forms.DateField(
+        label="Delete or review on",
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
-        help_text="Optional date for reviewing or removing this stored document.",
+        help_text=RETENTION_HELP_TEXT,
     )
 
 
@@ -64,45 +77,59 @@ class CandidateManualEntryForm(forms.Form):
         ),
     )
     candidate_retention_until = forms.DateField(
+        label="Candidate — delete or review on",
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
-        help_text="Optional date for reviewing or removing the candidate record.",
+        help_text=RETENTION_HELP_TEXT,
     )
     source_name = forms.CharField(
         max_length=200,
         initial="Manual recruiter entry",
-        help_text="Where this candidate record came from.",
+        help_text=SOURCE_NAME_HELP_TEXT,
     )
     source_reference = forms.CharField(
         max_length=500,
         required=False,
-        help_text="Optional stable ID or reference from the original source.",
+        help_text=SOURCE_REFERENCE_HELP_TEXT,
     )
     lawful_basis = forms.ChoiceField(
-        choices=CandidateSource.LawfulBasis.choices,
+        label="Reason for storing data",
+        choices=form_choices(CandidateSource.LawfulBasis.choices, LAWFUL_BASIS_LABELS),
         initial=CandidateSource.LawfulBasis.NOT_RECORDED,
+        help_text=LAWFUL_BASIS_HELP_TEXT,
     )
     consent_status = forms.ChoiceField(
-        choices=CandidateSource.ConsentStatus.choices,
+        label="Consent",
+        choices=form_choices(
+            CandidateSource.ConsentStatus.choices, CONSENT_STATUS_LABELS
+        ),
         initial=CandidateSource.ConsentStatus.UNKNOWN,
+        help_text=CONSENT_HELP_TEXT,
     )
     contact_permission = forms.ChoiceField(
-        choices=CandidateSource.ContactPermission.choices,
+        label="Allowed contact",
+        choices=form_choices(
+            CandidateSource.ContactPermission.choices, CONTACT_PERMISSION_LABELS
+        ),
         initial=CandidateSource.ContactPermission.UNKNOWN,
+        help_text=CONTACT_PERMISSION_HELP_TEXT,
     )
     permission_notes = forms.CharField(
+        label="Privacy and contact notes",
         required=False,
         widget=forms.Textarea(attrs={"rows": 3}),
     )
     source_retention_until = forms.DateField(
+        label="Source — delete or review on",
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
-        help_text="Optional retention date for this provenance record.",
+        help_text=RETENTION_HELP_TEXT,
     )
     document_retention_until = forms.DateField(
+        label="CV — delete or review on",
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
-        help_text="Optional review/removal date for the attached CV.",
+        help_text=RETENTION_HELP_TEXT,
     )
 
 
@@ -114,28 +141,41 @@ class CandidateCSVImportForm(forms.Form):
     )
     source_name = forms.CharField(
         max_length=200,
-        help_text="Applied to every candidate created by this import.",
+        help_text=SOURCE_NAME_HELP_TEXT,
     )
     lawful_basis = forms.ChoiceField(
-        choices=CandidateSource.LawfulBasis.choices,
+        label="Reason for storing data",
+        choices=form_choices(CandidateSource.LawfulBasis.choices, LAWFUL_BASIS_LABELS),
         initial=CandidateSource.LawfulBasis.NOT_RECORDED,
+        help_text=LAWFUL_BASIS_HELP_TEXT,
     )
     consent_status = forms.ChoiceField(
-        choices=CandidateSource.ConsentStatus.choices,
+        label="Consent",
+        choices=form_choices(
+            CandidateSource.ConsentStatus.choices, CONSENT_STATUS_LABELS
+        ),
         initial=CandidateSource.ConsentStatus.UNKNOWN,
+        help_text=CONSENT_HELP_TEXT,
     )
     contact_permission = forms.ChoiceField(
-        choices=CandidateSource.ContactPermission.choices,
+        label="Allowed contact",
+        choices=form_choices(
+            CandidateSource.ContactPermission.choices, CONTACT_PERMISSION_LABELS
+        ),
         initial=CandidateSource.ContactPermission.UNKNOWN,
+        help_text=CONTACT_PERMISSION_HELP_TEXT,
     )
     permission_notes = forms.CharField(
+        label="Privacy and contact notes",
         required=False,
         widget=forms.Textarea(attrs={"rows": 3}),
         help_text="Applied to every source record created by this import.",
     )
     source_retention_until = forms.DateField(
+        label="Source — delete or review on",
         required=False,
         widget=forms.DateInput(attrs={"type": "date"}),
+        help_text=RETENTION_HELP_TEXT,
     )
 
 
@@ -159,17 +199,35 @@ class CandidateIntakeBatchForm(forms.ModelForm):
             "document_retention_until": forms.DateInput(attrs={"type": "date"}),
         }
         help_texts = {
-            "source_name": "Where every CV in this batch was obtained.",
-            "candidate_retention_until": (
-                "Optional review/removal date applied to created candidates."
-            ),
-            "source_retention_until": (
-                "Optional retention date applied to each provenance record."
-            ),
-            "document_retention_until": (
-                "Optional retention date applied to each accepted CV."
-            ),
+            "source_name": SOURCE_NAME_HELP_TEXT,
+            "lawful_basis": LAWFUL_BASIS_HELP_TEXT,
+            "consent_status": CONSENT_HELP_TEXT,
+            "contact_permission": CONTACT_PERMISSION_HELP_TEXT,
+            "candidate_retention_until": RETENTION_HELP_TEXT,
+            "source_retention_until": RETENTION_HELP_TEXT,
+            "document_retention_until": RETENTION_HELP_TEXT,
         }
+        labels = {
+            "lawful_basis": "Reason for storing data",
+            "consent_status": "Consent",
+            "contact_permission": "Allowed contact",
+            "permission_notes": "Privacy and contact notes",
+            "candidate_retention_until": "Candidate — delete or review on",
+            "source_retention_until": "Source — delete or review on",
+            "document_retention_until": "CV — delete or review on",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["lawful_basis"].choices = form_choices(
+            CandidateSource.LawfulBasis.choices, LAWFUL_BASIS_LABELS
+        )
+        self.fields["consent_status"].choices = form_choices(
+            CandidateSource.ConsentStatus.choices, CONSENT_STATUS_LABELS
+        )
+        self.fields["contact_permission"].choices = form_choices(
+            CandidateSource.ContactPermission.choices, CONTACT_PERMISSION_LABELS
+        )
 
 
 class CandidateIntakeUploadForm(forms.Form):
@@ -247,7 +305,11 @@ class CandidateIntakeReviewForm(forms.Form):
     email = forms.EmailField(required=False)
     phone = forms.CharField(max_length=50, required=False)
     location = forms.CharField(max_length=200, required=False)
-    source_reference = forms.CharField(max_length=500, required=False)
+    source_reference = forms.CharField(
+        max_length=500,
+        required=False,
+        help_text=SOURCE_REFERENCE_HELP_TEXT,
+    )
 
     def clean(self):
         cleaned_data = super().clean()

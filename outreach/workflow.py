@@ -59,7 +59,8 @@ def assess_contact_permission(
     if not sources:
         return OutreachWorkflowEligibility(
             False,
-            "Record candidate provenance and contact permission before final approval.",
+            "Record the candidate source, reason for storing data, and allowed "
+            "contact before final approval.",
         )
     if any(
         source.consent_status == CandidateSource.ConsentStatus.WITHDRAWN
@@ -67,8 +68,7 @@ def assess_contact_permission(
     ):
         return OutreachWorkflowEligibility(
             False,
-            "Candidate consent is recorded as withdrawn. Final outreach approval is "
-            "blocked.",
+            "Consent is Withdrawn. Final outreach approval is blocked.",
         )
     if any(
         source.contact_permission == CandidateSource.ContactPermission.WITHDRAWN
@@ -76,8 +76,7 @@ def assess_contact_permission(
     ):
         return OutreachWorkflowEligibility(
             False,
-            "Candidate contact permission is recorded as withdrawn. Final outreach "
-            "approval is blocked.",
+            "Allowed contact is Do not contact. Final outreach approval is blocked.",
         )
     if any(
         source.contact_permission == CandidateSource.ContactPermission.RESTRICTED
@@ -85,8 +84,27 @@ def assess_contact_permission(
     ):
         return OutreachWorkflowEligibility(
             False,
-            "Candidate contact permission is restricted. Resolve the restriction "
-            "before final outreach approval.",
+            "Allowed contact is Application only. This rediscovery outreach requires "
+            "Future roles allowed.",
+        )
+    if any(
+        source.lawful_basis == CandidateSource.LawfulBasis.NOT_RECORDED
+        for source in sources
+    ):
+        return OutreachWorkflowEligibility(
+            False,
+            "Record a Reason for storing data for every candidate source before "
+            "final outreach approval.",
+        )
+    if any(
+        source.lawful_basis == CandidateSource.LawfulBasis.CONSENT
+        and source.consent_status != CandidateSource.ConsentStatus.GRANTED
+        for source in sources
+    ):
+        return OutreachWorkflowEligibility(
+            False,
+            "Consent is the selected reason for storing data, but Consent is not "
+            "recorded as Given.",
         )
     if not any(
         source.contact_permission == CandidateSource.ContactPermission.PERMITTED
@@ -94,8 +112,8 @@ def assess_contact_permission(
     ):
         return OutreachWorkflowEligibility(
             False,
-            "At least one candidate source must explicitly permit contact before "
-            "final outreach approval.",
+            "At least one candidate source must record Allowed contact as Future "
+            "roles allowed before final outreach approval.",
         )
     return OutreachWorkflowEligibility(True)
 

@@ -42,8 +42,8 @@ class OutreachDraftApprovalForm(forms.Form):
     )
     contact_permission_confirmed = forms.BooleanField(
         label=(
-            "I verified the candidate's recorded contact permission and approve "
-            "this exact subject and body."
+            "I verified the candidate's reason for storing data, consent when "
+            "required, and allowed contact, and approve this exact subject and body."
         ),
     )
 

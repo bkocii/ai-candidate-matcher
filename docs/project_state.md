@@ -20,8 +20,9 @@ Status: the user-approved corrective `INTAKE-001` task, `EVAL-001`, and
 `EVAL-002`, `EVAL-003`, and `DEMO-001` are complete after `PROD-005`; `DEMO-002`
 remains the next release-roadmap task. The user approved a pre-release
 functionality pass before styling/positioning; `DEF-001` is complete and the
-CV-first `CR-004` workflow is complete. The remaining approved items are
-recorded in `docs/change_review.md`.
+CV-first `CR-004` workflow and plain-language `CR-005` privacy/source pass are
+complete. The remaining approved items are recorded in
+`docs/change_review.md`.
 
 ## Decisions made
 
@@ -53,6 +54,10 @@ recorded in `docs/change_review.md`.
   one explicit batch action confirms only clean evidence-validated profile drafts
   after showing included/excluded rows. Every confirmed profile retains its own
   actor/time record, while candidate decisions and outreach remain separate.
+- Recruiter-facing candidate source fields use practical wording and never
+  default consent or contact permission to approval. Rediscovery outreach needs
+  a recorded reason, Future roles allowed, and Given consent when consent is the
+  selected reason.
 
 ## Implemented
 
@@ -836,6 +841,29 @@ recorded in `docs/change_review.md`.
   AI gateway, prompt, toolkit dependency, operations schema, matching model, or
   outreach behavior changed.
 
+### `CR-005 — Practical candidate privacy and source fields`
+
+- Preserved the existing controlled database values while translating normal
+  recruiter forms and review pages to **Reason for storing data**, **Consent**,
+  **Allowed contact**, and **Delete or review on**.
+- Relabelled contact states as **Not confirmed**, **Future roles allowed**,
+  **Application only**, and **Do not contact**. Consent defaults to **Not
+  recorded**, never **Given**, across quick-add, CSV import, and reviewed CV
+  intake.
+- Added the approved source-name and source-reference explanations and retained
+  shared bulk privacy/source values plus record-specific exact references.
+- Added an inspectable candidate source/privacy table without exposing another
+  organization or introducing mutable source administration early.
+- Tightened final outreach approval and every later copy/export recheck. Every
+  source needs a recorded reason, only Future roles allowed permits rediscovery
+  outreach, and consent selected as the reason requires Consent = Given.
+- Left delete/review dates blank when there is no organization retention policy.
+  The separately approved CR-002 task will provide policy-derived dates; CR-005
+  does not invent a universal retention period.
+- Added focused form, safe-default, display, tenant, and outreach eligibility
+  tests. No model field, migration, AI gateway, prompt, toolkit, matching,
+  decision, or send boundary changed.
+
 ### `EVAL-001 — Synthetic candidates, vacancies, and expected matches`
 
 - Added the strict version-controlled `eval-001.synthetic-multirole.v1`
@@ -1037,12 +1065,30 @@ recorded in `docs/change_review.md`.
   reported an empty follow-up plan and zero drift, and passed the same complete
   `488`-test quality gate.
 
+`CR-005` verification completed on 2026-08-25:
+
+- Focused privacy/source forms, manual/CSV intake, reviewed bulk intake,
+  CV-first confirmation, outreach approval, and retention set: `64 passed`.
+- Complete `python scripts/check.py` quality gate: `495 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `205`
+  files are formatted; all `35` clean-environment packages are compatible.
+- CR-005 adds no migration. The current migration plan is empty and model-to-
+  migration drift is zero. Stable stored source values are translated only at
+  recruiter-facing form, display, and outreach-policy boundaries.
+- The restricted ZIP was extracted into an empty directory, installed from
+  `uv.lock`, migrated from an empty database through `candidates.0007`, reported
+  an empty follow-up plan and zero drift, and passed the same complete
+  `495`-test quality gate.
+
 ## Not implemented
 
 Outreach generation, immutable recruiter editing, exact final approval, manual
 copy, and plain-text export are implemented. Automatic sending, recipient
 selection, email/ATS/platform integrations, and permission-management UI are not
-implemented; sending remains outside the MVP.
+implemented; existing source/privacy assertions are inspectable in the candidate
+workspace but remain editable only through intake or technical administration.
+Sending remains outside the MVP.
 Recruiters can intentionally run structured vacancy extraction for an editable
 requirements draft and candidate-profile extraction for a lawfully stored,
 successfully parsed CV. Both create human-reviewable drafts; only explicit
@@ -1081,9 +1127,8 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`CR-005 — Practical candidate privacy and source fields` is the next recommended
-approved functionality item because it simplifies the same intake screens while
-retaining their existing internal data and safety rules. Do not begin it without
-the user's next instruction. `DEMO-002 — Prepare a client-facing README and
-Upwork Project Catalog positioning` remains pending until the functionality pass
-is complete.
+`CR-002 — Dependency-aware data lifecycle and storage control` is the next
+approved change-review task in document order. Begin its read-only counts and
+dependency-aware dry-run phase only with the user's next instruction. `CR-003`
+and `DEMO-002 — Prepare a client-facing README and Upwork Project Catalog
+positioning` remain pending until their respective functionality/styling pass.

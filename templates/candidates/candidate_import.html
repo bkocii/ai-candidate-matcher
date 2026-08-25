@@ -14,7 +14,7 @@
 
 <section class="import-guidance" aria-labelledby="csv-format-title">
     <h2 id="csv-format-title">CSV format</h2>
-    <p><code>full_name</code> is required. Supported optional columns are <code>email</code>, <code>phone</code>, <code>location</code>, <code>source_reference</code>, and <code>retention_until</code> in <code>YYYY-MM-DD</code> format.</p>
+    <p><code>full_name</code> is required. Supported optional columns are <code>email</code>, <code>phone</code>, <code>location</code>, <code>source_reference</code>, and <code>retention_until</code> (the candidate's <strong>Delete or review on</strong> date) in <code>YYYY-MM-DD</code> format.</p>
 </section>
 
 <form class="form-panel stacked-form" method="post" enctype="multipart/form-data" action="{% url 'candidates:candidate-import' organization.slug %}#import-results">

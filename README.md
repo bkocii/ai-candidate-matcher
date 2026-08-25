@@ -173,7 +173,7 @@ uv run python manage.py runserver
 The command refuses to overwrite an existing organization and prints the exact
 dashboard, shortlist, review, assessment, and draft routes. It creates only
 synthetic EVAL-001 records, stops before final outreach approval, and keeps
-contact permission restricted. See [`docs/demo.md`](docs/demo.md) for the
+Allowed contact set to **Application only**. See [`docs/demo.md`](docs/demo.md) for the
 five-minute walkthrough and verified screenshots.
 
 ## Local setup

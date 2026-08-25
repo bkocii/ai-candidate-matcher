@@ -82,6 +82,7 @@ def candidate_detail(request, organization_slug: str, candidate_id: int):
     documents = candidate.documents.filter(deleted_at__isnull=True).prefetch_related(
         "profile_versions"
     )
+    sources = candidate.sources.select_related("recorded_by")
     return render(
         request,
         "candidates/candidate_detail.html",
@@ -89,6 +90,7 @@ def candidate_detail(request, organization_slug: str, candidate_id: int):
             "organization": organization,
             "candidate": candidate,
             "documents": documents,
+            "sources": sources,
             "can_administer": can_administer_organization(request.user, organization),
         },
     )

@@ -36,6 +36,44 @@
     </section>
 {% endif %}
 
+<section class="workspace-panel" aria-labelledby="candidate-source-title">
+    <div>
+        <p class="eyebrow">Source and privacy</p>
+        <h2 id="candidate-source-title">Recorded candidate sources</h2>
+        <p class="section-note">Consent and allowed contact are separate. These records document the organization's assertion and do not certify legal compliance.</p>
+    </div>
+    {% if sources %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Source name</th>
+                        <th scope="col">Source reference</th>
+                        <th scope="col">Reason for storing data</th>
+                        <th scope="col">Consent</th>
+                        <th scope="col">Allowed contact</th>
+                        <th scope="col">Delete or review on</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for source in sources %}
+                        <tr>
+                            <th scope="row">{{ source.source_name }}</th>
+                            <td>{{ source.source_reference|default:"—" }}</td>
+                            <td>{{ source.recruiter_lawful_basis }}</td>
+                            <td>{{ source.recruiter_consent_status }}</td>
+                            <td>{{ source.recruiter_contact_permission }}</td>
+                            <td>{{ source.retention_until|date:"Y-m-d"|default:"Not set" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No candidate source record is available.</p>
+    {% endif %}
+</section>
+
 <section aria-labelledby="documents-title">
     <h2 id="documents-title">Private documents</h2>
     <p class="section-note">Document bytes and extracted text remain private. Authorized downloads are attachment-only and are not cached.</p>

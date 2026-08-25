@@ -11,6 +11,9 @@ Reviewed bulk CV candidate intake was separately approved and completed as
 The unified CV-first intake, exact CSV-to-CV mapping, optional-CV quick-add, and
 explicit clean-profile batch confirmation were completed as `CR-004`; they are
 also not future-backlog items.
+Plain candidate source/privacy wording and stricter outreach eligibility were
+completed as `CR-005`; organization retention policies and policy-derived dates
+remain the separately approved `CR-002` scope rather than a future-backlog item.
 
 - Authorized ATS integrations such as customer-approved Greenhouse or Lever access.
 - Approved external candidate-source connectors.

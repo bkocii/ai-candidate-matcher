@@ -52,7 +52,7 @@ final approval even though the candidate decision is approved.
    does not change the score or automatically contact anyone.
 5. Open **Unapproved outreach draft**. Show that the exact draft is inspectable,
    still requires separate final approval, and cannot be approved or copied
-   because contact permission is restricted. Nothing is sent by the application.
+   because Allowed contact is **Application only**. Nothing is sent by the application.
 
 ## Reference screenshots
 

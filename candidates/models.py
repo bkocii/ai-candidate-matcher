@@ -6,6 +6,11 @@ from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 
+from candidates.privacy import (
+    consent_status_display,
+    contact_permission_display,
+    lawful_basis_display,
+)
 from organizations.models import Organization, OrganizationScopedQuerySet
 
 
@@ -299,6 +304,18 @@ class CandidateSource(models.Model):
     def __str__(self) -> str:
         return f"{self.candidate} — {self.source_name}"
 
+    @property
+    def recruiter_lawful_basis(self) -> str:
+        return lawful_basis_display(self.lawful_basis)
+
+    @property
+    def recruiter_consent_status(self) -> str:
+        return consent_status_display(self.consent_status)
+
+    @property
+    def recruiter_contact_permission(self) -> str:
+        return contact_permission_display(self.contact_permission)
+
 
 class CandidateIntakeBatch(models.Model):
     """Shared provenance and lifecycle for one reviewed bulk-CV intake."""
@@ -413,6 +430,18 @@ class CandidateIntakeBatch(models.Model):
 
     def __str__(self) -> str:
         return f"Candidate intake {self.pk or 'new'} — {self.source_name}"
+
+    @property
+    def recruiter_lawful_basis(self) -> str:
+        return lawful_basis_display(self.lawful_basis)
+
+    @property
+    def recruiter_consent_status(self) -> str:
+        return consent_status_display(self.consent_status)
+
+    @property
+    def recruiter_contact_permission(self) -> str:
+        return contact_permission_display(self.contact_permission)
 
 
 def candidate_intake_upload_to(instance: "CandidateIntakeItem", filename: str) -> str:

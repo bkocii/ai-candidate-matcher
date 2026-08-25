@@ -91,10 +91,10 @@ Open **Candidates** and select **Quick add**. Enter:
 - Location: `Prishtina`
 - Source name: `Synthetic manual test`
 - Source reference: `MAN-001`
-- Lawful basis: `Not recorded`
-- Consent status: `Unknown`
-- Contact permission: `Unknown`
-- Permission notes: `Synthetic test record; no real person.`
+- Reason for storing data: `Not recorded`
+- Consent: `Not recorded`
+- Allowed contact: `Not confirmed`
+- Privacy and contact notes: `Synthetic test record; no real person.`
 - CV file: optionally select `synthetic-arben-testi-cv.pdf`
 
 Expected result:
@@ -103,7 +103,17 @@ Expected result:
 - The provenance record and optional validated private CV are created in the
   same action. An invalid CV rolls back the candidate and source instead of
   leaving a partial record.
-- Unknown permission/consent remains explicitly unknown.
+- Not-recorded consent and not-confirmed contact remain explicit; neither is
+  silently treated as approval.
+
+Confirm the form also shows:
+
+- **Source name:** `Where this candidate record came from.`
+- **Source reference:** `Optional stable ID or reference from the original source.`
+- **Delete or review on** wording for candidate, source, and attached-CV dates.
+
+Leave all delete/review dates blank. Expected result: the app does not invent a
+retention date when the organization has no configured retention policy.
 
 Only the full name is required identity data. The prefilled source name and safe
 not-recorded/unknown values can be accepted without completing every optional
@@ -125,9 +135,9 @@ template used by the application.
 Upload `manual_testing/fixtures/candidate-import-valid.csv` and set:
 
 - Source name: `Synthetic valid CSV test`
-- Lawful basis: `Not recorded`
-- Consent status: `Unknown`
-- Contact permission: `Unknown`
+- Reason for storing data: `Not recorded`
+- Consent: `Not recorded`
+- Allowed contact: `Not confirmed`
 
 Expected report: `3 created`, `0 duplicates`, `0 invalid`.
 
@@ -167,11 +177,11 @@ creation action. Select it and record the shared source details below. The same
 flow supports one CV or several CVs:
 
 - Source name: `Synthetic reviewed bulk intake`
-- Lawful basis: `Not recorded`
-- Consent status: `Unknown`
-- Contact permission: `Unknown`
-- Permission notes: `Synthetic fixtures only; no real people.`
-- Candidate, source, and document retention dates: leave blank for this test
+- Reason for storing data: `Not recorded`
+- Consent: `Not recorded`
+- Allowed contact: `Not confirmed`
+- Privacy and contact notes: `Synthetic fixtures only; no real people.`
+- Candidate, source, and CV delete/review dates: leave blank for this test
 
 Expected result: an open tenant-scoped batch is created. Its shared provenance
 and retention values are visible before any candidate exists; none of these
@@ -992,20 +1002,21 @@ Expected result:
 - Blank values, overlong values, and unsafe control characters are rejected
   without creating a version.
 
-### Establish contact permission and approve the exact version
+### Establish allowed contact and approve the exact version
 
-The synthetic candidate created earlier has **Unknown** contact permission.
-Confirm that final approval is blocked and the page explains the permission
-requirement. In Django admin, edit one of that candidate's synthetic **Candidate
-sources** and set:
+The synthetic candidate created earlier has **Not confirmed** allowed contact and
+no recorded reason. Confirm that final approval is blocked and the page explains
+both requirements. In Django admin, edit one of that candidate's synthetic
+**Candidate sources** and set the underlying stored values shown below (the
+normal recruiter page displays the plain labels in parentheses):
 
-- Lawful basis: `Legitimate interests`
-- Consent status: `Not required` or `Granted`
-- Contact permission: `Permitted`
+- Lawful basis: `Legitimate interests` (**Reason for storing data**)
+- Consent status: `Not required` (**Consent**)
+- Contact permission: `Permitted` (**Allowed contact: Future roles allowed**)
 - Permission notes: `Synthetic manual test permission only.`
 
 Return to the latest outreach draft, add approval notes, check the explicit
-contact-permission attestation, and select **Approve exact draft**.
+source/consent/allowed-contact attestation, and select **Approve exact draft**.
 
 Expected result:
 
@@ -1013,8 +1024,15 @@ Expected result:
 - The approval records notes, your username, and a timestamp.
 - The draft is labelled approved but still **not sent**.
 - Missing notes or an unchecked attestation creates no approval.
-- Restricted or withdrawn contact permission, or withdrawn consent on any
-  candidate source, blocks approval.
+- Application only, Do not contact, or Not confirmed allowed contact blocks
+  approval. A missing reason also blocks approval.
+- When **Consent** is selected as the reason for storing data, Consent must be
+  **Given**. Not recorded, Not required, or Withdrawn blocks approval for that
+  consent-based source.
+
+Open the candidate page before approving and confirm the source table displays
+Source name, Source reference, Reason for storing data, Consent, Allowed contact,
+and Delete or review on without the older legalistic field labels.
 
 ### Copy and export only after approval
 
@@ -1036,9 +1054,10 @@ Edit the approved draft into another version. The new version must be
 unapproved, and the older approval must not authorize copying or exporting the
 new text. Approve the new exact version before those controls return.
 
-Finally, change the source permission to **Withdrawn**, refresh the draft page,
-and confirm copy/export is blocked. A direct POST to either action must return no
-draft text or file. Restore the synthetic permission if continuing other tests.
+Finally, change the stored contact permission to **Withdrawn** (**Do not
+contact**), refresh the draft page, and confirm copy/export is blocked. A direct
+POST to either action must return no draft text or file. Restore **Future roles
+allowed** if continuing other tests.
 
 Test the authorization and currentness guards:
 
@@ -1060,6 +1079,12 @@ In Django admin, open **Outreach drafts**, **Outreach draft approvals**, and
 **Outreach draft actions** under **Outreach**. Confirm all records are read-only.
 Deleting a disposable synthetic candidate removes its drafts, approvals, and
 actions with the private shortlist, assessment, and decision history.
+
+Run the focused provider-free CR-005 coverage:
+
+```powershell
+uv run pytest -q tests/test_candidate_privacy_fields.py tests/test_candidate_intake.py tests/test_candidate_bulk_intake.py tests/test_candidate_unified_intake.py tests/test_outreach_workflow.py tests/test_audit_retention.py
+```
 
 ## 22. Inspect safe AI usage events
 
@@ -1520,8 +1545,8 @@ Open each route printed by the command and follow `docs/demo.md`. In particular:
 3. Open the approved assessment and confirm its exact evidence plus immutable
    individual decision remain inspectable.
 4. Open the outreach draft and confirm **Not finally approved or sent** appears.
-5. Confirm final approval is unavailable because candidate contact permission is
-   restricted; copy/export is also unavailable and no action event exists.
+5. Confirm final approval is unavailable because Allowed contact is **Application
+   only**; copy/export is also unavailable and no action event exists.
 
 Run the command again with the same slug. Expected result: it refuses to
 overwrite the organization and does not add candidates, documents, assessments,

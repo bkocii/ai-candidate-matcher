@@ -183,7 +183,7 @@ outreach are unchanged and separate.
 
 ## CR-005 — Practical candidate privacy and source fields
 
-Status: **Approved for implementation — 2026-08-24**
+Status: **Complete — 2026-08-25**
 
 Recruiter-facing candidate intake should use plain language and safe practical
 defaults while retaining the underlying privacy, provenance, and outreach
@@ -223,6 +223,15 @@ than unnecessary internal field renames or schema redesign.
   consent is also required.
 - The interface provides concise explanations and validation messages so normal
   recruiters can complete intake without interpreting legal terminology.
+
+Implementation note: the stable database values remain unchanged while all
+recruiter intake, candidate-source review, and outreach surfaces translate them
+into the approved plain language. **Future roles allowed** is the only state that
+permits rediscovery outreach; **Application only**, **Do not contact**, and **Not
+confirmed** remain safe blockers. Final approval also requires a recorded reason
+for every source and, when that reason is consent, consent recorded as **Given**.
+Dates remain blank when no organization retention policy exists; CR-002 will
+supply policy-derived dates instead of CR-005 inventing a universal default.
 
 ## DEF-001 — Canonical skill matching
 

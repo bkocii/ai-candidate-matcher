@@ -45,13 +45,13 @@
 <section class="workspace-panel outreach-permission" aria-labelledby="outreach-permission-title">
     <div>
         <p class="eyebrow">Contact safety check</p>
-        <h2 id="outreach-permission-title">Recorded candidate permission</h2>
-        <p class="section-note">Final approval and later copy/export require at least one explicitly permitted source, with no restricted or withdrawn contact/consent record.</p>
+        <h2 id="outreach-permission-title">Recorded source and contact basis</h2>
+        <p class="section-note">Final approval and later copy/export require a recorded reason for storing data, valid consent when consent is that reason, and Future roles allowed. Application only, Do not contact, or withdrawn consent blocks this rediscovery outreach.</p>
     </div>
     {% if candidate_sources %}
         <ul class="permission-list">
             {% for source in candidate_sources %}
-                <li><strong>{{ source.source_name }}</strong> · contact {{ source.get_contact_permission_display }} · consent {{ source.get_consent_status_display }} · lawful basis {{ source.get_lawful_basis_display }}</li>
+                <li><strong>{{ source.source_name }}</strong> · Allowed contact: {{ source.recruiter_contact_permission }} · Consent: {{ source.recruiter_consent_status }} · Reason for storing data: {{ source.recruiter_lawful_basis }}</li>
             {% endfor %}
         </ul>
     {% else %}

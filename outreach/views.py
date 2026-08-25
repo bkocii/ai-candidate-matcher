@@ -206,7 +206,8 @@ def outreach_draft_approve(request, organization_slug: str, draft_id: int):
     if not form.is_valid():
         messages.error(
             request,
-            "Record final approval notes and confirm contact permission.",
+            "Record final approval notes and confirm the source, consent when "
+            "required, and allowed contact.",
         )
     else:
         try:
