@@ -7,6 +7,9 @@
         {{ field.label_tag }}
         {{ field }}
         {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+        {% if field.name == "client_company" and can_add_client_company %}
+            <small class="help-text"><a href="{{ add_client_url }}">Add a client company in organization settings</a></small>
+        {% endif %}
         {% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}
     </div>
 {% endfor %}

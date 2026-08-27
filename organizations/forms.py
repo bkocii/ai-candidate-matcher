@@ -1,6 +1,26 @@
 from django import forms
 
-from organizations.models import OrganizationRetentionPolicy, RetentionException
+from organizations.models import (
+    ClientCompany,
+    OrganizationRetentionPolicy,
+    RetentionException,
+)
+
+
+class ClientCompanyForm(forms.ModelForm):
+    website = forms.URLField(
+        required=False,
+        assume_scheme="https",
+        help_text="Optional. Used only as organization-owned reference metadata.",
+    )
+
+    class Meta:
+        model = ClientCompany
+        fields = ("name", "website")
+        labels = {"name": "Client company name"}
+
+    def clean_name(self) -> str:
+        return self.cleaned_data["name"].strip()
 
 
 class OrganizationRetentionPolicyForm(forms.ModelForm):

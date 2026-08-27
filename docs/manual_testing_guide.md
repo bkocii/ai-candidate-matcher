@@ -1,8 +1,8 @@
 # Manual Testing Guide
 
 This guide verifies the application from the Django foundation through
-`PROD-005`, `INTAKE-001`, `EVAL-001` through `EVAL-003`, `DEMO-001`, and
-`DEF-001`, and `CR-004`. Use only the
+`PROD-005`, `INTAKE-001`, `EVAL-001` through `EVAL-003`, `DEMO-001`,
+`DEF-001`, and `CR-002` through `CR-005`. Use only the
 synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
@@ -53,12 +53,6 @@ Create these records in order:
    - Organization: `Northstar Recruitment Test`
    - Role: `Administrator`
    - Active: checked
-3. **Client company**
-   - Organization: `Northstar Recruitment Test`
-   - Name: `Acme Test Industries`
-   - Slug: `acme-test-industries`
-   - Active: checked
-
 Why the membership is necessary: Django superuser status grants access to the
 separate `/admin/` surface, but it deliberately does not bypass normal
 organization isolation.
@@ -71,9 +65,14 @@ organization isolation.
 4. Confirm that the navigation contains **Dashboard**, **Candidates**,
    **Vacancies**, **Reviews**, **Jobs**, **AI usage**, **Privacy & audit**,
    **Django admin**, and **Sign out**.
-5. Confirm the dashboard initially shows zero active candidates and zero open
-   vacancies.
-6. Select **Sign out** and confirm you return to the login page.
+5. Confirm the dashboard initially shows zero active candidates, zero active
+   client companies, and zero open vacancies.
+6. Open **Organization settings → Client companies** and select **Add client
+   company**. Enter `Acme Test Industries` and the optional website
+   `https://acme.example.test`.
+7. Confirm the client is active, the vacancy count is zero, and the dashboard's
+   active-client count becomes one.
+8. Select **Sign out** and confirm you return to the login page.
 
 Expected security behavior:
 
@@ -362,6 +361,35 @@ Expected result:
 - Requirements version 1 is created as an editable manual draft.
 - You are redirected directly to the requirements editor.
 - The original pasted description is available in the collapsed source panel.
+
+Select **Edit vacancy**, change the display title, save, and then restore the
+original title. Expected result: the title changes, but the original vacancy
+description and requirements version 1 source snapshot do not change.
+
+As an organization administrator, also verify the client-company workflow:
+
+1. Open **Organization settings → Client companies** and deactivate `Acme Test
+   Industries`.
+2. Return to the existing vacancy. Confirm its historical Acme relationship is
+   still displayed.
+3. Open **Edit vacancy**. Confirm Acme is labelled as inactive and available only
+   because it is already linked to this vacancy. Save without changing it.
+4. Open **Add vacancy**. Confirm Acme is not available for a new vacancy.
+5. Use **Add a client company in organization settings** from the vacancy form,
+   create `Beta Test Customer`, and confirm you return to the vacancy form with
+   Beta selected.
+6. Return to client-company settings and reactivate Acme. Confirm it is again
+   available for new vacancies.
+
+Expected security behavior:
+
+- A recruiter can select active client companies and edit a vacancy's optional
+  client relationship, but cannot open client-company settings or see the
+  add-client shortcut.
+- A client from another organization cannot be selected or edited.
+- A client company is only an internal hiring-customer reference. It creates no
+  workspace, candidate ownership, membership, or login account.
+- Direct-employer vacancies remain valid without any client company.
 
 Enter the values from
 `manual_testing/fixtures/vacancy-requirements-reference.md`. List fields accept
@@ -1661,6 +1689,10 @@ The current milestone is behaving correctly when all of these are true:
   private/no-store attachment; signed-out, cross-organization, mismatched,
   deleted, missing, or changed stored documents are not delivered.
 - Recruiters can create direct-employer and client-associated vacancies.
+- Organization administrators can create, edit, deactivate, and reactivate
+  optional client companies inside Organization settings. Recruiters can use
+  active clients on vacancy creation/editing, inactive clients cannot be newly
+  assigned, and existing historical vacancy relationships remain intact.
 - Requirements can be saved, confirmed, copied to a new version, and confirmed
   again without mutating history.
 - Recruiters can open, pause, close, and reopen vacancies only through the

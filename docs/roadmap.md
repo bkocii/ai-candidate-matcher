@@ -21,8 +21,16 @@ Status: Complete.
 - `FOUND-003` Add optional client companies and organization-scoped permissions. **Complete — 2026-08-09.**
 - `FOUND-004` Establish base templates, navigation, and a minimal dashboard. **Complete — 2026-08-10.**
 - `FOUND-005` Add CI-quality commands and security-conscious environment configuration. **Complete — 2026-08-10.**
+- `CR-003` Add in-application organization-administrator client-company
+  management plus active-client selection on vacancy creation/editing while
+  preserving historical relationships. **Complete — 2026-08-25 as an approved
+  pre-release workflow correction.**
 
-Sprint acceptance: two organizations in tests cannot access each other's objects, project checks pass, and the published toolkit package is installed without importing local toolkit code.
+Sprint acceptance: two organizations in tests cannot access each other's
+objects, organization administrators can manage optional agency clients without
+Django admin, inactive clients cannot be newly assigned while historical vacancy
+links remain intact, project checks pass, and the published toolkit package is
+installed without importing local toolkit code.
 
 ## Sprint 2 — Candidate and vacancy intake
 

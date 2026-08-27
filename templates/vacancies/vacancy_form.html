@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}Add vacancy | {{ organization.name }}{% endblock %}
+{% block title %}{{ heading }} | {{ organization.name }}{% endblock %}
 
 {% block content %}
 <section class="page-heading">
     <p class="eyebrow">Vacancy workspace</p>
-    <h1>Add vacancy</h1>
-    <p class="lede">Paste the original job description. The app will preserve it as the source for the first recruiter-edited requirements version.</p>
+    <h1>{{ heading }}</h1>
+    <p class="lede">{{ lede }}</p>
 </section>
 
 <form class="form-panel stacked-form" method="post">
     {% csrf_token %}
     {% include "vacancies/_form_fields.html" %}
     <div class="button-row">
-        <button class="primary-button" type="submit">Create and review requirements</button>
-        <a class="secondary-button" href="{% url 'vacancies:vacancy-list' organization.slug %}">Cancel</a>
+        <button class="primary-button" type="submit">{{ submit_label }}</button>
+        <a class="secondary-button" href="{{ cancel_url }}">Cancel</a>
     </div>
 </form>
 {% endblock %}

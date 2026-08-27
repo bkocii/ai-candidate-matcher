@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Organization settings | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading" aria-labelledby="settings-title">
+    <div>
+        <p class="eyebrow">Administrator controls</p>
+        <h1 id="settings-title">Organization settings</h1>
+        <p class="lede">Manage agency client references and data lifecycle controls for {{ organization.name }}.</p>
+    </div>
+    <a class="secondary-button" href="{% url 'organizations:organization-dashboard' organization.slug %}">Back to dashboard</a>
+</section>
+
+<section class="detail-grid" aria-label="Organization settings sections">
+    <article class="detail-panel">
+        <p class="eyebrow">Agency workspace</p>
+        <h2>Client companies</h2>
+        <p>Keep optional hiring customers available for vacancies. Client companies are not workspaces, candidate owners, or user accounts.</p>
+        <p><a class="primary-button button-link" href="{% url 'organizations:client-company-list' organization.slug %}">Manage client companies</a></p>
+    </article>
+    <article class="detail-panel">
+        <p class="eyebrow">Privacy and storage</p>
+        <h2>Retention and deletion</h2>
+        <p>Preview dependency-safe cleanup, maintain exceptions or a legal hold, and manage staged organization deletion.</p>
+        <p><a class="secondary-button button-link" href="{% url 'organizations:retention-dashboard' organization.slug %}">Open retention settings</a></p>
+    </article>
+</section>
+{% endblock %}

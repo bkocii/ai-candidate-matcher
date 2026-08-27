@@ -6,7 +6,7 @@ from django.utils import timezone
 from accounts.models import User
 from audit.models import AuditEvent
 from audit.services import record_audit_event
-from organizations.models import Organization
+from organizations.models import ClientCompany, Organization
 from organizations.permissions import (
     require_organization_access,
     require_organization_object_access,
@@ -62,6 +62,21 @@ def create_vacancy_with_requirements(
         raise ValidationError(
             {"client_company": "The client company is not in this organization."}
         )
+    if client_company:
+        client_company = (
+            ClientCompany.objects.select_for_update()
+            .filter(pk=client_company.pk, organization=organization)
+            .first()
+        )
+        if client_company is None:
+            raise ValidationError(
+                {"client_company": "The client company is not in this organization."}
+            )
+        if not client_company.is_active:
+            raise ValidationError(
+                {"client_company": "Select an active client company."}
+            )
+        vacancy_values = {**vacancy_values, "client_company": client_company}
 
     vacancy = Vacancy.objects.create(
         organization=organization,
@@ -75,6 +90,46 @@ def create_vacancy_with_requirements(
         creation_method=VacancyRequirements.CreationMethod.MANUAL,
         created_by=user,
     )
+    return vacancy
+
+
+@transaction.atomic
+def update_vacancy_details(
+    *,
+    vacancy: Vacancy,
+    user: User,
+    values: dict,
+) -> Vacancy:
+    """Update vacancy display metadata without rewriting its source snapshots."""
+    require_organization_object_access(user, vacancy)
+    vacancy = (
+        Vacancy.objects.select_for_update()
+        .select_related("organization", "client_company")
+        .get(pk=vacancy.pk)
+    )
+    if vacancy.deleted_at is not None:
+        raise ValidationError("This vacancy has been deleted from the workspace.")
+
+    client_company = values.get("client_company")
+    if client_company:
+        selected_id = client_company.pk
+        client_company = (
+            ClientCompany.objects.select_for_update()
+            .filter(pk=selected_id, organization_id=vacancy.organization_id)
+            .first()
+        )
+        if client_company is None:
+            raise ValidationError(
+                {"client_company": "The client company is not in this organization."}
+            )
+        if not client_company.is_active and selected_id != vacancy.client_company_id:
+            raise ValidationError(
+                {"client_company": "Select an active client company."}
+            )
+
+    vacancy.title = values["title"]
+    vacancy.client_company = client_company
+    vacancy.save(update_fields=("title", "client_company", "updated_at"))
     return vacancy
 
 

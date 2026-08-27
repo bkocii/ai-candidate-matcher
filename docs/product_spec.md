@@ -43,6 +43,9 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Secure recruiter login.
 - One organization with multiple recruiter accounts.
 - Optional client companies for agency use.
+- Organization-administrator client-company settings with reversible
+  deactivation; recruiters can assign active clients while creating or editing
+  vacancies, and existing inactive-client relationships remain historical.
 - Primary CV-first candidate creation for one or several documents, reviewed
   local identity proposals, shared provenance, exact CSV-to-CV mapping, and
   explicit selected-row creation.
@@ -140,6 +143,10 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - AI usage reporting is tenant-scoped and aggregate. It distinguishes unavailable
   provider metadata from zero, never estimates missing token/cost/latency/retry
   values, and does not expose per-request or private recruitment content.
+- Client companies are optional organization-owned hiring-customer references,
+  not tenants, candidate owners, memberships, or login accounts. Direct
+  employers need none. Only active same-organization clients can be newly
+  assigned to a vacancy; deactivation does not erase an existing relationship.
 
 ## Core structured outputs
 

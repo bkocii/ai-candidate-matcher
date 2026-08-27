@@ -11,6 +11,7 @@
     </div>
     <div class="button-row">
         <a class="secondary-button" href="{% url 'vacancies:vacancy-list' organization.slug %}">All vacancies</a>
+        <a class="secondary-button" href="{% url 'vacancies:vacancy-edit' organization.slug vacancy.pk %}">Edit vacancy</a>
         {% if current_requirements %}
             <a class="primary-button button-link" href="{% url 'matching:candidate-filter-report' organization.slug vacancy.pk %}">Evaluate candidates</a>
             {% if latest_match_run %}

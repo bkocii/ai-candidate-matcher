@@ -118,7 +118,7 @@ use its separate staged individual-review command.
 
 ## CR-003 — In-app client-company management
 
-Status: **Approved for implementation — 2026-08-23**
+Status: **Complete — 2026-08-25**
 
 - Client companies remain optional organization-owned records used by agencies
   to identify the hiring customer for a vacancy. They are not tenants, candidate
@@ -131,6 +131,17 @@ Status: **Approved for implementation — 2026-08-23**
   The vacancy form provides administrators a convenient add-client shortcut.
 - Deactivation prevents selection for new vacancies but preserves historical
   vacancy relationships.
+
+Implementation note: organization administrators now have an application-owned
+**Organization settings → Client companies** list with create, edit,
+deactivate, and reactivate actions. Slugs are generated as stable internal
+identifiers. Recruiters can select only active same-organization clients on new
+vacancies and can edit a vacancy's title/client without rewriting its original
+description or immutable requirements snapshots. An inactive client remains
+available only to retain the exact vacancy already linked to it; it cannot be
+newly assigned. Administrator vacancy forms include a safe return-and-select
+add-client shortcut. Direct-employer vacancies remain client-free, client
+records create no workspace or account, and no model or migration changed.
 
 ## CR-004 — Unified candidate intake and batch profile confirmation
 

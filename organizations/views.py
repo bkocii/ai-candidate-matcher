@@ -1,8 +1,13 @@
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db.models import Count
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 
 from accounts.models import OrganizationMembership
 from audit.lifecycle import (
@@ -18,6 +23,7 @@ from audit.lifecycle import (
 from candidates.models import Candidate
 from organizations.forms import (
     ApplyRetentionForm,
+    ClientCompanyForm,
     OrganizationRetentionPolicyForm,
     RequestOrganizationDeletionForm,
     RetentionExceptionForm,
@@ -27,6 +33,11 @@ from organizations.permissions import (
     can_administer_organization,
     can_recover_organization,
     require_organization_admin,
+)
+from organizations.services import (
+    create_client_company,
+    set_client_company_active,
+    update_client_company,
 )
 from vacancies.models import Vacancy
 
@@ -92,6 +103,148 @@ def organization_dashboard(request, organization_slug: str):
             "can_administer": can_administer_organization(request.user, organization),
         },
     )
+
+
+def _visible_organization(request, organization_slug: str) -> Organization:
+    return get_object_or_404(
+        Organization.objects.visible_to(request.user),
+        slug=organization_slug,
+    )
+
+
+def _safe_return_url(request) -> str:
+    value = (
+        request.POST.get("next")
+        if request.method == "POST"
+        else request.GET.get("next")
+    )
+    if value and url_has_allowed_host_and_scheme(
+        value,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return value
+    return ""
+
+
+def _with_selected_company(url: str, company: ClientCompany) -> str:
+    parts = urlsplit(url)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query["client_company"] = str(company.pk)
+    return urlunsplit(
+        (parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment)
+    )
+
+
+@login_required
+def organization_settings(request, organization_slug: str):
+    organization = _visible_organization(request, organization_slug)
+    require_organization_admin(request.user, organization)
+    return render(
+        request,
+        "organizations/organization_settings.html",
+        {"organization": organization},
+    )
+
+
+@login_required
+def client_company_list(request, organization_slug: str):
+    organization = _visible_organization(request, organization_slug)
+    require_organization_admin(request.user, organization)
+    companies = (
+        ClientCompany.objects.for_organization(organization)
+        .annotate(vacancy_count=Count("vacancies"))
+        .order_by("name", "id")
+    )
+    return render(
+        request,
+        "organizations/client_company_list.html",
+        {"organization": organization, "companies": companies},
+    )
+
+
+@login_required
+def client_company_create(request, organization_slug: str):
+    organization = _visible_organization(request, organization_slug)
+    require_organization_admin(request.user, organization)
+    return_url = _safe_return_url(request)
+    form = ClientCompanyForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        company = create_client_company(
+            organization=organization,
+            user=request.user,
+            values=form.cleaned_data,
+        )
+        messages.success(request, f'Client company "{company.name}" added.')
+        if return_url:
+            return redirect(_with_selected_company(return_url, company))
+        return redirect("organizations:client-company-list", organization.slug)
+    return render(
+        request,
+        "organizations/client_company_form.html",
+        {
+            "organization": organization,
+            "form": form,
+            "return_url": return_url,
+            "heading": "Add client company",
+            "submit_label": "Add client company",
+        },
+    )
+
+
+@login_required
+def client_company_edit(request, organization_slug: str, company_id: int):
+    organization = _visible_organization(request, organization_slug)
+    require_organization_admin(request.user, organization)
+    company = get_object_or_404(
+        ClientCompany.objects.for_organization(organization), pk=company_id
+    )
+    form = ClientCompanyForm(request.POST or None, instance=company)
+    if request.method == "POST" and form.is_valid():
+        company = update_client_company(
+            company=company,
+            user=request.user,
+            values=form.cleaned_data,
+        )
+        messages.success(request, f'Client company "{company.name}" updated.')
+        return redirect("organizations:client-company-list", organization.slug)
+    return render(
+        request,
+        "organizations/client_company_form.html",
+        {
+            "organization": organization,
+            "company": company,
+            "form": form,
+            "heading": "Edit client company",
+            "submit_label": "Save client company",
+        },
+    )
+
+
+@login_required
+@require_POST
+def client_company_status(request, organization_slug: str, company_id: int):
+    organization = _visible_organization(request, organization_slug)
+    require_organization_admin(request.user, organization)
+    company = get_object_or_404(
+        ClientCompany.objects.for_organization(organization), pk=company_id
+    )
+    requested_state = request.POST.get("is_active")
+    if requested_state not in {"true", "false"}:
+        messages.error(request, "Select a valid client-company status.")
+    else:
+        try:
+            company = set_client_company_active(
+                company=company,
+                user=request.user,
+                is_active=requested_state == "true",
+            )
+        except ValidationError as error:
+            messages.error(request, "; ".join(error.messages))
+        else:
+            state = "activated" if company.is_active else "deactivated"
+            messages.success(request, f'Client company "{company.name}" {state}.')
+    return redirect("organizations:client-company-list", organization.slug)
 
 
 @login_required

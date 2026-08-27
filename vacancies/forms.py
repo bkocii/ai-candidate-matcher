@@ -1,7 +1,8 @@
 from django import forms
+from django.db.models import Q
 
 from organizations.models import ClientCompany, Organization
-from vacancies.models import VacancyRequirements
+from vacancies.models import Vacancy, VacancyRequirements
 
 LIST_FIELD_NAMES = (
     "must_have_skills",
@@ -43,6 +44,70 @@ class VacancyCreateForm(forms.Form):
 
     def clean_description(self) -> str:
         return self.cleaned_data["description"].strip()
+
+
+class ClientCompanyChoiceField(forms.ModelChoiceField):
+    def __init__(self, *args, current_inactive_id: int | None = None, **kwargs):
+        self.current_inactive_id = current_inactive_id
+        super().__init__(*args, **kwargs)
+
+    def label_from_instance(self, obj: ClientCompany) -> str:
+        if obj.pk == self.current_inactive_id:
+            return f"{obj.name} (inactive — current vacancy only)"
+        return obj.name
+
+
+class VacancyEditForm(forms.Form):
+    title = forms.CharField(max_length=200)
+    client_company = ClientCompanyChoiceField(
+        queryset=ClientCompany.objects.none(),
+        required=False,
+        empty_label="Direct employer / no client company",
+        help_text=(
+            "Choose an active client. A current inactive client can be retained "
+            "for this historical vacancy only."
+        ),
+    )
+
+    def __init__(
+        self,
+        *args,
+        organization: Organization,
+        vacancy: Vacancy,
+        **kwargs,
+    ) -> None:
+        if kwargs.get("initial") is None:
+            kwargs["initial"] = {
+                "title": vacancy.title,
+                "client_company": vacancy.client_company,
+            }
+        super().__init__(*args, **kwargs)
+        self.organization = organization
+        self.vacancy = vacancy
+        current_inactive_id = (
+            vacancy.client_company_id
+            if vacancy.client_company_id and not vacancy.client_company.is_active
+            else None
+        )
+        queryset = ClientCompany.objects.for_organization(organization).filter(
+            Q(is_active=True) | Q(pk=current_inactive_id)
+        )
+        field = self.fields["client_company"]
+        field.queryset = queryset.order_by("name")
+        field.current_inactive_id = current_inactive_id
+
+    def clean_title(self) -> str:
+        return self.cleaned_data["title"].strip()
+
+    def clean_client_company(self) -> ClientCompany | None:
+        company = self.cleaned_data["client_company"]
+        if (
+            company is not None
+            and not company.is_active
+            and company.pk != self.vacancy.client_company_id
+        ):
+            raise forms.ValidationError("Select an active client company.")
+        return company
 
 
 class VacancyRequirementsForm(forms.Form):
@@ -161,6 +226,13 @@ def vacancy_values_from_form(form: VacancyCreateForm) -> dict:
         "title": form.cleaned_data["title"],
         "client_company": form.cleaned_data["client_company"],
         "description": form.cleaned_data["description"],
+    }
+
+
+def vacancy_edit_values_from_form(form: VacancyEditForm) -> dict:
+    return {
+        "title": form.cleaned_data["title"],
+        "client_company": form.cleaned_data["client_company"],
     }
 
 

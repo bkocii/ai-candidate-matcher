@@ -1,19 +1,25 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from ai_gateway import AIGatewayError
 from matching.models import MatchRun
 from matching.staleness import assess_match_run_staleness
-from organizations.models import Organization
+from organizations.models import ClientCompany, Organization
+from organizations.permissions import can_administer_organization
 from vacancies.ai_extraction import extract_vacancy_requirements
 from vacancies.forms import (
     VacancyCreateForm,
+    VacancyEditForm,
     VacancyRequirementsForm,
     requirements_values_from_form,
+    vacancy_edit_values_from_form,
     vacancy_values_from_form,
 )
 from vacancies.models import Vacancy, VacancyRequirements
@@ -25,6 +31,7 @@ from vacancies.services import (
     create_vacancy_with_requirements,
     delete_vacancy,
     update_requirements_draft,
+    update_vacancy_details,
 )
 
 
@@ -54,6 +61,24 @@ def _visible_requirements(
     )
 
 
+def _requested_active_client(
+    request, organization: Organization
+) -> ClientCompany | None:
+    company_id = request.GET.get("client_company")
+    if not company_id:
+        return None
+    return (
+        ClientCompany.objects.for_organization(organization)
+        .filter(pk=company_id, is_active=True)
+        .first()
+    )
+
+
+def _add_client_url(request, organization: Organization) -> str:
+    path = reverse("organizations:client-company-create", args=[organization.slug])
+    return f"{path}?{urlencode({'next': request.get_full_path()})}"
+
+
 @login_required
 def vacancy_list(request, organization_slug: str):
     organization = _visible_organization(request, organization_slug)
@@ -74,9 +99,11 @@ def vacancy_list(request, organization_slug: str):
 @login_required
 def vacancy_create(request, organization_slug: str):
     organization = _visible_organization(request, organization_slug)
+    selected_client = _requested_active_client(request, organization)
     form = VacancyCreateForm(
         request.POST or None,
         organization=organization,
+        initial={"client_company": selected_client} if selected_client else None,
     )
     if request.method == "POST" and form.is_valid():
         vacancy = create_vacancy_with_requirements(
@@ -99,7 +126,71 @@ def vacancy_create(request, organization_slug: str):
     return render(
         request,
         "vacancies/vacancy_form.html",
-        {"organization": organization, "form": form},
+        {
+            "organization": organization,
+            "form": form,
+            "heading": "Add vacancy",
+            "lede": (
+                "Paste the original job description. The app will preserve it as "
+                "the source for the first recruiter-edited requirements version."
+            ),
+            "submit_label": "Create and review requirements",
+            "cancel_url": reverse("vacancies:vacancy-list", args=[organization.slug]),
+            "can_add_client_company": can_administer_organization(
+                request.user, organization
+            ),
+            "add_client_url": _add_client_url(request, organization),
+        },
+    )
+
+
+@login_required
+def vacancy_edit(request, organization_slug: str, vacancy_id: int):
+    organization = _visible_organization(request, organization_slug)
+    vacancy = _visible_vacancy(organization, vacancy_id)
+    selected_client = _requested_active_client(request, organization)
+    initial = None
+    if selected_client is not None:
+        initial = {"title": vacancy.title, "client_company": selected_client}
+    form = VacancyEditForm(
+        request.POST or None,
+        organization=organization,
+        vacancy=vacancy,
+        initial=initial,
+    )
+    if request.method == "POST" and form.is_valid():
+        try:
+            vacancy = update_vacancy_details(
+                vacancy=vacancy,
+                user=request.user,
+                values=vacancy_edit_values_from_form(form),
+            )
+        except ValidationError as error:
+            form.add_error(None, "; ".join(error.messages))
+        else:
+            messages.success(request, "Vacancy details updated.")
+            return redirect("vacancies:vacancy-detail", organization.slug, vacancy.pk)
+    return render(
+        request,
+        "vacancies/vacancy_form.html",
+        {
+            "organization": organization,
+            "vacancy": vacancy,
+            "form": form,
+            "heading": "Edit vacancy",
+            "lede": (
+                "Update the display title or optional hiring customer. The original "
+                "job-description source and confirmed requirements stay unchanged."
+            ),
+            "submit_label": "Save vacancy",
+            "cancel_url": reverse(
+                "vacancies:vacancy-detail", args=[organization.slug, vacancy.pk]
+            ),
+            "can_add_client_company": can_administer_organization(
+                request.user, organization
+            ),
+            "add_client_url": _add_client_url(request, organization),
+        },
     )
 
 
@@ -138,6 +229,7 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
             "draft": draft,
             "versions": versions,
             "status_transitions": available_vacancy_status_transitions(vacancy),
+            "can_administer": can_administer_organization(request.user, organization),
         },
     )
 

@@ -44,13 +44,13 @@
 </section>
 
 {% if can_administer %}
-<section class="workspace-panel" aria-labelledby="retention-settings-title">
+<section class="workspace-panel" aria-labelledby="organization-settings-title">
     <div>
         <p class="eyebrow">Administrator controls</p>
-        <h2 id="retention-settings-title">Data lifecycle</h2>
+        <h2 id="organization-settings-title">Organization settings</h2>
     </div>
-    <p>Preview retention impact, add exceptions or a legal hold, and manage staged organization deletion.</p>
-    <p><a class="secondary-button button-link" href="{% url 'organizations:retention-dashboard' organization.slug %}">Open retention settings</a></p>
+    <p>Manage optional client companies plus retention, exceptions, legal holds, and staged organization deletion.</p>
+    <p><a class="secondary-button button-link" href="{% url 'organizations:organization-settings' organization.slug %}">Open organization settings</a></p>
 </section>
 {% endif %}
 {% endblock %}

@@ -20,8 +20,9 @@ progress; `DEMO-002` is the next approved roadmap task.
 
 The user has chosen to complete approved functionality corrections before the
 final styling/positioning pass. `DEF-001`, `CR-004`, `CR-005`, and `CR-002` are
-now complete. Remaining approved change items are tracked in
-`docs/change_review.md`; `CR-003` is next in document order.
+now complete, as is `CR-003` in-app client-company management. `CR-001` remains
+an approved managed-SaaS direction that requires separate implementation
+approval.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -414,6 +415,19 @@ tenant graph, and retains only content-free lifecycle evidence and a numeric
 organization tombstone. The daily systemd service runs candidate staging,
 dependency cleanup, and expired-organization purge as explicit commands.
 
+`CR-003` is complete. Organization administrators can manage optional agency
+client companies under **Organization settings → Client companies** without
+Django admin. Create, edit, deactivate, and reactivate actions repeat tenant and
+administrator authorization; stable slugs are generated internally. Recruiters
+can choose active same-organization clients while creating or editing a vacancy,
+while administrators receive a safe add-client return-and-select shortcut. A
+deactivated client cannot be newly assigned but remains attached to historical
+vacancies and can be retained only on the vacancy already linked to it. Vacancy
+editing changes only the display title/client, never the original description or
+requirements source snapshots. Direct-employer vacancies remain supported.
+Client companies remain internal references, not tenants, candidate owners,
+memberships, or accounts. No model or migration was added.
+
 `EVAL-001` is complete. The strict version-controlled
 `eval-001.synthetic-multirole.v1` manifest contains 20 obviously synthetic
 candidates, 3 synthetic vacancies, exact deterministic top-five ranks/scores,
@@ -493,9 +507,8 @@ The next release-roadmap item remains:
 
 `DEMO-002 — Prepare a client-facing README and Upwork Project Catalog positioning.`
 
-However, do not begin it until the user finishes the approved pre-release
-functionality items in `docs/change_review.md`. `CR-003` is the next approved
-item in document order and still requires the user's instruction.
+`CR-001` remains an approved direction only and must not begin without separate
+implementation approval. Otherwise `DEMO-002` is the next release-roadmap item.
 
 ## Required instructions
 
@@ -698,10 +711,31 @@ The focused command is:
 uv run pytest -q tests/test_data_lifecycle.py tests/test_audit_retention.py tests/test_dashboard.py tests/test_organization_permissions.py tests/test_background_jobs.py tests/test_matching_shortlist.py tests/test_outreach_workflow.py
 ```
 
+`CR-003` verification completed on 2026-08-25:
+
+- Focused client-company management, organization access/dashboard, vacancy
+  model/intake, and shortlist-staleness regression set: `95 passed`.
+- Complete `python scripts/check.py` quality gate: `517 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `214`
+  files are formatted; installed dependency compatibility passed.
+- CR-003 adds no migration. The current migration plan is empty and model-to-
+  migration drift is zero.
+- The restricted ZIP installed from `uv.lock` in an empty extraction, applied
+  every existing migration from an empty database, reported an empty follow-up
+  plan and zero drift, and passed the same complete `517`-test quality gate.
+
+The focused command is:
+
+```text
+uv run pytest -q tests/test_client_company_management.py tests/test_organization_permissions.py tests/test_dashboard.py tests/test_vacancy_models.py tests/test_vacancy_intake.py tests/test_matching_staleness.py
+```
+
 ## Immediate next action
 
-Wait for the user's instruction before starting `CR-003`. Preserve `CR-002`,
-`CR-005`, `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation,
-explanation review, production/deployment, minimized usage reporting, durable
-jobs, staged deletion, and separate individually approved candidate-decision and
-outreach actions. Resume `DEMO-002` only when the functionality pass is complete.
+Wait for the user's next instruction. Preserve `CR-003`, `CR-002`, `CR-005`,
+`CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
+review, production/deployment, minimized usage reporting, durable jobs, staged
+deletion, and separate individually approved candidate-decision and outreach
+actions. `CR-001` needs separate implementation approval; otherwise resume
+`DEMO-002`.

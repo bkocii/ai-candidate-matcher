@@ -21,9 +21,9 @@ Status: the user-approved corrective `INTAKE-001` task, `EVAL-001`, and
 remains the next release-roadmap task. The user approved a pre-release
 functionality pass before styling/positioning; `DEF-001` is complete and the
 CV-first `CR-004` workflow, plain-language `CR-005` privacy/source pass, and
-dependency-aware `CR-002` lifecycle controls are complete. The remaining
-approved items are recorded in
-`docs/change_review.md`.
+dependency-aware `CR-002` lifecycle controls and in-app `CR-003` client-company
+management are complete. `CR-001` remains an approved direction requiring
+separate implementation approval.
 
 ## Decisions made
 
@@ -988,6 +988,27 @@ approved items are recorded in
   organization purge, then integrated both after candidate retention staging in
   the daily systemd retention service.
 
+### `CR-003 — In-app client-company management`
+
+- Added administrator-only **Organization settings → Client companies** pages
+  for organization-scoped list, create, edit, deactivate, and reactivate actions.
+- Generated stable per-organization slugs internally so normal administrators do
+  not manage routing identifiers; client companies remain optional hiring-
+  customer references and create no tenant, candidate ownership, membership, or
+  login account.
+- Added vacancy detail editing for title and optional client assignment without
+  rewriting the original description or any immutable requirements source
+  snapshot.
+- Limited new vacancy assignments to active same-organization clients at both
+  form and transactional service boundaries. A vacancy may retain only its exact
+  current inactive client, preserving historical relationships after
+  deactivation.
+- Added a same-origin administrator shortcut from vacancy create/edit forms that
+  safely returns with the newly created active client selected. Recruiters can
+  use existing active clients but cannot administer them.
+- Preserved direct-employer vacancies and existing deletion semantics. No model,
+  AI/toolkit, matching, decision, outreach, or migration change was required.
+
 ## Verification
 
 `PROD-005` verification completed on 2026-08-15:
@@ -1125,6 +1146,20 @@ approved items are recorded in
   every existing migration; the follow-up plan is empty and model-to-migration
   drift is zero.
 
+`CR-003` verification completed on 2026-08-25:
+
+- Focused client-company management, organization access/dashboard, vacancy
+  model/intake, and shortlist-staleness regression set: `95 passed`.
+- Complete `python scripts/check.py` quality gate: `517 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `214`
+  files are formatted; installed dependency compatibility passed.
+- CR-003 adds no migration. The current migration plan is empty and model-to-
+  migration drift is zero.
+- The restricted ZIP installed from `uv.lock` in an empty extraction, applied
+  every existing migration from an empty database, reported an empty follow-up
+  plan and zero drift, and passed the same complete `517`-test quality gate.
+
 ## Not implemented
 
 Outreach generation, immutable recruiter editing, exact final approval, manual
@@ -1171,8 +1206,7 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`CR-003 — In-app client-company management` is the next approved change-review
-task in document order. `CR-001` remains an approved direction that needs its own
-implementation approval. `DEMO-002 — Prepare a client-facing README and Upwork
-Project Catalog positioning` remains pending until the functionality/styling
-pass is complete.
+`DEMO-002 — Prepare a client-facing README and Upwork Project Catalog
+positioning` is the next release-roadmap task. `CR-001` remains an approved
+managed-SaaS direction that needs its own implementation approval before it can
+replace that roadmap order.

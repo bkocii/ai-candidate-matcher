@@ -29,7 +29,10 @@ safe text extraction. Organization-owned vacancies and immutable, versioned
 recruiter-confirmed requirements snapshots are available. Recruiters can create
 vacancies from pasted descriptions, select an optional client company, manually
 edit structured requirements, explicitly confirm them, and create immutable
-numbered correction versions. Confirmed vacancies can then be opened, paused,
+numbered correction versions. Organization administrators manage optional client
+companies in the normal workspace; recruiters can edit a vacancy's title/client,
+inactive clients cannot be newly assigned, and historical links remain intact.
+Confirmed vacancies can then be opened, paused,
 closed, and reopened through recruiter-facing lifecycle controls. The matching
 foundation now includes an organization-owned normalized skill vocabulary,
 candidate skill evidence, version-specific must-have/nice-to-have skill links,
@@ -218,10 +221,11 @@ uv run python manage.py run_background_worker --burst
 ```
 
 Open `http://127.0.0.1:8000/admin/` to create organizations, memberships,
-candidates, source/consent records, document metadata, vacancies, and versioned
-vacancy requirements. A Django superuser does not bypass organization membership
-on the normal dashboard. To test `/`, create an active organization membership
-for that same user in Django admin.
+and the first organization administrator. A Django superuser does not bypass
+organization membership on the normal dashboard. To test `/`, create an active
+administrator membership for that same user in Django admin. Client companies
+are then managed under **Organization settings → Client companies** in the normal
+application.
 
 After signing in to the normal application, open the organization workspace and
 select **Candidates**. You can create a candidate manually or download the CSV
@@ -244,7 +248,10 @@ shortlist or matching input. Extracted CV text, contact details, prompts, and ra
 provider output are never shown on the review page.
 
 Open **Vacancies** to paste a job description. Every new vacancy receives an
-editable requirements version 1. Recruiters enter list values one per line, save
+editable requirements version 1. Recruiters can select an active optional client
+or leave the vacancy in direct-employer mode. **Edit vacancy** changes only the
+display title/client and does not rewrite the original description or requirements
+source snapshots. Recruiters enter list values one per line, save
 the draft, add executable typed hard-constraint rules in the same editor, and
 explicitly confirm it. Operators and missing-fact behavior are fixed by rule type;
 recruiters cannot turn unknown evidence into automatic rejection. Confirmed
