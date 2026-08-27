@@ -53,7 +53,9 @@ gates by themselves.
 
 ### accounts
 
-Authentication, organization membership, and recruiter/admin roles.
+Authentication, explicit platform-owner capability, organization membership,
+and recruiter/admin roles. Platform ownership is separate from Django staff,
+superuser, and tenant membership state.
 
 ### organizations
 
@@ -208,6 +210,13 @@ policy version, and time. It never copies domain content. An immutable
 `OrganizationTombstone` retains only the former numeric organization ID, policy
 version, request time, and purge time.
 
+`CR-001` adds an immutable `TenantManagementEvent` ledger for organization
+creation and membership create/activate/deactivate actions. It stores only the
+organization ID snapshot, optional subject-user ID snapshot, controlled role,
+actor, action, schema version, and time. It has no organization foreign key, so
+the content-free evidence can survive a later tenant purge without retaining an
+organization name, username, email, password, or recruitment content.
+
 ### Dependency-aware data lifecycle
 
 - Each organization has a versioned retention policy with conservative defaults:
@@ -259,14 +268,18 @@ migration.
 
 - `accounts.User` is the swappable Django user model. It keeps Django's standard
   username-based authentication during the foundation sprint.
+- `accounts.User.is_platform_owner` is an explicit managed-SaaS capability. It
+  allows organization provisioning, administrator-membership management, and
+  staged tenant lifecycle actions but never bypasses organization querysets or
+  object authorization.
 - `organizations.Organization` is the ownership and data-isolation boundary.
 - `accounts.OrganizationMembership` links a user to an organization as either an
   `admin` or `recruiter` and can be deactivated without deleting its history.
 - An organization `admin` role does not grant Django `is_staff` or `is_superuser`
   status. Django administration access is managed separately.
-- The schema allows a user to belong to more than one organization so isolation
-  can be tested and the model does not require a destructive redesign later.
-  The MVP deployment and user interface still operate for one organization.
+- A user may belong to several organizations. The dashboard presents an explicit
+  workspace choice and shared navigation exposes a switch action only when more
+  than one active membership exists.
 - Organization-aware query helpers and object authorization are introduced in
   `FOUND-003`; views must use them rather than infer access from a role name.
 - `organizations.ClientCompany` belongs to exactly one organization. Creating no
@@ -284,6 +297,13 @@ migration.
 - Active user, organization, and membership state are all required for
   organization-scoped application access. Django staff or superuser status does
   not bypass this rule outside the separate Django admin surface.
+- Platform owners create a tenant and first administrator atomically. They may
+  add, deactivate, or reactivate administrator memberships, but at least one
+  active administrator must remain. Organization administrators create/link and
+  activate/deactivate recruiter memberships only. Existing accounts are linked
+  without changing their password or global active state; membership removal
+  affects only one workspace. Authenticated users can replace temporary passwords
+  through Django's session-preserving password-change workflow.
 - Organization-owned querysets expose `for_organization()` for an explicit
   tenant boundary and `visible_to()` for membership-filtered application reads.
 - Authorization helpers provide ordinary-member, organization-administrator,
@@ -298,6 +318,10 @@ migration.
   CSRF-protected POST action rather than a state-changing link.
 - The dashboard entry point redirects users with one active membership directly
   to that organization and asks users with several memberships to select one.
+- A platform owner with no tenant membership is routed to the separate platform
+  organization list rather than a tenant dashboard. Platform pages use only
+  organization/membership metadata and never pass a tenant context into shared
+  candidate navigation.
 - Users without an active membership receive a safe access message that does
   not disclose organization names.
 - Organization dashboard URLs resolve through `Organization.objects.visible_to()`;
@@ -329,6 +353,8 @@ migration.
 - `OutreachDraftAction`
 - `AIUsageEvent`
 - `AuditEvent`
+- `DataLifecycleEvent`
+- `TenantManagementEvent`
 
 ### Candidate intake records
 
@@ -1007,6 +1033,10 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
 - Organization and vacancy integration tests cover administrator-only client
   management, safe add-client return URLs, active-only new assignments,
   historical inactive relationships, and direct-employer mode.
+- Managed-SaaS tests cover explicit platform capability, technical-superuser
+  separation, atomic first-admin provisioning, tenant-content denial, recruiter/
+  administrator management boundaries, shared-account safety, workspace switching,
+  last-admin protection, lifecycle actions, and immutable content-free audit.
 - A separate synthetic smoke test lives outside ordinary pytest `testpaths`,
   requires `RUN_LIVE_AI_SMOKE=1`, and may make one low-cost billable API request.
 - An anonymized/synthetic benchmark set measures ranking stability and explanation quality.

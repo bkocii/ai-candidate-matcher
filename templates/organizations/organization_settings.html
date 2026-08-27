@@ -7,12 +7,18 @@
     <div>
         <p class="eyebrow">Administrator controls</p>
         <h1 id="settings-title">Organization settings</h1>
-        <p class="lede">Manage agency client references and data lifecycle controls for {{ organization.name }}.</p>
+        <p class="lede">Manage recruiters, agency client references, and data lifecycle controls for {{ organization.name }}.</p>
     </div>
     <a class="secondary-button" href="{% url 'organizations:organization-dashboard' organization.slug %}">Back to dashboard</a>
 </section>
 
 <section class="detail-grid" aria-label="Organization settings sections">
+    <article class="detail-panel">
+        <p class="eyebrow">Workspace access</p>
+        <h2>Team members</h2>
+        <p>Create or add recruiters and remove only their access to this organization. Platform owners manage administrator memberships separately.</p>
+        <p><a class="primary-button button-link" href="{% url 'organizations:member-list' organization.slug %}">Manage team</a></p>
+    </article>
     <article class="detail-panel">
         <p class="eyebrow">Agency workspace</p>
         <h2>Client companies</h2>

@@ -5,6 +5,7 @@ from audit.models import (
     AuditEvent,
     DataLifecycleEvent,
     OrganizationTombstone,
+    TenantManagementEvent,
 )
 
 
@@ -119,6 +120,29 @@ class OrganizationTombstoneAdmin(admin.ModelAdmin):
         "purged_at",
     )
     readonly_fields = tuple(field.name for field in OrganizationTombstone._meta.fields)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(TenantManagementEvent)
+class TenantManagementEventAdmin(admin.ModelAdmin):
+    list_display = (
+        "action",
+        "organization_id_snapshot",
+        "subject_user_id_snapshot",
+        "membership_role",
+        "actor",
+        "occurred_at",
+    )
+    list_filter = ("action", "membership_role")
+    readonly_fields = tuple(field.name for field in TenantManagementEvent._meta.fields)
 
     def has_add_permission(self, request):
         return False

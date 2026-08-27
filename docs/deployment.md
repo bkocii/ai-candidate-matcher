@@ -121,6 +121,14 @@ leases are reclaimable and exact saved results are reused. Profile drafts still
 require explicit evidence review and confirmation, candidate decisions remain
 individual, and outreach remains a separate approved action.
 
+For the one-time managed-SaaS bootstrap, a technical Django administrator creates
+one ordinary active user and explicitly enables **Platform owner**. Keep Django
+staff/superuser privileges separate unless that person also performs technical
+operations. The platform owner then signs in to the normal application to create
+organizations and first administrators. Platform ownership alone does not grant
+tenant membership or access to candidate, CV, vacancy, assessment, decision, or
+outreach content. There is no public signup or billing workflow.
+
 The daily timer runs three explicit services in order:
 
 ```bash

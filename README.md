@@ -15,6 +15,15 @@ python-ai-toolkit[django]==1.0.0
 Sprint 0 through Sprint 6, `EVAL-001` through `EVAL-003`, and `DEMO-001` are
 complete. Evaluation and showcase work continues with `DEMO-002`.
 
+The managed-SaaS workflow separates platform ownership from Django technical
+administration and tenant membership. Platform owners provision organizations
+and first administrators, manage administrator memberships, and use staged
+organization suspension/recovery without receiving recruitment-content access.
+Organization administrators manage recruiter memberships in the normal app.
+Existing users can belong to several isolated workspaces and switch explicitly;
+deactivating one membership leaves their account and other workspaces unchanged.
+Public signup, invitation delivery, subscriptions, and billing are not included.
+
 The repository now has a Django 5.2 LTS foundation, custom user model,
 organizations, organization memberships, administrator/recruiter roles,
 optional client companies, organization-scoped queryset and authorization
@@ -220,12 +229,14 @@ currently queued targets and exits; omit it for a continuous worker:
 uv run python manage.py run_background_worker --burst
 ```
 
-Open `http://127.0.0.1:8000/admin/` to create organizations, memberships,
-and the first organization administrator. A Django superuser does not bypass
-organization membership on the normal dashboard. To test `/`, create an active
-administrator membership for that same user in Django admin. Client companies
-are then managed under **Organization settings → Client companies** in the normal
-application.
+Open `http://127.0.0.1:8000/admin/` and create one ordinary user with **Platform
+owner** enabled. This is the technical bootstrap step; a Django superuser alone
+is not a platform owner and never bypasses tenant membership. Sign in as the
+platform owner at `/`, select **Platform → Create organization**, and create the
+tenant plus its first administrator. Sign in as that administrator to manage
+recruiters under **Organization settings → Team members** and optional clients
+under **Organization settings → Client companies**. New managed users can replace
+their temporary password through **Change password** in normal navigation.
 
 After signing in to the normal application, open the organization workspace and
 select **Candidates**. You can create a candidate manually or download the CSV

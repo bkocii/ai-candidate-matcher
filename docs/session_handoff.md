@@ -20,9 +20,9 @@ progress; `DEMO-002` is the next approved roadmap task.
 
 The user has chosen to complete approved functionality corrections before the
 final styling/positioning pass. `DEF-001`, `CR-004`, `CR-005`, and `CR-002` are
-now complete, as is `CR-003` in-app client-company management. `CR-001` remains
-an approved managed-SaaS direction that requires separate implementation
-approval.
+now complete, as is `CR-003` in-app client-company management. `CR-001` managed
+multi-organization provisioning and membership administration is also complete.
+`DEMO-002` remains next.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -428,6 +428,27 @@ requirements source snapshots. Direct-employer vacancies remain supported.
 Client companies remain internal references, not tenants, candidate owners,
 memberships, or accounts. No model or migration was added.
 
+`CR-001` is complete. `User.is_platform_owner` is an explicit capability separate
+from Django staff, superuser, and organization membership. Platform owners use a
+content-minimized application surface to create an organization and first
+administrator atomically, add or link further administrator accounts, manage
+administrator membership status, and invoke the existing staged tenant
+suspension/recovery workflow. Platform ownership alone still receives `404` from
+candidate and other tenant-content routes.
+
+Organization administrators manage recruiter memberships under **Organization
+settings → Team members**. New accounts require a validated temporary password;
+an existing username is linked without changing its password, identity fields,
+global active state, or other memberships. Removing access deactivates only the
+one membership. A normal authenticated account-security page lets new users
+replace the temporary password. At least one organization administrator must remain active, and
+users with several active memberships receive a workspace switcher. Immutable
+content-free tenant-management events store only numeric organization/user IDs,
+controlled role/action, actor, schema version, and time. Public signup,
+invitation/email delivery, billing, and automatic platform-owner tenant access
+remain unavailable. CR-001 adds `accounts.0002_user_is_platform_owner` and
+`audit.0005_tenantmanagementevent` only.
+
 `EVAL-001` is complete. The strict version-controlled
 `eval-001.synthetic-multirole.v1` manifest contains 20 obviously synthetic
 candidates, 3 synthetic vacancies, exact deterministic top-five ranks/scores,
@@ -503,12 +524,11 @@ version with actor and timestamp, and exceptions stay individual. Final
 approve/reject/revisit decisions remain individual recruiter actions with notes,
 actor, and timestamp, and outreach remains separate.
 
-The next release-roadmap item remains:
+The next release-roadmap item is:
 
 `DEMO-002 — Prepare a client-facing README and Upwork Project Catalog positioning.`
 
-`CR-001` remains an approved direction only and must not begin without separate
-implementation approval. Otherwise `DEMO-002` is the next release-roadmap item.
+The pre-release functionality pass through `CR-001` is complete.
 
 ## Required instructions
 
@@ -731,11 +751,26 @@ The focused command is:
 uv run pytest -q tests/test_client_company_management.py tests/test_organization_permissions.py tests/test_dashboard.py tests/test_vacancy_models.py tests/test_vacancy_intake.py tests/test_matching_staleness.py
 ```
 
+`CR-001` verification completed on 2026-08-27:
+
+- Focused managed-SaaS and affected tenant/lifecycle regression set: `140 passed`.
+- Complete quality gate: `534 passed`; Django system/deploy checks, static
+  collection, migration drift, Ruff over `218` files, and dependency
+  compatibility all passed.
+- Adds `accounts.0002_user_is_platform_owner` and
+  `audit.0005_tenantmanagementevent`; both apply successfully with an empty
+  follow-up migration plan.
+
+The focused command is:
+
+```text
+uv run pytest -q tests/test_managed_saas.py tests/test_identity_models.py tests/test_organization_permissions.py tests/test_dashboard.py tests/test_client_company_management.py tests/test_data_lifecycle.py tests/test_candidate_intake.py tests/test_candidate_bulk_intake.py tests/test_candidate_unified_intake.py tests/test_vacancy_intake.py tests/test_audit_retention.py
+```
+
 ## Immediate next action
 
-Wait for the user's next instruction. Preserve `CR-003`, `CR-002`, `CR-005`,
+Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
 review, production/deployment, minimized usage reporting, durable jobs, staged
 deletion, and separate individually approved candidate-decision and outreach
-actions. `CR-001` needs separate implementation approval; otherwise resume
-`DEMO-002`.
+actions. Resume `DEMO-002` unless another explicitly approved change intervenes.

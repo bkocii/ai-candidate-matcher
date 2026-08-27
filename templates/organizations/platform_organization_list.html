@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Platform organizations | AI Candidate Matcher{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading" aria-labelledby="platform-title">
+    <div><p class="eyebrow">Platform management</p><h1 id="platform-title">Organizations</h1><p class="lede">Provision and manage tenant access without opening candidate, vacancy, assessment, or outreach content.</p></div>
+    <a class="primary-button button-link" href="{% url 'organizations:platform-organization-create' %}">Create organization</a>
+</section>
+{% if managed_organizations %}
+<div class="table-wrap"><table><thead><tr><th>Organization</th><th>Status</th><th>Active administrators</th><th>Memberships</th><th>Action</th></tr></thead><tbody>
+{% for item in managed_organizations %}<tr><th scope="row">{{ item.name }}<br><small>{{ item.slug }}</small></th><td><span class="status-pill {% if item.is_active %}status-active{% endif %}">{% if item.is_active %}Active{% else %}Suspended{% endif %}</span></td><td>{{ item.administrator_count }}</td><td>{{ item.membership_count }}</td><td><a class="secondary-button" href="{% url 'organizations:platform-organization-detail' item.pk %}">Manage</a></td></tr>{% endfor %}
+</tbody></table></div>
+{% else %}<div class="empty-state"><h2>No organizations</h2><p>Create the first managed organization and its administrator.</p></div>{% endif %}
+{% endblock %}

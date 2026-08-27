@@ -25,12 +25,19 @@ Status: Complete.
   management plus active-client selection on vacancy creation/editing while
   preserving historical relationships. **Complete — 2026-08-25 as an approved
   pre-release workflow correction.**
+- `CR-001` Add managed multi-organization provisioning, explicit platform-owner
+  administration, organization-admin recruiter management, workspace switching,
+  and content-free tenant-management auditing without granting platform owners
+  tenant content access. **Complete — 2026-08-27 as an approved pre-release
+  SaaS workflow correction.**
 
 Sprint acceptance: two organizations in tests cannot access each other's
-objects, organization administrators can manage optional agency clients without
-Django admin, inactive clients cannot be newly assigned while historical vacancy
-links remain intact, project checks pass, and the published toolkit package is
-installed without importing local toolkit code.
+objects; platform owners can provision tenants and administrators without
+receiving recruitment-data access; organization administrators can manage
+recruiters and optional agency clients without Django admin; inactive memberships
+and clients cannot be newly used while historical records remain intact; project
+checks pass; and the published toolkit package is installed without importing
+local toolkit code.
 
 ## Sprint 2 — Candidate and vacancy intake
 

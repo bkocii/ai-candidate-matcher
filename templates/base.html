@@ -25,12 +25,19 @@
                         <a href="{% url 'operations:job-list' organization.slug %}">Jobs</a>
                         <a href="{% url 'audit:ai-usage-report' organization.slug %}">AI usage</a>
                         <a href="{% url 'audit:privacy-dashboard' organization.slug %}">Privacy &amp; audit</a>
+                        {% if workspace_count > 1 %}
+                            <a href="{% url 'organizations:dashboard' %}">Switch workspace</a>
+                        {% endif %}
                     {% else %}
                         <a href="{% url 'organizations:dashboard' %}">Organizations</a>
+                    {% endif %}
+                    {% if user.is_platform_owner %}
+                        <a href="{% url 'organizations:platform-organization-list' %}">Platform</a>
                     {% endif %}
                     {% if user.is_staff %}
                         <a href="{% url 'admin:index' %}">Django admin</a>
                     {% endif %}
+                    <a href="{% url 'accounts:password-change' %}">Change password</a>
                     <form method="post" action="{% url 'accounts:logout' %}">
                         {% csrf_token %}
                         <button class="link-button" type="submit">Sign out</button>

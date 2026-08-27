@@ -22,15 +22,21 @@ remains the next release-roadmap task. The user approved a pre-release
 functionality pass before styling/positioning; `DEF-001` is complete and the
 CV-first `CR-004` workflow, plain-language `CR-005` privacy/source pass, and
 dependency-aware `CR-002` lifecycle controls and in-app `CR-003` client-company
-management are complete. `CR-001` remains an approved direction requiring
-separate implementation approval.
+management are complete. `CR-001` managed multi-organization provisioning and
+membership administration is also complete. `DEMO-002` remains next.
 
 ## Decisions made
 
 - The first product is recruiter-side candidate search, not job search for candidates.
 - The MVP searches candidates supplied or controlled by the organization.
 - The product does not scrape LinkedIn or arbitrary websites.
-- The MVP supports one organization per deployment and multiple recruiter accounts.
+- The managed deployment supports several strictly isolated organizations and
+  multiple recruiter accounts per organization.
+- Platform ownership is separate from Django staff/superuser state and tenant
+  membership; it never grants implicit recruitment-data access.
+- Platform owners provision organizations and first administrators. Organization
+  administrators manage recruiters, and shared accounts can switch active
+  workspaces without one membership change affecting another.
 - Agency deployments can associate vacancies with optional client companies.
 - Deterministic filtering precedes AI assessment.
 - Deterministic skill matching uses a small controlled alias policy, preserves
@@ -1009,6 +1015,31 @@ separate implementation approval.
 - Preserved direct-employer vacancies and existing deletion semantics. No model,
   AI/toolkit, matching, decision, outreach, or migration change was required.
 
+### `CR-001 — Managed multi-organization SaaS`
+
+- Added explicit `User.is_platform_owner` capability independent of Django staff,
+  superuser, and organization membership state.
+- Added a separate platform organization list/detail workflow that atomically
+  creates an organization and first administrator, adds or links further
+  administrators, and never renders tenant recruitment content.
+- Allowed platform owners to use the existing staged suspension/recovery lifecycle
+  without making them organization members or bypassing candidate authorization.
+- Added organization-administrator **Team members** screens to create/link,
+  deactivate, and reactivate recruiter memberships only. The shared user account
+  and any other organization memberships remain unchanged.
+- Required a temporary password only for new managed accounts. Adding an existing
+  username preserves its password and global active state.
+- Added a normal authenticated password-change page so a managed user can replace
+  the temporary password without technical administration.
+- Added explicit workspace switching for users with several active memberships,
+  plus last-active-administrator protection.
+- Added immutable content-free tenant-management events containing only numeric
+  organization/user snapshots, controlled role/action, actor, schema version,
+  and timestamp.
+- Added `accounts.0002_user_is_platform_owner` and
+  `audit.0005_tenantmanagementevent`. No candidate, vacancy, matching, outreach,
+  operations, or AI/toolkit schema changed.
+
 ## Verification
 
 `PROD-005` verification completed on 2026-08-15:
@@ -1160,6 +1191,19 @@ separate implementation approval.
   every existing migration from an empty database, reported an empty follow-up
   plan and zero drift, and passed the same complete `517`-test quality gate.
 
+`CR-001` verification completed on 2026-08-27:
+
+- Focused managed-SaaS, identity, organization-permission/dashboard, client,
+  lifecycle, intake, vacancy, and audit regression set: `140 passed`.
+- Complete `python scripts/check.py` quality gate: `534 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `218`
+  files are formatted; installed dependency compatibility passed.
+- Adds `accounts.0002_user_is_platform_owner` and
+  `audit.0005_tenantmanagementevent`; both are additive and retain the previous
+  tenant foreign-key boundaries. Both apply successfully, and the follow-up
+  migration plan is empty.
+
 ## Not implemented
 
 Outreach generation, immutable recruiter editing, exact final approval, manual
@@ -1207,6 +1251,5 @@ rule corrections require a copied draft version.
 ## Next task
 
 `DEMO-002 — Prepare a client-facing README and Upwork Project Catalog
-positioning` is the next release-roadmap task. `CR-001` remains an approved
-managed-SaaS direction that needs its own implementation approval before it can
-replace that roadmap order.
+positioning` is the next release-roadmap task after the completed pre-release
+functionality pass through `CR-001`.

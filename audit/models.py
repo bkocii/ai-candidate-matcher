@@ -494,3 +494,80 @@ class OrganizationTombstone(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("Organization tombstones are immutable.")
+
+
+class TenantManagementEventQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise ValidationError("Tenant management events are immutable.")
+
+    def delete(self):
+        raise ValidationError("Tenant management events are immutable.")
+
+
+class TenantManagementEvent(models.Model):
+    """Content-free audit evidence for managed tenant and membership changes."""
+
+    class Action(models.TextChoices):
+        ORGANIZATION_CREATED = "organization_created", "Organization created"
+        MEMBERSHIP_CREATED = "membership_created", "Membership created"
+        MEMBERSHIP_ACTIVATED = "membership_activated", "Membership activated"
+        MEMBERSHIP_DEACTIVATED = "membership_deactivated", "Membership deactivated"
+
+    SCHEMA_VERSION = "tenant_management_event.v1"
+
+    organization_id_snapshot = models.PositiveBigIntegerField()
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tenant_management_events",
+    )
+    action = models.CharField(max_length=40, choices=Action.choices)
+    subject_user_id_snapshot = models.PositiveBigIntegerField(null=True, blank=True)
+    membership_role = models.CharField(
+        max_length=20,
+        choices=(
+            ("", "Not applicable"),
+            ("admin", "Administrator"),
+            ("recruiter", "Recruiter"),
+        ),
+        blank=True,
+    )
+    schema_version = models.CharField(max_length=50, default=SCHEMA_VERSION)
+    occurred_at = models.DateTimeField(auto_now_add=True)
+
+    objects = TenantManagementEventQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-occurred_at", "-id")
+        indexes = [
+            models.Index(
+                fields=("organization_id_snapshot", "occurred_at"),
+                name="tenant_event_org_time_idx",
+            )
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        is_membership_action = self.action in {
+            self.Action.MEMBERSHIP_CREATED,
+            self.Action.MEMBERSHIP_ACTIVATED,
+            self.Action.MEMBERSHIP_DEACTIVATED,
+        }
+        has_membership_subject = bool(
+            self.subject_user_id_snapshot and self.membership_role
+        )
+        if is_membership_action != has_membership_subject:
+            raise ValidationError(
+                "Membership events require a subject user and membership role."
+            )
+
+    def save(self, *args, **kwargs) -> None:
+        if self.pk:
+            raise ValidationError("Tenant management events are immutable.")
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Tenant management events are immutable.")

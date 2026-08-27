@@ -18,7 +18,7 @@ remain the separately approved `CR-002` scope rather than a future-backlog item.
 - Authorized ATS integrations such as customer-approved Greenhouse or Lever access.
 - Approved external candidate-source connectors.
 - Email integration with exact-recipient verification and explicit send approval.
-- Multi-tenant hosted SaaS architecture.
+- Public self-service signup, organization onboarding, and invitation delivery.
 - Subscription billing.
 - Candidate self-service consent, correction, and deletion portal.
 - Calendar and interview scheduling.

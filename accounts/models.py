@@ -4,7 +4,15 @@ from django.db import models
 
 
 class User(AbstractUser):
-    """Application user, kept deliberately small for the foundation sprint."""
+    """Application user with an explicit managed-SaaS operator capability."""
+
+    is_platform_owner = models.BooleanField(
+        default=False,
+        help_text=(
+            "Can provision organizations and manage their administrator "
+            "memberships without receiving organization data access."
+        ),
+    )
 
 
 class OrganizationMembership(models.Model):

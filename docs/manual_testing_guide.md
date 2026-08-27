@@ -2,7 +2,7 @@
 
 This guide verifies the application from the Django foundation through
 `PROD-005`, `INTAKE-001`, `EVAL-001` through `EVAL-003`, `DEMO-001`,
-`DEF-001`, and `CR-002` through `CR-005`. Use only the
+`DEF-001`, and `CR-001` through `CR-005`. Use only the
 synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
@@ -33,7 +33,7 @@ unguarded `Copy-Item .env.example .env` against a configured project. A blank
 `DJANGO_SECRET_KEY=` is accepted only in development and uses the local
 development fallback. Production configuration still requires a real secret.
 
-## 2. Create the first test administrator
+## 2. Bootstrap a technical operator and platform owner
 
 ```powershell
 uv run python manage.py createsuperuser
@@ -42,29 +42,52 @@ uv run python manage.py runserver
 
 Open `http://127.0.0.1:8000/admin/` and sign in.
 
-Create these records in order:
+Create one ordinary user under **Users**:
 
-1. **Organization**
-   - Name: `Northstar Recruitment Test`
-   - Slug: `northstar-test`
-   - Active: checked
-2. **Organization membership**
-   - User: the superuser you just created
-   - Organization: `Northstar Recruitment Test`
-   - Role: `Administrator`
-   - Active: checked
-Why the membership is necessary: Django superuser status grants access to the
-separate `/admin/` surface, but it deliberately does not bypass normal
-organization isolation.
+- Username: `platform-owner-test`
+- Password: use a strong disposable local-test password
+- Active: checked
+- Platform owner: checked
+- Staff status and superuser status: unchecked
+
+The Django superuser remains a technical operator. It is not automatically a
+platform owner and still cannot enter an organization workspace without a
+separate membership.
+
+Sign out of Django admin and sign in to the normal application as
+`platform-owner-test`. Confirm `/` opens **Platform → Organizations**, not a
+candidate workspace.
+
+Select **Create organization** and enter:
+
+- Organization name: `Northstar Recruitment Test`
+- Username: `northstar-admin`
+- Email: `northstar-admin@example.test`
+- First name: `Northstar`
+- Last name: `Admin`
+- Temporary password: use a strong disposable test password and confirm it
+
+Expected result:
+
+- The organization and its first administrator are created together.
+- The platform detail page shows lifecycle and administrator metadata only.
+- It does not show candidate, CV, vacancy, assessment, decision, or outreach
+  content and does not provide tenant-workspace navigation.
+- The platform owner has no organization membership unless one is separately
+  and deliberately added.
+
+Sign out and sign in as `northstar-admin` using the temporary password. Select
+**Change password**, replace it with another strong disposable password, and
+confirm the current session remains signed in.
 
 ## 3. Test authentication and the organization dashboard
 
 1. Open `http://127.0.0.1:8000/`.
-2. If prompted, sign in with the superuser.
+2. If prompted, sign in with `northstar-admin`.
 3. Confirm that the single active organization opens automatically.
 4. Confirm that the navigation contains **Dashboard**, **Candidates**,
    **Vacancies**, **Reviews**, **Jobs**, **AI usage**, **Privacy & audit**,
-   **Django admin**, and **Sign out**.
+   and **Sign out**. It must not show **Django admin** or **Platform**.
 5. Confirm the dashboard initially shows zero active candidates, zero active
    client companies, and zero open vacancies.
 6. Open **Organization settings → Client companies** and select **Add client
@@ -73,6 +96,37 @@ organization isolation.
 7. Confirm the client is active, the vacancy count is zero, and the dashboard's
    active-client count becomes one.
 8. Select **Sign out** and confirm you return to the login page.
+
+### Managed team and workspace switching
+
+1. Sign in again as `northstar-admin`.
+2. Open **Organization settings → Team members → Add recruiter**.
+3. Create `shared-recruiter` with an email and strong temporary password.
+4. Confirm the recruiter appears as active. Remove access, then confirm that
+   account can no longer enter Northstar while the global user remains active.
+5. Restore the membership.
+6. Sign in as `platform-owner-test` and create a second organization named
+   `Second Agency Test`, with a different first administrator.
+7. Sign in as the second administrator and add the existing username
+   `shared-recruiter`; leave email, names, and password fields blank.
+8. Sign in as `shared-recruiter`. Confirm the workspace chooser lists both
+   organizations and **Switch workspace** appears in tenant navigation.
+9. Remove the recruiter from only one organization and confirm the other
+   workspace remains available with the same password.
+10. As platform owner, add a second administrator to Northstar. Confirm the
+    last active administrator cannot be removed, but either administrator can be
+    removed while the other remains active.
+11. Confirm a technical Django superuser without **Platform owner** cannot open
+    `/platform/organizations/`.
+
+Platform lifecycle check:
+
+1. As platform owner, open the disposable second organization.
+2. Select **Suspend and schedule deletion**, enter the exact confirmation, and
+   confirm all tenant access is immediately blocked.
+3. Select **Recover organization** before the displayed deadline and confirm
+   membership-based access returns.
+4. Do not let the scheduled purge run against any organization you need.
 
 Expected security behavior:
 
@@ -1789,6 +1843,17 @@ The current milestone is behaving correctly when all of these are true:
   supervised web/worker/retention processes, and backup/restore guidance are
   available without exposing private recruitment content.
 - Cross-organization URLs do not disclose data.
+- Platform ownership is explicit and separate from Django technical privileges
+  and tenant memberships. Platform pages expose organization/membership metadata
+  only; platform owners cannot open tenant content without an active membership.
+- Platform owners can provision an organization and first administrator, manage
+  administrator access, suspend/recover tenants, and cannot deactivate the last
+  active administrator.
+- Organization administrators can create/link and deactivate/reactivate
+  recruiters only. Membership removal affects one workspace, existing-account
+  passwords are preserved, and multi-organization users can switch workspaces.
+- Organization creation and membership changes produce immutable content-free
+  tenant-management events without names, emails, passwords, or recruitment data.
 - The ordinary test suite and deterministic browser workflow require no AI key
   or live AI request; only explicit vacancy extraction, candidate extraction,
   match-assessment, or outreach-generation actions do.

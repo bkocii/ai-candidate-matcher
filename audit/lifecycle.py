@@ -26,7 +26,11 @@ from organizations.models import (
     OrganizationRetentionPolicy,
     RetentionException,
 )
-from organizations.permissions import require_organization_admin
+from organizations.permissions import (
+    is_platform_owner,
+    require_organization_admin,
+    require_organization_lifecycle_manager,
+)
 from outreach.models import OutreachDraft
 
 
@@ -466,8 +470,9 @@ def apply_retention_plan(
 
 
 def _has_inactive_admin_membership(user: User, organization: Organization) -> bool:
-    return bool(user.is_authenticated and user.is_active) and (
-        OrganizationMembership.objects.filter(
+    return is_platform_owner(user) or (
+        bool(user.is_authenticated and user.is_active)
+        and OrganizationMembership.objects.filter(
             user=user,
             organization=organization,
             role=OrganizationMembership.Role.ADMIN,
@@ -480,7 +485,7 @@ def _has_inactive_admin_membership(user: User, organization: Organization) -> bo
 def request_organization_deletion(
     *, organization: Organization, user: User
 ) -> Organization:
-    require_organization_admin(user, organization)
+    require_organization_lifecycle_manager(user, organization)
     organization = Organization.objects.select_for_update().get(pk=organization.pk)
     if organization.deletion_requested_at is not None:
         raise ValidationError("Organization deletion is already scheduled.")

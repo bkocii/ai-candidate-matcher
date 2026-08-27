@@ -3,7 +3,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -24,6 +24,8 @@ from candidates.models import Candidate
 from organizations.forms import (
     ApplyRetentionForm,
     ClientCompanyForm,
+    ManagedMembershipForm,
+    OrganizationProvisionForm,
     OrganizationRetentionPolicyForm,
     RequestOrganizationDeletionForm,
     RetentionExceptionForm,
@@ -32,11 +34,16 @@ from organizations.models import ClientCompany, Organization, RetentionException
 from organizations.permissions import (
     can_administer_organization,
     can_recover_organization,
+    is_platform_owner,
     require_organization_admin,
+    require_platform_owner,
 )
 from organizations.services import (
+    add_organization_member,
     create_client_company,
+    provision_organization,
     set_client_company_active,
+    set_organization_membership_active,
     update_client_company,
 )
 from vacancies.models import Vacancy
@@ -48,6 +55,8 @@ def dashboard_home(request):
     organizations = list(Organization.objects.visible_to(request.user))
 
     recoverable = organizations_available_for_recovery(request.user)
+    if not organizations and is_platform_owner(request.user):
+        return redirect("organizations:platform-organization-list")
     if not organizations and recoverable.exists():
         return redirect("organizations:organization-recovery")
     if not organizations:
@@ -144,6 +153,269 @@ def organization_settings(request, organization_slug: str):
         request,
         "organizations/organization_settings.html",
         {"organization": organization},
+    )
+
+
+@login_required
+def organization_member_list(request, organization_slug: str):
+    organization = _visible_organization(request, organization_slug)
+    require_organization_admin(request.user, organization)
+    memberships = OrganizationMembership.objects.filter(
+        organization=organization
+    ).select_related("user")
+    return render(
+        request,
+        "organizations/member_list.html",
+        {"organization": organization, "memberships": memberships},
+    )
+
+
+@login_required
+def recruiter_create(request, organization_slug: str):
+    organization = _visible_organization(request, organization_slug)
+    require_organization_admin(request.user, organization)
+    form = ManagedMembershipForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            membership, created_user = add_organization_member(
+                organization=organization,
+                actor=request.user,
+                role=OrganizationMembership.Role.RECRUITER,
+                values=form.managed_user_values(),
+            )
+        except ValidationError as error:
+            form.add_error(None, error)
+        else:
+            action = "created" if created_user else "added"
+            messages.success(
+                request,
+                f'Recruiter account "{membership.user.username}" {action}.',
+            )
+            return redirect("organizations:member-list", organization.slug)
+    return render(
+        request,
+        "organizations/member_form.html",
+        {
+            "organization": organization,
+            "form": form,
+            "heading": "Add recruiter",
+            "submit_label": "Add recruiter",
+        },
+    )
+
+
+@login_required
+@require_POST
+def recruiter_status(request, organization_slug: str, membership_id: int):
+    organization = _visible_organization(request, organization_slug)
+    require_organization_admin(request.user, organization)
+    membership = get_object_or_404(
+        OrganizationMembership.objects.select_related("user", "organization"),
+        pk=membership_id,
+        organization=organization,
+        role=OrganizationMembership.Role.RECRUITER,
+    )
+    requested_state = request.POST.get("is_active")
+    if requested_state not in {"true", "false"}:
+        messages.error(request, "Select a valid recruiter access state.")
+    else:
+        try:
+            membership = set_organization_membership_active(
+                membership=membership,
+                actor=request.user,
+                is_active=requested_state == "true",
+            )
+        except ValidationError as error:
+            messages.error(request, "; ".join(error.messages))
+        else:
+            state = "restored" if membership.is_active else "removed"
+            messages.success(
+                request,
+                f'Recruiter access for "{membership.user.username}" {state}.',
+            )
+    return redirect("organizations:member-list", organization.slug)
+
+
+@login_required
+def platform_organization_list(request):
+    require_platform_owner(request.user)
+    organizations = Organization.objects.all().annotate(
+        membership_count=Count("memberships", distinct=True),
+        administrator_count=Count(
+            "memberships",
+            filter=(
+                Q(memberships__role=OrganizationMembership.Role.ADMIN)
+                & Q(memberships__is_active=True)
+            ),
+            distinct=True,
+        ),
+    )
+    return render(
+        request,
+        "organizations/platform_organization_list.html",
+        {"managed_organizations": organizations},
+    )
+
+
+@login_required
+def platform_organization_create(request):
+    require_platform_owner(request.user)
+    form = OrganizationProvisionForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            organization, membership, created_user = provision_organization(
+                platform_owner=request.user,
+                organization_name=form.cleaned_data["organization_name"],
+                administrator_values=form.managed_user_values(),
+            )
+        except ValidationError as error:
+            form.add_error(None, error)
+        else:
+            account_action = "created" if created_user else "linked"
+            messages.success(
+                request,
+                f"{organization.name} created and administrator "
+                f'"{membership.user.username}" {account_action}.',
+            )
+            return redirect(
+                "organizations:platform-organization-detail", organization.pk
+            )
+    return render(
+        request,
+        "organizations/platform_organization_form.html",
+        {"form": form},
+    )
+
+
+def _platform_organization(request, organization_id: int) -> Organization:
+    require_platform_owner(request.user)
+    return get_object_or_404(Organization, pk=organization_id)
+
+
+@login_required
+def platform_organization_detail(request, organization_id: int):
+    managed_organization = _platform_organization(request, organization_id)
+    administrators = OrganizationMembership.objects.filter(
+        organization=managed_organization,
+        role=OrganizationMembership.Role.ADMIN,
+    ).select_related("user")
+    return render(
+        request,
+        "organizations/platform_organization_detail.html",
+        {
+            "managed_organization": managed_organization,
+            "administrators": administrators,
+        },
+    )
+
+
+@login_required
+def platform_administrator_create(request, organization_id: int):
+    managed_organization = _platform_organization(request, organization_id)
+    form = ManagedMembershipForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            membership, created_user = add_organization_member(
+                organization=managed_organization,
+                actor=request.user,
+                role=OrganizationMembership.Role.ADMIN,
+                values=form.managed_user_values(),
+            )
+        except ValidationError as error:
+            form.add_error(None, error)
+        else:
+            action = "created" if created_user else "added"
+            messages.success(
+                request,
+                f'Administrator "{membership.user.username}" {action}.',
+            )
+            return redirect(
+                "organizations:platform-organization-detail",
+                managed_organization.pk,
+            )
+    return render(
+        request,
+        "organizations/platform_administrator_form.html",
+        {"managed_organization": managed_organization, "form": form},
+    )
+
+
+@login_required
+@require_POST
+def platform_administrator_status(request, organization_id: int, membership_id: int):
+    managed_organization = _platform_organization(request, organization_id)
+    membership = get_object_or_404(
+        OrganizationMembership.objects.select_related("organization", "user"),
+        pk=membership_id,
+        organization=managed_organization,
+        role=OrganizationMembership.Role.ADMIN,
+    )
+    requested_state = request.POST.get("is_active")
+    if requested_state not in {"true", "false"}:
+        messages.error(request, "Select a valid administrator access state.")
+    else:
+        try:
+            membership = set_organization_membership_active(
+                membership=membership,
+                actor=request.user,
+                is_active=requested_state == "true",
+            )
+        except ValidationError as error:
+            messages.error(request, "; ".join(error.messages))
+        else:
+            state = "restored" if membership.is_active else "removed"
+            messages.success(
+                request,
+                f'Administrator access for "{membership.user.username}" {state}.',
+            )
+    return redirect(
+        "organizations:platform-organization-detail", managed_organization.pk
+    )
+
+
+@login_required
+def platform_organization_delete_request(request, organization_id: int):
+    managed_organization = _platform_organization(request, organization_id)
+    if managed_organization.deletion_requested_at is not None:
+        messages.error(request, "Organization deletion is already scheduled.")
+        return redirect(
+            "organizations:platform-organization-detail", managed_organization.pk
+        )
+    form = RequestOrganizationDeletionForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        request_organization_deletion(
+            organization=managed_organization,
+            user=request.user,
+        )
+        messages.warning(
+            request,
+            "Organization access is suspended until recovery or scheduled purge.",
+        )
+        return redirect(
+            "organizations:platform-organization-detail", managed_organization.pk
+        )
+    return render(
+        request,
+        "organizations/platform_organization_confirm_delete.html",
+        {"managed_organization": managed_organization, "form": form},
+    )
+
+
+@login_required
+@require_POST
+def platform_organization_recover(request, organization_id: int):
+    managed_organization = _platform_organization(request, organization_id)
+    try:
+        cancel_organization_deletion(
+            organization=managed_organization,
+            user=request.user,
+        )
+    except ValidationError as error:
+        messages.error(request, "; ".join(error.messages))
+    else:
+        messages.success(request, "Organization access restored.")
+    return redirect(
+        "organizations:platform-organization-detail", managed_organization.pk
     )
 
 

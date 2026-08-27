@@ -7,6 +7,42 @@ app_name = "organizations"
 urlpatterns = [
     path("", views.dashboard_home, name="dashboard"),
     path(
+        "platform/organizations/",
+        views.platform_organization_list,
+        name="platform-organization-list",
+    ),
+    path(
+        "platform/organizations/new/",
+        views.platform_organization_create,
+        name="platform-organization-create",
+    ),
+    path(
+        "platform/organizations/<int:organization_id>/",
+        views.platform_organization_detail,
+        name="platform-organization-detail",
+    ),
+    path(
+        "platform/organizations/<int:organization_id>/administrators/new/",
+        views.platform_administrator_create,
+        name="platform-administrator-create",
+    ),
+    path(
+        "platform/organizations/<int:organization_id>/administrators/"
+        "<int:membership_id>/status/",
+        views.platform_administrator_status,
+        name="platform-administrator-status",
+    ),
+    path(
+        "platform/organizations/<int:organization_id>/delete/",
+        views.platform_organization_delete_request,
+        name="platform-organization-delete-request",
+    ),
+    path(
+        "platform/organizations/<int:organization_id>/recover/",
+        views.platform_organization_recover,
+        name="platform-organization-recover",
+    ),
+    path(
         "organizations/recovery/",
         views.organization_recovery,
         name="organization-recovery",
@@ -25,6 +61,22 @@ urlpatterns = [
         "organizations/<slug:organization_slug>/settings/",
         views.organization_settings,
         name="organization-settings",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/settings/team/",
+        views.organization_member_list,
+        name="member-list",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/settings/team/recruiters/new/",
+        views.recruiter_create,
+        name="recruiter-create",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/settings/team/recruiters/"
+        "<int:membership_id>/status/",
+        views.recruiter_status,
+        name="recruiter-status",
     ),
     path(
         "organizations/<slug:organization_slug>/settings/client-companies/",

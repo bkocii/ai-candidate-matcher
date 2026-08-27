@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Suspend {{ managed_organization.name }} | AI Candidate Matcher{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="eyebrow">Platform management</p><h1>Suspend and schedule deletion</h1><p class="lede">This immediately blocks workspace access. Recovery remains available until the retention-policy deadline, after which scheduled purge removes the tenant dependency tree and private files.</p></section>
+<form class="form-panel stacked-form" method="post">{% csrf_token %}{% for field in form %}<div class="field">{{ field.label_tag }}{{ field }}{% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}</div>{% endfor %}<div class="button-row"><button class="danger-button" type="submit">Suspend organization</button><a class="secondary-button" href="{% url 'organizations:platform-organization-detail' managed_organization.pk %}">Cancel</a></div></form>
+{% endblock %}

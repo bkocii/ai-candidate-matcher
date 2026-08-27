@@ -8,7 +8,7 @@ Status values: **Approved direction**, **Approved for implementation**,
 
 ## CR-001 — Managed multi-organization SaaS
 
-Status: **Approved direction — 2026-08-23**
+Status: **Complete — 2026-08-27**
 
 For our app, the agreed middle ground is:
 
@@ -33,6 +33,21 @@ Important boundaries:
 - Django superusers remain technical operator accounts, not customer accounts.
 - Organization creation, membership changes, suspension, and deletion must be
   audited without copying private candidate content.
+
+Implementation note: `accounts.User.is_platform_owner` is an explicit capability
+separate from Django staff/superuser state and organization membership. Platform
+owners have an application-owned organization list, atomically provision a tenant
+with its first administrator, manage administrator memberships, and use the staged
+organization suspension/recovery workflow without receiving tenant content access.
+Organization administrators manage recruiter memberships only under
+**Organization settings → Team members**. New accounts require a temporary
+password; existing usernames are linked without changing their password or global
+account state. A signed-in account can replace its temporary password through the
+normal account-security page. Removing a membership removes only that workspace access. Users
+with several active memberships receive an explicit workspace switcher. Immutable
+content-free tenant-management events retain only numeric organization/user IDs,
+role, actor, action, and time. Public signup, invitations/email delivery, billing,
+and automatic platform-owner access to recruitment records remain unavailable.
 
 ## CR-002 — Dependency-aware data lifecycle and storage control
 

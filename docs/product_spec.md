@@ -18,7 +18,10 @@ Small recruitment agencies with CVs stored in folders, spreadsheets, email expor
 
 Small and medium employers recruiting directly from their own historical applicant pool.
 
-The MVP runs for one organization. Agency deployments may associate vacancies with optional client companies.
+The managed SaaS supports several isolated organizations. Agency organizations
+may associate vacancies with optional client companies. Platform owners provision
+organizations and first administrators; they do not automatically enter tenant
+workspaces or see recruitment content.
 
 ## Problem
 
@@ -41,7 +44,10 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 ## MVP capabilities
 
 - Secure recruiter login.
-- One organization with multiple recruiter accounts.
+- Managed multi-organization hosting with strictly isolated tenant workspaces.
+- Explicit platform-owner provisioning of organizations and first administrators
+  without implicit candidate-data access.
+- Organization-administrator recruiter management and multi-workspace switching.
 - Optional client companies for agency use.
 - Organization-administrator client-company settings with reversible
   deactivation; recruiters can assign active clients while creating or editing
@@ -88,6 +94,7 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Ranking based on age, gender, ethnicity, religion, disability, family status, photographs, or other protected/sensitive characteristics.
 - Full ATS replacement.
 - Multi-tenant SaaS billing and subscriptions.
+- Public signup, self-service organization creation, or automatic email invitations.
 - Mobile application or Windows executable.
 - Automated legal compliance certification.
 
@@ -147,6 +154,11 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
   not tenants, candidate owners, memberships, or login accounts. Direct
   employers need none. Only active same-organization clients can be newly
   assigned to a vacancy; deactivation does not erase an existing relationship.
+- Platform ownership, Django staff status, and Django superuser status do not
+  grant organization content access. Every tenant workspace still requires an
+  explicit active membership.
+- Disabling a membership removes only that organization's access. A shared user
+  account and its memberships in other organizations remain active.
 
 ## Core structured outputs
 

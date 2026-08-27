@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Team members | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading" aria-labelledby="team-title">
+    <div>
+        <p class="eyebrow">Organization settings</p>
+        <h1 id="team-title">Team members</h1>
+        <p class="lede">Recruiter access is scoped to {{ organization.name }}. Removing access does not disable a shared account in another workspace.</p>
+    </div>
+    <div class="button-row">
+        <a class="primary-button button-link" href="{% url 'organizations:recruiter-create' organization.slug %}">Add recruiter</a>
+        <a class="secondary-button" href="{% url 'organizations:organization-settings' organization.slug %}">Organization settings</a>
+    </div>
+</section>
+
+<div class="table-wrap">
+    <table>
+        <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>
+        {% for membership in memberships %}
+            <tr>
+                <th scope="row">{{ membership.user.username }}{% if membership.user.get_full_name %}<br><small>{{ membership.user.get_full_name }}</small>{% endif %}</th>
+                <td>{{ membership.get_role_display }}</td>
+                <td><span class="status-pill {% if membership.is_active %}status-active{% endif %}">{% if membership.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+                <td>
+                    {% if membership.role == "recruiter" %}
+                        <form method="post" action="{% url 'organizations:recruiter-status' organization.slug membership.pk %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="is_active" value="{% if membership.is_active %}false{% else %}true{% endif %}">
+                            <button class="{% if membership.is_active %}danger-button{% else %}secondary-button{% endif %}" type="submit">{% if membership.is_active %}Remove access{% else %}Restore access{% endif %}</button>
+                        </form>
+                    {% else %}
+                        <span class="help-text">Managed by platform owner</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
