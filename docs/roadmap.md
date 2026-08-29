@@ -59,6 +59,10 @@ local toolkit code.
   recruiter labels and safe defaults, expose inspectable source records, and
   enforce reason/consent/allowed-contact checks at final outreach approval.
   **Complete — 2026-08-25 as a user-approved pre-release workflow correction.**
+- `CR-006` Add audited candidate/source correction, evidence-validated profile
+  correction versions, deterministic trusted-data conflict detection, and
+  conflict-safe individual/batch confirmation. **Implemented — 2026-08-29;
+  browser retest pending as a user-approved manual-testing correction.**
 
 Status: Complete.
 

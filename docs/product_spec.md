@@ -61,6 +61,9 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Plain-language candidate source/privacy controls with safe not-recorded
   defaults, shared bulk values, inspectable provenance, and explicit outreach
   permission enforcement.
+- Audited recruiter correction of candidate/source records and immutable
+  evidence-validated profile correction versions. Conflicting trusted candidate
+  and CV-profile locations block individual and batch confirmation until resolved.
 - Hardened PDF and DOCX CV upload, safe text extraction, and authorized private
   attachment delivery.
 - Vacancy creation from pasted text.

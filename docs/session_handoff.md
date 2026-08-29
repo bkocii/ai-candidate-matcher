@@ -397,6 +397,22 @@ for abandoned intake, jobs, uncommitted workflow history, metadata, and tenant
 deletion. No CR-005 model or migration, AI/toolkit, matching, decision, or
 sending boundary changed.
 
+`CR-006` is implemented with browser retest pending. Active tenant members can
+correct candidate identity/contact fields and source/privacy assertions through
+the normal app. Services lock rows, refuse deletion-frozen edits, repeat
+tenant-local duplicate checks, and record minimized immutable audit events.
+Profile correction creates a separate numbered draft tied to the same unchanged
+CV, allows questionable skills to be removed, and reruns the existing schema and
+evidence checks. Candidate/profile location conflicts block direct confirmation
+and exclude the draft from intake batch confirmation until resolved. The
+candidate page uses responsive source cards and shows email, phone, and location.
+This adds only `audit.0006_remove_auditevent_audit_event_has_valid_action_and_more`;
+it changes no AI gateway, prompt, toolkit, matching, decision, or outreach contract.
+Focused correction coverage passed `77` tests, expanded candidate/audit/lifecycle
+regressions passed `151`, and the complete quality gate passed all `542` tests
+with zero migration drift, clean deployment/static checks, Ruff/formatting, and
+compatible dependencies.
+
 `CR-002` is complete. Every organization now has an on-demand versioned
 retention policy with conservative 7/90/180/365-day lifecycle defaults and a
 30-day organization recovery window. Organization administrators can open a

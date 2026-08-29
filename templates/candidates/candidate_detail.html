@@ -9,6 +9,7 @@
         <h1 id="candidate-title">{{ candidate.full_name }}</h1>
         <p class="lede">
             {{ candidate.email|default:"No email recorded" }}
+            {% if candidate.phone %} · {{ candidate.phone }}{% endif %}
             {% if candidate.location %} · {{ candidate.location }}{% endif %}
         </p>
     </div>
@@ -23,6 +24,7 @@
                 <a class="danger-button button-link" href="{% url 'candidates:candidate-delete-execute' organization.slug candidate.pk %}">Review permanent purge</a>
             {% endif %}
         {% else %}
+            <a class="secondary-button" href="{% url 'candidates:candidate-edit' organization.slug candidate.pk %}">Edit details</a>
             <a class="primary-button button-link" href="{% url 'candidates:candidate-cv-upload' organization.slug candidate.pk %}">Upload CV</a>
             <a class="danger-button button-link" href="{% url 'candidates:candidate-delete' organization.slug candidate.pk %}">Request deletion</a>
         {% endif %}
@@ -36,45 +38,42 @@
     </section>
 {% endif %}
 
-<section class="workspace-panel" aria-labelledby="candidate-source-title">
+<section class="workspace-panel source-workspace" aria-labelledby="candidate-source-title">
     <div>
         <p class="eyebrow">Source and privacy</p>
         <h2 id="candidate-source-title">Recorded candidate sources</h2>
         <p class="section-note">Consent and allowed contact are separate. These records document the organization's assertion and do not certify legal compliance.</p>
     </div>
     {% if sources %}
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th scope="col">Source name</th>
-                        <th scope="col">Source reference</th>
-                        <th scope="col">Reason for storing data</th>
-                        <th scope="col">Consent</th>
-                        <th scope="col">Allowed contact</th>
-                        <th scope="col">Delete or review on</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for source in sources %}
-                        <tr>
-                            <th scope="row">{{ source.source_name }}</th>
-                            <td>{{ source.source_reference|default:"—" }}</td>
-                            <td>{{ source.recruiter_lawful_basis }}</td>
-                            <td>{{ source.recruiter_consent_status }}</td>
-                            <td>{{ source.recruiter_contact_permission }}</td>
-                            <td>{{ source.retention_until|date:"Y-m-d"|default:"Not set" }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="source-card-grid">
+            {% for source in sources %}
+                <article class="source-card">
+                    <header>
+                        <div>
+                            <p class="eyebrow">{{ source.get_source_type_display }}</p>
+                            <h3>{{ source.source_name }}</h3>
+                        </div>
+                        {% if candidate.status != "deletion_requested" %}
+                            <a class="secondary-button compact-button" href="{% url 'candidates:candidate-source-edit' organization.slug candidate.pk source.pk %}">Edit</a>
+                        {% endif %}
+                    </header>
+                    <dl class="source-details">
+                        <div><dt>Source reference</dt><dd class="break-value">{{ source.source_reference|default:"—" }}</dd></div>
+                        <div><dt>Reason for storing data</dt><dd>{{ source.recruiter_lawful_basis }}</dd></div>
+                        <div><dt>Consent</dt><dd>{{ source.recruiter_consent_status }}</dd></div>
+                        <div><dt>Allowed contact</dt><dd>{{ source.recruiter_contact_permission }}</dd></div>
+                        <div><dt>Delete or review on</dt><dd>{{ source.retention_until|date:"Y-m-d"|default:"Not set" }}</dd></div>
+                    </dl>
+                    {% if source.permission_notes %}<p class="source-notes">{{ source.permission_notes }}</p>{% endif %}
+                </article>
+            {% endfor %}
         </div>
     {% else %}
         <p>No candidate source record is available.</p>
     {% endif %}
 </section>
 
-<section aria-labelledby="documents-title">
+<section class="report-section" aria-labelledby="documents-title">
     <h2 id="documents-title">Private documents</h2>
     <p class="section-note">Document bytes and extracted text remain private. Authorized downloads are attachment-only and are not cached.</p>
 

@@ -1,6 +1,11 @@
 from django import forms
 
-from candidates.models import CandidateIntakeBatch, CandidateSource
+from candidates.models import (
+    Candidate,
+    CandidateIntakeBatch,
+    CandidateProfile,
+    CandidateSource,
+)
 from candidates.privacy import (
     CONSENT_HELP_TEXT,
     CONSENT_STATUS_LABELS,
@@ -52,6 +57,153 @@ class CandidateCVUploadForm(forms.Form):
         widget=forms.DateInput(attrs={"type": "date"}),
         help_text=RETENTION_HELP_TEXT,
     )
+
+
+class CandidateEditForm(forms.ModelForm):
+    class Meta:
+        model = Candidate
+        fields = ("full_name", "email", "phone", "location", "retention_until")
+        widgets = {"retention_until": forms.DateInput(attrs={"type": "date"})}
+        labels = {"retention_until": "Delete or review on"}
+        help_texts = {"retention_until": RETENTION_HELP_TEXT}
+
+
+class CandidateSourceEditForm(forms.ModelForm):
+    class Meta:
+        model = CandidateSource
+        fields = (
+            "source_name",
+            "source_reference",
+            "lawful_basis",
+            "consent_status",
+            "contact_permission",
+            "permission_notes",
+            "retention_until",
+        )
+        widgets = {
+            "permission_notes": forms.Textarea(attrs={"rows": 3}),
+            "retention_until": forms.DateInput(attrs={"type": "date"}),
+        }
+        labels = {
+            "lawful_basis": "Reason for storing data",
+            "consent_status": "Consent",
+            "contact_permission": "Allowed contact",
+            "permission_notes": "Privacy and contact notes",
+            "retention_until": "Delete or review on",
+        }
+        help_texts = {
+            "source_name": SOURCE_NAME_HELP_TEXT,
+            "source_reference": SOURCE_REFERENCE_HELP_TEXT,
+            "lawful_basis": LAWFUL_BASIS_HELP_TEXT,
+            "consent_status": CONSENT_HELP_TEXT,
+            "contact_permission": CONTACT_PERMISSION_HELP_TEXT,
+            "retention_until": RETENTION_HELP_TEXT,
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["lawful_basis"].choices = form_choices(
+            CandidateSource.LawfulBasis.choices, LAWFUL_BASIS_LABELS
+        )
+        self.fields["consent_status"].choices = form_choices(
+            CandidateSource.ConsentStatus.choices, CONSENT_STATUS_LABELS
+        )
+        self.fields["contact_permission"].choices = form_choices(
+            CandidateSource.ContactPermission.choices, CONTACT_PERMISSION_LABELS
+        )
+
+
+class CandidateProfileCorrectionForm(forms.Form):
+    relevant_experience_summary = forms.CharField(
+        label="Relevant experience summary",
+        required=False,
+        max_length=2_000,
+        widget=forms.Textarea(attrs={"rows": 4}),
+    )
+    relevant_experience_summary_evidence = forms.CharField(
+        label="Summary CV evidence",
+        required=False,
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 2}),
+        help_text="Keep this as a short verbatim excerpt from the CV.",
+    )
+    location = forms.CharField(required=False, max_length=200)
+    location_evidence = forms.CharField(
+        label="Location CV evidence",
+        required=False,
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 2}),
+        help_text="Required when a location is recorded.",
+    )
+    work_mode_preference = forms.ChoiceField(
+        label="Work mode preference",
+        choices=CandidateProfile.WorkMode.choices,
+    )
+    work_mode_preference_evidence = forms.CharField(
+        label="Work mode CV evidence",
+        required=False,
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 2}),
+    )
+    availability = forms.CharField(required=False, max_length=300)
+    availability_evidence = forms.CharField(
+        label="Availability CV evidence",
+        required=False,
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 2}),
+    )
+    retained_skills = forms.MultipleChoiceField(
+        label="Supported skills to retain",
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        help_text=(
+            "Uncheck a skill that was misclassified. New skills require a new "
+            "evidence-reviewed extraction."
+        ),
+    )
+    ambiguities = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 4}),
+        help_text="Enter one unresolved ambiguity per line, or leave blank.",
+    )
+
+    def __init__(self, *args, profile: CandidateProfile, **kwargs):
+        self.profile = profile
+        initial = {
+            "relevant_experience_summary": profile.relevant_experience_summary,
+            "relevant_experience_summary_evidence": profile.fact_evidence.get(
+                "relevant_experience_summary", ""
+            ),
+            "location": profile.location,
+            "location_evidence": profile.fact_evidence.get("location", ""),
+            "work_mode_preference": profile.work_mode_preference,
+            "work_mode_preference_evidence": profile.fact_evidence.get(
+                "work_mode_preference", ""
+            ),
+            "availability": profile.availability,
+            "availability_evidence": profile.fact_evidence.get("availability", ""),
+            "retained_skills": [str(index) for index in range(len(profile.skills))],
+            "ambiguities": "\n".join(profile.ambiguities),
+        }
+        initial.update(kwargs.pop("initial", {}))
+        super().__init__(*args, initial=initial, **kwargs)
+        self.fields["retained_skills"].choices = tuple(
+            (str(index), f"{skill['name']} — {skill['evidence']}")
+            for index, skill in enumerate(profile.skills)
+        )
+
+    def clean_ambiguities(self):
+        value = self.cleaned_data["ambiguities"]
+        lines = [line.strip() for line in value.splitlines() if line.strip()]
+        if len(lines) > 40:
+            raise forms.ValidationError("Record no more than 40 ambiguities.")
+        if any(len(line) > 500 for line in lines):
+            raise forms.ValidationError(
+                "Each ambiguity must contain no more than 500 characters."
+            )
+        if len({line.casefold() for line in lines}) != len(lines):
+            raise forms.ValidationError("Remove duplicate ambiguity lines.")
+        return lines
 
 
 class CandidateManualEntryForm(forms.Form):

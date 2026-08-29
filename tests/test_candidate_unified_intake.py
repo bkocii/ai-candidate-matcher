@@ -341,6 +341,41 @@ def test_batch_profile_confirmation_includes_clean_and_excludes_ambiguity(
     assert not OutreachDraft.objects.exists()
 
 
+def test_batch_profile_confirmation_excludes_candidate_profile_conflict(
+    settings, tmp_path
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    user, _, batch = make_batch()
+    text = "Conflict Candidate\nconflict@example.test | Gjilan\nPython experience"
+    pending = upload_candidate_intake_cv(
+        batch=batch,
+        user=user,
+        uploaded_file=docx_upload("conflict.docx", text),
+    )
+    item, document, _ = accept_uploaded_item(
+        item=pending,
+        user=user,
+        name="Conflict Candidate",
+        email="conflict@example.test",
+        text=text,
+    )
+    profile = create_profile(
+        item=item,
+        document=document,
+        text=text,
+        user=user,
+    )
+    profile.location = "Gjilan"
+    profile.fact_evidence["location"] = "Gjilan"
+    profile.save()
+
+    review = review_intake_profiles(batch=batch, user=user)
+
+    assert not review.eligible_rows
+    assert review.excluded_rows[0].profile == profile
+    assert "do not match" in review.excluded_rows[0].reason
+
+
 def test_unified_intake_routes_are_tenant_scoped(client, settings, tmp_path) -> None:
     settings.MEDIA_ROOT = tmp_path
     owner, organization, batch = make_batch()

@@ -548,6 +548,16 @@ migration.
 - Confirmation is a separate POST action. A confirmed snapshot is immutable and
   becomes the candidate's current matching profile; a newer draft never replaces
   it, and an older draft cannot supersede a newer confirmed version.
+- Before individual or intake-batch confirmation, one deterministic review
+  compares overlapping trusted facts. A non-blank candidate location that differs
+  from the CV-profile location is a blocking conflict. Both paths use the same
+  function, so the batch action cannot bypass the individual guard.
+- Recruiter correction creates a separate numbered draft against the same
+  unchanged source document and hashes. It can correct supported summary,
+  location, work-mode, availability, and ambiguity values and remove a
+  misclassified existing skill. It cannot add unsupported skills; the complete
+  replacement must pass the same schema and verbatim evidence validation as AI
+  extraction. Existing and confirmed versions remain unchanged.
 - Confirmation publishes profile skills as inspectable `CandidateSkill` rows
   linked to both the source document and source profile. Recruiter/manual skill
   assertions are preserved; confirming a replacement profile removes only the
@@ -557,6 +567,13 @@ migration.
   facts remain unknown and eligible for recruiter review. A confirmed profile
   changes the candidate matching signature and makes affected historical runs
   stale; a draft profile does neither.
+
+Candidate identity/contact and candidate-source operational assertions have
+tenant-scoped correction routes. Services lock the authoritative row, refuse
+edits during deletion, repeat organization access checks, and recheck tenant-local
+duplicate identifiers or source references. Each successful change records only
+a minimized immutable audit action/object ID; private values and before/after
+content are not copied into the audit ledger.
 
 ### Vacancy intake records
 

@@ -6,6 +6,33 @@ outside the roadmap until their status is **Approved for implementation**.
 Status values: **Approved direction**, **Approved for implementation**,
 **Proposed**, **Deferred**, and **Rejected**.
 
+## CR-006 — Candidate correction and conflict-safe profile confirmation
+
+Status: **Implemented — browser retest pending, 2026-08-29**
+
+The page-by-page manual review found that recruiter-supplied candidate location
+could conflict with a CV-derived profile while individual and batch confirmation
+still treated the draft as clean. It also found no normal-app path to correct
+candidate/source assertions or remove a questionable extracted skill.
+
+- Active organization members can correct candidate identity/contact fields;
+  tenant-local email/phone duplicates are checked again before saving.
+- Candidate source/privacy assertions can be updated with the approved plain
+  wording. Source references are checked against other candidates before saving.
+- Candidate and source edits create minimized immutable audit events containing
+  only organization, actor, object type/ID, action, and time.
+- Profile correction never mutates an existing snapshot. It creates a new
+  numbered draft tied to the same unchanged CV, permits supported skills to be
+  removed, and reruns deterministic evidence checks.
+- A non-blank candidate location that conflicts with the CV profile location is
+  an explicit exception. Individual confirmation fails and batch review excludes
+  the draft until the trusted record or supported profile is corrected.
+- The candidate page shows email, phone, and location and presents source/privacy
+  data as responsive cards rather than a page-widening table.
+
+No AI request, prompt, raw response, automatic decision, or outreach action was
+added. The only schema change extends minimized audit-event choices/constraints.
+
 ## CR-001 — Managed multi-organization SaaS
 
 Status: **Complete — 2026-08-27**

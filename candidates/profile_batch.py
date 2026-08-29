@@ -12,6 +12,7 @@ from candidates.models import (
     CandidateIntakeItem,
     CandidateProfile,
 )
+from candidates.profile_review import candidate_profile_conflicts
 from organizations.permissions import require_organization_object_access
 
 
@@ -123,6 +124,17 @@ def review_intake_profiles(
                         "Sensitive-prefixed source content was removed; review this "
                         "profile individually."
                     ),
+                )
+            )
+            continue
+        conflicts = candidate_profile_conflicts(candidate=candidate, profile=latest)
+        if conflicts:
+            rows.append(
+                IntakeProfileReviewRow(
+                    item=item,
+                    profile=latest,
+                    status="excluded",
+                    reason=" ".join(conflict.message for conflict in conflicts),
                 )
             )
             continue

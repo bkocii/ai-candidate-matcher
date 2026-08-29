@@ -839,6 +839,11 @@ def confirm_candidate_profile(
         raise ValidationError(
             "A newer candidate profile is already confirmed. Review that version."
         )
+    from candidates.profile_review import candidate_profile_conflicts
+
+    conflicts = candidate_profile_conflicts(candidate=candidate, profile=profile)
+    if conflicts:
+        raise ValidationError([conflict.message for conflict in conflicts])
     if (
         document.deleted_at is not None
         or document.sha256 != profile.source_document_sha256

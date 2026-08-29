@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ candidate.full_name }} | {{ organization.name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">Candidate record</p>
+    <h1>Edit candidate details</h1>
+    <p class="lede">Correct identity and contact information. Duplicate identifiers are checked again and the change is audited.</p>
+</section>
+
+<form class="form-panel stacked-form" method="post">
+    {% csrf_token %}
+    {% include "candidates/_form_fields.html" %}
+    <div class="button-row">
+        <button class="primary-button" type="submit">Save candidate details</button>
+        <a class="secondary-button" href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">Cancel</a>
+    </div>
+</form>
+{% endblock %}

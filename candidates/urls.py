@@ -72,6 +72,17 @@ urlpatterns = [
         name="candidate-detail",
     ),
     path(
+        "organizations/<slug:organization_slug>/candidates/<int:candidate_id>/edit/",
+        views.candidate_edit,
+        name="candidate-edit",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/"
+        "<int:candidate_id>/sources/<int:source_id>/edit/",
+        views.candidate_source_edit,
+        name="candidate-source-edit",
+    ),
+    path(
         "organizations/<slug:organization_slug>/candidates/<int:candidate_id>/delete/",
         views.candidate_delete,
         name="candidate-delete",
@@ -117,6 +128,12 @@ urlpatterns = [
         "<int:candidate_id>/profiles/<int:profile_id>/confirm/",
         views.candidate_profile_confirm,
         name="candidate-profile-confirm",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/candidates/"
+        "<int:candidate_id>/profiles/<int:profile_id>/correct/",
+        views.candidate_profile_correct,
+        name="candidate-profile-correct",
     ),
     path(
         "organizations/<slug:organization_slug>/candidates/import/",

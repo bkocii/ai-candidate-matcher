@@ -16,6 +16,11 @@ from candidates.ai_extraction import (
     confirm_candidate_profile,
     extract_candidate_profile,
 )
+from candidates.corrections import (
+    create_corrected_profile_version,
+    update_candidate_record,
+    update_candidate_source,
+)
 from candidates.documents import (
     CandidateDocumentDeliveryError,
     CandidateDocumentUploadError,
@@ -25,12 +30,21 @@ from candidates.documents import (
 from candidates.forms import (
     CandidateCSVImportForm,
     CandidateCVUploadForm,
+    CandidateEditForm,
     CandidateManualEntryForm,
+    CandidateProfileCorrectionForm,
+    CandidateSourceEditForm,
     candidate_values_from_manual_form,
     source_values_from_import_form,
     source_values_from_manual_form,
 )
-from candidates.models import Candidate, CandidateDocument, CandidateProfile
+from candidates.models import (
+    Candidate,
+    CandidateDocument,
+    CandidateProfile,
+    CandidateSource,
+)
+from candidates.profile_review import candidate_profile_conflicts
 from candidates.services import (
     CSV_HEADERS,
     CandidateDeletionError,
@@ -92,6 +106,85 @@ def candidate_detail(request, organization_slug: str, candidate_id: int):
             "documents": documents,
             "sources": sources,
             "can_administer": can_administer_organization(request.user, organization),
+        },
+    )
+
+
+@login_required
+def candidate_edit(request, organization_slug: str, candidate_id: int):
+    organization = _visible_organization(request, organization_slug)
+    candidate = get_object_or_404(
+        Candidate.objects.for_organization(organization).not_deleted(),
+        pk=candidate_id,
+    )
+    form = CandidateEditForm(request.POST or None, instance=candidate)
+    if request.method == "POST" and form.is_valid():
+        try:
+            update_candidate_record(
+                candidate=candidate,
+                user=request.user,
+                values={field: form.cleaned_data[field] for field in form.fields},
+            )
+        except ValidationError as error:
+            form.add_error(None, "; ".join(error.messages))
+        else:
+            messages.success(request, "Candidate details updated and audited.")
+            return redirect(
+                "candidates:candidate-detail",
+                organization_slug=organization.slug,
+                candidate_id=candidate.pk,
+            )
+    return render(
+        request,
+        "candidates/candidate_edit.html",
+        {"organization": organization, "candidate": candidate, "form": form},
+    )
+
+
+@login_required
+def candidate_source_edit(
+    request,
+    organization_slug: str,
+    candidate_id: int,
+    source_id: int,
+):
+    organization = _visible_organization(request, organization_slug)
+    candidate = get_object_or_404(
+        Candidate.objects.for_organization(organization).not_deleted(),
+        pk=candidate_id,
+    )
+    source = get_object_or_404(
+        CandidateSource.objects.for_organization(organization),
+        pk=source_id,
+        candidate=candidate,
+    )
+    form = CandidateSourceEditForm(request.POST or None, instance=source)
+    if request.method == "POST" and form.is_valid():
+        try:
+            update_candidate_source(
+                source=source,
+                user=request.user,
+                values={field: form.cleaned_data[field] for field in form.fields},
+            )
+        except ValidationError as error:
+            form.add_error(None, "; ".join(error.messages))
+        else:
+            messages.success(
+                request, "Source and contact settings updated and audited."
+            )
+            return redirect(
+                "candidates:candidate-detail",
+                organization_slug=organization.slug,
+                candidate_id=candidate.pk,
+            )
+    return render(
+        request,
+        "candidates/candidate_source_edit.html",
+        {
+            "organization": organization,
+            "candidate": candidate,
+            "source": source,
+            "form": form,
         },
     )
 
@@ -182,8 +275,67 @@ def candidate_profile_detail(
             "candidate": candidate,
             "profile": profile,
             "profile_versions": candidate.profile_versions.select_related(
-                "source_document"
+                "source_document", "created_by"
             ),
+            "profile_conflicts": candidate_profile_conflicts(
+                candidate=candidate,
+                profile=profile,
+            ),
+        },
+    )
+
+
+@login_required
+def candidate_profile_correct(
+    request,
+    organization_slug: str,
+    candidate_id: int,
+    profile_id: int,
+):
+    organization = _visible_organization(request, organization_slug)
+    candidate = get_object_or_404(
+        Candidate.objects.for_organization(organization).not_deleted(),
+        pk=candidate_id,
+    )
+    profile = get_object_or_404(
+        CandidateProfile.objects.for_organization(organization).select_related(
+            "source_document"
+        ),
+        pk=profile_id,
+        candidate=candidate,
+    )
+    form = CandidateProfileCorrectionForm(
+        request.POST or None,
+        profile=profile,
+    )
+    if request.method == "POST" and form.is_valid():
+        try:
+            corrected = create_corrected_profile_version(
+                profile=profile,
+                user=request.user,
+                values=form.cleaned_data,
+            )
+        except ValidationError as error:
+            form.add_error(None, "; ".join(error.messages))
+        else:
+            messages.success(
+                request,
+                f"Corrected profile v{corrected.version} created for review.",
+            )
+            return redirect(
+                "candidates:candidate-profile-detail",
+                organization_slug=organization.slug,
+                candidate_id=candidate.pk,
+                profile_id=corrected.pk,
+            )
+    return render(
+        request,
+        "candidates/candidate_profile_correct.html",
+        {
+            "organization": organization,
+            "candidate": candidate,
+            "profile": profile,
+            "form": form,
         },
     )
 

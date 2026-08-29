@@ -11,12 +11,13 @@
     </div>
     <div class="button-row">
         <a class="secondary-button" href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">Candidate details</a>
-        {% if profile.status == "draft" %}
+        {% if profile.status == "draft" and not profile_conflicts %}
             <form method="post" action="{% url 'candidates:candidate-profile-confirm' organization.slug candidate.pk profile.pk %}">
                 {% csrf_token %}
                 <button class="primary-button" type="submit">Confirm profile for matching</button>
             </form>
         {% endif %}
+        <a class="secondary-button" href="{% url 'candidates:candidate-profile-correct' organization.slug candidate.pk profile.pk %}">Correct profile</a>
         <form method="post" action="{% url 'candidates:candidate-profile-extract' organization.slug candidate.pk profile.source_document.pk %}">
             {% csrf_token %}
             <button class="secondary-button" type="submit">Extract new version</button>
@@ -28,8 +29,23 @@
 <section class="review-callout" aria-labelledby="profile-review-title">
     <div>
         <p class="eyebrow">Recruiter review required</p>
-        <h2 id="profile-review-title">AI output is not matching evidence yet</h2>
+        <h2 id="profile-review-title">Not yet confirmed for matching</h2>
         <p>Check every fact against its displayed CV excerpt. Confirming publishes grounded skills and profile facts; it does not approve, reject, or assess this candidate.</p>
+    </div>
+</section>
+{% endif %}
+
+{% if profile_conflicts %}
+<section class="detail-panel danger-panel" aria-labelledby="profile-conflict-title">
+    <p class="eyebrow">Confirmation blocked</p>
+    <h2 id="profile-conflict-title">Candidate details conflict with the CV profile</h2>
+    {% for conflict in profile_conflicts %}
+        <p><strong>{{ conflict.field|title }}:</strong> candidate record “{{ conflict.candidate_value }}”; CV profile “{{ conflict.profile_value }}”.</p>
+    {% endfor %}
+    <p>Correct the candidate record when its value is wrong, or create a corrected evidence-backed profile version. This draft is excluded from batch confirmation until the conflict is resolved.</p>
+    <div class="button-row">
+        <a class="secondary-button" href="{% url 'candidates:candidate-edit' organization.slug candidate.pk %}">Edit candidate details</a>
+        <a class="secondary-button" href="{% url 'candidates:candidate-profile-correct' organization.slug candidate.pk profile.pk %}">Correct profile</a>
     </div>
 </section>
 {% endif %}
@@ -39,12 +55,12 @@
         <p class="eyebrow">Profile summary</p>
         <h2>Relevant experience</h2>
         <p>{{ profile.relevant_experience_summary|default:"Not recorded" }}</p>
-        {% if profile.fact_evidence.relevant_experience_summary %}<p><small>{{ profile.fact_evidence.relevant_experience_summary }}</small></p>{% endif %}
+        {% if profile.fact_evidence.relevant_experience_summary %}<p class="evidence-note"><strong>CV evidence</strong><br>{{ profile.fact_evidence.relevant_experience_summary }}</p>{% endif %}
         <dl class="requirement-list">
-            <div><dt>Location</dt><dd>{{ profile.location|default:"Unknown" }}{% if profile.fact_evidence.location %}<br><small>{{ profile.fact_evidence.location }}</small>{% endif %}</dd></div>
-            <div><dt>Work mode preference</dt><dd>{{ profile.get_work_mode_preference_display }}{% if profile.fact_evidence.work_mode_preference %}<br><small>{{ profile.fact_evidence.work_mode_preference }}</small>{% endif %}</dd></div>
-            <div><dt>Employment preferences</dt><dd>{{ profile.employment_type_preferences|join:", "|default:"Unknown" }}{% if profile.fact_evidence.employment_type_preferences %}<br><small>{{ profile.fact_evidence.employment_type_preferences }}</small>{% endif %}</dd></div>
-            <div><dt>Availability</dt><dd>{{ profile.availability|default:"Unknown" }}{% if profile.fact_evidence.availability %}<br><small>{{ profile.fact_evidence.availability }}</small>{% endif %}</dd></div>
+            <div><dt>Location</dt><dd>{{ profile.location|default:"Unknown" }}{% if profile.fact_evidence.location %}<span class="inline-evidence"><strong>CV evidence:</strong> {{ profile.fact_evidence.location }}</span>{% endif %}</dd></div>
+            <div><dt>Work mode preference</dt><dd>{{ profile.get_work_mode_preference_display }}{% if profile.fact_evidence.work_mode_preference %}<span class="inline-evidence"><strong>CV evidence:</strong> {{ profile.fact_evidence.work_mode_preference }}</span>{% endif %}</dd></div>
+            <div><dt>Employment preferences</dt><dd>{{ profile.employment_type_preferences|join:", "|default:"Unknown" }}{% if profile.fact_evidence.employment_type_preferences %}<span class="inline-evidence"><strong>CV evidence:</strong> {{ profile.fact_evidence.employment_type_preferences }}</span>{% endif %}</dd></div>
+            <div><dt>Availability</dt><dd>{{ profile.availability|default:"Unknown" }}{% if profile.fact_evidence.availability %}<span class="inline-evidence"><strong>CV evidence:</strong> {{ profile.fact_evidence.availability }}</span>{% endif %}</dd></div>
         </dl>
     </article>
     <article class="detail-panel">
@@ -90,6 +106,7 @@
     </div>
 </section>
 
+{% if profile.languages or profile.education or profile.certifications %}
 <section class="detail-grid" aria-label="Qualifications and evidence">
     <article class="detail-panel">
         <h2>Languages</h2>
@@ -104,21 +121,23 @@
         {% if profile.certifications %}<ul>{% for item in profile.certifications %}<li><strong>{{ item.name }}{% if item.issuer %} · {{ item.issuer }}{% endif %}</strong><br>{{ item.evidence }}</li>{% endfor %}</ul>{% else %}<p>Unknown.</p>{% endif %}
     </article>
 </section>
+{% endif %}
 
 <p class="section-note">The source CV text, contact details, prompt, and raw provider response are not displayed on this page.</p>
 
 <section class="version-history" aria-labelledby="profile-history-title">
     <h2 id="profile-history-title">Profile history</h2>
-    <p class="section-note">Confirmed versions are immutable. Re-extraction creates a separate numbered draft.</p>
+    <p class="section-note">Confirmed versions are immutable. Re-extraction or recruiter correction creates a separate numbered draft.</p>
     <div class="table-wrap">
         <table>
-            <thead><tr><th>Version</th><th>Status</th><th>Source</th><th>Created</th></tr></thead>
+            <thead><tr><th>Version</th><th>Status</th><th>Source</th><th>Created by</th><th>Created</th></tr></thead>
             <tbody>
                 {% for version in profile_versions %}
                     <tr>
                         <th><a href="{% url 'candidates:candidate-profile-detail' organization.slug candidate.pk version.pk %}">v{{ version.version }}</a></th>
                         <td>{{ version.get_status_display }}</td>
                         <td>{{ version.source_document.original_filename }}</td>
+                        <td>{{ version.created_by.username|default:"System" }}</td>
                         <td>{{ version.created_at|date:"Y-m-d H:i" }}</td>
                     </tr>
                 {% endfor %}

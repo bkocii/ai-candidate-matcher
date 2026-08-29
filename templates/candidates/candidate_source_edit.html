@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Edit source | {{ candidate.full_name }}{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">Candidate source</p>
+    <h1>Edit source and contact settings</h1>
+    <p class="lede">Update the organization's recorded provenance and permissions. Consent is never inferred and every change is audited.</p>
+</section>
+
+<form class="form-panel stacked-form" method="post">
+    {% csrf_token %}
+    {% include "candidates/_form_fields.html" %}
+    <div class="button-row">
+        <button class="primary-button" type="submit">Save source settings</button>
+        <a class="secondary-button" href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">Cancel</a>
+    </div>
+</form>
+{% endblock %}

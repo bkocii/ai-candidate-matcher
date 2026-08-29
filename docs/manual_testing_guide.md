@@ -308,10 +308,14 @@ Expected result:
 
 - The screen shows included and excluded counts before any confirmation.
 - A clean evidence-validated draft with no ambiguity, sensitive-content flag,
-  source change, duplicate conflict, or candidate-state exception is included.
+  source change, duplicate conflict, trusted candidate/profile conflict, or
+  candidate-state exception is included.
 - Pending/failed extraction, ambiguities, sensitive-content flags, changed CVs,
   inactive/deleting candidates, missing exact accepted-CV links, and already
   confirmed profiles are excluded with a bounded reason.
+- A recruiter-supplied candidate location that differs from the CV profile
+  location is excluded with a conflict reason. Direct confirmation is blocked by
+  the same check.
 - Every available profile has an individual link and can be opened before the
   batch action.
 - **Confirm all eligible profiles** is one explicit POST action. Each included
@@ -319,6 +323,23 @@ Expected result:
   excluded drafts remain unchanged.
 - The action publishes grounded profile facts only. It does not approve, reject,
   revisit, assess, contact, create outreach, or send anything for a candidate.
+
+### Correct candidate, source, and profile data
+
+Open the created candidate and verify that email, phone, and location appear in
+the heading. Use **Edit details** to correct the candidate location. Reusing the
+same candidate's email/phone is allowed; an identifier used by another candidate
+is rejected without saving.
+
+Use **Edit** on a source card to record **Reason for storing data**, **Consent**,
+and **Allowed contact**. Safe defaults remain explicit, and the source reference
+cannot be changed to another candidate's stable reference.
+
+On a profile version, choose **Correct profile**. Uncheck one questionable skill
+and create the corrected draft. The original version remains unchanged, the new
+numbered draft stays tied to the same CV, and retained/edited facts must pass the
+source-evidence checks. Unsupported corrections save nothing. Confirmation stays
+blocked until trusted-data conflicts and recorded ambiguities are resolved.
 
 ## 7. Test private CV upload and extraction
 

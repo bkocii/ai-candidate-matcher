@@ -876,6 +876,28 @@ membership administration is also complete. `DEMO-002` remains next.
   tests. No model field, migration, AI gateway, prompt, toolkit, matching,
   decision, or send boundary changed.
 
+### `CR-006 — Candidate correction and conflict-safe confirmation`
+
+- Added tenant-scoped **Edit details** and source/privacy correction routes.
+  Candidate edits repeat email/phone duplicate checks; source edits repeat stable
+  reference checks. Deletion-frozen records remain uneditable.
+- Added minimized immutable audit actions for candidate, source, and corrected
+  profile versions without copying private values or before/after content.
+- Added recruiter correction that creates a new numbered profile draft against
+  the unchanged CV, permits removal of questionable skills, and reruns the
+  existing schema/evidence validators. Existing versions remain unchanged.
+- Added deterministic candidate/profile location conflict detection. Direct
+  confirmation fails and intake batch review excludes the draft until resolved.
+- Replaced the source/privacy table with responsive cards, exposed phone, added
+  edit actions, clarified draft wording, labelled evidence, and omitted fully
+  empty qualification panels.
+- Adds `audit.0006_remove_auditevent_audit_event_has_valid_action_and_more`; no
+  candidate, matching, AI/toolkit, decision, or outreach schema changes.
+- Focused correction/intake/profile/privacy/outreach/staleness coverage:
+  `77 passed`; expanded candidate/audit/lifecycle regressions: `151 passed`.
+- Complete quality gate: `542 passed`; deployment/static checks, migration drift,
+  Ruff across `223` files, formatting, and dependency compatibility all passed.
+
 ### `EVAL-001 — Synthetic candidates, vacancies, and expected matches`
 
 - Added the strict version-controlled `eval-001.synthetic-multirole.v1`
@@ -1209,8 +1231,8 @@ membership administration is also complete. `DEMO-002` remains next.
 Outreach generation, immutable recruiter editing, exact final approval, manual
 copy, and plain-text export are implemented. Automatic sending, recipient
 selection, email/ATS/platform integrations, and permission-management UI are not
-implemented; existing source/privacy assertions are inspectable in the candidate
-workspace but remain editable only through intake or technical administration.
+implemented; source/privacy assertions are inspectable and correctable in the
+tenant workspace.
 Sending remains outside the MVP.
 Recruiters can intentionally run structured vacancy extraction for an editable
 requirements draft and candidate-profile extraction for a lawfully stored,

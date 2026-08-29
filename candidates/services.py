@@ -96,11 +96,17 @@ def normalize_phone(value: str) -> str:
 class CandidateDuplicateFinder:
     """Find organization-local duplicates without using names as identity."""
 
-    def __init__(self, organization: Organization):
+    def __init__(
+        self,
+        organization: Organization,
+        *,
+        exclude_candidate_id: int | None = None,
+    ):
         self.organization = organization
-        candidates = Candidate.objects.for_organization(organization).prefetch_related(
-            "sources"
-        )
+        candidates = Candidate.objects.for_organization(organization)
+        if exclude_candidate_id is not None:
+            candidates = candidates.exclude(pk=exclude_candidate_id)
+        candidates = candidates.prefetch_related("sources")
         self.email_candidates: dict[str, set[int]] = {}
         self.phone_candidates: dict[str, set[int]] = {}
         self.reference_candidates: dict[str, set[int]] = {}

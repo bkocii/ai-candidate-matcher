@@ -50,10 +50,21 @@ class AuditEvent(models.Model):
             "candidate_document_downloaded",
             "Candidate document downloaded",
         )
+        CANDIDATE_UPDATED = "candidate_updated", "Candidate updated"
+        CANDIDATE_SOURCE_UPDATED = (
+            "candidate_source_updated",
+            "Candidate source updated",
+        )
+        CANDIDATE_PROFILE_CORRECTED = (
+            "candidate_profile_corrected",
+            "Candidate profile corrected",
+        )
         VACANCY_DELETED = "vacancy_deleted", "Vacancy deleted"
 
     class ObjectType(models.TextChoices):
         CANDIDATE = "candidate", "Candidate"
+        CANDIDATE_SOURCE = "candidate_source", "Candidate source"
+        CANDIDATE_PROFILE = "candidate_profile", "Candidate profile"
         CANDIDATE_DOCUMENT = "candidate_document", "Candidate document"
         VACANCY = "vacancy", "Vacancy"
 
@@ -100,6 +111,9 @@ class AuditEvent(models.Model):
                         "candidate_deletion_cancelled",
                         "candidate_deleted",
                         "candidate_document_downloaded",
+                        "candidate_updated",
+                        "candidate_source_updated",
+                        "candidate_profile_corrected",
                         "vacancy_deleted",
                     ]
                 ),
@@ -109,6 +123,8 @@ class AuditEvent(models.Model):
                 condition=models.Q(
                     object_type__in=[
                         "candidate",
+                        "candidate_source",
+                        "candidate_profile",
                         "candidate_document",
                         "vacancy",
                     ]
@@ -123,8 +139,17 @@ class AuditEvent(models.Model):
                             "candidate_retention_flagged",
                             "candidate_deletion_cancelled",
                             "candidate_deleted",
+                            "candidate_updated",
                         ],
                         object_type="candidate",
+                    )
+                    | models.Q(
+                        action="candidate_source_updated",
+                        object_type="candidate_source",
+                    )
+                    | models.Q(
+                        action="candidate_profile_corrected",
+                        object_type="candidate_profile",
                     )
                     | models.Q(
                         action="candidate_document_downloaded",
@@ -143,8 +168,11 @@ class AuditEvent(models.Model):
             self.Action.CANDIDATE_RETENTION_FLAGGED,
             self.Action.CANDIDATE_DELETION_CANCELLED,
             self.Action.CANDIDATE_DELETED,
+            self.Action.CANDIDATE_UPDATED,
         }
         expected_object_type = {
+            self.Action.CANDIDATE_SOURCE_UPDATED: self.ObjectType.CANDIDATE_SOURCE,
+            self.Action.CANDIDATE_PROFILE_CORRECTED: self.ObjectType.CANDIDATE_PROFILE,
             self.Action.CANDIDATE_DOCUMENT_DOWNLOADED: (
                 self.ObjectType.CANDIDATE_DOCUMENT
             ),
