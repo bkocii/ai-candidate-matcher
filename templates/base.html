@@ -23,8 +23,10 @@
                         <a href="{% url 'vacancies:vacancy-list' organization.slug %}">Vacancies</a>
                         <a href="{% url 'matching:assessment-review-queue' organization.slug %}">Reviews</a>
                         <a href="{% url 'operations:job-list' organization.slug %}">Jobs</a>
-                        <a href="{% url 'audit:ai-usage-report' organization.slug %}">AI usage</a>
-                        <a href="{% url 'audit:privacy-dashboard' organization.slug %}">Privacy &amp; audit</a>
+                        {% if can_view_organization_reports %}
+                            <a href="{% url 'audit:ai-usage-report' organization.slug %}">AI usage</a>
+                            <a href="{% url 'audit:privacy-dashboard' organization.slug %}">Privacy &amp; audit</a>
+                        {% endif %}
                         {% if workspace_count > 1 %}
                             <a href="{% url 'organizations:dashboard' %}">Switch workspace</a>
                         {% endif %}

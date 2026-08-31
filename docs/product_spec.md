@@ -150,9 +150,14 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Audit views expose only the minimum identifiers and operational metadata needed
   for accountability; they do not duplicate CV, contact, prompt, response,
   recruiter-note, or outreach content.
-- AI usage reporting is tenant-scoped and aggregate. It distinguishes unavailable
-  provider metadata from zero, never estimates missing token/cost/latency/retry
-  values, and does not expose per-request or private recruitment content.
+- AI usage reporting is organization-administrator-only, tenant-scoped, and
+  aggregate. It distinguishes unavailable provider metadata from zero, never
+  estimates missing token/cost/latency/retry values, and does not expose
+  per-request or private recruitment content.
+- Full organization privacy/audit reporting is administrator-only. Recruiters
+  retain the task-specific processing state and candidate context required by
+  their ordinary workflows, but cannot inspect organization-wide retention,
+  actor-history, model, cost, or failure reports.
 - Client companies are optional organization-owned hiring-customer references,
   not tenants, candidate owners, memberships, or login accounts. Direct
   employers need none. Only active same-organization clients can be newly

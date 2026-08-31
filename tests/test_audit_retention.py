@@ -9,7 +9,10 @@ from django.utils import timezone
 
 from accounts.models import OrganizationMembership, User
 from audit.models import AuditEvent
-from audit.reporting import build_retention_and_minimization_report
+from audit.reporting import (
+    build_audit_history,
+    build_retention_and_minimization_report,
+)
 from audit.services import record_audit_event
 from candidates.models import Candidate, CandidateSource
 from candidates.services import (
@@ -216,7 +219,7 @@ def test_privacy_dashboard_is_tenant_scoped_and_omits_source_content(client) -> 
 
     report = build_retention_and_minimization_report(
         organization=organization,
-        user=recruiter,
+        user=admin,
         as_of=date(2026, 8, 15),
     )
     assert report.pending_deletions == (pending,)
@@ -224,22 +227,36 @@ def test_privacy_dashboard_is_tenant_scoped_and_omits_source_content(client) -> 
     assert report.overdue_sources[0].candidate == due
     assert report.minimization_issues[0].object_id == bad_tombstone.pk
 
+    with pytest.raises(PermissionDenied):
+        build_retention_and_minimization_report(
+            organization=organization,
+            user=recruiter,
+            as_of=date(2026, 8, 15),
+        )
+    with pytest.raises(PermissionDenied):
+        build_audit_history(
+            organization=organization,
+            user=recruiter,
+        )
+
     route = reverse("audit:privacy-dashboard", args=[organization.slug])
     client.force_login(recruiter)
     response = client.get(route)
-    content = response.content.decode()
-    assert response.status_code == 200
-    assert "Pending Candidate" in content
-    assert "Due Candidate" in content
-    assert "SECRET SOURCE CONTENT" not in content
-    assert "SECRET-REFERENCE" not in content
-    assert "SECRET NOTES" not in content
-    assert "retained@example.test" not in content
-    assert "Review purge" not in content
+    assert response.status_code == 403
+    assert "Pending Candidate" not in response.content.decode()
+    assert "Due Candidate" not in response.content.decode()
 
     client.force_login(admin)
     admin_response = client.get(route)
-    assert "Review purge" in admin_response.content.decode()
+    admin_content = admin_response.content.decode()
+    assert admin_response.status_code == 200
+    assert "Pending Candidate" in admin_content
+    assert "Due Candidate" in admin_content
+    assert "SECRET SOURCE CONTENT" not in admin_content
+    assert "SECRET-REFERENCE" not in admin_content
+    assert "SECRET NOTES" not in admin_content
+    assert "retained@example.test" not in admin_content
+    assert "Review purge" in admin_content
 
     client.force_login(outsider)
     hidden_response = client.get(route)

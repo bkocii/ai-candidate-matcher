@@ -250,8 +250,8 @@ organization name, username, email, password, or recruitment content.
 
 The organization **AI usage** page is a read-only derived query over
 `AIUsageEvent`; it introduces no mutable summary table or copied reporting
-record. Authorized recruiters can filter by a bounded period or controlled
-workflow and inspect aggregate attempts, outcomes, success rate, available
+record. Authorized organization administrators can filter by a bounded period
+or controlled workflow and inspect aggregate attempts, outcomes, success rate, available
 tokens/cost/latency/retries, stale pending attempts, workflow/model breakdowns,
 safe failure categories, and at most 90 displayed daily rows.
 

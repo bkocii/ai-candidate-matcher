@@ -13,7 +13,10 @@ from audit.usage_reporting import (
     build_ai_usage_report,
 )
 from organizations.models import Organization
-from organizations.permissions import can_administer_organization
+from organizations.permissions import (
+    can_administer_organization,
+    require_organization_admin,
+)
 
 
 @login_required
@@ -22,6 +25,7 @@ def privacy_dashboard(request, organization_slug: str):
         Organization.objects.visible_to(request.user),
         slug=organization_slug,
     )
+    require_organization_admin(request.user, organization)
     return render(
         request,
         "audit/privacy_dashboard.html",
@@ -47,6 +51,7 @@ def ai_usage_report(request, organization_slug: str):
         Organization.objects.visible_to(request.user),
         slug=organization_slug,
     )
+    require_organization_admin(request.user, organization)
     report = build_ai_usage_report(
         organization=organization,
         user=request.user,

@@ -27,7 +27,11 @@ from organizations.models import Organization
 pytestmark = pytest.mark.django_db
 
 
-def make_workspace(username="recruiter"):
+def make_workspace(
+    username="administrator",
+    *,
+    role=OrganizationMembership.Role.ADMIN,
+):
     user = User.objects.create_user(username=username)
     organization = Organization.objects.create(
         name=f"{username.title()} Organization",
@@ -36,7 +40,7 @@ def make_workspace(username="recruiter"):
     OrganizationMembership.objects.create(
         user=user,
         organization=organization,
-        role=OrganizationMembership.Role.RECRUITER,
+        role=role,
     )
     return user, organization
 
@@ -264,9 +268,15 @@ def test_empty_report_and_cross_tenant_service_access():
         )
 
 
-def test_usage_report_route_is_tenant_scoped_and_content_free(client):
+def test_usage_report_route_is_admin_only_tenant_scoped_and_content_free(client):
     user, organization = make_workspace()
     outsider, other = make_workspace("outsider")
+    recruiter = User.objects.create_user(username="recruiter")
+    OrganizationMembership.objects.create(
+        user=recruiter,
+        organization=organization,
+        role=OrganizationMembership.Role.RECRUITER,
+    )
     populate_usage(user, organization)
     route = reverse("audit:ai-usage-report", args=[organization.slug])
     client.force_login(user)
@@ -284,6 +294,11 @@ def test_usage_report_route_is_tenant_scoped_and_content_free(client):
     assert "private validation detail" not in content
     assert "candidate_name" not in content
 
+    client.force_login(recruiter)
+    forbidden = client.get(route)
+    assert forbidden.status_code == 403
+    assert "45" not in forbidden.content.decode()
+
     client.force_login(outsider)
     hidden = client.get(route)
     assert hidden.status_code == 404
@@ -291,12 +306,43 @@ def test_usage_report_route_is_tenant_scoped_and_content_free(client):
     assert other != organization
 
 
-def test_navigation_links_to_usage_report(client):
-    user, organization = make_workspace()
-    client.force_login(user)
-
-    response = client.get(reverse("audit:privacy-dashboard", args=[organization.slug]))
-
-    assert reverse("audit:ai-usage-report", args=[organization.slug]) in (
-        response.content.decode()
+def test_navigation_shows_organization_reports_only_to_admins(client):
+    admin, organization = make_workspace()
+    recruiter = User.objects.create_user(username="recruiter")
+    OrganizationMembership.objects.create(
+        user=recruiter,
+        organization=organization,
+        role=OrganizationMembership.Role.RECRUITER,
     )
+    dashboard = reverse(
+        "organizations:organization-dashboard",
+        args=[organization.slug],
+    )
+
+    client.force_login(admin)
+    response = client.get(dashboard)
+
+    usage_route = reverse("audit:ai-usage-report", args=[organization.slug])
+    privacy_route = reverse("audit:privacy-dashboard", args=[organization.slug])
+    assert usage_route in response.content.decode()
+    assert privacy_route in response.content.decode()
+
+    client.force_login(recruiter)
+    response = client.get(dashboard)
+
+    assert usage_route not in response.content.decode()
+    assert privacy_route not in response.content.decode()
+
+
+def test_usage_report_service_rejects_recruiters():
+    recruiter, organization = make_workspace(
+        "recruiter",
+        role=OrganizationMembership.Role.RECRUITER,
+    )
+
+    with pytest.raises(PermissionDenied):
+        build_ai_usage_report(
+            organization=organization,
+            user=recruiter,
+            period="all",
+        )

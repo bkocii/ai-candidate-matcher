@@ -919,7 +919,7 @@ Direct Gmail/Microsoft 365 sending should be treated as proposed product scope a
 - Confirm the displayed `$0.000000` is genuinely supplied zero-cost metadata. If the live provider supplied no cost, it must be shown as unavailable rather than stored or presented as zero.
 - Create an old pending attempt and confirm it is counted separately after 15 minutes rather than treated as failed.
 - Confirm another organization receives `404` and cannot infer any totals.
-- Decide whether aggregate tokens, costs, models, latency, and failures should be restricted to organization administrators; the current implementation permits every active organization member.
+- Manually reconfirm the administrator and recruiter navigation states in each supported browser after the role-policy correction.
 
 #### Findings
 
@@ -928,7 +928,7 @@ Direct Gmail/Microsoft 365 sending should be treated as proposed product scope a
 | MT-025-U01 | Usability defect | Medium | Eight large summary cards consume two full rows before the useful workflow breakdown, then five reporting sections receive similar visual weight. The result is a long technical page that is difficult to scan. | Keep four primary metrics at the top: **AI attempts**, **Success rate**, **Tokens**, and **Estimated cost**. Put latency, retries, failures, and pending into a compact operational strip. Collapse **Model**, **Failure**, and **Metadata availability** under **Technical details** by default. | Open |
 | MT-025-V01 | Visual defect | Medium | Operational values use raw machine-like formatting: `11225`, `$0.000000`, and `5284 ms`. This weakens the otherwise professional presentation. | Use locale-aware separators and readable units: **11,225 tokens**, **$0.00** or **< $0.01**, and **5.3 s**. Retain precise values only in a tooltip/export if needed. | Open |
 | MT-025-C01 | Usability defect | Medium | Failure labels such as **Application validation** and **Application safety validation** are implementation terminology and do not tell an administrator what action is possible. | Use a plain summary such as **AI output did not pass safety checks**, with an optional technical-category disclosure. Link to the relevant safe job/exception list when remediation is possible, without exposing private AI content. | Open |
-| MT-025-A01 | Product/access decision | Medium | The report includes organization-wide cost, model, failure, and operational metadata but is currently available to every active member, not only organization administrators. This also adds a low-frequency technical item to every recruiter's primary navigation. | Restrict the full report to organization administrators, or provide recruiters only a minimal processing-status view. Move the full report under organization settings/administration as part of CR-001 navigation and role work. | Proposed |
+| MT-025-A01 | Product/access decision | Medium | The report includes organization-wide cost, model, failure, and operational metadata that should not appear in an ordinary recruiter's navigation or authorization scope. | The full report is now organization-administrator-only at the navigation, route, and reporting-service boundaries. Recruiters retain task-specific processing status in their normal workflows. | Implemented |
 | MT-025-F01 | Correctness check | High | All six attempts claim available estimated-cost metadata yet total cost is exactly `$0.000000`. That may be valid for synthetic/test metadata, but for live provider calls it can falsely imply AI is free if missing or unsupported pricing is represented as zero. | Verify the stored events. Treat missing/unknown cost as unavailable (`—`), distinguish it from a genuine zero-cost provider response, and display an explanatory coverage note. | Open pending verification |
 
 ### MT-026 — Privacy, retention, and audit dashboard
@@ -954,7 +954,7 @@ Direct Gmail/Microsoft 365 sending should be treated as proposed product scope a
 
 - Open retention settings and verify its dry run, policy defaults, legal holds/exceptions, cleanup confirmation, and role restrictions.
 - Create a due candidate and confirm scheduled retention creates one staged deletion request without purging data or duplicating the request when rerun.
-- Confirm a non-administrator cannot review or execute a purge and another organization receives `404` without seeing counts or actor names.
+- Manually reconfirm the administrator and recruiter navigation states in each supported browser; automated coverage now confirms recruiter `403`, administrator access, and cross-tenant `404` without report content.
 - Confirm a purged candidate leaves only the intended minimized event/tombstone information and no private files.
 - Verify long audit histories are bounded or paginated and preserve stable ordering.
 
@@ -966,7 +966,7 @@ Direct Gmail/Microsoft 365 sending should be treated as proposed product scope a
 | MT-026-U01 | Usability defect | High | The retention review gives three large cards to empty categories (`None`) while the only actionable condition—missing dates—is the fourth card. Administrators must scan substantial empty space to find the issue. | Lead with a consolidated **Needs attention** list. Hide zero-result panels by default or reduce them to compact status rows; show direct links for the candidate/source/document missing a date. | Open |
 | MT-026-U02 | Usability defect | Medium | Workflow history is split into six large cards containing raw bullet lists. This repeats reporting already available elsewhere, creates a very long page, and will become unmanageable as records accumulate. | Replace the cards with one compact, paginated **Audit log** table with type/status/date filters. Show the latest entries first and link to safe internal details; keep full content excluded. | Open |
 | MT-026-C01 | Usability defect | Medium | Labels such as **Frozen for explicit review**, **candidate-level policy review**, **deleted-record integrity checks**, and raw values such as `candidate_profile #71` require implementation knowledge. | Use plain administrator wording, for example **Deletion requests**, **Retention dates missing**, and **Deletion integrity**. Keep object IDs as secondary audit references and provide a safe inspect link where the object still exists. | Open |
-| MT-026-A01 | Product/access decision | Medium | Organization-wide privacy history, actor names, retention counts, and workflow audit summaries are visible to every active organization member, while only retention settings/actions are administrator-gated. This also keeps another low-frequency administrative link in recruiter navigation. | Make the full **Data retention & audit** workspace organization-admin-only under organization settings. Keep only candidate-specific privacy information available to recruiters where their workflow needs it. Resolve this with CR-001 role/navigation work. | Proposed |
+| MT-026-A01 | Product/access decision | Medium | Organization-wide privacy history, actor names, retention counts, and workflow audit summaries should not appear in an ordinary recruiter's navigation or authorization scope. | The full report is now organization-administrator-only at the navigation, route, and reporting-service boundaries. Candidate-specific recruiter workflows remain available. | Implemented |
 
 ### MT-027 — Retention settings and deletion controls
 
@@ -1473,7 +1473,7 @@ Direct Gmail/Microsoft 365 sending should be treated as proposed product scope a
 - **Date:** 2026-08-30
 - **Routes:** Authenticated page → `/accounts/logout/` → `/accounts/login/`
 - **Browser:** Chrome desktop
-- **Functional status:** Server-side correction implemented; browser-history and multi-browser retest pending
+- **Functional status:** Verified in the available desktop browsers after correction; wider Firefox/mobile compatibility coverage deferred
 
 #### Completed functional checks
 
@@ -1483,19 +1483,21 @@ Direct Gmail/Microsoft 365 sending should be treated as proposed product scope a
 - **Pass after refresh only:** Refreshing that cached page enforced authentication and returned to login.
 - **Automated correction check:** Authenticated HTML now returns `Cache-Control: no-store, private, max-age=0`, `Pragma: no-cache`, and `Expires: 0`; logout responses receive the same policy, while anonymous and non-HTML/static-style responses retain their existing cache policy.
 - **Automated verification:** The focused response-security set passed `66` tests and the complete quality gate passed `545` tests with no migration drift.
+- **Pass after correction:** In Chrome desktop, pressing browser **Back** after sign-out returned to the login page; the previously rendered protected page was not restored.
+- **Pass after correction:** With protected candidate/profile and platform pages open in separate Chrome tabs, signing out in one tab caused refresh and Back/Forward navigation in the other tab to require login; protected history was not restored.
+- **Pass after correction:** In Microsoft Edge desktop, Back/Forward navigation after sign-out returned to login and did not restore the protected page.
 
 #### Pending functional checks
 
-- After adding authenticated-page cache controls, repeat logout/back/forward navigation in Chrome, Edge, Firefox, and mobile Safari/Chrome.
-- Verify candidate details, CV/profile pages, shortlist/assessment pages, audit reports, and platform administration are never rendered from browser history after logout.
-- Test logout with protected pages open in multiple tabs and confirm refresh/navigation in every tab requires authentication.
+- Optionally repeat logout/back/forward navigation in Firefox and mobile Safari/Chrome before declaring those browsers part of the supported production matrix. Firefox was not installed in the current test environment.
+- Extend the representative protected-page sample on any newly supported browser to candidate details, CV/profile pages, shortlist/assessment pages, audit reports, and platform administration.
 - Confirm sign-out remains a CSRF-protected POST and cannot be triggered by a cross-site GET.
 
 #### Findings
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-041-S01 | Privacy/security defect | High | After sign-out, browser **Back** displayed the last protected page from history until refresh. The server-side correction now marks every authenticated HTML response private/no-store with legacy-compatible directives while leaving anonymous HTML and non-HTML/static caching unchanged. | Retest browser back-forward cache behavior in the supported browser set. If a supported browser still restores a persisted page, add a minimal `pageshow` safeguard that reloads only when restored from browser history. | Implemented; browser retest pending |
+| MT-041-S01 | Privacy/security defect | High | After sign-out, browser **Back** displayed the last protected page from history until refresh. The server-side correction now marks every authenticated HTML response private/no-store with legacy-compatible directives while leaving anonymous HTML and non-HTML/static caching unchanged. Chrome desktop single-tab/multi-tab and Edge desktop tests now return to login instead of restoring protected history. Firefox was unavailable in the current environment. | Retain the automated regression checks and repeat the scenario when adding another browser to the supported production matrix. If that browser restores a persisted page, add a minimal `pageshow` safeguard that reloads only when restored from browser history. | Resolved in tested environments |
 | MT-041-C01 | Security communication improvement | Low | Logout redirects directly to the ordinary login page with no explicit confirmation that the account was signed out. | Show a concise **You have been signed out** success message on the login page. This does not replace the cache-control fix but reassures the user that the server session ended. | Proposed |
 
 ### MT-042 — Multi-organization chooser and platform-owner tenant access
@@ -1541,7 +1543,7 @@ Direct Gmail/Microsoft 365 sending should be treated as proposed product scope a
 - **Account/role:** `shared-recruiter` — Recruiter
 - **Viewport:** Desktop, 1920 × 1080
 - **Visual status:** Role context is clear; existing dashboard/navigation density issues remain
-- **Functional status:** Recruiter workspace and server-side role boundaries pass; report-visibility policy remains proposed
+- **Functional status:** Recruiter workspace and GET/POST server-side role boundaries pass; administrator-only report policy is implemented
 
 #### Completed functional checks
 
@@ -1550,7 +1552,7 @@ Direct Gmail/Microsoft 365 sending should be treated as proposed product scope a
 - **Pass:** Candidate, vacancy, review, and job workflows remain visible to the recruiter.
 - **Pass:** The **Platform** navigation item is absent, so the ordinary recruiter is not offered platform-owner controls.
 - **Pass:** The dashboard shows only organization-scoped counts: one active candidate, one active client company, and one open vacancy.
-- **Observed by design:** **AI usage** and **Privacy & audit** remain visible to recruiters because both reports currently authorize every active organization member. This confirms the previously recorded access/product decisions MT-025-A01 and MT-026-A01 rather than introducing a new implementation discrepancy.
+- **Corrected:** **AI usage** and **Privacy & audit** are hidden from recruiter navigation. Direct recruiter requests receive `403`, while an administrator retains access and a cross-tenant member still receives `404`.
 - **Pass:** The lower **Organization settings** panel is absent for `shared-recruiter`; administrator controls are not available through the dashboard UI.
 - **Pass:** Directly requesting `/organizations/second-agency-test/settings/` as `shared-recruiter` returned HTTP 403 Forbidden and exposed no organization settings or administrator action.
 - **Pass:** Directly requesting `/platform/organizations/` as `shared-recruiter` returned HTTP 403 Forbidden and exposed no platform organization registry or platform-owner action.
@@ -1558,15 +1560,17 @@ Direct Gmail/Microsoft 365 sending should be treated as proposed product scope a
 - **Pass:** Directly requesting `/organizations/second-agency-test/settings/client-companies/` returned HTTP 403 Forbidden and exposed no client-company administration controls.
 - **Pass:** Directly requesting `/organizations/second-agency-test/retention/` returned HTTP 403 Forbidden and exposed no retention-policy, legal-hold, exception, preview, or cleanup controls.
 - **Pass:** Directly requesting `/organizations/second-agency-test/delete/` returned HTTP 403 Forbidden and exposed no organization suspension/deletion action.
+- **Automated pass:** With CSRF checks enforced and a valid token, a recruiter received HTTP 403 from representative recruiter-membership, client-company, retention-cleanup, organization-deletion, and platform-provisioning POST endpoints. The target membership and client remained active, the organization remained active and unscheduled for deletion, and no unauthorized organization was created.
+- **Automated verification:** The focused role-boundary set passed `63` tests and the complete quality gate passed `546` tests with no migration drift.
+- **Automated report-policy verification:** The focused AI-usage, audit-retention, dashboard, and permission set passed `34` tests. The complete quality gate passed `547` tests with no migration drift. Recruiter report services and routes return `403`, administrator access remains available, cross-tenant requests remain `404`, and recruiter navigation omits both full-report links.
 
 #### Pending functional checks
 
-- Exercise representative POST mutation endpoints with CSRF-aware automated authorization tests; manual GET denial is complete and no destructive manual request is necessary.
-- Decide CR-001 navigation policy for full AI-usage and privacy/audit reports: administrator-only is recommended, while candidate-specific compliance context should remain available inside recruiter workflows.
+- Manually reconfirm both report links and direct-route outcomes while signed in as an administrator and a recruiter in the supported browser matrix.
 
 #### Findings
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-043-A01 | Role/navigation decision | Medium | A recruiter correctly loses **Platform** and settings controls but still receives the organization-wide **AI usage** and **Privacy & audit** links. These pages expose aggregate cost/model/failure metadata plus organization-wide retention and actor history that are operationally useful mainly to administrators. | Implement the already proposed MT-025-A01 and MT-026-A01 decision: move full AI usage and privacy/audit into administrator settings, while keeping only task-relevant processing state and candidate-specific privacy information in recruiter workflows. | Proposed |
+| MT-043-A01 | Role/navigation decision | Medium | Organization-wide **AI usage** and **Privacy & audit** expose cost/model/failure metadata plus retention and actor history that are operationally useful mainly to administrators. | Both full reports are now administrator-only in navigation, HTTP routes, and direct reporting services. Recruiter task state and candidate workflows remain unchanged. | Implemented |
 | MT-043-V01 | Visual duplication | Low | The **Recruiter** badge beside the title and the separate **Your role: Recruiter** metric card communicate the same state, leaving most of the second metric row empty. | Apply MT-002-V01 consistently for both roles: retain the compact badge and remove the redundant role card. | Open |

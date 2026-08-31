@@ -10,7 +10,7 @@ from matching.models import (
     ShortlistEntry,
 )
 from organizations.models import Organization
-from organizations.permissions import require_organization_access
+from organizations.permissions import require_organization_admin
 from outreach.models import OutreachDraftAction, OutreachDraftApproval
 
 
@@ -51,7 +51,7 @@ def build_retention_and_minimization_report(
     user,
     as_of: date,
 ) -> RetentionAndMinimizationReport:
-    require_organization_access(user, organization)
+    require_organization_admin(user, organization)
     candidates = Candidate.objects.for_organization(organization)
     operational_candidates = candidates.filter(
         status__in=[Candidate.Status.ACTIVE, Candidate.Status.INACTIVE]
@@ -161,7 +161,7 @@ def build_audit_history(
     user,
     limit: int = 50,
 ) -> AuditHistory:
-    require_organization_access(user, organization)
+    require_organization_admin(user, organization)
     bounded_limit = min(max(limit, 1), 100)
     return AuditHistory(
         privacy_events=tuple(

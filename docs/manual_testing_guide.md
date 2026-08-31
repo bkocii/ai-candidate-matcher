@@ -1233,7 +1233,8 @@ must not create AI usage events.
 
 ## 23. Test privacy audit, retention review, and minimization
 
-Open **Privacy & audit** in the organization navigation.
+Sign in as an organization administrator and open **Privacy & audit** in the
+organization navigation.
 
 Expected result:
 
@@ -1252,8 +1253,9 @@ Expected result:
 - The page contains no source names/references, permission notes, contact fields,
   CV text, prompts, raw AI responses, recruiter decision notes, approval notes,
   or outreach subject/body.
-- A member of another organization receives `404` and no names or counts from
-  this organization.
+- An active recruiter in this organization does not see the navigation link and
+  receives `403` for a copied report URL. A member of another organization
+  receives `404` and no names or counts from this organization.
 
 ### Retention command
 
@@ -1421,8 +1423,8 @@ uv run pytest -q tests/test_background_jobs.py tests/test_candidate_ai_extractio
 ## 25. Test organization AI usage reporting
 
 After creating successful and deliberately failed synthetic AI attempts in
-sections 16 through 18, 21, or 24, open **AI usage** in the organization
-navigation.
+sections 16 through 18, 21, or 24, sign in as an organization administrator and
+open **AI usage** in the organization navigation.
 
 Expected result:
 
@@ -1444,8 +1446,9 @@ Expected result:
 - The report contains no request IDs, prompts, raw responses, source descriptions,
   CV text, candidate names/contact data, recruiter notes, decision content, or
   outreach subject/body.
-- A member of another organization receives `404` for a copied report URL and
-  sees none of this organization's totals.
+- An active recruiter in this organization does not see the navigation link and
+  receives `403` for a copied report URL. A member of another organization
+  receives `404` and sees none of this organization's totals.
 
 Run the focused provider-free coverage:
 

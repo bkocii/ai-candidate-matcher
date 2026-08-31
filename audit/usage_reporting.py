@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from audit.models import AIUsageEvent
 from organizations.models import Organization
-from organizations.permissions import require_organization_access
+from organizations.permissions import require_organization_admin
 
 ALL_WORKFLOWS = "all"
 DEFAULT_REPORTING_PERIOD = "30"
@@ -232,7 +232,7 @@ def build_ai_usage_report(
     now=None,
 ) -> AIUsageReport:
     """Aggregate only minimized operational metadata for one organization."""
-    require_organization_access(user, organization)
+    require_organization_admin(user, organization)
     selected_period = normalize_reporting_period(period)
     selected_workflow = normalize_reporting_workflow(workflow)
     current_time = now or timezone.now()

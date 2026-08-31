@@ -1,5 +1,6 @@
 import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.test import Client
 from django.urls import reverse
 
 from accounts.models import OrganizationMembership, User
@@ -9,7 +10,7 @@ from audit.lifecycle import (
 )
 from audit.models import DataLifecycleEvent, TenantManagementEvent
 from candidates.models import Candidate
-from organizations.models import Organization
+from organizations.models import ClientCompany, Organization
 from organizations.permissions import (
     has_organization_access,
     is_platform_owner,
@@ -352,6 +353,86 @@ def test_team_routes_are_admin_only_and_manage_recruiters(client) -> None:
     assert response.status_code == 302
     membership.refresh_from_db()
     assert membership.is_active is False
+
+
+def test_recruiter_cannot_post_administrator_or_platform_mutations() -> None:
+    _, organization, _ = make_organization_admin()
+    recruiter = User.objects.create_user(username="mutation-recruiter")
+    OrganizationMembership.objects.create(
+        user=recruiter,
+        organization=organization,
+        role=OrganizationMembership.Role.RECRUITER,
+    )
+    managed_recruiter = User.objects.create_user(username="managed-recruiter")
+    managed_membership = OrganizationMembership.objects.create(
+        user=managed_recruiter,
+        organization=organization,
+        role=OrganizationMembership.Role.RECRUITER,
+    )
+    company = ClientCompany.objects.create(
+        organization=organization,
+        name="Protected Client",
+        slug="protected-client",
+    )
+    csrf_client = Client(enforce_csrf_checks=True)
+    csrf_client.force_login(recruiter)
+    dashboard = csrf_client.get(
+        reverse("organizations:organization-dashboard", args=[organization.slug])
+    )
+    csrf_token = dashboard.cookies["csrftoken"].value
+
+    responses = (
+        csrf_client.post(
+            reverse(
+                "organizations:recruiter-status",
+                args=[organization.slug, managed_membership.pk],
+            ),
+            {"is_active": "false"},
+            HTTP_X_CSRFTOKEN=csrf_token,
+        ),
+        csrf_client.post(
+            reverse(
+                "organizations:client-company-status",
+                args=[organization.slug, company.pk],
+            ),
+            {"is_active": "false"},
+            HTTP_X_CSRFTOKEN=csrf_token,
+        ),
+        csrf_client.post(
+            reverse("organizations:retention-dashboard", args=[organization.slug]),
+            {"action": "apply_cleanup"},
+            HTTP_X_CSRFTOKEN=csrf_token,
+        ),
+        csrf_client.post(
+            reverse(
+                "organizations:organization-delete-request",
+                args=[organization.slug],
+            ),
+            {"confirmation": "DELETE ORGANIZATION"},
+            HTTP_X_CSRFTOKEN=csrf_token,
+        ),
+        csrf_client.post(
+            reverse("organizations:platform-organization-create"),
+            {
+                "organization_name": "Unauthorized Organization",
+                "username": "unauthorized-admin",
+                "temporary_password": TEMPORARY_PASSWORD,
+                "temporary_password_confirmation": TEMPORARY_PASSWORD,
+            },
+            HTTP_X_CSRFTOKEN=csrf_token,
+        ),
+    )
+
+    assert dashboard.status_code == 200
+    assert [response.status_code for response in responses] == [403] * 5
+    managed_membership.refresh_from_db()
+    company.refresh_from_db()
+    organization.refresh_from_db()
+    assert managed_membership.is_active is True
+    assert company.is_active is True
+    assert organization.is_active is True
+    assert organization.deletion_requested_at is None
+    assert not Organization.objects.filter(name="Unauthorized Organization").exists()
 
 
 def test_workspace_switch_navigation_uses_only_active_memberships(client) -> None:
