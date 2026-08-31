@@ -1,8 +1,12 @@
 import pytest
+from django.contrib.auth.models import AnonymousUser
+from django.http import HttpResponse
+from django.test import RequestFactory
 from django.urls import reverse
 
 from accounts.models import OrganizationMembership, User
 from candidates.models import Candidate
+from config.middleware import AuthenticatedHTMLNoStoreMiddleware
 from organizations.models import ClientCompany, Organization
 
 pytestmark = pytest.mark.django_db
@@ -203,3 +207,60 @@ def test_logout_requires_post_and_returns_to_login(client) -> None:
 
     assert response.status_code == 302
     assert response.url == reverse("accounts:login")
+    assert response["Cache-Control"] == "no-store, private, max-age=0"
+    assert response["Pragma"] == "no-cache"
+    assert response["Expires"] == "0"
+
+
+def test_authenticated_html_responses_cannot_be_restored_from_cache(client) -> None:
+    user = User.objects.create_user(username="private-page-user")
+    organization = Organization.objects.create(name="Private", slug="private")
+    add_membership(user, organization)
+    client.force_login(user)
+
+    response = client.get(
+        reverse(
+            "organizations:organization-dashboard",
+            kwargs={"organization_slug": organization.slug},
+        )
+    )
+
+    assert response.status_code == 200
+    assert response["Cache-Control"] == "no-store, private, max-age=0"
+    assert response["Pragma"] == "no-cache"
+    assert response["Expires"] == "0"
+
+
+def test_anonymous_html_response_keeps_its_existing_cache_policy() -> None:
+    request = RequestFactory().get("/public/")
+    request.user = AnonymousUser()
+    middleware = AuthenticatedHTMLNoStoreMiddleware(
+        lambda request: HttpResponse(
+            "Public",
+            headers={"Cache-Control": "public, max-age=300"},
+        )
+    )
+
+    response = middleware(request)
+
+    assert response["Cache-Control"] == "public, max-age=300"
+    assert "Pragma" not in response
+    assert "Expires" not in response
+
+
+def test_authenticated_non_html_response_keeps_its_existing_cache_policy() -> None:
+    request = RequestFactory().get("/static/css/app.css")
+    request.user = type("AuthenticatedUser", (), {"is_authenticated": True})()
+    middleware = AuthenticatedHTMLNoStoreMiddleware(
+        lambda request: HttpResponse(
+            "body { color: inherit; }",
+            content_type="text/css",
+            headers={"Cache-Control": "public, max-age=3600"},
+        )
+    )
+
+    response = middleware(request)
+
+    assert response["Cache-Control"] == "public, max-age=3600"
+    assert "Pragma" not in response
+    assert "Expires" not in response

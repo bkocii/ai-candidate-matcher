@@ -316,6 +316,11 @@ migration.
   layer without a JavaScript framework.
 - Authentication uses Django's built-in login and logout views. Logout is a
   CSRF-protected POST action rather than a state-changing link.
+- Every response that began with an authenticated user and returns HTML carries
+  `Cache-Control: no-store, private, max-age=0`, `Pragma: no-cache`, and
+  `Expires: 0`. This prevents tenant and platform pages from being restored from
+  browser history after logout. Anonymous HTML and non-HTML responses, including
+  public static assets, retain their existing cache behavior.
 - The dashboard entry point redirects users with one active membership directly
   to that organization and asks users with several memberships to select one.
 - A platform owner with no tenant membership is routed to the separate platform

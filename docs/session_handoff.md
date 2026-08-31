@@ -24,6 +24,13 @@ now complete, as is `CR-003` in-app client-company management. `CR-001` managed
 multi-organization provisioning and membership administration is also complete.
 `DEMO-002` remains next.
 
+Manual-testing correction `MT-041-S01` is implemented: every response that
+began with an authenticated user and returns HTML is private/no-store with
+legacy-compatible cache directives. This protects tenant and platform pages
+from browser-history restoration after logout while leaving anonymous pages,
+static assets, and non-HTML responses unchanged. Cross-browser back/forward and
+multi-tab retesting remains the next manual check for this finding.
+
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
 constrained administrator/recruiter roles, optional organization-owned client
@@ -781,6 +788,22 @@ The focused command is:
 
 ```text
 uv run pytest -q tests/test_managed_saas.py tests/test_identity_models.py tests/test_organization_permissions.py tests/test_dashboard.py tests/test_client_company_management.py tests/test_data_lifecycle.py tests/test_candidate_intake.py tests/test_candidate_bulk_intake.py tests/test_candidate_unified_intake.py tests/test_vacancy_intake.py tests/test_audit_retention.py
+```
+
+`MT-041-S01` verification completed on 2026-08-30:
+
+- Focused authenticated-cache, logout, health, private-document, and outreach
+  response set: `66 passed`.
+- Complete quality gate: `545 passed`; Django system/deploy checks, static
+  collection, zero migration drift, Ruff over `224` files, and dependency
+  compatibility all passed.
+- No migration was added. Cross-browser history and multi-tab behavior still
+  require the manual retest documented in `docs/manual_testing_guide.md`.
+
+The focused command is:
+
+```text
+uv run pytest -q tests/test_dashboard.py tests/test_production_operations.py tests/test_candidate_documents.py tests/test_outreach_workflow.py
 ```
 
 ## Immediate next action

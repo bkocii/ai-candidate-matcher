@@ -96,6 +96,14 @@ confirm the current session remains signed in.
 7. Confirm the client is active, the vacancy count is zero, and the dashboard's
    active-client count becomes one.
 8. Select **Sign out** and confirm you return to the login page.
+9. Press browser **Back** and **Forward** after sign-out. The prior protected
+   page must not reappear from browser history; any protected navigation must
+   require authentication again. Repeat with candidate, shortlist/review,
+   privacy/audit, and platform pages, including a second open tab.
+10. In browser developer tools, confirm authenticated HTML responses include
+    `Cache-Control: no-store, private, max-age=0`, `Pragma: no-cache`, and
+    `Expires: 0`. Confirm public CSS/JavaScript assets retain their normal cache
+    behavior.
 
 ### Managed team and workspace switching
 

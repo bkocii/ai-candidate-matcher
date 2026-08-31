@@ -116,6 +116,10 @@ membership administration is also complete. `DEMO-002` remains next.
 - Added responsive project-owned base, authentication, organization-selection,
   no-access, and dashboard templates with a small static CSS layer.
 - Added Django login and POST-only logout routes with safe redirect settings.
+- Added an authenticated-HTML response boundary that marks tenant and platform
+  pages private and non-cacheable, preventing protected content from being
+  restored from browser history after logout without changing static-asset or
+  other non-HTML caching.
 - Added a membership-aware dashboard entry point that redirects a single active
   organization or presents an explicit selection when several are available.
 - Added an organization dashboard showing the active-client count and current
@@ -1225,6 +1229,18 @@ membership administration is also complete. `DEMO-002` remains next.
   `audit.0005_tenantmanagementevent`; both are additive and retain the previous
   tenant foreign-key boundaries. Both apply successfully, and the follow-up
   migration plan is empty.
+
+`MT-041-S01` verification completed on 2026-08-30:
+
+- Focused authenticated-cache, logout, health, private-document, and outreach
+  response set: `66 passed`.
+- Complete `python scripts/check.py` quality gate: `545 passed`.
+- Django system and warning-strict deployment checks passed; production static
+  collection passed; migration drift is zero; Ruff lint passed and all `224`
+  files are formatted; installed dependency compatibility passed.
+- The correction adds no model or migration. Automated response tests confirm
+  authenticated HTML is private/no-store and anonymous or non-HTML caching is
+  unchanged. Cross-browser history restoration remains a manual retest.
 
 ## Not implemented
 
