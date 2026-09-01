@@ -52,4 +52,6 @@ def test_production_env_example_has_placeholders_not_real_secrets() -> None:
     assert "DJANGO_ENVIRONMENT=production" in environment
     assert "POSTGRES_PASSWORD=replace-with-a-database-password" in environment
     assert "OPENAI_API_KEY=replace-with-the-provider-key" in environment
+    assert "AI_INPUT_COST_PER_1M_TOKENS=0.75" in environment
+    assert "AI_OUTPUT_COST_PER_1M_TOKENS=4.50" in environment
     assert "DJANGO_MEDIA_ROOT=/srv/ai-candidate-matcher/private-media" in environment

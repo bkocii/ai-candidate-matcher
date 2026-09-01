@@ -122,6 +122,37 @@ def test_production_uses_postgresql_and_explicit_private_media() -> None:
     assert str(PROJECT_ROOT / ".test-private-media") in result.stdout
 
 
+def test_explicit_ai_cost_rates_are_mapped_together() -> None:
+    environment = secure_production_environment()
+    environment.update(
+        {
+            "DJANGO_SETTINGS_MODULE": "config.settings",
+            "AI_INPUT_COST_PER_1M_TOKENS": "0.75",
+            "AI_OUTPUT_COST_PER_1M_TOKENS": "4.50",
+        }
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "from django.conf import settings; "
+                "print(settings.AI_TOOLKIT['input_cost_per_1m_tokens']); "
+                "print(settings.AI_TOOLKIT['output_cost_per_1m_tokens'])"
+            ),
+        ],
+        cwd=PROJECT_ROOT,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.splitlines() == ["0.75", "4.50"]
+
+
 def test_quality_gate_overrides_development_https_settings(monkeypatch) -> None:
     monkeypatch.setenv("DJANGO_SECURE_SSL_REDIRECT", "false")
     monkeypatch.setenv("DJANGO_SESSION_COOKIE_SECURE", "false")

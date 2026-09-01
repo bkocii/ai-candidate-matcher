@@ -166,9 +166,19 @@ provider charge, uses no database or recruitment data, and is never a CI gate.
 
 Django maps `AI_PROVIDER`, provider-specific API key/model variables, generic
 `AI_API_KEY` / `AI_MODEL` fallbacks, `AI_EMBEDDING_MODEL`, and
-`AI_MAX_RETRIES` into `AI_TOOLKIT`. For the default provider, `OPENAI_API_KEY`
-and `OPENAI_MODEL` take precedence over the generic fallbacks. File logging is
-always disabled by the application configuration.
+`AI_MAX_RETRIES` into `AI_TOOLKIT`. Explicit
+`AI_INPUT_COST_PER_1M_TOKENS` and `AI_OUTPUT_COST_PER_1M_TOKENS` values are also
+mapped together. For the default provider, `OPENAI_API_KEY` and `OPENAI_MODEL`
+take precedence over the generic fallbacks. File logging is always disabled by
+the application configuration.
+
+The supplied environment examples configure the official OpenAI API prices
+verified for `gpt-5.4-mini` on 2026-09-01: `$0.75` input and `$4.50` output per
+one million tokens. The rates are runtime configuration, not permanent product
+constants, and must be reviewed whenever the model or provider price changes.
+The application forwards toolkit cost estimates only when both explicit rates
+are configured. Missing rates therefore produce unavailable cost metadata rather
+than trusting the toolkit v1.0.0 placeholder zero-price table.
 
 No key is validated at Django startup. The first intentional gateway request
 constructs and validates the toolkit client; a missing or invalid configuration

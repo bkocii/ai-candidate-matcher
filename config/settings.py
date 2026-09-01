@@ -282,6 +282,10 @@ AI_TOOLKIT = {
     or os.getenv("AI_MODEL", "gpt-5.4-mini"),
     "embedding_model": os.getenv(f"{AI_PROVIDER_ENV_PREFIX}_EMBEDDING_MODEL")
     or os.getenv("AI_EMBEDDING_MODEL", "text-embedding-3-small"),
+    "input_cost_per_1m_tokens": os.getenv("AI_INPUT_COST_PER_1M_TOKENS", "").strip()
+    or None,
+    "output_cost_per_1m_tokens": os.getenv("AI_OUTPUT_COST_PER_1M_TOKENS", "").strip()
+    or None,
     "max_retries": env_int("AI_MAX_RETRIES", default=1),
     "file_logging_enabled": False,
 }

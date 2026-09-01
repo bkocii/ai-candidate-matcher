@@ -1,7 +1,6 @@
 """Reusable provider-free gateway test double for application service tests."""
 
 from collections.abc import Callable
-from decimal import Decimal
 from typing import NamedTuple, cast
 
 from pydantic import BaseModel
@@ -36,7 +35,7 @@ def fake_gateway_metadata() -> AIGatewayMetadata:
             output_tokens=1,
             total_tokens=2,
         ),
-        estimated_cost_usd=Decimal("0"),
+        estimated_cost_usd=None,
     )
 
 

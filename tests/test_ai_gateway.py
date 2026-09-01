@@ -81,6 +81,12 @@ def successful_toolkit_result() -> AIResult[ExampleOutput]:
     )
 
 
+@override_settings(
+    AI_TOOLKIT={
+        "input_cost_per_1m_tokens": "0.75",
+        "output_cost_per_1m_tokens": "4.50",
+    }
+)
 def test_toolkit_gateway_returns_application_owned_result_and_metadata() -> None:
     client = RecordingClient()
     gateway = ToolkitAIGateway(client_factory=lambda: client)
@@ -101,6 +107,19 @@ def test_toolkit_gateway_returns_application_owned_result_and_metadata() -> None
     assert result.metadata.token_usage.output_tokens == 8
     assert result.metadata.token_usage.total_tokens == 28
     assert client.calls == [("Analyze only supplied evidence.", ExampleOutput)]
+
+
+@override_settings(AI_TOOLKIT={})
+def test_toolkit_gateway_hides_cost_without_explicit_configured_rates() -> None:
+    gateway = ToolkitAIGateway(client_factory=RecordingClient)
+
+    result = gateway.request_structured(
+        prompt="Analyze supplied evidence.",
+        response_type=ExampleOutput,
+    )
+
+    assert result.metadata.token_usage is not None
+    assert result.metadata.estimated_cost_usd is None
 
 
 def test_gateway_result_does_not_expose_toolkit_raw_response() -> None:

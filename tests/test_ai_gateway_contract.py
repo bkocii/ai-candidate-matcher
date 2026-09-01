@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import pytest
 from ai.schemas import AIResult, TokenUsage
+from django.test import override_settings
 from pydantic import BaseModel
 
 from ai_gateway import (
@@ -70,6 +71,12 @@ def contract_gateway(request):
     return ToolkitAIGateway(client_factory=lambda: client), client.calls
 
 
+@override_settings(
+    AI_TOOLKIT={
+        "input_cost_per_1m_tokens": "0.75",
+        "output_cost_per_1m_tokens": "4.50",
+    }
+)
 def test_fake_and_toolkit_gateways_share_success_contract(contract_gateway):
     gateway, calls = contract_gateway
 

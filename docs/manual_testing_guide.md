@@ -1233,8 +1233,7 @@ must not create AI usage events.
 
 ## 23. Test privacy audit, retention review, and minimization
 
-Sign in as an organization administrator and open **Privacy & audit** in the
-organization navigation.
+Open **Privacy & audit** in the organization navigation.
 
 Expected result:
 
@@ -1253,9 +1252,8 @@ Expected result:
 - The page contains no source names/references, permission notes, contact fields,
   CV text, prompts, raw AI responses, recruiter decision notes, approval notes,
   or outreach subject/body.
-- An active recruiter in this organization does not see the navigation link and
-  receives `403` for a copied report URL. A member of another organization
-  receives `404` and no names or counts from this organization.
+- A member of another organization receives `404` and no names or counts from
+  this organization.
 
 ### Retention command
 
@@ -1423,8 +1421,20 @@ uv run pytest -q tests/test_background_jobs.py tests/test_candidate_ai_extractio
 ## 25. Test organization AI usage reporting
 
 After creating successful and deliberately failed synthetic AI attempts in
-sections 16 through 18, 21, or 24, sign in as an organization administrator and
-open **AI usage** in the organization navigation.
+sections 16 through 18, 21, or 24, open **AI usage** in the organization
+navigation.
+
+Before making a live `gpt-5.4-mini` request, confirm the runtime environment has
+both verified per-million-token rates configured:
+
+```text
+AI_INPUT_COST_PER_1M_TOKENS=0.75
+AI_OUTPUT_COST_PER_1M_TOKENS=4.50
+```
+
+Both values were verified against OpenAI's published API price on 2026-09-01.
+If the model or its price changes, update both values together before making new
+requests.
 
 Expected result:
 
@@ -1441,14 +1451,16 @@ Expected result:
 - Provider metadata that was not supplied is displayed as unavailable (`—`) and
   included in the coverage counts. A failed request without provider metadata
   does not invent zero tokens, zero cost, a model, latency, or retry data.
+- Cost is available only when both explicit rates were configured for the
+  request. It is calculated from recorded input/output tokens; changing rates
+  later does not rewrite historical usage events.
 - Pending attempts older than 15 minutes are counted separately for operational
   review. Pending work is not treated as either success or failure.
 - The report contains no request IDs, prompts, raw responses, source descriptions,
   CV text, candidate names/contact data, recruiter notes, decision content, or
   outreach subject/body.
-- An active recruiter in this organization does not see the navigation link and
-  receives `403` for a copied report URL. A member of another organization
-  receives `404` and sees none of this organization's totals.
+- A member of another organization receives `404` for a copied report URL and
+  sees none of this organization's totals.
 
 Run the focused provider-free coverage:
 

@@ -15,6 +15,9 @@ def test_django_settings_load() -> None:
     assert settings.STATIC_URL == "/static/"
     assert settings.FILE_UPLOAD_PERMISSIONS == 0o600
     assert settings.FILE_UPLOAD_DIRECTORY_PERMISSIONS == 0o700
+    input_rate = settings.AI_TOOLKIT["input_cost_per_1m_tokens"]
+    output_rate = settings.AI_TOOLKIT["output_cost_per_1m_tokens"]
+    assert bool(input_rate) == bool(output_rate)
 
 
 def test_published_toolkit_version_is_installed() -> None:
@@ -38,6 +41,8 @@ def test_django_integration_entry_points_are_available() -> None:
         "provider": "openai",
         "api_key": "test-key-not-used-for-network-calls",
         "model": "gpt-5.4-mini",
+        "input_cost_per_1m_tokens": "0.75",
+        "output_cost_per_1m_tokens": "4.50",
         "file_logging_enabled": False,
     }
 )
@@ -46,4 +51,6 @@ def test_toolkit_django_configuration_validates_without_network() -> None:
 
     assert config.provider == "openai"
     assert config.model == "gpt-5.4-mini"
+    assert config.input_cost_per_1m_tokens == "0.75"
+    assert config.output_cost_per_1m_tokens == "4.50"
     assert config.file_logging_enabled is False

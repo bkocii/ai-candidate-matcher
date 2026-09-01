@@ -28,8 +28,8 @@ Manual-testing correction `MT-041-S01` is implemented: every response that
 began with an authenticated user and returns HTML is private/no-store with
 legacy-compatible cache directives. This protects tenant and platform pages
 from browser-history restoration after logout while leaving anonymous pages,
-static assets, and non-HTML responses unchanged. Chrome single-tab/multi-tab and
-Edge manual retests passed; Firefox was unavailable in the current environment.
+static assets, and non-HTML responses unchanged. Cross-browser back/forward and
+multi-tab retesting remains the next manual check for this finding.
 
 `FOUND-001` through `FOUND-005` and `DATA-001` through `DATA-005` are complete. The project now has a Django
 5.2.17 LTS foundation, a custom user model, organizations, memberships,
@@ -277,14 +277,13 @@ same-organization duplicate check is serialized before save. No AI, toolkit,
 audit view/event, retention scheduler, background task, or observability scope
 was added.
 
-`PROD-002` is complete. Organization administrators have a tenant-scoped
-**Privacy & audit** dashboard with candidate/source/document retention
-exceptions, missing-date counts, a staged candidate deletion queue,
-deleted-tombstone minimization checks, immutable privacy events, and compact
-histories over existing AI usage, CSV source, assessment, decision,
-outreach-approval, and copy/export records. Recruiters cannot open this full
-organization report. These views omit contact fields, CV/source text, prompts,
-raw responses, decision and approval notes, and outreach content.
+`PROD-002` is complete. Recruiters have a tenant-scoped **Privacy & audit**
+dashboard with candidate/source/document retention exceptions, missing-date
+counts, a staged candidate deletion queue, deleted-tombstone minimization checks,
+immutable privacy events, and compact histories over existing AI usage, CSV
+source, assessment, decision, outreach-approval, and copy/export records. These
+views omit contact fields, CV/source text, prompts, raw responses, decision and
+approval notes, and outreach content.
 
 Candidate deletion now requires two explicit stages. An organization member
 requests deletion, freezing the candidate from new uploads, extraction, and
@@ -327,16 +326,13 @@ queue. Profile results remain drafts requiring evidence inspection and
 individual confirmation. Assessment results enter the existing review flow;
 approve/reject/revisit and outreach remain separate individual actions.
 
-`PROD-004` is complete. The organization-administrator-only, tenant-scoped
-**AI usage** page derives aggregate
+`PROD-004` is complete. The tenant-scoped **AI usage** page derives aggregate
 attempt, outcome, token, cost, latency, retry, model, workflow, safe-failure, and
 daily trend reporting from existing minimized `AIUsageEvent` records. Filters
 support 7, 30, and 90 days or all time and individual workflows. Metadata
 coverage is explicit, and absent provider metadata remains unavailable rather
 than being estimated. The report contains no request IDs or private recruitment
-content. Recruiters retain the processing state exposed by candidate, shortlist,
-review, and job workflows but cannot open the organization-wide report. No
-toolkit or database migration change was needed.
+content. No toolkit or database migration change was needed.
 
 The shared quality gate also supplies every required HTTPS value to its isolated
 production-check subprocess. This prevents a normal development `.env` with
@@ -801,8 +797,8 @@ uv run pytest -q tests/test_managed_saas.py tests/test_identity_models.py tests/
 - Complete quality gate: `545 passed`; Django system/deploy checks, static
   collection, zero migration drift, Ruff over `224` files, and dependency
   compatibility all passed.
-- No migration was added. Chrome single-tab/multi-tab and Edge history tests
-  passed; Firefox/mobile coverage remains optional for a wider support matrix.
+- No migration was added. Cross-browser history and multi-tab behavior still
+  require the manual retest documented in `docs/manual_testing_guide.md`.
 
 The focused command is:
 
@@ -810,36 +806,21 @@ The focused command is:
 uv run pytest -q tests/test_dashboard.py tests/test_production_operations.py tests/test_candidate_documents.py tests/test_outreach_workflow.py
 ```
 
-`MT-043` authorization verification completed on 2026-08-31:
+`MT-025-F01` verification completed on 2026-09-01:
 
-- Focused managed-SaaS, client-company, lifecycle, organization-permission, and
-  dashboard set: `63 passed`.
-- Complete quality gate: `546 passed`; Django system/deploy checks, static
-  collection, zero migration drift, Ruff over `224` files, and dependency
-  compatibility all passed.
-- A recruiter with a valid CSRF token cannot mutate administrator or platform
-  state through representative POST endpoints. No migration was added.
-
-`MT-043-A01` report-policy verification completed on 2026-08-31:
-
-- The full **AI usage** and **Privacy & audit** reports are
-  organization-administrator-only in navigation, HTTP routes, and reporting
-  services. Recruiter workflow access is otherwise unchanged.
-- Focused report/audit/dashboard/permission set: `34 passed`.
-- Complete quality gate: `547 passed`; system/deploy checks, static collection,
-  zero migration drift, Ruff over `224` files, and dependency compatibility all
-  passed. No migration was added.
+- Official `gpt-5.4-mini` rates are configured in both environment examples at
+  `$0.75` input and `$4.50` output per one million tokens.
+- Django maps the two explicit values together. The gateway suppresses toolkit
+  cost metadata when either rate is absent, preventing the toolkit v1.0.0
+  placeholder zero table from implying that live AI usage is free.
+- Focused coverage: `86 passed`. Complete quality gate: `547 passed`; system and
+  deployment checks, static collection, zero migration drift, Ruff over `224`
+  files, and dependency compatibility all passed. No migration was added.
 
 The focused command is:
 
 ```text
-uv run pytest -q tests/test_ai_usage_reporting.py tests/test_audit_retention.py tests/test_dashboard.py tests/test_organization_permissions.py
-```
-
-The focused command is:
-
-```text
-uv run pytest -q tests/test_managed_saas.py tests/test_client_company_management.py tests/test_data_lifecycle.py tests/test_organization_permissions.py tests/test_dashboard.py
+uv run pytest -q tests/test_foundation.py tests/test_environment.py tests/test_deployment_artifacts.py tests/test_ai_gateway.py tests/test_ai_gateway_contract.py tests/test_ai_usage_events.py tests/test_ai_usage_reporting.py
 ```
 
 ## Immediate next action

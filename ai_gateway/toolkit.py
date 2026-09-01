@@ -12,6 +12,7 @@ from ai.exceptions import (
 )
 from ai.integrations.django import get_ai_client
 from ai.schemas import AIResult
+from django.conf import settings
 from pydantic import BaseModel
 
 from ai_gateway.contracts import (
@@ -26,6 +27,14 @@ from ai_gateway.contracts import (
 )
 
 StructuredOutput = TypeVar("StructuredOutput", bound=BaseModel)
+
+
+def _explicit_cost_rates_are_configured() -> bool:
+    """Trust toolkit cost estimates only when both operator rates are explicit."""
+    toolkit_settings = getattr(settings, "AI_TOOLKIT", {})
+    input_rate = toolkit_settings.get("input_cost_per_1m_tokens")
+    output_rate = toolkit_settings.get("output_cost_per_1m_tokens")
+    return bool(input_rate and output_rate)
 
 
 class StructuredToolkitClient(Protocol):
@@ -104,6 +113,10 @@ class ToolkitAIGateway:
                 duration_ms=result.duration_ms,
                 retries_used=result.retries_used,
                 token_usage=token_usage,
-                estimated_cost_usd=result.estimated_cost_usd,
+                estimated_cost_usd=(
+                    result.estimated_cost_usd
+                    if _explicit_cost_rates_are_configured()
+                    else None
+                ),
             ),
         )

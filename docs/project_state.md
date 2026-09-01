@@ -693,8 +693,7 @@ membership administration is also complete. `DEMO-002` remains next.
   timestamp only. Candidate request/retention/cancel/purge, private CV download,
   and vacancy deletion are recorded without copied identity, contact, CV,
   prompt, response, note, or outreach content.
-- Added an organization-administrator-only, tenant-scoped **Privacy & audit**
-  dashboard. It presents staged
+- Added a tenant-scoped **Privacy & audit** dashboard. It presents staged
   deletion requests, candidate/source/document retention exceptions, missing
   retention dates, deleted-tombstone minimization findings, privacy events, and
   compact summaries over existing AI/import/assessment/decision/outreach audit
@@ -749,8 +748,7 @@ membership administration is also complete. `DEMO-002` remains next.
 
 ### `PROD-004 — Token, cost, latency, retry, and failure reporting`
 
-- Added an organization-administrator-only, tenant-scoped **AI usage** report
-  derived from the immutable,
+- Added a tenant-scoped **AI usage** report derived from the immutable,
   minimized `AIUsageEvent` ledger. No reporting copy or parallel usage store was
   introduced.
 - Added 7-, 30-, and 90-day and all-time period filters plus workflow filters.
@@ -1242,30 +1240,22 @@ membership administration is also complete. `DEMO-002` remains next.
   files are formatted; installed dependency compatibility passed.
 - The correction adds no model or migration. Automated response tests confirm
   authenticated HTML is private/no-store and anonymous or non-HTML caching is
-  unchanged. Chrome single-tab/multi-tab and Edge manual retests passed;
-  Firefox was unavailable in the current environment.
+  unchanged. Cross-browser history restoration remains a manual retest.
 
-`MT-043` authorization verification completed on 2026-08-31:
+`MT-025-F01` verification completed on 2026-09-01:
 
-- Focused managed-SaaS, client-company, lifecycle, organization-permission, and
-  dashboard set: `63 passed`.
-- Complete `python scripts/check.py` quality gate: `546 passed`.
-- A CSRF-enforced recruiter request with a valid token receives `403` from
-  representative membership, client-company, retention, organization-deletion,
-  and platform-provisioning POST boundaries without changing state.
-- Django system/deployment checks, static collection, migration drift, Ruff over
-  `224` files, and dependency compatibility all passed. No migration was added.
-
-`MT-043-A01` report-policy verification completed on 2026-08-31:
-
-- The full organization **AI usage** and **Privacy & audit** reports are now
-  administrator-only in shared navigation, HTTP routes, and direct reporting
-  services. Recruiter candidate, vacancy, review, job, and task-specific status
-  workflows are unchanged.
-- Focused report, audit, dashboard, and permission set: `34 passed`.
-- Complete `python scripts/check.py` quality gate: `547 passed`; deployment
-  checks, static collection, migration drift, Ruff over `224` files, and
-  dependency compatibility all passed. No migration was added.
+- The environment examples now configure the official `gpt-5.4-mini` API rates
+  verified on 2026-09-01: `$0.75` input and `$4.50` output per one million
+  tokens. Both values map into the published toolkit's Django configuration.
+- The application forwards calculated cost metadata only when both explicit
+  rates are configured. Missing rates are unavailable instead of inheriting the
+  toolkit v1.0.0 placeholder zero-price table; historical events are unchanged.
+- Focused configuration, gateway, ledger, usage-report, environment, and
+  deployment coverage: `86 passed`.
+- Complete `python scripts/check.py` quality gate: `547 passed`; Django system
+  and deployment checks, static collection, zero migration drift, Ruff over
+  `224` files, and dependency compatibility all passed.
+- This correction adds no model or migration.
 
 ## Not implemented
 
@@ -1297,11 +1287,9 @@ their immutable historical scores and explanations.
 For each candidate on a current shortlist with a confirmed profile, recruiters
 can request and inspect immutable evidence-based AI assessment versions. These
 are decision support only and cannot change the deterministic shortlist.
-Safe AI usage events are available to operators through read-only Django admin
-and to organization administrators through compact content-free summaries on
-the privacy dashboard plus aggregate tenant-scoped token/cost/latency/retry/
-failure reporting under **AI usage**. Recruiters retain task-specific status but
-cannot open either organization-wide report.
+Safe AI usage events are available to operators through read-only Django admin,
+as compact content-free summaries on the privacy dashboard, and as aggregate
+tenant-scoped token/cost/latency/retry/failure reporting under **AI usage**.
 The review queue now reuses confirmed profiles and provides compact exception-
 focused assessment review and individual decision history. Resumable batch
 profile extraction and whole-shortlist assessment generation are implemented in

@@ -75,6 +75,13 @@ Production startup requires:
 - an absolute persistent private-media path distinct from static assets;
 - the AI provider key only when live AI workflows will be used.
 
+The production example explicitly configures the `gpt-5.4-mini` token rates
+verified from OpenAI on 2026-09-01: `AI_INPUT_COST_PER_1M_TOKENS=0.75` and
+`AI_OUTPUT_COST_PER_1M_TOKENS=4.50`. These values are USD per one million
+tokens. Review and update both values together whenever the configured model or
+provider pricing changes. If they are intentionally omitted, the application
+records cost as unavailable rather than trusting a zero-price placeholder.
+
 Set `DJANGO_TRUST_X_FORWARDED_PROTO=True` only when the trusted proxy overwrites
 the header as the provided Nginx example does. Enable HSTS only after HTTPS is
 stable. Treat subdomain coverage and browser preload as separate deliberate
