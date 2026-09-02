@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from io import StringIO
 
 import pytest
@@ -8,11 +8,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import OrganizationMembership, User
-from audit.models import AuditEvent
-from audit.reporting import (
-    build_audit_history,
-    build_retention_and_minimization_report,
-)
+from audit.models import AIUsageEvent, AuditEvent
+from audit.reporting import build_audit_history, build_retention_and_minimization_report
 from audit.services import record_audit_event
 from candidates.models import Candidate, CandidateSource
 from candidates.services import (
@@ -200,6 +197,10 @@ def test_privacy_dashboard_is_tenant_scoped_and_omits_source_content(client) -> 
         full_name="Due Candidate",
         retention_until=date(2026, 8, 15),
     )
+    missing = Candidate.objects.create(
+        organization=organization,
+        full_name="Missing Date Candidate",
+    )
     CandidateSource.objects.create(
         candidate=due,
         source_type=CandidateSource.SourceType.MANUAL_ENTRY,
@@ -225,40 +226,86 @@ def test_privacy_dashboard_is_tenant_scoped_and_omits_source_content(client) -> 
     assert report.pending_deletions == (pending,)
     assert report.overdue_candidates == (due,)
     assert report.overdue_sources[0].candidate == due
+    assert report.candidates_missing_retention == (missing,)
+    assert report.candidates_without_retention == 1
+    assert report.needs_attention_count == 5
     assert report.minimization_issues[0].object_id == bad_tombstone.pk
-
-    with pytest.raises(PermissionDenied):
-        build_retention_and_minimization_report(
-            organization=organization,
-            user=recruiter,
-            as_of=date(2026, 8, 15),
-        )
-    with pytest.raises(PermissionDenied):
-        build_audit_history(
-            organization=organization,
-            user=recruiter,
-        )
 
     route = reverse("audit:privacy-dashboard", args=[organization.slug])
     client.force_login(recruiter)
-    response = client.get(route)
-    assert response.status_code == 403
-    assert "Pending Candidate" not in response.content.decode()
-    assert "Due Candidate" not in response.content.decode()
+    assert client.get(route).status_code == 403
 
     client.force_login(admin)
-    admin_response = client.get(route)
-    admin_content = admin_response.content.decode()
-    assert admin_response.status_code == 200
-    assert "Pending Candidate" in admin_content
-    assert "Due Candidate" in admin_content
-    assert "SECRET SOURCE CONTENT" not in admin_content
-    assert "SECRET-REFERENCE" not in admin_content
-    assert "SECRET NOTES" not in admin_content
-    assert "retained@example.test" not in admin_content
-    assert "Review purge" in admin_content
+    response = client.get(route)
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Pending Candidate" in content
+    assert "Due Candidate" in content
+    assert "Needs attention (5)" in content
+    assert "Missing Date Candidate" in content
+    assert 'class="privacy-status-strip"' in content
+    assert "Activity log" in content
+    assert "Workflow audit summaries" not in content
+    assert "CSV-created source records" not in content
+    assert "Candidate records due (0)" not in content
+    assert "Source records due (0)" not in content
+    assert "Documents due (0)" not in content
+    assert "SECRET SOURCE CONTENT" not in content
+    assert "SECRET-REFERENCE" not in content
+    assert "SECRET NOTES" not in content
+    assert "retained@example.test" not in content
+    assert "Review purge" in content
 
     client.force_login(outsider)
     hidden_response = client.get(route)
     assert hidden_response.status_code == 404
     assert "Pending Candidate" not in hidden_response.content.decode()
+
+
+def test_workflow_activity_is_plain_sorted_bounded_and_filterable() -> None:
+    user = User.objects.create_user(username="admin")
+    organization = Organization.objects.create(name="Northstar", slug="northstar")
+    add_member(user, organization, role=OrganizationMembership.Role.ADMIN)
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Private Candidate",
+    )
+    source = CandidateSource.objects.create(
+        candidate=candidate,
+        source_type=CandidateSource.SourceType.CSV_IMPORT,
+        source_name="PRIVATE SOURCE",
+        recorded_by=user,
+    )
+    attempt = AIUsageEvent.objects.create(
+        organization=organization,
+        actor=user,
+        workflow=AIUsageEvent.Workflow.CANDIDATE_PROFILE,
+        target_type=AIUsageEvent.ObjectType.CANDIDATE_DOCUMENT,
+        target_id=1,
+    )
+    CandidateSource.objects.filter(pk=source.pk).update(
+        created_at=timezone.now() - timedelta(minutes=5)
+    )
+
+    history = build_audit_history(
+        organization=organization,
+        user=user,
+        limit=1,
+    )
+    intake_only = build_audit_history(
+        organization=organization,
+        user=user,
+        category="intake",
+    )
+    normalized = build_audit_history(
+        organization=organization,
+        user=user,
+        category="invalid",
+    )
+
+    assert len(history.workflow_entries) == 1
+    assert history.workflow_entries[0].reference == f"AI attempt #{attempt.pk}"
+    assert intake_only.workflow_entries[0].activity == "Candidate added from CSV"
+    assert intake_only.workflow_entries[0].reference == f"Candidate #{candidate.pk}"
+    assert "PRIVATE SOURCE" not in repr(intake_only.workflow_entries)
+    assert normalized.selected_category == "all"

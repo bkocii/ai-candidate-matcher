@@ -1237,6 +1237,12 @@ Open **Privacy & audit** in the organization navigation.
 
 Expected result:
 
+- A **Needs attention** panel appears first and links directly to candidates with
+  missing candidate, source, or document retention dates. When nothing needs
+  attention, it shows one clear all-good state instead.
+- The four retention totals use one compact status strip. Empty candidate,
+  source, and document due-date panels are hidden rather than rendered as large
+  cards containing `None`.
 - The summary distinguishes pending deletion requests, active/inactive candidate
   records whose retention date is due, missing candidate retention dates, and
   deleted-record minimization issues.
@@ -1246,9 +1252,16 @@ Expected result:
   for review. A due date is shown as a policy-review signal, not legal advice or
   an automatic purge instruction.
 - Privacy events show controlled action, generic object type/ID, actor, and time.
-  Workflow summaries show safe IDs/status/version/actor information for AI
-  attempts, CSV-created source records, assessments, recruiter decisions,
-  outreach approvals, and copy/export actions.
+  The paginated **Activity log** combines AI attempts, CSV-created source
+  records, assessments, recruiter decisions, outreach approvals, and
+  copy/export actions in newest-first order. Its controlled activity-type filter
+  preserves only safe IDs/status/version/actor information and resets invalid
+  values to **All activity**.
+- The three activity filters render in their own full-width bordered row, with
+  labels above equal-width controls; they stack vertically on narrow screens.
+- A recruiter sees neither organization-wide report link and receives `403` for
+  direct AI-usage or privacy/audit URLs. An organization administrator sees both
+  links and can open both reports.
 - The page contains no source names/references, permission notes, contact fields,
   CV text, prompts, raw AI responses, recruiter decision notes, approval notes,
   or outreach subject/body.

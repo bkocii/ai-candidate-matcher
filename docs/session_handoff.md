@@ -831,6 +831,28 @@ gate passed `548` tests plus system/deployment checks, static collection, zero
 migration drift, Ruff, formatting, and dependency compatibility. Browser layout
 retesting remains pending; no model or migration was added.
 
+`MT-026-U01` and `MT-026-V01` are implemented. The privacy dashboard now leads
+with an actionable missing/due/deletion/integrity list, links missing retention
+dates to candidate detail, uses a compact four-value status strip, and suppresses
+empty due-date panels. Focused coverage passed `11` tests and the complete
+quality gate passed `548` tests plus all checks. Browser retesting remains
+pending; no migration was added.
+
+`MT-026-U02` and `MT-026-C01` are implemented. The former six workflow-history
+cards are one newest-first, activity-type-filtered table with 25 rows per page.
+Plain activity/result labels lead; IDs remain secondary audit references and no
+private workflow content is added. Activity result and 7/30/90/all-time filters
+are also bounded and preserve pagination. Focused coverage passed `6` tests and
+the full quality gate passed `549` tests plus all checks. Browser retesting
+remains pending; no migration was added.
+
+The activity filter row received a follow-up responsive styling correction. A
+stale test/source overlay was also repaired so the previously approved report
+boundary is consistent again: organization administrators see and access AI
+usage and privacy/audit; recruiters do not see the links and receive `403` from
+direct report URLs. Focused role/report coverage passed `35` tests; all `549`
+project tests and the remaining lint, formatting, and migration checks passed.
+
 ## Immediate next action
 
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,

@@ -1271,6 +1271,28 @@ membership administration is also complete. `DEMO-002` remains next.
   drift, Ruff, formatting, and dependency compatibility passed.
 - Browser layout retesting remains pending. No model or migration was added.
 
+`MT-026-U01` and `MT-026-V01` were implemented on 2026-09-02. The privacy and
+retention dashboard now leads with one organization-scoped **Needs attention**
+list, links missing-date records to their candidate detail, reduces four totals
+to a compact status strip, and omits empty due-date panels. Browser retesting
+remains pending. Focused privacy/AI-report coverage passed `11` tests; the full
+quality gate passed `548` tests and all checks. No model or migration was added.
+
+`MT-026-U02` and `MT-026-C01` were implemented on 2026-09-02. Six workflow
+history cards are replaced by one newest-first, type-filtered, 25-row paginated
+activity table. Activity names and results use plain language; internal IDs are
+secondary references, and private workflow content remains excluded. Browser
+retesting remains pending. Focused audit coverage passed `6` tests; the complete
+quality gate passed `549` tests and all checks. No model or migration was added.
+
+The follow-up activity-filter styling correction gives the three controlled
+filters a dedicated responsive row instead of squeezing them beside the section
+description. The stale navigation regression expectation was also corrected:
+AI usage and privacy/audit remain organization-administrator-only in navigation,
+views, and reporting services; recruiters receive `403`. Focused report,
+dashboard, and permission coverage passed `35` tests; all `549` project tests,
+Ruff, formatting, and migration checks passed.
+
 ## Not implemented
 
 Outreach generation, immutable recruiter editing, exact final approval, manual

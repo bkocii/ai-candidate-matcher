@@ -305,6 +305,103 @@ h2 {
     gap: 20px;
 }
 
+.attention-panel {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 18px;
+    padding: 20px 22px;
+    border: 1px solid #e7c56a;
+    border-radius: 16px;
+    background: #fff9e8;
+}
+
+.attention-panel h2,
+.attention-panel p {
+    margin: 0;
+}
+
+.attention-panel-clear {
+    border-color: #a9ddc7;
+    background: #effaf5;
+}
+
+.attention-list {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding-left: 20px;
+}
+
+.privacy-status-strip {
+    display: grid;
+    overflow: hidden;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: 32px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+}
+
+.privacy-status-strip > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 16px;
+    border-right: 1px solid var(--border);
+}
+
+.privacy-status-strip > div:last-child {
+    border-right: 0;
+}
+
+.privacy-status-strip span {
+    color: var(--muted);
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.section-heading-row {
+    margin-bottom: 16px;
+}
+
+.section-heading-row h2,
+.section-heading-row p {
+    margin-bottom: 0;
+}
+
+.activity-log-filters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 18px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+}
+
+.activity-log-filters .field {
+    display: grid;
+    gap: 7px;
+}
+
+.activity-log-filters label {
+    color: var(--muted);
+    font-size: 0.84rem;
+    font-weight: 700;
+}
+
+.activity-log-filters select {
+    width: 100%;
+    min-height: 42px;
+}
+
+.secondary-reference {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
 .button-link,
 .secondary-button {
     display: inline-flex;
@@ -1563,8 +1660,18 @@ tbody tr:last-child td {
 
     .report-columns,
     .usage-metric-grid,
-    .usage-operational-strip {
+    .usage-operational-strip,
+    .privacy-status-strip {
         grid-template-columns: 1fr;
+    }
+
+    .privacy-status-strip > div {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .privacy-status-strip > div:last-child {
+        border-bottom: 0;
     }
 
     .usage-operational-strip > div {
@@ -1579,6 +1686,10 @@ tbody tr:last-child td {
     .technical-details > summary {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .activity-log-filters {
+        grid-template-columns: 1fr;
     }
 
     .filter-candidate > header {

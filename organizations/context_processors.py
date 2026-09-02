@@ -1,30 +1,23 @@
-from accounts.models import OrganizationMembership
 from organizations.models import Organization
+from organizations.permissions import can_administer_organization
 
 
 def workspace_navigation(request):
-    """Expose safe workspace and current-role state to shared navigation."""
+    """Expose only a safe active-workspace count to shared navigation."""
     if not getattr(request.user, "is_authenticated", False):
-        return {
-            "workspace_count": 0,
-            "can_view_organization_reports": False,
-        }
-
-    resolver_match = getattr(request, "resolver_match", None)
-    organization_slug = (
-        resolver_match.kwargs.get("organization_slug") if resolver_match else None
+        return {"workspace_count": 0}
+    context = {"workspace_count": Organization.objects.visible_to(request.user).count()}
+    organization = getattr(request, "organization", None)
+    if organization is None:
+        resolver_match = getattr(request, "resolver_match", None)
+        slug = (
+            resolver_match.kwargs.get("organization_slug") if resolver_match else None
+        )
+        if slug:
+            organization = (
+                Organization.objects.visible_to(request.user).filter(slug=slug).first()
+            )
+    context["can_view_organization_reports"] = bool(
+        organization and can_administer_organization(request.user, organization)
     )
-    can_view_organization_reports = bool(
-        organization_slug
-        and OrganizationMembership.objects.filter(
-            user=request.user,
-            organization__slug=organization_slug,
-            organization__is_active=True,
-            role=OrganizationMembership.Role.ADMIN,
-            is_active=True,
-        ).exists()
-    )
-    return {
-        "workspace_count": Organization.objects.visible_to(request.user).count(),
-        "can_view_organization_reports": can_view_organization_reports,
-    }
+    return context

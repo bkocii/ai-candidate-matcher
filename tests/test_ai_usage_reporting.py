@@ -29,7 +29,7 @@ from organizations.models import Organization
 pytestmark = pytest.mark.django_db
 
 
-def make_workspace(username="recruiter"):
+def make_workspace(username="recruiter", *, role=OrganizationMembership.Role.ADMIN):
     user = User.objects.create_user(username=username)
     organization = Organization.objects.create(
         name=f"{username.title()} Organization",
@@ -38,7 +38,7 @@ def make_workspace(username="recruiter"):
     OrganizationMembership.objects.create(
         user=user,
         organization=organization,
-        role=OrganizationMembership.Role.RECRUITER,
+        role=role,
     )
     return user, organization
 
@@ -307,11 +307,22 @@ def test_usage_report_route_is_tenant_scoped_and_content_free(client):
 
 
 def test_navigation_links_to_usage_report(client):
-    user, organization = make_workspace()
-    client.force_login(user)
-
-    response = client.get(reverse("audit:privacy-dashboard", args=[organization.slug]))
-
-    assert reverse("audit:ai-usage-report", args=[organization.slug]) in (
-        response.content.decode()
+    admin, organization = make_workspace()
+    recruiter = User.objects.create_user(username="navigation-recruiter")
+    OrganizationMembership.objects.create(
+        user=recruiter,
+        organization=organization,
+        role=OrganizationMembership.Role.RECRUITER,
     )
+    route = reverse("audit:ai-usage-report", args=[organization.slug])
+
+    client.force_login(recruiter)
+    recruiter_response = client.get(
+        reverse("organizations:organization-dashboard", args=[organization.slug])
+    )
+    assert route not in recruiter_response.content.decode()
+    assert client.get(route).status_code == 403
+
+    client.force_login(admin)
+    response = client.get(reverse("audit:privacy-dashboard", args=[organization.slug]))
+    assert route in response.content.decode()
