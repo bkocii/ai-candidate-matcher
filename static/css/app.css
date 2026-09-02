@@ -219,6 +219,82 @@ h2 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.usage-operational-strip {
+    display: grid;
+    overflow: hidden;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: 20px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+}
+
+.usage-operational-strip > div {
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    padding: 14px 18px;
+    border-right: 1px solid var(--border);
+}
+
+.usage-operational-strip > div:last-child {
+    border-right: 0;
+}
+
+.usage-operational-strip span,
+.usage-operational-strip small {
+    color: var(--muted);
+}
+
+.usage-operational-strip span {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.usage-operational-strip strong {
+    font-size: 1.35rem;
+    line-height: 1.2;
+}
+
+.technical-details {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+}
+
+.technical-details > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 22px;
+    cursor: pointer;
+    font-weight: 750;
+}
+
+.technical-details > summary * {
+    cursor: pointer;
+}
+
+.technical-details > summary small {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.technical-details-body {
+    display: grid;
+    gap: 32px;
+    padding: 6px 22px 24px;
+    border-top: 1px solid var(--border);
+}
+
+.technical-details-body .report-columns {
+    margin-top: 0;
+}
+
 .report-section {
     margin-top: 36px;
 }
@@ -1486,8 +1562,23 @@ tbody tr:last-child td {
     }
 
     .report-columns,
-    .usage-metric-grid {
+    .usage-metric-grid,
+    .usage-operational-strip {
         grid-template-columns: 1fr;
+    }
+
+    .usage-operational-strip > div {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .usage-operational-strip > div:last-child {
+        border-bottom: 0;
+    }
+
+    .technical-details > summary {
+        align-items: flex-start;
+        flex-direction: column;
     }
 
     .filter-candidate > header {
