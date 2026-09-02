@@ -823,6 +823,14 @@ The focused command is:
 uv run pytest -q tests/test_foundation.py tests/test_environment.py tests/test_deployment_artifacts.py tests/test_ai_gateway.py tests/test_ai_gateway_contract.py tests/test_ai_usage_events.py tests/test_ai_usage_reporting.py
 ```
 
+`MT-025-U01`, `MT-025-V01`, and `MT-025-C01` are implemented. The AI usage
+report now has four primary metrics, a compact operational strip, collapsed
+technical details, readable token/cost/latency values, and plain failure labels.
+Focused usage/ledger/retention coverage passed `19` tests. The complete quality
+gate passed `548` tests plus system/deployment checks, static collection, zero
+migration drift, Ruff, formatting, and dependency compatibility. Browser layout
+retesting remains pending; no model or migration was added.
+
 ## Immediate next action
 
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,

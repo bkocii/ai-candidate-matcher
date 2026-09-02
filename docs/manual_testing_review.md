@@ -899,8 +899,8 @@ Direct Gmail/Microsoft 365 sending should be treated as proposed product scope a
 - **Date:** 2026-08-29
 - **Route:** `/organizations/second-agency-test/ai-usage/`
 - **Viewport:** Desktop, 1920 × 1080
-- **Visual status:** Complete but overly long and technical
-- **Functional status:** Aggregate totals pass; cost semantics corrected; filters require follow-up
+- **Visual status:** Corrected; compact summary and readable operational values require browser retest
+- **Functional status:** Aggregate totals and configured live cost calculation pass; filters require follow-up
 
 #### Completed functional checks
 
@@ -917,14 +917,24 @@ Direct Gmail/Microsoft 365 sending should be treated as proposed product scope a
 - **Pass:** The environment examples configure the official `gpt-5.4-mini` API
   rates verified on 2026-09-01: `$0.75` input and `$4.50` output per one million
   tokens. Missing rate configuration produces unavailable cost metadata.
+- **Pass:** A recorded browser test after configuration showed seven attempts,
+  13,642 tokens, and a non-zero `$0.003305` estimate, confirming that new live
+  usage uses the configured rates.
+- **Implemented:** Four primary metrics, a compact operational strip, and a
+  collapsed technical-details section replace the former equally weighted long
+  report layout.
+- **Implemented:** Token counts use thousands separators, sub-cent positive cost
+  is displayed as `< $0.01`, zero remains `$0.00`, and latency uses seconds when
+  at least one second.
+- **Implemented:** Failure stages and application-validation failures use plain
+  administrator wording without exposing private provider or validation detail.
 
 #### Pending functional checks
 
 - Change the period to 7 days, 90 days, and all time and confirm every summary/table uses the same boundary.
 - Filter each workflow and verify its totals against the corresponding unfiltered workflow row.
-- Run one new synthetic/live request after applying the two configured rates and
-  confirm its ledger row has a non-zero estimate consistent with recorded input
-  and output tokens. Historical placeholder-zero rows are not rewritten.
+- Reopen the corrected report and confirm the compact layout, readable values,
+  and collapsed technical details at desktop and narrow viewport widths.
 - Create an old pending attempt and confirm it is counted separately after 15 minutes rather than treated as failed.
 - Confirm another organization receives `404` and cannot infer any totals.
 - Decide whether aggregate tokens, costs, models, latency, and failures should be restricted to organization administrators; the current implementation permits every active organization member.
@@ -933,9 +943,9 @@ Direct Gmail/Microsoft 365 sending should be treated as proposed product scope a
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-025-U01 | Usability defect | Medium | Eight large summary cards consume two full rows before the useful workflow breakdown, then five reporting sections receive similar visual weight. The result is a long technical page that is difficult to scan. | Keep four primary metrics at the top: **AI attempts**, **Success rate**, **Tokens**, and **Estimated cost**. Put latency, retries, failures, and pending into a compact operational strip. Collapse **Model**, **Failure**, and **Metadata availability** under **Technical details** by default. | Open |
-| MT-025-V01 | Visual defect | Medium | Operational values use raw machine-like formatting: `11225`, `$0.000000`, and `5284 ms`. This weakens the otherwise professional presentation. | Use locale-aware separators and readable units: **11,225 tokens**, **$0.00** or **< $0.01**, and **5.3 s**. Retain precise values only in a tooltip/export if needed. | Open |
-| MT-025-C01 | Usability defect | Medium | Failure labels such as **Application validation** and **Application safety validation** are implementation terminology and do not tell an administrator what action is possible. | Use a plain summary such as **AI output did not pass safety checks**, with an optional technical-category disclosure. Link to the relevant safe job/exception list when remediation is possible, without exposing private AI content. | Open |
+| MT-025-U01 | Usability defect | Medium | Eight large summary cards consume two full rows before the useful workflow breakdown, then five reporting sections receive similar visual weight. The result is a long technical page that is difficult to scan. | Keep four primary metrics at the top: **AI attempts**, **Success rate**, **Tokens**, and **Estimated cost**. Put latency, retries, failures, and pending into a compact operational strip. Collapse **Model**, **Failure**, and **Metadata availability** under **Technical details** by default. | Implemented — browser retest pending |
+| MT-025-V01 | Visual defect | Medium | Operational values use raw machine-like formatting: `11225`, `$0.000000`, and `5284 ms`. This weakens the otherwise professional presentation. | Use locale-aware separators and readable units: **11,225 tokens**, **$0.00** or **< $0.01**, and **5.3 s**. Retain precise values only in a tooltip/export if needed. | Implemented — browser retest pending |
+| MT-025-C01 | Usability defect | Medium | Failure labels such as **Application validation** and **Application safety validation** are implementation terminology and do not tell an administrator what action is possible. | Use a plain summary such as **AI output did not pass safety checks**, with an optional technical-category disclosure. Link to the relevant safe job/exception list when remediation is possible, without exposing private AI content. | Implemented — browser retest pending |
 | MT-025-A01 | Product/access decision | Medium | The report includes organization-wide cost, model, failure, and operational metadata but is currently available to every active member, not only organization administrators. This also adds a low-frequency technical item to every recruiter's primary navigation. | Restrict the full report to organization administrators, or provide recruiters only a minimal processing-status view. Move the full report under organization settings/administration as part of CR-001 navigation and role work. | Proposed |
 | MT-025-F01 | Correctness check | High | All six attempts claimed available estimated-cost metadata because the toolkit v1.0.0 built-in `gpt-5.4-mini` table contained placeholder zeroes. This could falsely imply that AI usage was free. | Explicitly configure the verified model rates, forward estimates only when both rates are configured, and leave missing prices unavailable. Do not rewrite historical events. | Resolved — 2026-09-01 |
 

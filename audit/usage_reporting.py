@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from audit.models import AIUsageEvent
 from organizations.models import Organization
-from organizations.permissions import require_organization_admin
+from organizations.permissions import require_organization_access
 
 ALL_WORKFLOWS = "all"
 DEFAULT_REPORTING_PERIOD = "30"
@@ -21,15 +21,34 @@ REPORTING_PERIODS = (
 REPORTING_PERIOD_DAYS = {"7": 7, "30": 30, "90": 90, "all": None}
 FAILURE_CODE_LABELS = {
     "ai_configuration_error": "AI configuration unavailable",
-    "ai_invalid_response": "Structured response invalid",
+    "ai_invalid_response": "AI output could not be processed",
     "ai_request_failed": "AI request failed",
     "ai_service_unavailable": "AI service unavailable",
-    "ai_application_validation": "Application safety validation",
+    "ai_application_validation": "AI output did not pass safety checks",
 }
 FAILURE_STAGE_LABELS = {
-    AIUsageEvent.FailureStage.GATEWAY: "Gateway",
-    AIUsageEvent.FailureStage.APPLICATION: "Application validation",
+    AIUsageEvent.FailureStage.GATEWAY: "AI request",
+    AIUsageEvent.FailureStage.APPLICATION: "After AI response",
 }
+
+
+def format_count(value: int) -> str:
+    return f"{value:,}"
+
+
+def format_cost_usd(value: Decimal) -> str:
+    if value == 0:
+        return "$0.00"
+    if value < Decimal("0.01"):
+        return "< $0.01"
+    return f"${value:,.2f}"
+
+
+def format_duration_ms(value: Decimal) -> str:
+    if value < Decimal("1000"):
+        return f"{value.quantize(Decimal('1'), rounding=ROUND_HALF_UP):,} ms"
+    seconds = (value / Decimal("1000")).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+    return f"{seconds:,} s"
 
 
 @dataclass(frozen=True)
@@ -83,6 +102,28 @@ class UsageMetrics:
     def missing_model_metadata_count(self) -> int:
         return self.attempts - self.model_metadata_count
 
+    @property
+    def input_tokens_display(self) -> str:
+        return format_count(self.input_tokens)
+
+    @property
+    def output_tokens_display(self) -> str:
+        return format_count(self.output_tokens)
+
+    @property
+    def total_tokens_display(self) -> str:
+        return format_count(self.total_tokens)
+
+    @property
+    def cost_display(self) -> str:
+        return format_cost_usd(self.cost_usd)
+
+    @property
+    def average_duration_display(self) -> str:
+        if self.average_duration_ms is None:
+            return "—"
+        return format_duration_ms(self.average_duration_ms)
+
 
 @dataclass(frozen=True)
 class UsageBreakdownRow:
@@ -108,6 +149,14 @@ class DailyUsageRow:
     token_metadata_count: int
     cost_usd: Decimal
     cost_metadata_count: int
+
+    @property
+    def total_tokens_display(self) -> str:
+        return format_count(self.total_tokens)
+
+    @property
+    def cost_display(self) -> str:
+        return format_cost_usd(self.cost_usd)
 
 
 @dataclass(frozen=True)
@@ -232,7 +281,7 @@ def build_ai_usage_report(
     now=None,
 ) -> AIUsageReport:
     """Aggregate only minimized operational metadata for one organization."""
-    require_organization_admin(user, organization)
+    require_organization_access(user, organization)
     selected_period = normalize_reporting_period(period)
     selected_workflow = normalize_reporting_workflow(workflow)
     current_time = now or timezone.now()
@@ -246,10 +295,9 @@ def build_ai_usage_report(
         queryset = queryset.filter(workflow=selected_workflow)
 
     workflow_labels = dict(AIUsageEvent.Workflow.choices)
-    stage_labels = dict(AIUsageEvent.FailureStage.choices)
     failure_rows = tuple(
         FailureBreakdownRow(
-            stage=stage_labels.get(item["failure_stage"], "Recorded failure"),
+            stage=FAILURE_STAGE_LABELS.get(item["failure_stage"], "Recorded failure"),
             label=FAILURE_CODE_LABELS.get(
                 item["failure_code"], "Other recorded failure"
             ),

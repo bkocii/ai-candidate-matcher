@@ -1454,6 +1454,14 @@ Expected result:
 - Cost is available only when both explicit rates were configured for the
   request. It is calculated from recorded input/output tokens; changing rates
   later does not rewrite historical usage events.
+- Positive estimated costs below one cent display as `< $0.01`, exact zero as
+  `$0.00`, and missing cost as `—`. Token totals use thousands separators and
+  latency of at least one second uses a one-decimal seconds value.
+- The first view contains four primary metrics and a compact operational strip.
+  Model, failure, and metadata coverage tables remain collapsed under
+  **Technical details** until the administrator opens them.
+- Application-output failures use the plain label **AI output did not pass
+  safety checks**; no private validation detail is displayed.
 - Pending attempts older than 15 minutes are counted separately for operational
   review. Pending work is not treated as either success or failure.
 - The report contains no request IDs, prompts, raw responses, source descriptions,

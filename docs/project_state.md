@@ -1257,6 +1257,20 @@ membership administration is also complete. `DEMO-002` remains next.
   `224` files, and dependency compatibility all passed.
 - This correction adds no model or migration.
 
+`MT-025-U01`, `MT-025-V01`, and `MT-025-C01` were implemented on 2026-09-01:
+
+- The administrator report now prioritizes four primary metrics and one compact
+  operational strip; model, failure, and metadata coverage remain collapsed
+  under technical details by default.
+- Tokens, sub-cent/zero costs, and latency have readable display formats while
+  stored and aggregated values remain unchanged.
+- Failure categories use administrator-facing wording and continue to exclude
+  provider messages and private application-validation detail.
+- Focused usage/ledger/retention coverage: `19 passed`. Complete quality gate:
+  `548 passed`; system/deployment checks, static collection, zero migration
+  drift, Ruff, formatting, and dependency compatibility passed.
+- Browser layout retesting remains pending. No model or migration was added.
+
 ## Not implemented
 
 Outreach generation, immutable recruiter editing, exact final approval, manual
