@@ -1,3 +1,4 @@
+from datetime import timedelta
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.contrib import messages
@@ -6,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.db.models import Count, Q
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
@@ -381,7 +383,10 @@ def platform_organization_delete_request(request, organization_id: int):
         return redirect(
             "organizations:platform-organization-detail", managed_organization.pk
         )
-    form = RequestOrganizationDeletionForm(request.POST or None)
+    form = RequestOrganizationDeletionForm(
+        request.POST or None,
+        organization=managed_organization,
+    )
     if request.method == "POST" and form.is_valid():
         request_organization_deletion(
             organization=managed_organization,
@@ -612,7 +617,22 @@ def organization_delete_request(request, organization_slug: str):
         slug=organization_slug,
     )
     require_organization_admin(request.user, organization)
-    form = RequestOrganizationDeletionForm(request.POST or None)
+    policy = get_retention_policy(organization)
+    projected_purge_after = timezone.now() + timedelta(
+        days=policy.organization_recovery_days
+    )
+    organization_exception_active = (
+        organization.retention_exceptions.filter(
+            is_active=True,
+            scope=RetentionException.Scope.ORGANIZATION,
+        )
+        .filter(Q(expires_at__isnull=True) | Q(expires_at__gte=timezone.localdate()))
+        .exists()
+    )
+    form = RequestOrganizationDeletionForm(
+        request.POST or None,
+        organization=organization,
+    )
     if request.method == "POST" and form.is_valid():
         request_organization_deletion(organization=organization, user=request.user)
         messages.warning(
@@ -624,7 +644,13 @@ def organization_delete_request(request, organization_slug: str):
     return render(
         request,
         "organizations/organization_confirm_delete.html",
-        {"organization": organization, "form": form},
+        {
+            "organization": organization,
+            "form": form,
+            "policy": policy,
+            "projected_purge_after": projected_purge_after,
+            "organization_exception_active": organization_exception_active,
+        },
     )
 
 

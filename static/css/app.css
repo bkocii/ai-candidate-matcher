@@ -512,6 +512,58 @@ h2 {
     color: var(--muted);
 }
 
+.danger-confirmation {
+    display: grid;
+    gap: 22px;
+    padding: 28px;
+    border: 1px solid #d89a93;
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.danger-confirmation-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.danger-confirmation-header h2,
+.danger-confirmation-header p {
+    margin-bottom: 0;
+}
+
+.consequence-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.consequence-grid article {
+    display: grid;
+    align-content: start;
+    gap: 7px;
+    padding: 18px;
+    border-right: 1px solid var(--border);
+}
+
+.consequence-grid article:last-child {
+    border-right: 0;
+}
+
+.consequence-grid span {
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.danger-confirmation-form {
+    max-width: 760px;
+    margin-top: 0;
+}
+
 .button-link,
 .secondary-button {
     display: inline-flex;
@@ -1803,8 +1855,23 @@ tbody tr:last-child td {
     }
 
     .retention-form-grid,
-    .retention-preview-strip {
+    .retention-preview-strip,
+    .consequence-grid {
         grid-template-columns: 1fr;
+    }
+
+    .danger-confirmation-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .consequence-grid article {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .consequence-grid article:last-child {
+        border-bottom: 0;
     }
 
     .retention-preview-strip > div,

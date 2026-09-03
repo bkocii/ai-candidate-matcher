@@ -866,6 +866,12 @@ cross-tenant/cross-scope values fail validation. Browser retesting remains
 pending. Focused lifecycle coverage passed `9` tests; all `550` project tests
 and final lint, formatting, and migration checks passed. No migration was added.
 
+`MT-028-S01/S02/C01/V01/S03` are implemented as one screen-level pass. The
+organization-specific suspension page uses a responsive danger card, exact
+tenant phrase, recovery duration/deadline, and legal-hold/exception explanation.
+The transaction still recalculates the actual purge deadline. Browser retesting
+remains pending; no migration was added.
+
 ## Immediate next action
 
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,

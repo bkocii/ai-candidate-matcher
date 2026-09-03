@@ -1348,10 +1348,15 @@ For disposable synthetic data only, apply the recalculated safe plan:
 uv run python manage.py process_data_lifecycle --organization northstar-test --apply --confirm "PURGE ELIGIBLE DATA"
 ```
 
-From the retention page, review **Delete organization**. The exact phrase
-`DELETE ORGANIZATION` immediately suspends access and sends the administrator to
-the recovery page. Select **Restore access** before the displayed deadline and
-confirm the workspace returns. Do not test expiry/purge against needed data.
+From the retention page, review **Delete organization**. The danger card must
+name the organization and slug, show immediate access loss, the configured
+recovery days, and the exact projected purge deadline. It must also say whether
+a legal hold or organization exception blocks final purge. The exact phrase is
+organization-specific—for example, `SUSPEND NORTHSTAR TEST`. The old generic
+`DELETE ORGANIZATION` phrase must fail. A valid phrase immediately suspends
+access and sends the administrator to the recovery page. Select **Restore
+access** before the displayed deadline and confirm the workspace returns. Do not
+test expiry/purge against needed data.
 
 The scheduled whole-organization command is dry-run by default:
 

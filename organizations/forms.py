@@ -297,13 +297,23 @@ class ApplyRetentionForm(forms.Form):
 
 
 class RequestOrganizationDeletionForm(forms.Form):
-    confirmation = forms.CharField(
-        label='Type "DELETE ORGANIZATION" to confirm suspension',
-        max_length=30,
-    )
+    confirmation = forms.CharField(max_length=240)
+
+    def __init__(self, *args, organization, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.confirmation_phrase = f"SUSPEND {organization.name.upper()}"
+        self.fields[
+            "confirmation"
+        ].label = f'Type "{self.confirmation_phrase}" to confirm'
+        self.fields["confirmation"].widget.attrs.update(
+            {
+                "autocomplete": "off",
+                "spellcheck": "false",
+            }
+        )
 
     def clean_confirmation(self) -> str:
         value = self.cleaned_data["confirmation"].strip()
-        if value != "DELETE ORGANIZATION":
+        if value != self.confirmation_phrase:
             raise forms.ValidationError("Enter the exact confirmation phrase.")
         return value

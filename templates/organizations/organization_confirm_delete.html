@@ -5,11 +5,24 @@
 {% block content %}
 <section class="page-heading" aria-labelledby="delete-title">
     <p class="eyebrow">Organization administration</p>
-    <h1 id="delete-title">Suspend and schedule deletion</h1>
-    <p class="lede">This immediately blocks workspace access. Recovery remains available until the policy deadline; after that, the scheduled purge removes the complete tenant dependency tree and private files.</p>
+    <h1 id="delete-title">Suspend {{ organization.name }} and schedule deletion</h1>
+    <p class="lede">Review the immediate access change and recovery deadline before confirming this organization-specific action.</p>
 </section>
-<form class="form-panel stacked-form" method="post">
-    {% csrf_token %}{{ form.as_p }}
-    <div class="form-actions"><button class="danger-button" type="submit">Suspend organization</button><a class="secondary-button" href="{% url 'organizations:retention-dashboard' organization.slug %}">Cancel</a></div>
-</form>
+
+<section class="danger-confirmation" aria-labelledby="danger-summary-title">
+    <div class="danger-confirmation-header"><div><p class="eyebrow">Organization at risk</p><h2 id="danger-summary-title">{{ organization.name }}</h2></div><span class="role-badge">{{ organization.slug }}</span></div>
+    <div class="consequence-grid">
+        <article><strong>Access stops immediately</strong><span>Members will no longer be able to open this workspace.</span></article>
+        <article><strong>Recovery for {{ policy.organization_recovery_days }} days</strong><span>An administrator can restore access during the recovery window.</span></article>
+        <article><strong>Projected purge deadline</strong><span>{{ projected_purge_after|date:"Y-m-d H:i T" }}</span></article>
+    </div>
+    {% if policy.legal_hold or organization_exception_active %}<div class="notice warning"><strong>Permanent purge is currently blocked.</strong> Suspension can still happen now, but {% if policy.legal_hold %}the active legal hold{% if organization_exception_active %} and {% endif %}{% endif %}{% if organization_exception_active %}the organization retention exception{% endif %} must be resolved before permanent deletion. <a href="{% url 'organizations:retention-dashboard' organization.slug %}">Review retention controls</a>.</div>{% endif %}
+    <p>The final purge deadline is recalculated when you submit. Permanent deletion happens only after that deadline and only if no hold or organization exception blocks it.</p>
+    <form class="stacked-form danger-confirmation-form" method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="field">{{ form.confirmation.label_tag }}{{ form.confirmation }}{{ form.confirmation.errors }}<small class="field-help">This phrase names the organization so you can verify the target.</small></div>
+        <div class="form-actions"><a class="secondary-button" href="{% url 'organizations:retention-dashboard' organization.slug %}">Cancel</a><button class="danger-button" type="submit">Suspend now and schedule deletion</button></div>
+    </form>
+</section>
 {% endblock %}

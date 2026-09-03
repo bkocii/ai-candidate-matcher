@@ -1307,6 +1307,13 @@ exception controls use explicit responsive field components; an empty plan is
 one compact safe state; purge controls appear only for a non-empty eligible
 plan; operational labels are plain; and navigation returns to Privacy & audit.
 
+The screen-level `MT-028` correction was completed on 2026-09-03. Organization
+suspension now names the tenant and slug, requires `SUSPEND <ORGANIZATION NAME>`,
+shows immediate access loss, recovery duration, and projected deadline, and
+explains active legal-hold/organization-exception effects. The actual deadline
+continues to be recalculated inside the transactional suspension service. A
+responsive danger card replaces the generic unstyled form.
+
 ## Not implemented
 
 Outreach generation, immutable recruiter editing, exact final approval, manual

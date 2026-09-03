@@ -363,6 +363,49 @@ def test_organization_suspension_recovery_and_complete_purge() -> None:
     ).exists()
 
 
+def test_organization_suspension_page_names_target_deadline_and_exact_phrase(
+    client,
+) -> None:
+    admin, organization = make_admin(slug="suspension-review")
+    policy = get_retention_policy(organization)
+    policy.legal_hold = True
+    policy.save(update_fields=("legal_hold",))
+    RetentionException.objects.create(
+        organization=organization,
+        scope=RetentionException.Scope.ORGANIZATION,
+        reason="Synthetic organization hold",
+        created_by=admin,
+    )
+    route = reverse(
+        "organizations:organization-delete-request", args=[organization.slug]
+    )
+    phrase = f"SUSPEND {organization.name.upper()}"
+    client.force_login(admin)
+
+    response = client.get(route)
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert f"Suspend {organization.name} and schedule deletion" in content
+    assert phrase in content
+    assert "Recovery for 30 days" in content
+    assert "Projected purge deadline" in content
+    assert "Permanent purge is currently blocked" in content
+    assert 'class="danger-confirmation"' in content
+
+    invalid = client.post(route, {"confirmation": "DELETE ORGANIZATION"})
+    organization.refresh_from_db()
+    assert invalid.status_code == 200
+    assert organization.is_active is True
+    assert "Enter the exact confirmation phrase" in invalid.content.decode()
+
+    confirmed = client.post(route, {"confirmation": phrase})
+    organization.refresh_from_db()
+    assert confirmed.status_code == 302
+    assert organization.is_active is False
+    assert organization.purge_after is not None
+
+
 def test_lifecycle_command_is_dry_run_and_apply_needs_confirmation() -> None:
     _, organization = make_admin(slug="command")
     output = StringIO()
