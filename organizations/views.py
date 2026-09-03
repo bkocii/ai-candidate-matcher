@@ -211,7 +211,7 @@ def recruiter_create(request, organization_slug: str):
 
 
 @login_required
-@require_POST
+@require_http_methods(["GET", "POST"])
 def recruiter_status(request, organization_slug: str, membership_id: int):
     organization = _visible_organization(request, organization_slug)
     require_organization_admin(request.user, organization)
@@ -221,7 +221,21 @@ def recruiter_status(request, organization_slug: str, membership_id: int):
         organization=organization,
         role=OrganizationMembership.Role.RECRUITER,
     )
-    requested_state = request.POST.get("is_active")
+    requested_state = (
+        request.POST.get("is_active")
+        if request.method == "POST"
+        else ("false" if membership.is_active else "true")
+    )
+    if request.method == "GET":
+        return render(
+            request,
+            "organizations/recruiter_status_confirm.html",
+            {
+                "organization": organization,
+                "membership": membership,
+                "requested_state": requested_state,
+            },
+        )
     if requested_state not in {"true", "false"}:
         messages.error(request, "Select a valid recruiter access state.")
     else:

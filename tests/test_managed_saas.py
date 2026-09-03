@@ -705,6 +705,64 @@ def test_team_routes_are_admin_only_and_manage_recruiters(client) -> None:
     assert membership.is_active is False
 
 
+def test_recruiter_access_change_requires_scoped_identity_confirmation(client) -> None:
+    admin, organization, _ = make_organization_admin()
+    recruiter = User.objects.create_user(
+        username="reviewed-recruiter",
+        email="reviewed@example.test",
+        first_name="Reviewed",
+        last_name="Recruiter",
+    )
+    membership = OrganizationMembership.objects.create(
+        user=recruiter,
+        organization=organization,
+        role=OrganizationMembership.Role.RECRUITER,
+    )
+    client.force_login(admin)
+    url = reverse(
+        "organizations:recruiter-status",
+        args=[organization.slug, membership.pk],
+    )
+
+    review = client.get(url)
+    content = review.content.decode()
+    assert review.status_code == 200
+    assert "Remove recruiter access?" in content
+    assert "Reviewed Recruiter" in content
+    assert "reviewed@example.test" in content
+    assert organization.name in content
+    membership.refresh_from_db()
+    assert membership.is_active is True
+
+    changed = client.post(url, {"is_active": "false"})
+    assert changed.status_code == 302
+    membership.refresh_from_db()
+    assert membership.is_active is False
+
+    restore_review = client.get(url)
+    assert "Restore recruiter access?" in restore_review.content.decode()
+
+
+def test_recruiter_access_confirmation_hides_cross_tenant_membership(client) -> None:
+    admin, organization, _ = make_organization_admin("tenant-admin")
+    _, other, _ = make_organization_admin("other-admin")
+    recruiter = User.objects.create_user(username="other-recruiter")
+    membership = OrganizationMembership.objects.create(
+        user=recruiter,
+        organization=other,
+        role=OrganizationMembership.Role.RECRUITER,
+    )
+    client.force_login(admin)
+
+    response = client.get(
+        reverse(
+            "organizations:recruiter-status",
+            args=[organization.slug, membership.pk],
+        )
+    )
+    assert response.status_code == 404
+
+
 def test_workspace_switch_navigation_uses_only_active_memberships(client) -> None:
     user = User.objects.create_user(username="workspace-switcher")
     first = Organization.objects.create(name="First", slug="first")

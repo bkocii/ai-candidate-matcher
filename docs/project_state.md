@@ -1399,3 +1399,9 @@ MT-033 now uses organization-neutral **Hiring clients** language and presents
 team, hiring-client, and retention cards in one balanced desktop row that stacks
 responsively. The broader organization timezone/locale profile remains a
 separate proposed feature.
+
+MT-034 recruiter access changes now use a tenant-scoped identity confirmation
+page for both removal and restoration. Team rows and confirmation details show
+email when available, label membership state as **Organization access**, and use
+**Access removed** rather than implying a disabled global account. Cross-tenant
+membership IDs remain hidden by 404. Browser retesting remains pending.

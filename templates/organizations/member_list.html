@@ -17,20 +17,16 @@
 
 <div class="table-wrap">
     <table>
-        <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Action</th></tr></thead>
+        <thead><tr><th>User</th><th>Role</th><th>Organization access</th><th>Action</th></tr></thead>
         <tbody>
         {% for membership in memberships %}
             <tr>
-                <th scope="row">{{ membership.user.username }}{% if membership.user.get_full_name %}<br><small>{{ membership.user.get_full_name }}</small>{% endif %}</th>
+                <th scope="row">{{ membership.user.username }}{% if membership.user.get_full_name %}<br><small>{{ membership.user.get_full_name }}</small>{% endif %}{% if membership.user.email %}<br><small>{{ membership.user.email }}</small>{% endif %}</th>
                 <td>{{ membership.get_role_display }}</td>
-                <td><span class="status-pill {% if membership.is_active %}status-active{% endif %}">{% if membership.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+                <td><span class="status-pill {% if membership.is_active %}status-active{% endif %}">{% if membership.is_active %}Active{% else %}Access removed{% endif %}</span></td>
                 <td>
                     {% if membership.role == "recruiter" %}
-                        <form method="post" action="{% url 'organizations:recruiter-status' organization.slug membership.pk %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="is_active" value="{% if membership.is_active %}false{% else %}true{% endif %}">
-                            <button class="{% if membership.is_active %}danger-button{% else %}secondary-button{% endif %}" type="submit">{% if membership.is_active %}Remove access{% else %}Restore access{% endif %}</button>
-                        </form>
+                        <a class="{% if membership.is_active %}danger-button{% else %}secondary-button{% endif %}" href="{% url 'organizations:recruiter-status' organization.slug membership.pk %}">{% if membership.is_active %}Remove access{% else %}Restore access{% endif %}</a>
                     {% else %}
                         <span class="help-text">Managed by platform owner</span>
                     {% endif %}

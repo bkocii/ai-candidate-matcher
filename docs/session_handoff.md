@@ -908,6 +908,11 @@ layout are implemented: **Hiring clients** is organization-neutral, while its
 three administration cards share a balanced desktop row and stack responsively.
 Browser retesting remains pending.
 
+MT-034 recruiter removal/restoration now requires a scoped confirmation naming
+the account, organization, and candidate-data impact. Team membership labels no
+longer imply global account state, email is shown when available, and cross-
+tenant membership IDs return 404. Browser retesting remains pending.
+
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
 review, production/deployment, minimized usage reporting, durable jobs, staged
