@@ -22,6 +22,7 @@ from audit.services import record_audit_event
 from candidates.models import CandidateIntakeBatch, CandidateIntakeItem
 from matching.models import MatchRun, ReviewDecision
 from operations.models import BackgroundJob, BackgroundTask
+from organizations.forms import RetentionExceptionForm
 from organizations.models import (
     Organization,
     RetentionException,
@@ -77,9 +78,58 @@ def test_policy_defaults_dashboard_and_admin_boundary(client) -> None:
     response = client.get(route)
     assert response.status_code == 200
     assert response.context["plan"].purgeable_count == 0
-    assert "Current workflows and decision-bearing history remain protected" in (
-        response.content.decode()
+    content = response.content.decode()
+    assert "Current workflows and decision-bearing history remain protected" in content
+    assert 'class="empty-preview"' in content
+    assert "Nothing eligible for deletion" in content
+    assert 'class="retention-form-grid"' in content
+    assert "Delete the items shown above" not in content
+    assert 'name="apply-confirmation"' not in content
+    assert reverse("audit:privacy-dashboard", args=[organization.slug]) in content
+
+
+def test_retention_exception_target_is_selected_from_current_organization() -> None:
+    admin, organization = make_admin(slug="exception-target")
+    _, other = make_admin(slug="other-exception-target")
+    own_job = BackgroundJob.objects.create(
+        organization=organization,
+        workflow=BackgroundJob.Workflow.CANDIDATE_PROFILE_BATCH,
+        scope_type=BackgroundJob.ScopeType.ORGANIZATION,
+        scope_id=organization.pk,
+        idempotency_key="c" * 64,
+        status=BackgroundJob.Status.SUCCEEDED,
+        completed_at=timezone.now(),
     )
+    foreign_job = BackgroundJob.objects.create(
+        organization=other,
+        workflow=BackgroundJob.Workflow.CANDIDATE_PROFILE_BATCH,
+        scope_type=BackgroundJob.ScopeType.ORGANIZATION,
+        scope_id=other.pk,
+        idempotency_key="d" * 64,
+        status=BackgroundJob.Status.SUCCEEDED,
+        completed_at=timezone.now(),
+    )
+    own_target = f"{RetentionException.Scope.COMPLETED_JOBS}:{own_job.pk}"
+    foreign_target = f"{RetentionException.Scope.COMPLETED_JOBS}:{foreign_job.pk}"
+
+    form = RetentionExceptionForm(
+        data={"target": own_target, "reason": "Preserve for support review"},
+        organization=organization,
+    )
+    forged = RetentionExceptionForm(
+        data={"target": foreign_target, "reason": "Forged foreign target"},
+        organization=organization,
+    )
+
+    assert form.is_valid(), form.errors
+    exception = form.save(user=admin)
+    assert exception.organization == organization
+    assert exception.scope == RetentionException.Scope.COMPLETED_JOBS
+    assert exception.object_id == own_job.pk
+    assert not forged.is_valid()
+    rendered_choices = str(forged["target"])
+    assert own_target in rendered_choices
+    assert foreign_target not in rendered_choices
 
 
 def test_cleanup_expires_intake_and_jobs_but_honors_exception(

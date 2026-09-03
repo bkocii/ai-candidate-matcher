@@ -1295,6 +1295,20 @@ again reports zero newly due candidates and creates no duplicate event.
 Source- and document-level expiry remain visible exceptions for individual
 review; this command intentionally stages only candidate-level expiry.
 
+When adding a retention exception, **What should be protected?** must offer
+whole-group choices plus eligible temporary-intake, completed-job, shortlist,
+and outreach records belonging only to the active organization. There is no raw
+object-ID field. Submit one valid record selection, then tamper with the posted
+value using an ID from another organization; the valid selection is saved and
+the forged value is rejected without creating an exception.
+
+The retention page uses labelled two-column field grids on desktop and one
+column on narrow screens. When the dry run is empty, one compact **Nothing
+eligible for deletion** state replaces the six zero-value cards, and the purge
+confirmation/control is absent. When eligible records exist, the compact
+category summary and **Delete the items shown above** confirmation appear.
+**Back to Privacy & audit** returns to the parent compliance workspace.
+
 Run the focused automated coverage:
 
 ```powershell

@@ -838,6 +838,12 @@ empty due-date panels. Focused coverage passed `11` tests and the complete
 quality gate passed `548` tests plus all checks. Browser retesting remains
 pending; no migration was added.
 
+The remainder of the MT-027 page-level pass is implemented: styled responsive
+policy/exception fields, a compact empty/non-empty preview, no purge control for
+an empty plan, plain deletion wording, and **Back to Privacy & audit**. Future
+manual-review work should complete behavior, wording, responsive styling, tests,
+and documentation per screen before producing a handoff ZIP.
+
 `MT-026-U02` and `MT-026-C01` are implemented. The former six workflow-history
 cards are one newest-first, activity-type-filtered table with 25 rows per page.
 Plain activity/result labels lead; IDs remain secondary audit references and no
@@ -852,6 +858,13 @@ boundary is consistent again: organization administrators see and access AI
 usage and privacy/audit; recruiters do not see the links and receive `403` from
 direct report URLs. Focused role/report coverage passed `35` tests; all `549`
 project tests and the remaining lint, formatting, and migration checks passed.
+
+`MT-027-U01` is implemented. Retention-exception creation now derives a single
+grouped target selector from eligible records in the active organization and
+retains explicit whole-group choices. Raw IDs are not accepted, and forged
+cross-tenant/cross-scope values fail validation. Browser retesting remains
+pending. Focused lifecycle coverage passed `9` tests; all `550` project tests
+and final lint, formatting, and migration checks passed. No migration was added.
 
 ## Immediate next action
 

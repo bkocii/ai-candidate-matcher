@@ -528,7 +528,9 @@ def retention_dashboard(request, organization_slug: str):
     require_organization_admin(request.user, organization)
     policy = get_retention_policy(organization)
     policy_form = OrganizationRetentionPolicyForm(instance=policy, prefix="policy")
-    exception_form = RetentionExceptionForm(prefix="exception")
+    exception_form = RetentionExceptionForm(
+        organization=organization, prefix="exception"
+    )
     apply_form = ApplyRetentionForm(prefix="apply")
 
     if request.method == "POST":
@@ -546,13 +548,13 @@ def retention_dashboard(request, organization_slug: str):
                 messages.success(request, "Retention policy updated.")
                 return redirect("organizations:retention-dashboard", organization.slug)
         elif action == "add_exception":
-            exception_form = RetentionExceptionForm(request.POST, prefix="exception")
+            exception_form = RetentionExceptionForm(
+                request.POST,
+                organization=organization,
+                prefix="exception",
+            )
             if exception_form.is_valid():
-                exception = exception_form.save(commit=False)
-                exception.organization = organization
-                exception.created_by = request.user
-                exception.full_clean()
-                exception.save()
+                exception_form.save(user=request.user)
                 messages.success(request, "Retention exception added.")
                 return redirect("organizations:retention-dashboard", organization.slug)
         elif action == "deactivate_exception":

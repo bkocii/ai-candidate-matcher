@@ -4,11 +4,15 @@ from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.exceptions import ValidationError
 
 from accounts.models import User
+from candidates.models import CandidateIntakeItem
+from matching.models import MatchRun
+from operations.models import BackgroundJob
 from organizations.models import (
     ClientCompany,
     OrganizationRetentionPolicy,
     RetentionException,
 )
+from outreach.models import OutreachDraft
 
 
 class ManagedMembershipForm(forms.Form):
@@ -140,8 +144,10 @@ class OrganizationRetentionPolicyForm(forms.ModelForm):
         labels = {
             "temporary_intake_days": "Abandoned intake after (days)",
             "completed_job_days": "Completed job history after (days)",
-            "uncommitted_workflow_days": "Uncommitted workflow history after (days)",
-            "metadata_days": "Usage and audit metadata after (days)",
+            "uncommitted_workflow_days": (
+                "Unused shortlists and abandoned outreach after (days)"
+            ),
+            "metadata_days": "AI usage and audit history after (days)",
             "organization_recovery_days": "Organization recovery window (days)",
             "legal_hold": "Pause all scheduled deletion (legal hold)",
         }
@@ -152,15 +158,129 @@ class OrganizationRetentionPolicyForm(forms.ModelForm):
         }
 
 
-class RetentionExceptionForm(forms.ModelForm):
-    class Meta:
-        model = RetentionException
-        fields = ("scope", "object_id", "reason", "expires_at")
-        widgets = {"expires_at": forms.DateInput(attrs={"type": "date"})}
-        help_texts = {
-            "object_id": "Leave blank to pause this entire retention group.",
-            "reason": "Do not copy candidate, CV, decision, or outreach content here.",
-        }
+class RetentionExceptionForm(forms.Form):
+    target = forms.ChoiceField(label="What should be protected?")
+    reason = forms.CharField(
+        max_length=500,
+        help_text=(
+            "Use a short operational reason. Do not include candidate, CV, "
+            "decision, or outreach content."
+        ),
+    )
+    expires_at = forms.DateField(
+        required=False,
+        label="Expiry date",
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text="Optional. Leave blank when the exception has no planned expiry.",
+    )
+
+    def __init__(self, *args, organization, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.organization = organization
+        self.fields["target"].choices = self._target_choices()
+
+    @staticmethod
+    def _value(scope: str, object_id: int | None = None) -> str:
+        return f"{scope}:{object_id or ''}"
+
+    def _target_choices(self):
+        groups = []
+        intake_choices = [
+            (self._value(RetentionException.Scope.TEMPORARY_INTAKE), "Entire group")
+        ]
+        intake_choices.extend(
+            (
+                self._value(RetentionException.Scope.TEMPORARY_INTAKE, item.pk),
+                f"Intake item #{item.pk} — {item.get_status_display()}",
+            )
+            for item in CandidateIntakeItem.objects.for_organization(self.organization)[
+                :100
+            ]
+        )
+        groups.append(("Temporary candidate intake", intake_choices))
+
+        job_choices = [
+            (self._value(RetentionException.Scope.COMPLETED_JOBS), "Entire group")
+        ]
+        job_choices.extend(
+            (
+                self._value(RetentionException.Scope.COMPLETED_JOBS, job.pk),
+                f"Processing job #{job.pk} — {job.get_status_display()}",
+            )
+            for job in BackgroundJob.objects.for_organization(self.organization).filter(
+                status__in=[
+                    BackgroundJob.Status.SUCCEEDED,
+                    BackgroundJob.Status.COMPLETED_WITH_ERRORS,
+                ]
+            )[:100]
+        )
+        groups.append(("Completed processing activity", job_choices))
+
+        shortlist_choices = [
+            (self._value(RetentionException.Scope.MATCH_RUNS), "Entire group")
+        ]
+        shortlist_choices.extend(
+            (
+                self._value(RetentionException.Scope.MATCH_RUNS, run.pk),
+                f"Shortlist #{run.pk}",
+            )
+            for run in MatchRun.objects.for_organization(self.organization)[:100]
+        )
+        groups.append(("Older shortlists", shortlist_choices))
+
+        outreach_choices = [
+            (self._value(RetentionException.Scope.OUTREACH), "Entire group")
+        ]
+        outreach_entry_ids = (
+            OutreachDraft.objects.for_organization(self.organization)
+            .values_list("shortlist_entry_id", flat=True)
+            .distinct()[:100]
+        )
+        outreach_choices.extend(
+            (
+                self._value(RetentionException.Scope.OUTREACH, entry_id),
+                f"Outreach chain for shortlist entry #{entry_id}",
+            )
+            for entry_id in outreach_entry_ids
+        )
+        groups.append(("Unapproved outreach", outreach_choices))
+        groups.append(
+            (
+                "Operational records",
+                [
+                    (
+                        self._value(RetentionException.Scope.METADATA),
+                        "All AI usage and audit history",
+                    )
+                ],
+            )
+        )
+        groups.append(
+            (
+                "Organization deletion",
+                [
+                    (
+                        self._value(RetentionException.Scope.ORGANIZATION),
+                        f"{self.organization.name} organization deletion",
+                    )
+                ],
+            )
+        )
+        return [("", "Choose what to protect"), *groups]
+
+    def save(self, *, user) -> RetentionException:
+        scope, raw_object_id = self.cleaned_data["target"].split(":", 1)
+        exception = RetentionException(
+            organization=self.organization,
+            scope=scope,
+            object_id=int(raw_object_id) if raw_object_id else None,
+            reason=self.cleaned_data["reason"].strip(),
+            expires_at=self.cleaned_data["expires_at"],
+            created_by=user,
+        )
+        exception.full_clean()
+        exception.save()
+        return exception
 
 
 class ApplyRetentionForm(forms.Form):

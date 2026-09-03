@@ -1293,6 +1293,20 @@ views, and reporting services; recruiters receive `403`. Focused report,
 dashboard, and permission coverage passed `35` tests; all `549` project tests,
 Ruff, formatting, and migration checks passed.
 
+`MT-027-U01` was implemented on 2026-09-02. Retention exceptions use one
+organization-scoped **What should be protected?** selector with whole-group and
+eligible record choices instead of separate scope and raw object-ID fields.
+Forged, mistyped, cross-scope, and cross-tenant targets fail form validation;
+the persisted model and cleanup matching semantics are unchanged. Focused
+lifecycle coverage passed `9` tests; all `550` project tests, lint, formatting,
+and migration checks passed.
+
+The page-level `MT-027-V01`, `MT-027-U02`, `MT-027-U03`, `MT-027-C01`, and
+`MT-027-U04` correction was completed with `MT-027-U01`: retention policy and
+exception controls use explicit responsive field components; an empty plan is
+one compact safe state; purge controls appear only for a non-empty eligible
+plan; operational labels are plain; and navigation returns to Privacy & audit.
+
 ## Not implemented
 
 Outreach generation, immutable recruiter editing, exact final approval, manual
