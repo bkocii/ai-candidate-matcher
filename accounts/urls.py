@@ -2,9 +2,10 @@ from django.contrib.auth.views import (
     LoginView,
     LogoutView,
     PasswordChangeDoneView,
-    PasswordChangeView,
 )
 from django.urls import path, reverse_lazy
+
+from accounts.views import RequiredAwarePasswordChangeView
 
 app_name = "accounts"
 
@@ -17,7 +18,7 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path(
         "password/change/",
-        PasswordChangeView.as_view(
+        RequiredAwarePasswordChangeView.as_view(
             template_name="registration/password_change_form.html",
             success_url=reverse_lazy("accounts:password-change-done"),
         ),

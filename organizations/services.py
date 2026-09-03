@@ -63,6 +63,7 @@ def _resolve_managed_user(values: dict) -> tuple[User, bool]:
     )
     validate_password(password, user=user)
     user.set_password(password)
+    user.must_change_password = True
     user.full_clean()
     user.save()
     return user, True

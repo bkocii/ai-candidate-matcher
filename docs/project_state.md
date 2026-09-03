@@ -1382,3 +1382,9 @@ identity confirmation before access is granted; new-account fields are isolated
 with correct autocomplete attributes and cannot silently reuse an existing
 username. Expiring invitation/password setup remains a separate open security
 task. No migration was added.
+
+The interim temporary-credential safeguard is implemented. Every newly created
+managed account is marked **must change password** and is blocked from
+application pages until a successful private password change. Existing linked
+accounts are unaffected. Migration `accounts.0003_user_must_change_password`
+adds the state; expiring email invitations remain future work.

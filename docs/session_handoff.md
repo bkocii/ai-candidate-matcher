@@ -890,6 +890,14 @@ identified before the grant POST, while new-user fields use creation-specific
 autocomplete and reject existing usernames. Invitation/password-setup work is
 still open; no migration was added.
 
+The interim managed-account password safeguard is implemented. New managed
+users receive `must_change_password=True`; middleware permits only password
+change, its completion page, and logout until the password is replaced. The
+custom password-change view clears the gate after success. Existing linked
+accounts remain unchanged. Apply migration
+`accounts.0003_user_must_change_password`; expiring invitations remain future
+work.
+
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
 review, production/deployment, minimized usage reporting, durable jobs, staged

@@ -7,6 +7,13 @@ synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
 
+New accounts created through managed organization provisioning or team access
+must replace their temporary password before any workspace is available. Sign in
+with a disposable managed account, confirm an ordinary application URL redirects
+to **Change password**, complete the change, and confirm workspace access then
+succeeds. Existing accounts linked to another organization must not be forced
+through this step again.
+
 ## 1. Prepare the local project
 
 Open PowerShell in the project root (the directory containing `manage.py`):

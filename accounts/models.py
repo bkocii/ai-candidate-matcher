@@ -13,6 +13,13 @@ class User(AbstractUser):
             "memberships without receiving organization data access."
         ),
     )
+    must_change_password = models.BooleanField(
+        default=False,
+        help_text=(
+            "Blocks normal application access until a managed account replaces "
+            "its temporary password."
+        ),
+    )
 
 
 class OrganizationMembership(models.Model):

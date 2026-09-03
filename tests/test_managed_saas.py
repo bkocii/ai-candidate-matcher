@@ -89,6 +89,7 @@ def test_platform_owner_provisions_organization_first_admin_and_audit() -> None:
     assert membership.role == OrganizationMembership.Role.ADMIN
     assert membership.is_active is True
     assert membership.user.check_password(TEMPORARY_PASSWORD)
+    assert membership.user.must_change_password is True
     assert has_organization_access(owner, organization) is False
     events = list(
         TenantManagementEvent.objects.filter(
@@ -122,6 +123,49 @@ def test_provisioning_can_link_existing_user_without_changing_password() -> None
     assert created_user is False
     assert membership.user == existing
     assert existing.check_password("Existing-Password-4821!")
+    assert existing.must_change_password is False
+
+
+def test_managed_user_must_change_temporary_password_before_workspace_access(
+    client,
+) -> None:
+    owner = make_platform_owner()
+    organization, membership, _ = provision_organization(
+        platform_owner=owner,
+        organization_name="Password Gate Agency",
+        administrator_values=managed_values("password-gated-admin"),
+    )
+    user = membership.user
+    assert client.login(username=user.username, password=TEMPORARY_PASSWORD)
+
+    blocked = client.get(
+        reverse("organizations:organization-dashboard", args=[organization.slug])
+    )
+    assert blocked.status_code == 302
+    assert blocked.url == reverse("accounts:password-change")
+
+    change_page = client.get(reverse("accounts:password-change"))
+    assert change_page.status_code == 200
+    assert "Password change required" in change_page.content.decode()
+
+    changed = client.post(
+        reverse("accounts:password-change"),
+        {
+            "old_password": TEMPORARY_PASSWORD,
+            "new_password1": "Private-Replacement-5832!",
+            "new_password2": "Private-Replacement-5832!",
+        },
+    )
+    assert changed.status_code == 302
+    assert changed.url == reverse("accounts:password-change-done")
+    user.refresh_from_db()
+    assert user.must_change_password is False
+    assert (
+        client.get(
+            reverse("organizations:organization-dashboard", args=[organization.slug])
+        ).status_code
+        == 200
+    )
 
 
 def test_non_platform_user_cannot_provision_an_organization() -> None:
