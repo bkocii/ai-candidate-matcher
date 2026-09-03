@@ -10,7 +10,7 @@ from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods, require_POST
 
 from accounts.models import OrganizationMembership
 from audit.lifecycle import (
@@ -381,7 +381,7 @@ def platform_administrator_create(request, organization_id: int):
 
 
 @login_required
-@require_POST
+@require_http_methods(["GET", "POST"])
 def platform_administrator_status(request, organization_id: int, membership_id: int):
     managed_organization = _platform_organization(request, organization_id)
     membership = get_object_or_404(
@@ -390,7 +390,34 @@ def platform_administrator_status(request, organization_id: int, membership_id: 
         organization=managed_organization,
         role=OrganizationMembership.Role.ADMIN,
     )
-    requested_state = request.POST.get("is_active")
+    requested_state = (
+        request.POST.get("is_active")
+        if request.method == "POST"
+        else ("false" if membership.is_active else "true")
+    )
+    active_administrators_remaining = (
+        OrganizationMembership.objects.filter(
+            organization=managed_organization,
+            role=OrganizationMembership.Role.ADMIN,
+            is_active=True,
+        )
+        .exclude(pk=membership.pk)
+        .count()
+    )
+    if request.method == "GET":
+        return render(
+            request,
+            "organizations/platform_administrator_status_confirm.html",
+            {
+                "managed_organization": managed_organization,
+                "membership": membership,
+                "requested_state": requested_state,
+                "active_administrators_remaining": active_administrators_remaining,
+                "removal_blocked": (
+                    requested_state == "false" and active_administrators_remaining == 0
+                ),
+            },
+        )
     if requested_state not in {"true", "false"}:
         messages.error(request, "Select a valid administrator access state.")
     else:

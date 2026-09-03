@@ -400,6 +400,93 @@ def test_platform_owner_manages_admins_but_cannot_remove_last_active_admin() -> 
     assert second_admin.is_active is True
 
 
+def test_platform_administrator_access_change_requires_identity_confirmation(
+    client,
+) -> None:
+    owner = make_platform_owner()
+    user, organization, membership = make_organization_admin("first-admin")
+    second_membership, _ = add_organization_member(
+        organization=organization,
+        actor=owner,
+        role=OrganizationMembership.Role.ADMIN,
+        values=managed_values("second-admin"),
+    )
+    user.email = "first-admin@example.test"
+    user.save(update_fields=("email",))
+    client.force_login(owner)
+    url = reverse(
+        "organizations:platform-administrator-status",
+        args=[organization.pk, membership.pk],
+    )
+
+    review = client.get(url)
+    content = review.content.decode()
+
+    assert review.status_code == 200
+    assert "Remove administrator access?" in content
+    assert "first-admin@example.test" in content
+    assert organization.name in content
+    assert "Active administrators remaining" in content
+    assert ">1<" in content
+    membership.refresh_from_db()
+    assert membership.is_active is True
+
+    changed = client.post(url, {"is_active": "false"})
+    assert changed.status_code == 302
+    membership.refresh_from_db()
+    assert membership.is_active is False
+    second_membership.refresh_from_db()
+    assert second_membership.is_active is True
+
+
+def test_platform_administrator_confirmation_blocks_last_active_admin(client) -> None:
+    owner = make_platform_owner()
+    _, organization, membership = make_organization_admin()
+    client.force_login(owner)
+    url = reverse(
+        "organizations:platform-administrator-status",
+        args=[organization.pk, membership.pk],
+    )
+
+    review = client.get(url)
+    content = review.content.decode()
+
+    assert review.status_code == 200
+    assert "This access cannot be removed" in content
+    assert "Remove administrator access</button>" not in content
+
+    rejected = client.post(url, {"is_active": "false"})
+    assert rejected.status_code == 302
+    membership.refresh_from_db()
+    assert membership.is_active is True
+
+
+def test_platform_owner_membership_is_explained_as_separate_access(client) -> None:
+    owner = make_platform_owner()
+    organization = Organization.objects.create(name="Support Tenant", slug="support")
+    membership = OrganizationMembership.objects.create(
+        user=owner,
+        organization=organization,
+        role=OrganizationMembership.Role.ADMIN,
+    )
+    client.force_login(owner)
+
+    detail = client.get(
+        reverse("organizations:platform-organization-detail", args=[organization.pk])
+    )
+    assert (
+        "Platform owner with separate workspace membership" in detail.content.decode()
+    )
+
+    review = client.get(
+        reverse(
+            "organizations:platform-administrator-status",
+            args=[organization.pk, membership.pk],
+        )
+    )
+    assert "Platform-management capability remains unchanged" in review.content.decode()
+
+
 def test_team_routes_are_admin_only_and_manage_recruiters(client) -> None:
     admin, organization, _ = make_organization_admin()
     recruiter = User.objects.create_user(username="existing-recruiter")

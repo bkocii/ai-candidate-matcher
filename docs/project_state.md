@@ -1367,5 +1367,11 @@ functionality pass through `CR-001`.
 The MT-029 platform organization list now surfaces active tenants without an
 administrator, distinguishes active from total memberships, and supports
 search, health/status filtering, and 25-row pagination. A compact summary makes
-tenant exceptions visible without opening each organization. Browser retesting
-remains pending; no migration was added.
+tenant exceptions visible without opening each organization. Browser testing
+passed on 2026-09-03.
+
+MT-030 administrator access changes now use a dedicated identity-and-impact
+confirmation page. It displays the tenant, account email, remaining active
+administrator count, and separate platform-owner membership semantics. The last
+active administrator is blocked before submission and by the service boundary.
+Browser retesting remains pending; no migration was added.

@@ -877,7 +877,12 @@ remains pending; no migration was added.
 MT-029 platform organization-list corrections are implemented: orphaned active
 tenants show **Needs administrator**, the table separates active and total
 memberships, and responsive search/status filters plus pagination are covered by
-tests. Browser retesting remains pending; no migration was added.
+tests. Browser testing passed on 2026-09-03.
+
+MT-030 platform administrator access changes now require a review page naming
+the person and organization. Removal shows the remaining administrator count,
+cannot proceed for the final active administrator, and explains separate
+platform-owner workspace membership. Browser retesting remains pending.
 
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
