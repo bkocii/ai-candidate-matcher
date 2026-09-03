@@ -874,6 +874,11 @@ remains pending; no migration was added.
 
 ## Immediate next action
 
+MT-029 platform organization-list corrections are implemented: orphaned active
+tenants show **Needs administrator**, the table separates active and total
+memberships, and responsive search/status filters plus pagination are covered by
+tests. Browser retesting remains pending; no migration was added.
+
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
 review, production/deployment, minimized usage reporting, durable jobs, staged

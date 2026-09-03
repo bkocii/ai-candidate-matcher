@@ -7,9 +7,21 @@
     <div><p class="eyebrow">Platform management</p><h1 id="platform-title">Organizations</h1><p class="lede">Provision and manage tenant access without opening candidate, vacancy, assessment, or outreach content.</p></div>
     <a class="primary-button button-link" href="{% url 'organizations:platform-organization-create' %}">Create organization</a>
 </section>
+<div class="platform-summary" aria-label="Organization summary">
+    <div><strong>{{ organization_summary.active }}</strong><span>Active</span></div>
+    <div><strong>{{ organization_summary.suspended }}</strong><span>Suspended</span></div>
+    <div class="{% if organization_summary.needs_administrator %}summary-warning{% endif %}"><strong>{{ organization_summary.needs_administrator }}</strong><span>Need an administrator</span></div>
+</div>
+<form class="list-filters" method="get" role="search">
+    <div class="field"><label for="organization-search">Search organizations</label><input id="organization-search" name="q" type="search" value="{{ organization_query }}" placeholder="Name or workspace slug"></div>
+    <div class="field"><label for="organization-status">Status</label><select id="organization-status" name="status"><option value="all"{% if organization_status == "all" %} selected{% endif %}>All organizations</option><option value="active"{% if organization_status == "active" %} selected{% endif %}>Active</option><option value="suspended"{% if organization_status == "suspended" %} selected{% endif %}>Suspended</option><option value="needs_administrator"{% if organization_status == "needs_administrator" %} selected{% endif %}>Needs administrator</option></select></div>
+    <button class="secondary-button" type="submit">Apply filters</button>
+    {% if organization_query or organization_status != "all" %}<a class="text-link" href="{% url 'organizations:platform-organization-list' %}">Clear</a>{% endif %}
+</form>
 {% if managed_organizations %}
-<div class="table-wrap"><table><thead><tr><th>Organization</th><th>Status</th><th>Active administrators</th><th>Memberships</th><th>Action</th></tr></thead><tbody>
-{% for item in managed_organizations %}<tr><th scope="row">{{ item.name }}<br><small>{{ item.slug }}</small></th><td><span class="status-pill {% if item.is_active %}status-active{% endif %}">{% if item.is_active %}Active{% else %}Suspended{% endif %}</span></td><td>{{ item.administrator_count }}</td><td>{{ item.membership_count }}</td><td><a class="secondary-button" href="{% url 'organizations:platform-organization-detail' item.pk %}">Manage</a></td></tr>{% endfor %}
+<div class="table-wrap"><table><thead><tr><th>Organization</th><th>Health</th><th>Active administrators</th><th>Active members</th><th>Total memberships</th><th>Action</th></tr></thead><tbody>
+{% for item in managed_organizations %}<tr{% if item.is_active and not item.administrator_count %} class="attention-row"{% endif %}><th scope="row">{{ item.name }}<br><small>{{ item.slug }}</small></th><td>{% if item.is_active and not item.administrator_count %}<span class="status-pill status-warning">Needs administrator</span>{% elif item.is_active %}<span class="status-pill status-active">Active</span>{% else %}<span class="status-pill">Suspended</span>{% endif %}</td><td>{{ item.administrator_count }}</td><td>{{ item.active_membership_count }}</td><td>{{ item.total_membership_count }}</td><td><a class="secondary-button" href="{% url 'organizations:platform-organization-detail' item.pk %}">{% if item.is_active and not item.administrator_count %}Add administrator{% else %}Manage{% endif %}</a></td></tr>{% endfor %}
 </tbody></table></div>
-{% else %}<div class="empty-state"><h2>No organizations</h2><p>Create the first managed organization and its administrator.</p></div>{% endif %}
+{% if managed_organizations.has_other_pages %}<nav class="pagination" aria-label="Organizations pages">{% if managed_organizations.has_previous %}<a class="secondary-button" href="?q={{ organization_query|urlencode }}&amp;status={{ organization_status }}&amp;page={{ managed_organizations.previous_page_number }}">Previous</a>{% endif %}<span>Page {{ managed_organizations.number }} of {{ managed_organizations.paginator.num_pages }}</span>{% if managed_organizations.has_next %}<a class="secondary-button" href="?q={{ organization_query|urlencode }}&amp;status={{ organization_status }}&amp;page={{ managed_organizations.next_page_number }}">Next</a>{% endif %}</nav>{% endif %}
+{% else %}<div class="empty-state"><h2>{% if organization_query or organization_status != "all" %}No matching organizations{% else %}No organizations{% endif %}</h2><p>{% if organization_query or organization_status != "all" %}Try changing or clearing the filters.{% else %}Create the first managed organization and its administrator.{% endif %}</p></div>{% endif %}
 {% endblock %}

@@ -1363,3 +1363,9 @@ rule corrections require a copied draft version.
 `DEMO-002 — Prepare a client-facing README and Upwork Project Catalog
 positioning` is the next release-roadmap task after the completed pre-release
 functionality pass through `CR-001`.
+
+The MT-029 platform organization list now surfaces active tenants without an
+administrator, distinguishes active from total memberships, and supports
+search, health/status filtering, and 25-row pagination. A compact summary makes
+tenant exceptions visible without opening each organization. Browser retesting
+remains pending; no migration was added.

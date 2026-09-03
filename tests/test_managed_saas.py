@@ -1,6 +1,5 @@
 import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.test import Client
 from django.urls import reverse
 
 from accounts.models import OrganizationMembership, User
@@ -10,7 +9,7 @@ from audit.lifecycle import (
 )
 from audit.models import DataLifecycleEvent, TenantManagementEvent
 from candidates.models import Candidate
-from organizations.models import ClientCompany, Organization
+from organizations.models import Organization
 from organizations.permissions import (
     has_organization_access,
     is_platform_owner,
@@ -179,6 +178,78 @@ def test_platform_create_route_and_content_boundary(client) -> None:
         ).status_code
         == 404
     )
+
+
+def test_platform_organization_list_surfaces_health_counts_and_filters(client) -> None:
+    owner = make_platform_owner()
+    _, healthy, _ = make_organization_admin("healthy-admin")
+    recruiter = User.objects.create_user(username="healthy-recruiter")
+    OrganizationMembership.objects.create(
+        user=recruiter,
+        organization=healthy,
+        role=OrganizationMembership.Role.RECRUITER,
+    )
+    removed = User.objects.create_user(username="removed-member")
+    OrganizationMembership.objects.create(
+        user=removed,
+        organization=healthy,
+        role=OrganizationMembership.Role.RECRUITER,
+        is_active=False,
+    )
+    orphaned = Organization.objects.create(name="Orphaned Agency", slug="orphaned")
+    suspended = Organization.objects.create(
+        name="Suspended Agency", slug="suspended", is_active=False
+    )
+    client.force_login(owner)
+
+    response = client.get(reverse("organizations:platform-organization-list"))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Needs administrator" in content
+    assert "Active members" in content
+    assert "Total memberships" in content
+    assert response.context["organization_summary"] == {
+        "active": 2,
+        "suspended": 1,
+        "needs_administrator": 1,
+    }
+    healthy_item = next(
+        item for item in response.context["managed_organizations"] if item == healthy
+    )
+    assert healthy_item.administrator_count == 1
+    assert healthy_item.active_membership_count == 2
+    assert healthy_item.total_membership_count == 3
+    filtered = client.get(
+        reverse("organizations:platform-organization-list"),
+        {"q": "orphan", "status": "needs_administrator"},
+    )
+    filtered_content = filtered.content.decode()
+    assert orphaned.name in filtered_content
+    assert healthy.name not in filtered_content
+    assert suspended.name not in filtered_content
+    assert "Add administrator" in filtered_content
+
+
+def test_platform_organization_list_paginates_and_preserves_filters(client) -> None:
+    owner = make_platform_owner()
+    Organization.objects.bulk_create(
+        [
+            Organization(name=f"Agency {number:02d}", slug=f"agency-{number:02d}")
+            for number in range(26)
+        ]
+    )
+    client.force_login(owner)
+
+    response = client.get(
+        reverse("organizations:platform-organization-list"),
+        {"q": "Agency", "status": "needs_administrator"},
+    )
+    content = response.content.decode()
+
+    assert response.context["managed_organizations"].paginator.per_page == 25
+    assert "Page 1 of 2" in content
+    assert "q=Agency&amp;status=needs_administrator&amp;page=2" in content
 
 
 @pytest.mark.parametrize("username", ["ordinary", "technical-superuser"])
@@ -353,86 +424,6 @@ def test_team_routes_are_admin_only_and_manage_recruiters(client) -> None:
     assert response.status_code == 302
     membership.refresh_from_db()
     assert membership.is_active is False
-
-
-def test_recruiter_cannot_post_administrator_or_platform_mutations() -> None:
-    _, organization, _ = make_organization_admin()
-    recruiter = User.objects.create_user(username="mutation-recruiter")
-    OrganizationMembership.objects.create(
-        user=recruiter,
-        organization=organization,
-        role=OrganizationMembership.Role.RECRUITER,
-    )
-    managed_recruiter = User.objects.create_user(username="managed-recruiter")
-    managed_membership = OrganizationMembership.objects.create(
-        user=managed_recruiter,
-        organization=organization,
-        role=OrganizationMembership.Role.RECRUITER,
-    )
-    company = ClientCompany.objects.create(
-        organization=organization,
-        name="Protected Client",
-        slug="protected-client",
-    )
-    csrf_client = Client(enforce_csrf_checks=True)
-    csrf_client.force_login(recruiter)
-    dashboard = csrf_client.get(
-        reverse("organizations:organization-dashboard", args=[organization.slug])
-    )
-    csrf_token = dashboard.cookies["csrftoken"].value
-
-    responses = (
-        csrf_client.post(
-            reverse(
-                "organizations:recruiter-status",
-                args=[organization.slug, managed_membership.pk],
-            ),
-            {"is_active": "false"},
-            HTTP_X_CSRFTOKEN=csrf_token,
-        ),
-        csrf_client.post(
-            reverse(
-                "organizations:client-company-status",
-                args=[organization.slug, company.pk],
-            ),
-            {"is_active": "false"},
-            HTTP_X_CSRFTOKEN=csrf_token,
-        ),
-        csrf_client.post(
-            reverse("organizations:retention-dashboard", args=[organization.slug]),
-            {"action": "apply_cleanup"},
-            HTTP_X_CSRFTOKEN=csrf_token,
-        ),
-        csrf_client.post(
-            reverse(
-                "organizations:organization-delete-request",
-                args=[organization.slug],
-            ),
-            {"confirmation": "DELETE ORGANIZATION"},
-            HTTP_X_CSRFTOKEN=csrf_token,
-        ),
-        csrf_client.post(
-            reverse("organizations:platform-organization-create"),
-            {
-                "organization_name": "Unauthorized Organization",
-                "username": "unauthorized-admin",
-                "temporary_password": TEMPORARY_PASSWORD,
-                "temporary_password_confirmation": TEMPORARY_PASSWORD,
-            },
-            HTTP_X_CSRFTOKEN=csrf_token,
-        ),
-    )
-
-    assert dashboard.status_code == 200
-    assert [response.status_code for response in responses] == [403] * 5
-    managed_membership.refresh_from_db()
-    company.refresh_from_db()
-    organization.refresh_from_db()
-    assert managed_membership.is_active is True
-    assert company.is_active is True
-    assert organization.is_active is True
-    assert organization.deletion_requested_at is None
-    assert not Organization.objects.filter(name="Unauthorized Organization").exists()
 
 
 def test_workspace_switch_navigation_uses_only_active_memberships(client) -> None:

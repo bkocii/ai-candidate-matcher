@@ -4,6 +4,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.http import HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
@@ -241,21 +242,58 @@ def recruiter_status(request, organization_slug: str, membership_id: int):
 @login_required
 def platform_organization_list(request):
     require_platform_owner(request.user)
-    organizations = Organization.objects.all().annotate(
-        membership_count=Count("memberships", distinct=True),
-        administrator_count=Count(
-            "memberships",
-            filter=(
-                Q(memberships__role=OrganizationMembership.Role.ADMIN)
-                & Q(memberships__is_active=True)
+    organizations = (
+        Organization.objects.all()
+        .annotate(
+            active_membership_count=Count(
+                "memberships",
+                filter=Q(memberships__is_active=True),
+                distinct=True,
             ),
-            distinct=True,
-        ),
+            total_membership_count=Count("memberships", distinct=True),
+            administrator_count=Count(
+                "memberships",
+                filter=(
+                    Q(memberships__role=OrganizationMembership.Role.ADMIN)
+                    & Q(memberships__is_active=True)
+                ),
+                distinct=True,
+            ),
+        )
+        .order_by("name", "slug")
     )
+    summary = {
+        "active": organizations.filter(is_active=True).count(),
+        "suspended": organizations.filter(is_active=False).count(),
+        "needs_administrator": organizations.filter(
+            is_active=True, administrator_count=0
+        ).count(),
+    }
+    query = request.GET.get("q", "").strip()
+    status = request.GET.get("status", "all")
+    if query:
+        organizations = organizations.filter(
+            Q(name__icontains=query) | Q(slug__icontains=query)
+        )
+    if status == "active":
+        organizations = organizations.filter(is_active=True)
+    elif status == "suspended":
+        organizations = organizations.filter(is_active=False)
+    elif status == "needs_administrator":
+        organizations = organizations.filter(is_active=True, administrator_count=0)
+    elif status != "all":
+        status = "all"
+
+    page = Paginator(organizations, 25).get_page(request.GET.get("page"))
     return render(
         request,
         "organizations/platform_organization_list.html",
-        {"managed_organizations": organizations},
+        {
+            "managed_organizations": page,
+            "organization_summary": summary,
+            "organization_query": query,
+            "organization_status": status,
+        },
     )
 
 
