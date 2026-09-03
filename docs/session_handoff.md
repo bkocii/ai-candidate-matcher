@@ -884,6 +884,12 @@ the person and organization. Removal shows the remaining administrator count,
 cannot proceed for the final active administrator, and explains separate
 platform-owner workspace membership. Browser retesting remains pending.
 
+MT-030 browser testing passed on 2026-09-03. MT-031 now provides explicit
+**Add existing account** and **Create new account** paths. Existing users are
+identified before the grant POST, while new-user fields use creation-specific
+autocomplete and reject existing usernames. Invitation/password-setup work is
+still open; no migration was added.
+
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
 review, production/deployment, minimized usage reporting, durable jobs, staged

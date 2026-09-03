@@ -1375,3 +1375,10 @@ confirmation page. It displays the tenant, account email, remaining active
 administrator count, and separate platform-owner membership semantics. The last
 active administrator is blocked before submission and by the service boundary.
 Browser retesting remains pending; no migration was added.
+
+MT-030 browser testing passed on 2026-09-03. MT-031 now separates existing- and
+new-administrator workflows. Existing accounts require exact lookup and visible
+identity confirmation before access is granted; new-account fields are isolated
+with correct autocomplete attributes and cannot silently reuse an existing
+username. Expiring invitation/password setup remains a separate open security
+task. No migration was added.

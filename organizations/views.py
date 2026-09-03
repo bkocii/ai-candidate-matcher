@@ -27,7 +27,9 @@ from candidates.models import Candidate
 from organizations.forms import (
     ApplyRetentionForm,
     ClientCompanyForm,
+    ExistingManagedMembershipForm,
     ManagedMembershipForm,
+    NewManagedMembershipForm,
     OrganizationProvisionForm,
     OrganizationRetentionPolicyForm,
     RequestOrganizationDeletionForm,
@@ -352,7 +354,23 @@ def platform_organization_detail(request, organization_id: int):
 @login_required
 def platform_administrator_create(request, organization_id: int):
     managed_organization = _platform_organization(request, organization_id)
-    form = ManagedMembershipForm(request.POST or None)
+    default_mode = (
+        "new" if request.method == "POST" and request.POST.get("email") else "existing"
+    )
+    mode = request.POST.get("account_mode") or request.GET.get("mode", default_mode)
+    if mode not in {"existing", "new"}:
+        mode = "existing"
+    form_class = (
+        ExistingManagedMembershipForm
+        if mode == "existing"
+        else NewManagedMembershipForm
+    )
+    form = form_class(request.POST or None)
+    matched_user = None
+    if request.method == "GET" and mode == "existing" and request.GET.get("username"):
+        form = form_class({"username": request.GET["username"]})
+        if form.is_valid():
+            matched_user = form.existing_user
     if request.method == "POST" and form.is_valid():
         try:
             membership, created_user = add_organization_member(
@@ -364,7 +382,7 @@ def platform_administrator_create(request, organization_id: int):
         except ValidationError as error:
             form.add_error(None, error)
         else:
-            action = "created" if created_user else "added"
+            action = "created" if created_user else "granted access"
             messages.success(
                 request,
                 f'Administrator "{membership.user.username}" {action}.',
@@ -376,7 +394,12 @@ def platform_administrator_create(request, organization_id: int):
     return render(
         request,
         "organizations/platform_administrator_form.html",
-        {"managed_organization": managed_organization, "form": form},
+        {
+            "managed_organization": managed_organization,
+            "form": form,
+            "account_mode": mode,
+            "matched_user": matched_user,
+        },
     )
 
 

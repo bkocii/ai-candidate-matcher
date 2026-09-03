@@ -487,6 +487,79 @@ def test_platform_owner_membership_is_explained_as_separate_access(client) -> No
     assert "Platform-management capability remains unchanged" in review.content.decode()
 
 
+def test_platform_administrator_existing_account_requires_lookup_confirmation(
+    client,
+) -> None:
+    owner = make_platform_owner()
+    organization = Organization.objects.create(name="Lookup Agency", slug="lookup")
+    existing = User.objects.create_user(
+        username="verified-admin",
+        email="verified@example.test",
+        first_name="Verified",
+        last_name="Person",
+    )
+    client.force_login(owner)
+    url = reverse("organizations:platform-administrator-create", args=[organization.pk])
+
+    initial = client.get(url)
+    assert "Add existing account" in initial.content.decode()
+    assert "Temporary password" not in initial.content.decode()
+
+    lookup = client.get(url, {"mode": "existing", "username": existing.username})
+    content = lookup.content.decode()
+    assert "Matched account" in content
+    assert "Verified Person" in content
+    assert "verified@example.test" in content
+    assert "Grant administrator access" in content
+    assert not OrganizationMembership.objects.filter(
+        user=existing, organization=organization
+    ).exists()
+
+    granted = client.post(
+        url, {"account_mode": "existing", "username": existing.username}
+    )
+    assert granted.status_code == 302
+    assert OrganizationMembership.objects.filter(
+        user=existing,
+        organization=organization,
+        role=OrganizationMembership.Role.ADMIN,
+        is_active=True,
+    ).exists()
+
+
+def test_platform_administrator_new_account_mode_rejects_existing_username(
+    client,
+) -> None:
+    owner = make_platform_owner()
+    organization = Organization.objects.create(name="New Agency", slug="new-agency")
+    existing = User.objects.create_user(username="already-here")
+    client.force_login(owner)
+    url = reverse("organizations:platform-administrator-create", args=[organization.pk])
+
+    page = client.get(url, {"mode": "new"})
+    content = page.content.decode()
+    assert "Create a new administrator account" in content
+    assert 'autocomplete="new-password"' in content
+
+    rejected = client.post(
+        url,
+        {
+            "account_mode": "new",
+            "username": existing.username,
+            "email": "different@example.test",
+            "first_name": "Wrong",
+            "last_name": "Identity",
+            "temporary_password": TEMPORARY_PASSWORD,
+            "temporary_password_confirmation": TEMPORARY_PASSWORD,
+        },
+    )
+    assert rejected.status_code == 200
+    assert "This account already exists" in rejected.content.decode()
+    assert not OrganizationMembership.objects.filter(
+        user=existing, organization=organization
+    ).exists()
+
+
 def test_team_routes_are_admin_only_and_manage_recruiters(client) -> None:
     admin, organization, _ = make_organization_admin()
     recruiter = User.objects.create_user(username="existing-recruiter")

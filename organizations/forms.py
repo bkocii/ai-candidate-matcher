@@ -98,6 +98,61 @@ class ManagedMembershipForm(forms.Form):
         }
 
 
+class ExistingManagedMembershipForm(forms.Form):
+    username = forms.CharField(
+        max_length=150,
+        validators=(UnicodeUsernameValidator(),),
+        label="Existing username",
+        widget=forms.TextInput(attrs={"autocomplete": "username"}),
+        help_text="Enter the exact username, then verify the matched identity.",
+    )
+
+    def clean_username(self) -> str:
+        username = self.cleaned_data["username"].strip()
+        user = User.objects.filter(username__iexact=username).first()
+        if user is None:
+            raise ValidationError("No account matches this username.")
+        if not user.is_active:
+            raise ValidationError("This user account is inactive.")
+        self.existing_user = user
+        return user.username
+
+    def managed_user_values(self) -> dict:
+        return {
+            "username": self.cleaned_data["username"],
+            "email": "",
+            "first_name": "",
+            "last_name": "",
+            "temporary_password": "",
+        }
+
+
+class NewManagedMembershipForm(ManagedMembershipForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].help_text = "Create a unique username for this account."
+        self.fields["username"].widget.attrs["autocomplete"] = "username"
+        self.fields["email"].required = True
+        self.fields[
+            "email"
+        ].help_text = "Used to identify and contact this administrator."
+        self.fields["email"].widget.attrs["autocomplete"] = "email"
+        self.fields["first_name"].widget.attrs["autocomplete"] = "given-name"
+        self.fields["last_name"].widget.attrs["autocomplete"] = "family-name"
+        self.fields["temporary_password"].widget.attrs["autocomplete"] = "new-password"
+        self.fields["temporary_password_confirmation"].widget.attrs["autocomplete"] = (
+            "new-password"
+        )
+
+    def clean_username(self) -> str:
+        username = super().clean_username()
+        if User.objects.filter(username__iexact=username).exists():
+            raise ValidationError(
+                "This account already exists. Use Add existing account instead."
+            )
+        return username
+
+
 class OrganizationProvisionForm(ManagedMembershipForm):
     field_order = (
         "organization_name",
