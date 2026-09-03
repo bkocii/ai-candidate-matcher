@@ -1405,3 +1405,9 @@ page for both removal and restoration. Team rows and confirmation details show
 email when available, label membership state as **Organization access**, and use
 **Access removed** rather than implying a disabled global account. Cross-tenant
 membership IDs remain hidden by 404. Browser retesting remains pending.
+
+MT-034 browser testing passed on 2026-09-03. MT-035 now reuses the explicit
+existing/new managed-account pattern for recruiters. Exact existing-account
+lookup shows identity before the grant, while new accounts use isolated fields,
+reject existing usernames, and remain subject to the mandatory first password
+change. Expiring email invitations remain future work.

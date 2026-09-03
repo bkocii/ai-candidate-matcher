@@ -29,7 +29,6 @@ from organizations.forms import (
     ClientCompanyForm,
     ExistingManagedMembershipForm,
     ExistingOrganizationProvisionForm,
-    ManagedMembershipForm,
     NewManagedMembershipForm,
     NewOrganizationProvisionForm,
     OrganizationRetentionPolicyForm,
@@ -180,7 +179,21 @@ def organization_member_list(request, organization_slug: str):
 def recruiter_create(request, organization_slug: str):
     organization = _visible_organization(request, organization_slug)
     require_organization_admin(request.user, organization)
-    form = ManagedMembershipForm(request.POST or None)
+    default_mode = "new"
+    mode = request.POST.get("account_mode") or request.GET.get("mode", default_mode)
+    if mode not in {"existing", "new"}:
+        mode = default_mode
+    form_class = (
+        ExistingManagedMembershipForm
+        if mode == "existing"
+        else NewManagedMembershipForm
+    )
+    form = form_class(request.POST or None)
+    matched_user = None
+    if request.method == "GET" and mode == "existing" and request.GET.get("username"):
+        form = form_class({"username": request.GET["username"]})
+        if form.is_valid():
+            matched_user = form.existing_user
     if request.method == "POST" and form.is_valid():
         try:
             membership, created_user = add_organization_member(
@@ -192,7 +205,7 @@ def recruiter_create(request, organization_slug: str):
         except ValidationError as error:
             form.add_error(None, error)
         else:
-            action = "created" if created_user else "added"
+            action = "created" if created_user else "granted access"
             messages.success(
                 request,
                 f'Recruiter account "{membership.user.username}" {action}.',
@@ -205,7 +218,8 @@ def recruiter_create(request, organization_slug: str):
             "organization": organization,
             "form": form,
             "heading": "Add recruiter",
-            "submit_label": "Add recruiter",
+            "account_mode": mode,
+            "matched_user": matched_user,
         },
     )
 

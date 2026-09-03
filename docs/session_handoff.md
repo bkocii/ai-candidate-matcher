@@ -913,6 +913,12 @@ the account, organization, and candidate-data impact. Team membership labels no
 longer imply global account state, email is shown when available, and cross-
 tenant membership IDs return 404. Browser retesting remains pending.
 
+MT-034 browser testing passed on 2026-09-03. MT-035 recruiter onboarding now
+separates new account creation from verified existing-account access grants,
+with the same reusable forms and responsive interaction used for administrators.
+The mandatory first password change is active; email invitations remain future
+work. Browser retesting remains pending.
+
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
 review, production/deployment, minimized usage reporting, durable jobs, staged

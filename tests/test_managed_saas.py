@@ -763,6 +763,67 @@ def test_recruiter_access_confirmation_hides_cross_tenant_membership(client) -> 
     assert response.status_code == 404
 
 
+def test_recruiter_create_separates_new_and_existing_account_flows(client) -> None:
+    admin, organization, _ = make_organization_admin()
+    existing = User.objects.create_user(
+        username="known-recruiter",
+        email="known@example.test",
+        first_name="Known",
+        last_name="Recruiter",
+    )
+    client.force_login(admin)
+    url = reverse("organizations:recruiter-create", args=[organization.slug])
+
+    new_page = client.get(url)
+    new_content = new_page.content.decode()
+    assert "Create a new recruiter account" in new_content
+    assert 'autocomplete="new-password"' in new_content
+
+    lookup = client.get(url, {"mode": "existing", "username": existing.username})
+    lookup_content = lookup.content.decode()
+    assert "Matched account" in lookup_content
+    assert "Known Recruiter" in lookup_content
+    assert "known@example.test" in lookup_content
+    assert "Temporary password" not in lookup_content
+    assert not OrganizationMembership.objects.filter(
+        user=existing, organization=organization
+    ).exists()
+
+    granted = client.post(
+        url, {"account_mode": "existing", "username": existing.username}
+    )
+    assert granted.status_code == 302
+    assert OrganizationMembership.objects.filter(
+        user=existing,
+        organization=organization,
+        role=OrganizationMembership.Role.RECRUITER,
+    ).exists()
+
+
+def test_new_recruiter_mode_rejects_existing_username(client) -> None:
+    admin, organization, _ = make_organization_admin()
+    existing = User.objects.create_user(username="existing-person")
+    client.force_login(admin)
+
+    response = client.post(
+        reverse("organizations:recruiter-create", args=[organization.slug]),
+        {
+            "account_mode": "new",
+            "username": existing.username,
+            "email": "other@example.test",
+            "first_name": "Other",
+            "last_name": "Person",
+            "temporary_password": TEMPORARY_PASSWORD,
+            "temporary_password_confirmation": TEMPORARY_PASSWORD,
+        },
+    )
+    assert response.status_code == 200
+    assert "This account already exists" in response.content.decode()
+    assert not OrganizationMembership.objects.filter(
+        user=existing, organization=organization
+    ).exists()
+
+
 def test_workspace_switch_navigation_uses_only_active_memberships(client) -> None:
     user = User.objects.create_user(username="workspace-switcher")
     first = Organization.objects.create(name="First", slug="first")
