@@ -28,9 +28,10 @@ from organizations.forms import (
     ApplyRetentionForm,
     ClientCompanyForm,
     ExistingManagedMembershipForm,
+    ExistingOrganizationProvisionForm,
     ManagedMembershipForm,
     NewManagedMembershipForm,
-    OrganizationProvisionForm,
+    NewOrganizationProvisionForm,
     OrganizationRetentionPolicyForm,
     RequestOrganizationDeletionForm,
     RetentionExceptionForm,
@@ -302,12 +303,31 @@ def platform_organization_list(request):
 @login_required
 def platform_organization_create(request):
     require_platform_owner(request.user)
-    form = OrganizationProvisionForm(request.POST or None)
+    default_mode = (
+        "new" if request.method == "POST" and request.POST.get("email") else "existing"
+    )
+    mode = request.POST.get("account_mode") or request.GET.get("mode", default_mode)
+    if mode not in {"existing", "new"}:
+        mode = "existing"
+    form_class = (
+        ExistingOrganizationProvisionForm
+        if mode == "existing"
+        else NewOrganizationProvisionForm
+    )
+    form = form_class(request.POST or None)
+    matched_user = None
+    if request.method == "GET" and request.GET.get("username"):
+        form = form_class(request.GET)
+        if form.is_valid() and mode == "existing":
+            matched_user = form.existing_user
+    elif request.method == "GET" and not request.GET:
+        form = form_class()
     if request.method == "POST" and form.is_valid():
         try:
             organization, membership, created_user = provision_organization(
                 platform_owner=request.user,
                 organization_name=form.cleaned_data["organization_name"],
+                organization_slug=form.cleaned_data["organization_slug"],
                 administrator_values=form.managed_user_values(),
             )
         except ValidationError as error:
@@ -316,8 +336,10 @@ def platform_organization_create(request):
             account_action = "created" if created_user else "linked"
             messages.success(
                 request,
-                f"{organization.name} created and administrator "
-                f'"{membership.user.username}" {account_action}.',
+                f"Organization created. Administrator "
+                f'"{membership.user.username}" {account_action}. '
+                "They can sign in, set a private password if required, then add "
+                "recruiters or start recruiting.",
             )
             return redirect(
                 "organizations:platform-organization-detail", organization.pk
@@ -325,7 +347,7 @@ def platform_organization_create(request):
     return render(
         request,
         "organizations/platform_organization_form.html",
-        {"form": form},
+        {"form": form, "account_mode": mode, "matched_user": matched_user},
     )
 
 

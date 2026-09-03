@@ -75,13 +75,17 @@ def provision_organization(
     platform_owner: User,
     organization_name: str,
     administrator_values: dict,
+    organization_slug: str | None = None,
 ) -> tuple[Organization, OrganizationMembership, bool]:
     """Create one tenant and its first active administrator atomically."""
     require_platform_owner(platform_owner)
     organization_name = organization_name.strip()
+    resolved_slug = organization_slug.strip().lower() if organization_slug else None
+    if resolved_slug and Organization.objects.filter(slug=resolved_slug).exists():
+        raise ValidationError("This workspace URL is already in use.")
     organization = Organization(
         name=organization_name,
-        slug=_available_organization_slug(organization_name),
+        slug=resolved_slug or _available_organization_slug(organization_name),
     )
     organization.full_clean()
     organization.save()

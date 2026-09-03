@@ -224,6 +224,81 @@ def test_platform_create_route_and_content_boundary(client) -> None:
     )
 
 
+def test_platform_organization_create_separates_sections_and_accepts_slug(
+    client,
+) -> None:
+    owner = make_platform_owner()
+    client.force_login(owner)
+    url = reverse("organizations:platform-organization-create")
+
+    page = client.get(url, {"mode": "new"})
+    content = page.content.decode()
+    assert "Organization details" in content
+    assert "First administrator" in content
+    assert "Workspace URL" in content
+    assert "Use existing account" in content
+    assert "Create new account" in content
+
+    response = client.post(
+        url,
+        {
+            "account_mode": "new",
+            "organization_name": "Custom Workspace",
+            "organization_slug": "custom-workspace-url",
+            "username": "custom-admin",
+            "email": "custom-admin@example.test",
+            "first_name": "Custom",
+            "last_name": "Admin",
+            "temporary_password": TEMPORARY_PASSWORD,
+            "temporary_password_confirmation": TEMPORARY_PASSWORD,
+        },
+    )
+    assert response.status_code == 302
+    organization = Organization.objects.get(name="Custom Workspace")
+    assert organization.slug == "custom-workspace-url"
+    assert organization.memberships.get().user.must_change_password is True
+
+
+def test_platform_organization_create_rejects_duplicate_visible_slug(client) -> None:
+    owner = make_platform_owner()
+    Organization.objects.create(name="Existing", slug="reserved-workspace")
+    client.force_login(owner)
+
+    response = client.post(
+        reverse("organizations:platform-organization-create"),
+        {
+            "account_mode": "new",
+            "organization_name": "Another Organization",
+            "organization_slug": "reserved-workspace",
+            "username": "another-admin",
+            "email": "another@example.test",
+            "first_name": "Another",
+            "last_name": "Admin",
+            "temporary_password": TEMPORARY_PASSWORD,
+            "temporary_password_confirmation": TEMPORARY_PASSWORD,
+        },
+    )
+    assert response.status_code == 200
+    assert "workspace URL is already in use" in response.content.decode()
+    assert not User.objects.filter(username="another-admin").exists()
+
+
+def test_organization_settings_uses_neutral_hiring_client_language(client) -> None:
+    admin, organization, _ = make_organization_admin()
+    client.force_login(admin)
+
+    response = client.get(
+        reverse("organizations:organization-settings", args=[organization.slug])
+    )
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "settings-grid" in content
+    assert "Optional hiring clients" in content
+    assert "Manage hiring clients" in content
+    assert "Agency workspace" not in content
+
+
 def test_platform_organization_list_surfaces_health_counts_and_filters(client) -> None:
     owner = make_platform_owner()
     _, healthy, _ = make_organization_admin("healthy-admin")

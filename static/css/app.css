@@ -2014,3 +2014,16 @@ tbody tr:last-child td {
 @media (max-width: 560px) {
     .mode-switcher { display: flex; flex-direction: column; }
 }
+
+.provision-form { display: grid; gap: 1rem; }
+.settings-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.settings-grid .detail-panel { display: flex; flex-direction: column; }
+.settings-grid .detail-panel > p:last-child { margin-top: auto; padding-top: 1rem; }
+.provision-section { margin: 0; padding: 1.5rem; border: 1px solid var(--border); border-radius: 0.85rem; background: var(--surface); box-shadow: var(--shadow); }
+.provision-section legend { padding: 0 0.4rem; font-size: 1.15rem; font-weight: 800; }
+.provision-section legend span { display: inline-grid; width: 1.8rem; height: 1.8rem; place-items: center; margin-right: 0.4rem; border-radius: 50%; background: var(--accent); color: var(--primary-dark); }
+.slug-input { display: flex; align-items: center; overflow: hidden; border: 1px solid var(--border); border-radius: 0.55rem; background: var(--background); }
+.slug-input span { padding-left: 0.8rem; color: var(--muted); white-space: nowrap; }
+.slug-input input { border: 0; box-shadow: none; }
+@media (max-width: 560px) { .slug-input { align-items: stretch; flex-direction: column; } .slug-input span { padding: 0.65rem 0.8rem 0; } }
+@media (max-width: 900px) { .settings-grid { grid-template-columns: 1fr; } }

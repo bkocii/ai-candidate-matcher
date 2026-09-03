@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth import password_validation
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.exceptions import ValidationError
+from django.utils.text import slugify
 
 from accounts.models import User
 from candidates.models import CandidateIntakeItem
@@ -9,6 +10,7 @@ from matching.models import MatchRun
 from operations.models import BackgroundJob
 from organizations.models import (
     ClientCompany,
+    Organization,
     OrganizationRetentionPolicy,
     RetentionException,
 )
@@ -167,6 +169,54 @@ class OrganizationProvisionForm(ManagedMembershipForm):
 
     def clean_organization_name(self) -> str:
         return self.cleaned_data["organization_name"].strip()
+
+
+class OrganizationProvisionFieldsMixin:
+    def clean_organization_name(self) -> str:
+        return self.cleaned_data["organization_name"].strip()
+
+    def clean_organization_slug(self) -> str:
+        slug = self.cleaned_data["organization_slug"].strip().lower()
+        if not slug:
+            slug = slugify(self.cleaned_data.get("organization_name", ""))[:200]
+        if Organization.objects.filter(slug=slug).exists():
+            raise ValidationError("This workspace URL is already in use.")
+        return slug
+
+
+class ExistingOrganizationProvisionForm(
+    OrganizationProvisionFieldsMixin, ExistingManagedMembershipForm
+):
+    organization_name = forms.CharField(max_length=200, label="Organization name")
+    organization_slug = forms.SlugField(
+        max_length=200,
+        required=False,
+        label="Workspace URL",
+        help_text="Stable identifier used in organization URLs.",
+    )
+    field_order = ("organization_name", "organization_slug", "username")
+
+
+class NewOrganizationProvisionForm(
+    OrganizationProvisionFieldsMixin, NewManagedMembershipForm
+):
+    organization_name = forms.CharField(max_length=200, label="Organization name")
+    organization_slug = forms.SlugField(
+        max_length=200,
+        required=False,
+        label="Workspace URL",
+        help_text="Stable identifier used in organization URLs.",
+    )
+    field_order = (
+        "organization_name",
+        "organization_slug",
+        "username",
+        "email",
+        "first_name",
+        "last_name",
+        "temporary_password",
+        "temporary_password_confirmation",
+    )
 
 
 class ClientCompanyForm(forms.ModelForm):

@@ -1388,3 +1388,14 @@ managed account is marked **must change password** and is blocked from
 application pages until a successful private password change. Existing linked
 accounts are unaffected. Migration `accounts.0003_user_must_change_password`
 adds the state; expiring email invitations remain future work.
+
+MT-032 organization provisioning now separates numbered organization and first-
+administrator sections, reuses explicit existing/new account modes, previews an
+editable stable workspace URL, and rejects duplicate slugs before any account or
+tenant is created. Success guidance identifies the administrator's next safe
+steps. Browser testing passed on 2026-09-03; no additional migration was added.
+
+MT-033 now uses organization-neutral **Hiring clients** language and presents
+team, hiring-client, and retention cards in one balanced desktop row that stacks
+responsively. The broader organization timezone/locale profile remains a
+separate proposed feature.

@@ -7,12 +7,12 @@
     <div>
         <p class="eyebrow">Administrator controls</p>
         <h1 id="settings-title">Organization settings</h1>
-        <p class="lede">Manage recruiters, agency client references, and data lifecycle controls for {{ organization.name }}.</p>
+        <p class="lede">Manage team access, optional hiring clients, and data lifecycle controls for {{ organization.name }}.</p>
     </div>
     <a class="secondary-button" href="{% url 'organizations:organization-dashboard' organization.slug %}">Back to dashboard</a>
 </section>
 
-<section class="detail-grid" aria-label="Organization settings sections">
+<section class="detail-grid settings-grid" aria-label="Organization settings sections">
     <article class="detail-panel">
         <p class="eyebrow">Workspace access</p>
         <h2>Team members</h2>
@@ -20,10 +20,10 @@
         <p><a class="primary-button button-link" href="{% url 'organizations:member-list' organization.slug %}">Manage team</a></p>
     </article>
     <article class="detail-panel">
-        <p class="eyebrow">Agency workspace</p>
-        <h2>Client companies</h2>
-        <p>Keep optional hiring customers available for vacancies. Client companies are not workspaces, candidate owners, or user accounts.</p>
-        <p><a class="primary-button button-link" href="{% url 'organizations:client-company-list' organization.slug %}">Manage client companies</a></p>
+        <p class="eyebrow">Optional hiring clients</p>
+        <h2>Hiring clients</h2>
+        <p>Keep customers available for vacancies when your organization recruits for other companies. Hiring clients are not workspaces, candidate owners, or user accounts.</p>
+        <p><a class="primary-button button-link" href="{% url 'organizations:client-company-list' organization.slug %}">Manage hiring clients</a></p>
     </article>
     <article class="detail-panel">
         <p class="eyebrow">Privacy and storage</p>
