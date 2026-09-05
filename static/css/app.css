@@ -38,7 +38,7 @@ a {
 
 .site-nav {
     display: flex;
-    max-width: 1120px;
+    max-width: 1280px;
     min-height: 72px;
     align-items: center;
     justify-content: space-between;
@@ -70,7 +70,7 @@ a {
 .nav-links {
     display: flex;
     align-items: center;
-    gap: 22px;
+    gap: clamp(10px, 1.2vw, 18px);
     color: var(--muted);
     font-size: 0.92rem;
     font-weight: 650;
@@ -79,6 +79,7 @@ a {
 .nav-links a,
 .link-button {
     text-decoration: none;
+    white-space: nowrap;
 }
 
 .nav-links a:hover,
@@ -88,6 +89,52 @@ a {
 
 .nav-links form {
     margin: 0;
+}
+
+.account-menu {
+    position: relative;
+}
+
+.account-menu summary {
+    cursor: pointer;
+    list-style: none;
+    white-space: nowrap;
+}
+
+.account-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.account-menu summary::after {
+    content: "▾";
+    margin-left: 6px;
+    font-size: 0.72em;
+}
+
+.account-menu[open] summary,
+.account-menu summary:hover {
+    color: var(--primary);
+}
+
+.account-menu-panel {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 12px);
+    right: 0;
+    display: grid;
+    min-width: 176px;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.form-secondary-link {
+    justify-self: center;
+    color: var(--primary-dark);
+    font-weight: 700;
 }
 
 .link-button {
@@ -1801,6 +1848,11 @@ tbody tr:last-child td {
         width: 100%;
         flex-wrap: wrap;
         gap: 14px;
+    }
+
+    .account-menu-panel {
+        right: auto;
+        left: 0;
     }
 
     .page-shell {

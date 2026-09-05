@@ -222,6 +222,28 @@ def test_client_company_status_change_requires_impact_confirmation(client) -> No
     assert company.is_active is True
 
 
+def test_hiring_client_accepts_domain_only_website_and_displays_hostname(
+    client,
+) -> None:
+    admin, _, organization = workspace()
+    client.force_login(admin)
+
+    response = client.post(
+        reverse("organizations:client-company-create", args=[organization.slug]),
+        {"name": "Plain Domain Client", "website": "acme.example.com/about"},
+    )
+    assert response.status_code == 302
+    company = ClientCompany.objects.get(name="Plain Domain Client")
+    assert company.website == "https://acme.example.com/about"
+
+    listing = client.get(
+        reverse("organizations:client-company-list", args=[organization.slug])
+    )
+    content = listing.content.decode()
+    assert ">acme.example.com</a>" in content
+    assert 'title="https://acme.example.com/about"' in content
+
+
 def test_admin_add_client_shortcut_returns_to_vacancy_with_selection(client) -> None:
     admin, _, organization = workspace()
     vacancy_url = reverse("vacancies:vacancy-create", args=[organization.slug])

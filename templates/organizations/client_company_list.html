@@ -34,7 +34,7 @@
                     {% for company in companies %}
                         <tr>
                             <th scope="row">{{ company.name }}</th>
-                            <td>{% if company.website %}<a href="{{ company.website }}" rel="noreferrer">{{ company.website }}</a>{% else %}Not recorded{% endif %}</td>
+                            <td>{% if company.website %}<a href="{{ company.website }}" rel="noreferrer" title="{{ company.website }}">{{ company.website_label }}</a>{% else %}Not recorded{% endif %}</td>
                             <td><span class="status-pill {% if company.is_active %}status-active{% endif %}">{% if company.is_active %}Active{% else %}Inactive{% endif %}</span></td>
                             <td>{{ company.vacancy_count }}</td>
                             <td>

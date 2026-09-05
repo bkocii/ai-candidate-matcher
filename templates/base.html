@@ -39,11 +39,16 @@
                     {% if user.is_staff %}
                         <a href="{% url 'admin:index' %}">Django admin</a>
                     {% endif %}
-                    <a href="{% url 'accounts:password-change' %}">Change password</a>
-                    <form method="post" action="{% url 'accounts:logout' %}">
-                        {% csrf_token %}
-                        <button class="link-button" type="submit">Sign out</button>
-                    </form>
+                    <details class="account-menu">
+                        <summary>{% firstof user.get_short_name user.username %}</summary>
+                        <div class="account-menu-panel">
+                            <a href="{% url 'accounts:password-change' %}">Change password</a>
+                            <form method="post" action="{% url 'accounts:logout' %}">
+                                {% csrf_token %}
+                                <button class="link-button" type="submit">Sign out</button>
+                            </form>
+                        </div>
+                    </details>
                 </div>
             {% endif %}
         </nav>

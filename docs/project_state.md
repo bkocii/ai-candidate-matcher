@@ -1416,3 +1416,16 @@ MT-035 browser testing passed after centering its mode switch over the compact
 form. MT-036 uses **Hiring clients** language and requires an impact confirmation
 before deactivation or reactivation, showing the linked-vacancy count and
 preservation behavior. Browser retesting for MT-036 remains pending.
+
+MT-036 browser testing passed on 2026-09-05. Global navigation now uses compact
+fixed gaps and non-wrapping link labels so role-dependent omissions leave no
+visual holes. MT-038 accepts domain-only hiring-client websites, normalizes them
+to HTTPS after server validation, displays compact hostnames, and uses consistent
+hiring-client wording. Browser testing passed on 2026-09-05.
+
+Account actions now live in a compact named account menu instead of competing
+with primary navigation. The sign-in page provides provider-independent,
+one-time email password recovery with a generic response that does not disclose
+whether an address exists. Successful recovery clears the managed-account
+first-login password gate. Development uses console email; production supplies
+SMTP credentials for the operator's chosen transactional email service.

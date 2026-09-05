@@ -268,6 +268,27 @@ LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "organizations:dashboard"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
+# Password-reset delivery is provider-independent SMTP. Development prints the
+# message to the console; production deployments provide their mail service's
+# SMTP credentials through environment variables.
+EMAIL_BACKEND = os.getenv(
+    "DJANGO_EMAIL_BACKEND",
+    "django.core.mail.backends.smtp.EmailBackend"
+    if IS_PRODUCTION
+    else "django.core.mail.backends.console.EmailBackend",
+).strip()
+EMAIL_HOST = os.getenv("DJANGO_EMAIL_HOST", "").strip()
+EMAIL_PORT = env_int("DJANGO_EMAIL_PORT", default=587, minimum=1)
+EMAIL_HOST_USER = os.getenv("DJANGO_EMAIL_HOST_USER", "").strip()
+EMAIL_HOST_PASSWORD = os.getenv("DJANGO_EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("DJANGO_EMAIL_USE_TLS", default=True)
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DJANGO_DEFAULT_FROM_EMAIL", "AI Candidate Matcher <no-reply@localhost>"
+).strip()
+PASSWORD_RESET_TIMEOUT = env_int(
+    "DJANGO_PASSWORD_RESET_TIMEOUT", default=3600, minimum=300
+)
+
 
 # Python AI Toolkit configuration. A real key is required only when the lazy
 # application gateway makes an AI request; startup, checks, migrations, and

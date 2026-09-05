@@ -1,7 +1,10 @@
+import re
+
 import pytest
 from django.contrib.auth.models import AnonymousUser
+from django.core import mail
 from django.http import HttpResponse
-from django.test import RequestFactory
+from django.test import RequestFactory, override_settings
 from django.urls import reverse
 
 from accounts.models import OrganizationMembership, User
@@ -210,6 +213,61 @@ def test_logout_requires_post_and_returns_to_login(client) -> None:
     assert response["Cache-Control"] == "no-store, private, max-age=0"
     assert response["Pragma"] == "no-cache"
     assert response["Expires"] == "0"
+
+
+def test_login_links_to_password_recovery(client) -> None:
+    response = client.get(reverse("accounts:login"))
+
+    assert response.status_code == 200
+    assert reverse("accounts:password-reset") in response.content.decode()
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+def test_password_reset_does_not_disclose_unknown_email(client) -> None:
+    response = client.post(
+        reverse("accounts:password-reset"),
+        {"email": "unknown@example.test"},
+        follow=True,
+    )
+
+    assert response.status_code == 200
+    assert "If an active account matches" in response.content.decode()
+    assert mail.outbox == []
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+def test_password_reset_link_sets_password_and_clears_first_login_gate(client) -> None:
+    user = User.objects.create_user(
+        username="reset-user",
+        email="reset@example.test",
+        password="TemporaryPass123!",
+        must_change_password=True,
+    )
+
+    response = client.post(reverse("accounts:password-reset"), {"email": user.email})
+
+    assert response.status_code == 302
+    assert len(mail.outbox) == 1
+    reset_path = re.search(
+        r"https?://[^/]+(/accounts/password/reset/[^\s]+)", mail.outbox[0].body
+    )
+    assert reset_path is not None
+
+    response = client.get(reset_path.group(1))
+    assert response.status_code == 302
+    response = client.post(
+        response.url,
+        {
+            "new_password1": "NewPrivatePass456!",
+            "new_password2": "NewPrivatePass456!",
+        },
+    )
+
+    assert response.status_code == 302
+    assert response.url == reverse("accounts:password-reset-complete")
+    user.refresh_from_db()
+    assert user.must_change_password is False
+    assert client.login(username=user.username, password="NewPrivatePass456!") is True
 
 
 def test_authenticated_html_responses_cannot_be_restored_from_cache(client) -> None:

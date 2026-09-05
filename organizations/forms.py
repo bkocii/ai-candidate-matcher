@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth import password_validation
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.utils.text import slugify
 
 from accounts.models import User
@@ -220,19 +221,30 @@ class NewOrganizationProvisionForm(
 
 
 class ClientCompanyForm(forms.ModelForm):
-    website = forms.URLField(
+    website = forms.CharField(
         required=False,
-        assume_scheme="https",
-        help_text="Optional. Used only as organization-owned reference metadata.",
+        widget=forms.TextInput(
+            attrs={"inputmode": "url", "placeholder": "company.com"}
+        ),
+        help_text="Optional. Helps your team identify the hiring client.",
     )
 
     class Meta:
         model = ClientCompany
         fields = ("name", "website")
-        labels = {"name": "Client company name"}
+        labels = {"name": "Hiring client name"}
 
     def clean_name(self) -> str:
         return self.cleaned_data["name"].strip()
+
+    def clean_website(self) -> str:
+        website = self.cleaned_data["website"].strip()
+        if not website:
+            return ""
+        if "://" not in website:
+            website = f"https://{website}"
+        URLValidator(schemes=("http", "https"))(website)
+        return website
 
 
 class OrganizationRetentionPolicyForm(forms.ModelForm):

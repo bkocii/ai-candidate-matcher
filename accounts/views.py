@@ -1,4 +1,4 @@
-from django.contrib.auth.views import PasswordChangeView
+from django.contrib.auth.views import PasswordChangeView, PasswordResetConfirmView
 
 
 class RequiredAwarePasswordChangeView(PasswordChangeView):
@@ -9,4 +9,15 @@ class RequiredAwarePasswordChangeView(PasswordChangeView):
         if self.request.user.must_change_password:
             self.request.user.must_change_password = False
             self.request.user.save(update_fields=("must_change_password",))
+        return response
+
+
+class RequiredAwarePasswordResetConfirmView(PasswordResetConfirmView):
+    """Treat a successful one-time reset as the required private password setup."""
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        if form.user.must_change_password:
+            form.user.must_change_password = False
+            form.user.save(update_fields=("must_change_password",))
         return response

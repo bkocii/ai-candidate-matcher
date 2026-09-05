@@ -571,6 +571,8 @@ def client_company_list(request, organization_slug: str):
         .annotate(vacancy_count=Count("vacancies"))
         .order_by("name", "id")
     )
+    for company in companies:
+        company.website_label = urlsplit(company.website).netloc or company.website
     return render(
         request,
         "organizations/client_company_list.html",
@@ -601,8 +603,8 @@ def client_company_create(request, organization_slug: str):
             "organization": organization,
             "form": form,
             "return_url": return_url,
-            "heading": "Add client company",
-            "submit_label": "Add client company",
+            "heading": "Add hiring client",
+            "submit_label": "Add hiring client",
         },
     )
 
@@ -630,8 +632,8 @@ def client_company_edit(request, organization_slug: str, company_id: int):
             "organization": organization,
             "company": company,
             "form": form,
-            "heading": "Edit client company",
-            "submit_label": "Save client company",
+            "heading": "Edit hiring client",
+            "submit_label": "Save hiring client",
         },
     )
 

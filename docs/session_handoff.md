@@ -924,6 +924,17 @@ centered form. MT-036 now uses **Hiring clients** throughout the list and adds a
 scoped deactivation/reactivation confirmation with linked-vacancy impact.
 Browser retesting for MT-036 remains pending.
 
+MT-036 browser testing passed on 2026-09-05. Navbar spacing now remains compact
+when role-only links are absent. MT-038 accepts and validates domain-only hiring-
+client websites, stores normalized HTTPS URLs, displays hostnames, and completes
+the hiring-client terminology/status styling pass. Browser testing passed on
+2026-09-05.
+
+The crowded password/sign-out links are now grouped in a named account menu.
+Self-service password recovery uses Django's generic one-time email flow and
+clears `must_change_password` after a successful reset. Production must configure
+the documented SMTP environment values before browser/email-provider acceptance.
+
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
 review, production/deployment, minimized usage reporting, durable jobs, staged

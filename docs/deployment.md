@@ -75,6 +75,13 @@ Production startup requires:
 - an absolute persistent private-media path distinct from static assets;
 - the AI provider key only when live AI workflows will be used.
 
+Password recovery is independent of the AI provider. Configure the
+`DJANGO_EMAIL_*` SMTP values shown in `deploy/production.env.example` for a
+transactional email service such as Amazon SES, Postmark, SendGrid, or Mailgun.
+Use a verified sender address, keep the SMTP password in the protected
+environment file, and confirm that reset links use the public HTTPS hostname.
+Development defaults to console email and does not send externally.
+
 The production example explicitly configures the `gpt-5.4-mini` token rates
 verified from OpenAI on 2026-09-01: `AI_INPUT_COST_PER_1M_TOKENS=0.75` and
 `AI_OUTPUT_COST_PER_1M_TOKENS=4.50`. These values are USD per one million
