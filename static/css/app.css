@@ -1995,16 +1995,17 @@ tbody tr:last-child td {
 }
 
 .mode-switcher {
-    display: inline-flex;
+    display: flex;
+    width: min(760px, 100%);
     gap: 0.35rem;
-    margin-bottom: 1rem;
+    margin: 0 auto 1rem;
     padding: 0.3rem;
     border: 1px solid var(--border);
     border-radius: 0.75rem;
     background: var(--surface);
 }
 
-.mode-switcher a { padding: 0.65rem 0.9rem; border-radius: 0.5rem; text-decoration: none; font-weight: 700; color: var(--muted); }
+.mode-switcher a { flex: 1; padding: 0.65rem 0.9rem; border-radius: 0.5rem; text-align: center; text-decoration: none; font-weight: 700; color: var(--muted); }
 .mode-switcher a.active { background: var(--accent); color: var(--primary-dark); }
 .compact-form-panel { max-width: 760px; }
 .identity-confirmation { margin-top: 1.25rem; padding: 1.25rem; border: 1px solid var(--primary); border-radius: 0.75rem; background: var(--surface-soft); }

@@ -637,14 +637,29 @@ def client_company_edit(request, organization_slug: str, company_id: int):
 
 
 @login_required
-@require_POST
+@require_http_methods(["GET", "POST"])
 def client_company_status(request, organization_slug: str, company_id: int):
     organization = _visible_organization(request, organization_slug)
     require_organization_admin(request.user, organization)
     company = get_object_or_404(
         ClientCompany.objects.for_organization(organization), pk=company_id
     )
-    requested_state = request.POST.get("is_active")
+    requested_state = (
+        request.POST.get("is_active")
+        if request.method == "POST"
+        else ("false" if company.is_active else "true")
+    )
+    if request.method == "GET":
+        return render(
+            request,
+            "organizations/client_company_status_confirm.html",
+            {
+                "organization": organization,
+                "company": company,
+                "requested_state": requested_state,
+                "vacancy_count": company.vacancies.count(),
+            },
+        )
     if requested_state not in {"true", "false"}:
         messages.error(request, "Select a valid client-company status.")
     else:

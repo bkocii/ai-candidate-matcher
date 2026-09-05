@@ -1,29 +1,29 @@
 {% extends "base.html" %}
 
-{% block title %}Client companies | {{ organization.name }}{% endblock %}
+{% block title %}Hiring clients | {{ organization.name }}{% endblock %}
 
 {% block content %}
 <section class="page-heading action-heading" aria-labelledby="client-companies-title">
     <div>
         <p class="eyebrow">Organization settings</p>
-        <h1 id="client-companies-title">Client companies</h1>
-        <p class="lede">Optional hiring-customer references for agency vacancies. Direct employers can leave every vacancy unassigned.</p>
+        <h1 id="client-companies-title">Hiring clients</h1>
+        <p class="lede">Optional customer references for organizations that recruit for other companies. Direct employers can leave every vacancy unassigned.</p>
     </div>
     <div class="button-row">
-        <a class="primary-button button-link" href="{% url 'organizations:client-company-create' organization.slug %}">Add client company</a>
+        <a class="primary-button button-link" href="{% url 'organizations:client-company-create' organization.slug %}">Add hiring client</a>
         <a class="secondary-button" href="{% url 'organizations:organization-settings' organization.slug %}">Organization settings</a>
     </div>
 </section>
 
 <section class="version-history" aria-labelledby="company-list-title">
-    <h2 id="company-list-title">Organization-owned clients</h2>
+    <h2 id="company-list-title">Your hiring clients</h2>
     <p class="section-note">Deactivation removes a company from new vacancy choices. Existing vacancy links remain visible and unchanged.</p>
     {% if companies %}
         <div class="table-wrap">
             <table>
                 <thead>
                     <tr>
-                        <th scope="col">Client company</th>
+                        <th scope="col">Hiring client</th>
                         <th scope="col">Website</th>
                         <th scope="col">Status</th>
                         <th scope="col">Vacancies</th>
@@ -35,16 +35,12 @@
                         <tr>
                             <th scope="row">{{ company.name }}</th>
                             <td>{% if company.website %}<a href="{{ company.website }}" rel="noreferrer">{{ company.website }}</a>{% else %}Not recorded{% endif %}</td>
-                            <td><span class="status-pill">{% if company.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+                            <td><span class="status-pill {% if company.is_active %}status-active{% endif %}">{% if company.is_active %}Active{% else %}Inactive{% endif %}</span></td>
                             <td>{{ company.vacancy_count }}</td>
                             <td>
                                 <div class="button-row">
                                     <a class="secondary-button" href="{% url 'organizations:client-company-edit' organization.slug company.pk %}">Edit</a>
-                                    <form method="post" action="{% url 'organizations:client-company-status' organization.slug company.pk %}">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="is_active" value="{% if company.is_active %}false{% else %}true{% endif %}">
-                                        <button class="{% if company.is_active %}danger-button{% else %}secondary-button{% endif %}" type="submit">{% if company.is_active %}Deactivate{% else %}Reactivate{% endif %}</button>
-                                    </form>
+                                    <a class="{% if company.is_active %}danger-button{% else %}secondary-button{% endif %}" href="{% url 'organizations:client-company-status' organization.slug company.pk %}">{% if company.is_active %}Deactivate{% else %}Reactivate{% endif %}</a>
                                 </div>
                             </td>
                         </tr>
@@ -54,8 +50,8 @@
         </div>
     {% else %}
         <div class="empty-state">
-            <h3>No client companies</h3>
-            <p>This is a valid direct-employer setup. Add a company only when an agency vacancy needs a hiring-customer reference.</p>
+            <h3>No hiring clients</h3>
+            <p>This is a valid direct-employer setup. Add a hiring client only when a vacancy belongs to another company.</p>
         </div>
     {% endif %}
 </section>

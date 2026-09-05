@@ -1411,3 +1411,8 @@ existing/new managed-account pattern for recruiters. Exact existing-account
 lookup shows identity before the grant, while new accounts use isolated fields,
 reject existing usernames, and remain subject to the mandatory first password
 change. Expiring email invitations remain future work.
+
+MT-035 browser testing passed after centering its mode switch over the compact
+form. MT-036 uses **Hiring clients** language and requires an impact confirmation
+before deactivation or reactivation, showing the linked-vacancy count and
+preservation behavior. Browser retesting for MT-036 remains pending.

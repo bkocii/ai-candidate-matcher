@@ -202,7 +202,7 @@ def test_deactivation_preserves_historical_vacancy_and_removes_new_choice(
     assert "Acme" in detail.content.decode()
 
 
-def test_client_company_status_change_is_post_only(client) -> None:
+def test_client_company_status_change_requires_impact_confirmation(client) -> None:
     admin, _, organization = workspace()
     company = ClientCompany.objects.create(
         organization=organization, name="Acme", slug="acme"
@@ -215,7 +215,9 @@ def test_client_company_status_change_is_post_only(client) -> None:
         )
     )
 
-    assert response.status_code == 405
+    assert response.status_code == 200
+    assert "Deactivate Acme?" in response.content.decode()
+    assert "Linked vacancies" in response.content.decode()
     company.refresh_from_db()
     assert company.is_active is True
 

@@ -919,6 +919,11 @@ with the same reusable forms and responsive interaction used for administrators.
 The mandatory first password change is active; email invitations remain future
 work. Browser retesting remains pending.
 
+MT-035 browser testing passed after the account-mode switch was aligned to the
+centered form. MT-036 now uses **Hiring clients** throughout the list and adds a
+scoped deactivation/reactivation confirmation with linked-vacancy impact.
+Browser retesting for MT-036 remains pending.
+
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
 review, production/deployment, minimized usage reporting, durable jobs, staged
