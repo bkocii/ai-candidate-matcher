@@ -48,7 +48,7 @@
                             <span class="visually-hidden">Account menu for {% firstof user.get_short_name user.username %}</span>
                         </summary>
                         <div class="account-menu-panel">
-                            <a href="{% url 'accounts:password-change' %}">Change password</a>
+                            <a href="{% url 'accounts:password-change' %}?next={{ request.get_full_path|urlencode }}">Change password</a>
                             <form method="post" action="{% url 'accounts:logout' %}">
                                 {% csrf_token %}
                                 <button class="link-button" type="submit">Sign out</button>
@@ -71,5 +71,6 @@
 
         {% block content %}{% endblock %}
     </main>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

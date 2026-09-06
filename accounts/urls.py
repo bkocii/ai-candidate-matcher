@@ -1,7 +1,6 @@
 from django.contrib.auth.views import (
     LoginView,
     LogoutView,
-    PasswordChangeDoneView,
     PasswordResetCompleteView,
     PasswordResetDoneView,
     PasswordResetView,
@@ -11,6 +10,7 @@ from django.urls import path, reverse_lazy
 from accounts.views import (
     RequiredAwarePasswordChangeView,
     RequiredAwarePasswordResetConfirmView,
+    SafePasswordChangeDoneView,
 )
 
 app_name = "accounts"
@@ -64,7 +64,7 @@ urlpatterns = [
     ),
     path(
         "password/change/done/",
-        PasswordChangeDoneView.as_view(
+        SafePasswordChangeDoneView.as_view(
             template_name="registration/password_change_done.html"
         ),
         name="password-change-done",

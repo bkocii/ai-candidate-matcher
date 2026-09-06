@@ -1436,4 +1436,10 @@ to prevent overlap with its confirmation message.
 MT-039 vacancy details now label the hiring client and display lifecycle state
 as a status pill. The header presents one state-aware primary action; requirements
 correction sits beside the confirmed definition, and deletion is isolated in a
-bottom danger zone. Browser retesting remains pending.
+bottom danger zone. Browser testing passed on 2026-09-06.
+
+MT-040 password changes now provide separate accessible visibility controls for
+the current password and new-password pair. Voluntary changes can cancel or
+continue back to a validated same-site origin; external return URLs are rejected.
+The mandatory first-login gate intentionally provides no Cancel escape. Browser
+retesting remains pending.

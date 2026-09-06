@@ -249,6 +249,54 @@ def test_password_reset_complete_keeps_action_below_explanation(client) -> None:
     assert content.index("Your new password is ready") < content.index("Sign in</a>")
 
 
+def test_voluntary_password_change_uses_validated_same_site_return(client) -> None:
+    user = User.objects.create_user(
+        username="password-return-user", password="OldPass123!"
+    )
+    organization = Organization.objects.create(
+        name="Return Agency", slug="return-agency"
+    )
+    add_membership(user, organization)
+    client.force_login(user)
+    return_url = reverse(
+        "organizations:organization-dashboard", args=[organization.slug]
+    )
+
+    page = client.get(reverse("accounts:password-change"), {"next": return_url})
+    content = page.content.decode()
+    assert f'href="{return_url}"' in content
+    assert "Show current password" in content
+    assert "Show new passwords" in content
+
+    changed = client.post(
+        reverse("accounts:password-change"),
+        {
+            "old_password": "OldPass123!",
+            "new_password1": "NewPrivatePass789!",
+            "new_password2": "NewPrivatePass789!",
+            "next": return_url,
+        },
+    )
+    assert changed.status_code == 302
+    done = client.get(changed.url)
+    assert f'href="{return_url}"' in done.content.decode()
+
+
+def test_password_change_rejects_external_return_url(client) -> None:
+    user = User.objects.create_user(username="safe-return-user")
+    client.force_login(user)
+
+    response = client.get(
+        reverse("accounts:password-change"),
+        {"next": "https://attacker.example/collect"},
+    )
+    content = response.content.decode()
+
+    assert 'name="next"' not in content
+    assert 'href="https://attacker.example' not in content
+    assert 'href="/">Cancel</a>' in content
+
+
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 def test_password_reset_does_not_disclose_unknown_email(client) -> None:
     response = client.post(

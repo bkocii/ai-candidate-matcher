@@ -146,7 +146,11 @@ def test_managed_user_must_change_temporary_password_before_workspace_access(
 
     change_page = client.get(reverse("accounts:password-change"))
     assert change_page.status_code == 200
-    assert "Password change required" in change_page.content.decode()
+    change_content = change_page.content.decode()
+    assert "Password change required" in change_content
+    assert ">Cancel</a>" not in change_content
+    assert "Show current password" in change_content
+    assert "Show new passwords" in change_content
 
     changed = client.post(
         reverse("accounts:password-change"),

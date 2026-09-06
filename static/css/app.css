@@ -155,6 +155,24 @@ a {
     font-weight: 700;
 }
 
+.password-toggle {
+    justify-self: start;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--primary-dark);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 750;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.password-toggle:hover {
+    color: var(--primary);
+}
+
 .auth-panel-action {
     margin: 24px 0 0;
 }

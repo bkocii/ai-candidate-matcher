@@ -941,7 +941,12 @@ these two visual corrections remains pending.
 MT-039 vacancy details now use labelled client/status metadata and one primary
 next action chosen from pending draft, latest shortlist, or candidate evaluation.
 Correction controls are colocated with requirements and deletion is in a separate
-danger zone. Browser retesting remains pending.
+danger zone. Browser testing passed on 2026-09-06.
+
+MT-040 adds current/new password visibility controls and safe origin-aware
+Cancel/Continue navigation. The first-login mandatory form omits Cancel, and
+external return destinations are rejected. Browser retesting remains pending;
+no migration was added.
 
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
