@@ -1,6 +1,5 @@
 from django.contrib.auth.views import (
     LoginView,
-    LogoutView,
     PasswordResetCompleteView,
     PasswordResetDoneView,
     PasswordResetView,
@@ -8,6 +7,7 @@ from django.contrib.auth.views import (
 from django.urls import path, reverse_lazy
 
 from accounts.views import (
+    ConfirmedLogoutView,
     RequiredAwarePasswordChangeView,
     RequiredAwarePasswordResetConfirmView,
     SafePasswordChangeDoneView,
@@ -21,7 +21,7 @@ urlpatterns = [
         LoginView.as_view(template_name="registration/login.html"),
         name="login",
     ),
-    path("logout/", LogoutView.as_view(), name="logout"),
+    path("logout/", ConfirmedLogoutView.as_view(), name="logout"),
     path(
         "password/reset/",
         PasswordResetView.as_view(

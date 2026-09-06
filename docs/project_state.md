@@ -1442,4 +1442,6 @@ MT-040 password changes now provide separate accessible visibility controls for
 the current password and new-password pair. Voluntary changes can cancel or
 continue back to a validated same-site origin; external return URLs are rejected.
 The mandatory first-login gate intentionally provides no Cancel escape. Browser
-retesting remains pending.
+testing passed on 2026-09-06. Sign-in and reset setup now reuse the visibility
+control, and successful POST-only logout shows a signed-out confirmation; those
+small additions still need browser retesting.

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Sign in | AI Candidate Matcher{% endblock %}
 
@@ -25,6 +26,7 @@
         <div class="field">
             <label for="{{ form.password.id_for_label }}">Password</label>
             {{ form.password }}
+            <button class="password-toggle" type="button" data-password-target="#{{ form.password.id_for_label }}" data-show-label="Show password" data-hide-label="Hide password" aria-pressed="false">Show password</button>
         </div>
 
         <button class="primary-button" type="submit">Sign in</button>
@@ -32,3 +34,5 @@
     </form>
 </section>
 {% endblock %}
+
+{% block scripts %}<script src="{% static 'js/password-visibility.js' %}" defer></script>{% endblock %}

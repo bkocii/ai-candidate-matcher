@@ -231,13 +231,17 @@ def test_logout_requires_post_and_returns_to_login(client) -> None:
     assert response["Cache-Control"] == "no-store, private, max-age=0"
     assert response["Pragma"] == "no-cache"
     assert response["Expires"] == "0"
+    login_page = client.get(reverse("accounts:login"))
+    assert "You have been signed out." in login_page.content.decode()
 
 
 def test_login_links_to_password_recovery(client) -> None:
     response = client.get(reverse("accounts:login"))
 
     assert response.status_code == 200
-    assert reverse("accounts:password-reset") in response.content.decode()
+    content = response.content.decode()
+    assert reverse("accounts:password-reset") in content
+    assert "Show password" in content
 
 
 def test_password_reset_complete_keeps_action_below_explanation(client) -> None:
@@ -330,6 +334,8 @@ def test_password_reset_link_sets_password_and_clears_first_login_gate(client) -
 
     response = client.get(reset_path.group(1))
     assert response.status_code == 302
+    reset_form = client.get(response.url)
+    assert "Show new passwords" in reset_form.content.decode()
     response = client.post(
         response.url,
         {

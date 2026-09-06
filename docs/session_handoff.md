@@ -945,8 +945,10 @@ danger zone. Browser testing passed on 2026-09-06.
 
 MT-040 adds current/new password visibility controls and safe origin-aware
 Cancel/Continue navigation. The first-login mandatory form omits Cancel, and
-external return destinations are rejected. Browser retesting remains pending;
-no migration was added.
+external return destinations are rejected. Browser testing passed on 2026-09-06;
+no migration was added. Sign-in and reset setup now reuse password visibility,
+and successful logout displays a signed-out confirmation. Those additions still
+need browser retesting.
 
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation

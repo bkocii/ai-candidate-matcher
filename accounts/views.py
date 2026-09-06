@@ -1,6 +1,8 @@
 from urllib.parse import urlencode, urlparse
 
+from django.contrib import messages
 from django.contrib.auth.views import (
+    LogoutView,
     PasswordChangeDoneView,
     PasswordChangeView,
     PasswordResetConfirmView,
@@ -25,6 +27,15 @@ def _safe_return_url(request):
     if urlparse(candidate).path in excluded_paths:
         return None
     return candidate
+
+
+class ConfirmedLogoutView(LogoutView):
+    """Confirm successful session termination on the following sign-in page."""
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        messages.success(request, "You have been signed out.")
+        return response
 
 
 class RequiredAwarePasswordChangeView(PasswordChangeView):
