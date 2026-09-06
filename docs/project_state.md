@@ -1429,3 +1429,11 @@ one-time email password recovery with a generic response that does not disclose
 whether an address exists. Successful recovery clears the managed-account
 first-login password gate. Development uses console email; production supplies
 SMTP credentials for the operator's chosen transactional email service.
+The account-menu trigger now uses an accessible profile icon and closes on an
+outside click or Escape. The reset-complete action has explicit block spacing
+to prevent overlap with its confirmation message.
+
+MT-039 vacancy details now label the hiring client and display lifecycle state
+as a status pill. The header presents one state-aware primary action; requirements
+correction sits beside the confirmed definition, and deletion is isolated in a
+bottom danger zone. Browser retesting remains pending.

@@ -199,6 +199,24 @@ def test_navigation_exposes_django_admin_only_to_staff(client) -> None:
     assert "Django admin" in response.content.decode()
 
 
+def test_navigation_groups_account_actions_behind_accessible_icon(client) -> None:
+    user = User.objects.create_user(username="menu-user")
+    organization = Organization.objects.create(name="Northstar", slug="northstar")
+    add_membership(user, organization)
+    client.force_login(user)
+
+    response = client.get(
+        reverse("organizations:organization-dashboard", args=[organization.slug])
+    )
+    content = response.content.decode()
+
+    assert 'class="account-menu"' in content
+    assert "Account menu for menu-user" in content
+    assert 'class="account-menu-icon"' in content
+    assert reverse("accounts:password-change") in content
+    assert reverse("accounts:logout") in content
+
+
 def test_logout_requires_post_and_returns_to_login(client) -> None:
     user = User.objects.create_user(username="signed-in-user")
     client.force_login(user)
@@ -220,6 +238,15 @@ def test_login_links_to_password_recovery(client) -> None:
 
     assert response.status_code == 200
     assert reverse("accounts:password-reset") in response.content.decode()
+
+
+def test_password_reset_complete_keeps_action_below_explanation(client) -> None:
+    response = client.get(reverse("accounts:password-reset-complete"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'class="auth-panel-action"' in content
+    assert content.index("Your new password is ready") < content.index("Sign in</a>")
 
 
 @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")

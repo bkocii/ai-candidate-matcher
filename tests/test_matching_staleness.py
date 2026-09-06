@@ -221,7 +221,7 @@ def test_vacancy_and_filter_pages_keep_stale_history_discoverable(client) -> Non
     )
 
     assert expected_path in vacancy_response.content.decode()
-    assert "Latest shortlist (stale)" in vacancy_response.content.decode()
+    assert "Open latest shortlist (stale)" in vacancy_response.content.decode()
     assert expected_path in filter_response.content.decode()
     assert "View latest shortlist (stale)" in filter_response.content.decode()
 

@@ -934,6 +934,14 @@ The crowded password/sign-out links are now grouped in a named account menu.
 Self-service password recovery uses Django's generic one-time email flow and
 clears `must_change_password` after a successful reset. Production must configure
 the documented SMTP environment values before browser/email-provider acceptance.
+The account icon menu closes on outside click and Escape, and the reset-complete
+button no longer shares the confirmation text's line box. Browser retesting of
+these two visual corrections remains pending.
+
+MT-039 vacancy details now use labelled client/status metadata and one primary
+next action chosen from pending draft, latest shortlist, or candidate evaluation.
+Correction controls are colocated with requirements and deletion is in a separate
+danger zone. Browser retesting remains pending.
 
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation

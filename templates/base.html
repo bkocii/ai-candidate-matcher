@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}AI Candidate Matcher{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <script src="{% static 'js/account-menu.js' %}" defer></script>
 </head>
 <body>
     <header class="site-header">
@@ -40,7 +41,12 @@
                         <a href="{% url 'admin:index' %}">Django admin</a>
                     {% endif %}
                     <details class="account-menu">
-                        <summary>{% firstof user.get_short_name user.username %}</summary>
+                        <summary title="Account: {% firstof user.get_short_name user.username %}">
+                            <svg class="account-menu-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 8a7 7 0 0 0-14 0" />
+                            </svg>
+                            <span class="visually-hidden">Account menu for {% firstof user.get_short_name user.username %}</span>
+                        </summary>
                         <div class="account-menu-panel">
                             <a href="{% url 'accounts:password-change' %}">Change password</a>
                             <form method="post" action="{% url 'accounts:logout' %}">

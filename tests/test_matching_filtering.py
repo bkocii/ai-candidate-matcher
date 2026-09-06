@@ -557,4 +557,13 @@ def test_vacancy_detail_links_to_filter_only_after_confirmation(client) -> None:
     confirmed_response = client.get(detail_url)
 
     assert "Evaluate candidates" not in draft_response.content.decode()
-    assert "Evaluate candidates" in confirmed_response.content.decode()
+    confirmed_content = confirmed_response.content.decode()
+    assert "Evaluate candidates" in confirmed_content
+    assert "Hiring client:" in confirmed_content
+    assert 'class="status-pill status-draft"' in confirmed_content
+    requirements_position = confirmed_content.index("Current confirmed requirements")
+    correction_position = confirmed_content.index("Create correction draft")
+    assert requirements_position < correction_position
+    assert confirmed_content.index("Requirements history") < confirmed_content.index(
+        "Danger zone"
+    )

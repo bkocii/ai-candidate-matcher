@@ -7,26 +7,21 @@
     <div>
         <p class="eyebrow">Vacancy</p>
         <h1 id="vacancy-title">{{ vacancy.title }}</h1>
-        <p class="lede">{{ vacancy.client_company|default:"Direct employer" }} · {{ vacancy.get_status_display }}</p>
+        <div class="vacancy-heading-meta">
+            <span><strong>Hiring client:</strong> {{ vacancy.client_company|default:"Direct employer" }}</span>
+            <span class="status-pill status-{{ vacancy.status }}">{{ vacancy.get_status_display }}</span>
+        </div>
     </div>
     <div class="button-row">
         <a class="secondary-button" href="{% url 'vacancies:vacancy-list' organization.slug %}">All vacancies</a>
         <a class="secondary-button" href="{% url 'vacancies:vacancy-edit' organization.slug vacancy.pk %}">Edit vacancy</a>
-        {% if current_requirements %}
-            <a class="primary-button button-link" href="{% url 'matching:candidate-filter-report' organization.slug vacancy.pk %}">Evaluate candidates</a>
-            {% if latest_match_run %}
-                <a class="secondary-button" href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_match_run.pk %}">Latest shortlist{% if latest_match_run_staleness.is_stale %} (stale){% endif %}</a>
-            {% endif %}
-        {% endif %}
         {% if draft %}
             <a class="primary-button button-link" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk draft.pk %}">Edit draft v{{ draft.version }}</a>
-        {% else %}
-            <form method="post" action="{% url 'vacancies:requirements-new-draft' organization.slug vacancy.pk %}">
-                {% csrf_token %}
-                <button class="primary-button" type="submit">Create correction draft</button>
-            </form>
+        {% elif latest_match_run %}
+            <a class="primary-button button-link" href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_match_run.pk %}">Open latest shortlist{% if latest_match_run_staleness.is_stale %} (stale){% endif %}</a>
+        {% elif current_requirements %}
+            <a class="primary-button button-link" href="{% url 'matching:candidate-filter-report' organization.slug vacancy.pk %}">Evaluate candidates</a>
         {% endif %}
-        <a class="danger-button button-link" href="{% url 'vacancies:vacancy-delete' organization.slug vacancy.pk %}">Delete vacancy</a>
     </div>
 </section>
 
@@ -108,6 +103,12 @@
             <h2 id="confirmed-rules-title">Typed hard-constraint rules · v{{ current_requirements.version }}</h2>
             <p class="section-note">These executable rules are immutable with the confirmed requirements version. Create a correction draft to change them.</p>
         </div>
+        {% if not draft %}
+            <form method="post" action="{% url 'vacancies:requirements-new-draft' organization.slug vacancy.pk %}">
+                {% csrf_token %}
+                <button class="secondary-button" type="submit">Create correction draft</button>
+            </form>
+        {% endif %}
     </div>
     {% include "matching/_hard_constraint_rules.html" with rules=confirmed_hard_constraint_rules editable=False requirements=current_requirements %}
 </section>
@@ -142,5 +143,14 @@
             </tbody>
         </table>
     </div>
+</section>
+
+<section class="danger-zone" aria-labelledby="delete-vacancy-title">
+    <div>
+        <p class="eyebrow">Danger zone</p>
+        <h2 id="delete-vacancy-title">Delete vacancy</h2>
+        <p class="section-note">Review the vacancy and affected records before scheduling deletion.</p>
+    </div>
+    <a class="danger-button button-link" href="{% url 'vacancies:vacancy-delete' organization.slug vacancy.pk %}">Delete vacancy</a>
 </section>
 {% endblock %}
