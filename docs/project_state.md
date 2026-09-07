@@ -1482,4 +1482,13 @@ exceptions. Linked queued/running tasks display as **Processing**, clean drafts 
 profiles as **Already confirmed**. The intake and confirmation pages share those
 states and use a compact status strip; batch confirmation still acts only on ready
 drafts. Collapsible intake tools now show rotating native-semantic chevrons. Browser
-retesting is pending.
+testing of the queued **Processing** state passed on 2026-09-07.
+
+MT-009 job detail now explains the entire workload with compact total, queued,
+running, succeeded, needs-attention, and failed counts. It shows an explicit UTC
+last-updated time and a normal GET **Refresh status** action. Candidate-profile jobs
+link back to an intake only when every candidate-document task is safely traced to
+the same organization-scoped batch; unrelated and mixed-origin jobs do not receive
+the link. Status pills now distinguish queued, running, succeeded, attention, and
+failed states, and the safety explanation is visually secondary. Browser retesting
+is pending; no migration was added.

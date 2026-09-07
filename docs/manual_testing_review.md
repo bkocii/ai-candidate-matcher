@@ -277,7 +277,7 @@ This file records functional defects and visual improvements found during page-b
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-008-U01 | Usability defect | Medium | While background extraction is merely queued, profile confirmation reports `0 eligible · 1 excluded`. “Excluded” can incorrectly suggest a validation failure rather than a draft that is not ready yet. | Separate states into **Processing**, **Ready to confirm**, and **Needs individual review**; reserve **Excluded** for a completed eligibility decision. | Implemented — browser retest pending |
+| MT-008-U01 | Usability defect | Medium | While background extraction is merely queued, profile confirmation reports `0 eligible · 1 excluded`. “Excluded” can incorrectly suggest a validation failure rather than a draft that is not ready yet. | Separate states into **Processing**, **Ready to confirm**, and **Needs individual review**; reserve **Excluded** for a completed eligibility decision. | Browser tested — passed 2026-09-07 |
 | MT-008-U02 | Usability defect | Medium | After candidates are staged or created, the still-expanded upload and CSV forms push the pending review, created candidates, and profile status far down the page. | Prioritize current batch progress and candidate review; collapse completed/optional intake tools behind **Add more CVs** and **Import CSV details** actions. | Browser tested — passed 2026-09-07 |
 | MT-008-U03 | Improvement | Medium | Audit timestamps are rendered in UTC without a timezone label or organization/user timezone preference. | Add an organization or user display timezone and show an explicit timezone where ambiguity matters, while retaining UTC storage. | Proposed |
 
@@ -286,7 +286,7 @@ This file records functional defects and visual improvements found during page-b
 - **Date:** 2026-08-29
 - **Route:** `/organizations/second-agency-test/jobs/18/`
 - **Viewport:** Desktop, 1920 × 1080
-- **Visual status:** Pass with operational improvements proposed
+- **Visual status:** Improvements implemented; browser retest pending
 - **Functional status:** Pass for queued state
 
 #### Completed functional checks
@@ -309,10 +309,10 @@ This file records functional defects and visual improvements found during page-b
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-009-U01 | Usability defect | Medium | The job is queued, but the summary cards omit a queued or running count; all three outcome cards show zero. | Include **Queued** and **Running** in the compact status summary so the current total is immediately explained. | Open |
-| MT-009-U02 | Usability defect | Medium | The status page has no visible refresh action, last-updated indicator, or automatic update behavior. A recruiter can continue seeing **Waiting for worker** after processing completes. | Add lightweight polling or a clear **Refresh status** action with a last-updated timestamp, stopping automatically at a terminal state. | Open |
-| MT-009-U03 | Improvement | Low | The page does not provide a direct route back to the intake batch that created the job. | Add a contextual **Back to intake** link when a job originated from an intake batch. | Proposed |
-| MT-009-V01 | Improvement | Low | The large green safety banner has greater visual emphasis than the actual queued item status. | Reduce it to a compact informational note after the safety model is familiar elsewhere in the product. | Proposed |
+| MT-009-U01 | Usability defect | Medium | The job is queued, but the summary cards omit a queued or running count; all three outcome cards show zero. | Include **Queued** and **Running** in the compact status summary so the current total is immediately explained. | Implemented — browser retest pending |
+| MT-009-U02 | Usability defect | Medium | The status page has no visible refresh action, last-updated indicator, or automatic update behavior. A recruiter can continue seeing **Waiting for worker** after processing completes. | Add lightweight polling or a clear **Refresh status** action with a last-updated timestamp, stopping automatically at a terminal state. | Implemented — browser retest pending |
+| MT-009-U03 | Improvement | Low | The page does not provide a direct route back to the intake batch that created the job. | Add a contextual **Back to intake** link when a job originated from an intake batch. | Implemented — browser retest pending |
+| MT-009-V01 | Improvement | Low | The large green safety banner has greater visual emphasis than the actual queued item status. | Reduce it to a compact informational note after the safety model is familiar elsewhere in the product. | Implemented — browser retest pending |
 
 ### MT-010 — Completed candidate-profile job
 
@@ -342,7 +342,7 @@ This file records functional defects and visual improvements found during page-b
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
 | MT-010-U01 | Improvement | Medium | The completed job shows only its queued timestamp; it does not show when processing started or completed, or how long it took. | Display queued, started, and completed times plus duration using the configured display timezone. | Proposed |
-| MT-010-V01 | Visual defect | Low | Queued and succeeded status pills use nearly identical neutral styling, weakening quick status recognition. | Use accessible, restrained semantic styling for queued, running, succeeded, attention, and failed states without relying on color alone. | Open |
+| MT-010-V01 | Visual defect | Low | Queued and succeeded status pills use nearly identical neutral styling, weakening quick status recognition. | Use accessible, restrained semantic styling for queued, running, succeeded, attention, and failed states without relying on color alone. | Implemented — browser retest pending |
 
 ### MT-011 — Evidence-based candidate profile draft
 

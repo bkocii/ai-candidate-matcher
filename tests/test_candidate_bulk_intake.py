@@ -400,6 +400,25 @@ def test_selected_review_creates_candidate_source_document_and_targeted_job(
     assert task.target_id == document.pk
     assert not candidate.profile_versions.exists()
 
+    job_page = client.get(
+        reverse("operations:job-detail", args=[organization.slug, job.pk])
+    )
+    job_content = job_page.content.decode()
+    assert job_page.status_code == 200
+    assert "<span>Queued</span><strong>1</strong>" in job_content
+    assert "<span>Running</span><strong>0</strong>" in job_content
+    assert "Last updated" in job_content
+    assert "UTC" in job_content
+    assert "Refresh status" in job_content
+    assert "Back to intake" in job_content
+    assert (
+        reverse(
+            "candidates:candidate-intake-detail",
+            args=[organization.slug, batch.pk],
+        )
+        in job_content
+    )
+
     repeated = queue_candidate_profile_documents(
         organization=organization,
         user=user,

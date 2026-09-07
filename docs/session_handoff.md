@@ -991,7 +991,15 @@ MT-007 Post/Redirect/Get and its all-success report passed Chrome testing on
 task and profile: Processing, Ready to confirm, Needs individual review, or
 Already confirmed. The intake and confirmation surfaces no longer call queued
 work excluded, confirmation remains limited to ready drafts, and collapsed intake
-tools show rotating chevrons. Browser retesting is pending; no migration was added.
+tools show rotating chevrons. The queued **Processing** state passed Chrome testing
+on 2026-09-07.
+
+MT-009 now gives the job detail a six-state compact summary, explicit UTC
+last-updated time, a GET-only **Refresh status** action, restrained semantic status
+pills, and a smaller safety note. **Back to intake** appears only when all
+candidate-document tasks can be traced to one tenant-scoped intake batch. Focused
+coverage verifies queued and running totals, the safe backlink boundary, and tenant
+isolation. Browser retesting is pending; no migration was added.
 
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation

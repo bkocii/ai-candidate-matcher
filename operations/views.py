@@ -1,3 +1,5 @@
+from collections import Counter
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -6,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from candidates.models import CandidateDocument, CandidateProfile
+from candidates.models import CandidateDocument, CandidateIntakeItem, CandidateProfile
 from matching.models import MatchAssessment, MatchRun, ShortlistEntry
 from operations.models import BackgroundJob, BackgroundTask
 from operations.services import (
@@ -172,6 +174,32 @@ def _present_task(task: BackgroundTask, organization: Organization) -> None:
     )
 
 
+def _origin_intake_for_job(
+    *, job: BackgroundJob, tasks: list[BackgroundTask], organization: Organization
+):
+    if job.workflow != BackgroundJob.Workflow.CANDIDATE_PROFILE_BATCH:
+        return None
+    document_ids = {
+        task.target_id
+        for task in tasks
+        if task.target_type == BackgroundTask.TargetType.CANDIDATE_DOCUMENT
+    }
+    if not document_ids:
+        return None
+    intake_items = list(
+        CandidateIntakeItem.objects.for_organization(organization)
+        .filter(
+            status=CandidateIntakeItem.Status.CREATED,
+            accepted_document_id__in=document_ids,
+        )
+        .select_related("batch")
+    )
+    if {item.accepted_document_id for item in intake_items} != document_ids:
+        return None
+    batches = {item.batch_id: item.batch for item in intake_items}
+    return next(iter(batches.values())) if len(batches) == 1 else None
+
+
 @login_required
 def job_detail(request, organization_slug: str, job_id: int):
     organization = _organization(request, organization_slug)
@@ -184,10 +212,25 @@ def job_detail(request, organization_slug: str, job_id: int):
     tasks = list(job.tasks.all())
     for task in tasks:
         _present_task(task, organization)
+    task_counts = Counter(task.status for task in tasks)
+    job.queued_count = task_counts[BackgroundTask.Status.QUEUED]
+    job.running_count = task_counts[BackgroundTask.Status.RUNNING]
+    job.last_updated_at = max(
+        [job.updated_at, *(task.updated_at for task in tasks)],
+    )
     return render(
         request,
         "operations/job_detail.html",
-        {"organization": organization, "job": job, "tasks": tasks},
+        {
+            "organization": organization,
+            "job": job,
+            "tasks": tasks,
+            "origin_intake": _origin_intake_for_job(
+                job=job,
+                tasks=tasks,
+                organization=organization,
+            ),
+        },
     )
 
 

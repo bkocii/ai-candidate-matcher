@@ -229,8 +229,21 @@ def test_job_routes_are_tenant_scoped_and_show_batch_controls(client):
     assert b"Queue pending profile extraction" in candidate_page.content
     assert job_page.status_code == 200
     assert b"Profile confirmation" in job_page.content
+    assert b"<span>Queued</span><strong>1</strong>" in job_page.content
+    assert b"<span>Running</span><strong>0</strong>" in job_page.content
+    assert b"Refresh status" in job_page.content
+    assert b"Back to intake" not in job_page.content
     assert hidden.status_code == 404
     assert other_user != user
+
+    task = job.tasks.get()
+    task.status = BackgroundTask.Status.RUNNING
+    task.save(update_fields=("status", "updated_at"))
+    running_page = client.get(
+        reverse("operations:job-detail", args=[organization.slug, job.pk])
+    )
+    assert b"<span>Queued</span><strong>0</strong>" in running_page.content
+    assert b"<span>Running</span><strong>1</strong>" in running_page.content
 
 
 def test_worker_burst_reports_only_safe_task_identifiers(monkeypatch, capsys):

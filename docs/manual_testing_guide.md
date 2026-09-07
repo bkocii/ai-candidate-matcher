@@ -318,6 +318,12 @@ Expected result:
   **Ready to confirm**. Ambiguities, source conflicts, and safe job failures become
   **Needs individual review**; an explicit completed confirmation becomes
   **Already confirmed**.
+- The queued job detail shows total `1`, queued `1`, running `0`, and zero completed
+  outcomes; it includes an explicit UTC **Last updated** time, **Refresh status**,
+  and **Back to intake**. After the worker starts or completes, use **Refresh
+  status** and confirm the counts and semantic status pill change without repeating
+  any mutation. A profile job not created from one intake batch must not show the
+  intake backlink.
 - Any resulting profile is a draft requiring individual evidence review and
   confirmation. No match decision or outreach action occurs.
 - Selecting Arben for creation remains blocked as a duplicate. Use **Discard**

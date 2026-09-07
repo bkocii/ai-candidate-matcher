@@ -2227,6 +2227,80 @@ tbody tr:last-child td {
     color: #705300;
 }
 
+.job-updated {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+.job-status-strip {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 1px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--border);
+}
+
+.job-status-strip article {
+    min-width: 0;
+    padding: 13px 14px;
+    background: var(--surface);
+}
+
+.job-status-strip span,
+.job-status-strip strong {
+    display: block;
+}
+
+.job-status-strip span {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.job-status-strip strong {
+    margin-top: 5px;
+    color: var(--primary-dark);
+    font-size: 1.25rem;
+}
+
+.job-safety-note {
+    margin: 16px 0;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.status-queued {
+    background: #e8eef8;
+    color: #315680;
+}
+
+.status-running {
+    background: #fff1c7;
+    color: #705300;
+}
+
+.status-succeeded {
+    background: var(--accent);
+    color: var(--primary-dark);
+}
+
+.status-completed_with_errors,
+.status-skipped {
+    background: #fff1c7;
+    color: #705300;
+}
+
+.status-failed {
+    background: #fbeaea;
+    color: var(--danger);
+}
+
 .intake-review-toolbar,
 .intake-candidate-card > header,
 .intake-candidate-card > footer {
@@ -2401,6 +2475,10 @@ tbody tr:last-child td {
     .intake-review-fields,
     .profile-review-status {
         grid-template-columns: 1fr;
+    }
+
+    .job-status-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .intake-source-reference {
