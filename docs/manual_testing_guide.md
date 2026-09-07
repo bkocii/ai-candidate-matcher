@@ -241,8 +241,15 @@ future organization-country setting.
 ## 6. Test reviewed bulk CV candidate intake
 
 Open **Candidates** and confirm **Create candidates from CVs** is the primary
-creation action. Select it and record the shared source details below. The same
-flow supports one CV or several CVs:
+creation action. Select these three files together in the initial **Upload CVs**
+section:
+
+- `synthetic-drita-shembull-cv.docx`
+- `synthetic-arben-testi-cv.pdf`
+- `rejected-invalid-signature.pdf`
+
+Then record the shared source details below. The same submission supports one CV
+or several CVs:
 
 - Source name: `Synthetic reviewed bulk intake`
 - Reason for storing data: `Not recorded`
@@ -251,15 +258,10 @@ flow supports one CV or several CVs:
 - Privacy and contact notes: `Synthetic fixtures only; no real people.`
 - Candidate, source, and CV delete/review dates: leave blank for this test
 
-Expected result: an open tenant-scoped batch is created. Its shared provenance
-and retention values are visible before any candidate exists; none of these
-values is inferred by AI.
-
-Select these three files together in **Add CVs**:
-
-- `synthetic-drita-shembull-cv.docx`
-- `synthetic-arben-testi-cv.pdf`
-- `rejected-invalid-signature.pdf`
+Select **Create intake and add CVs**. Expected result: one open tenant-scoped
+batch is created and the accepted CVs are staged in the same submission. Its
+shared provenance and retention values are visible before any candidate exists;
+none of these values is inferred by AI.
 
 Expected result:
 
@@ -272,10 +274,19 @@ Expected result:
 - Arben is visibly marked as a possible email/phone duplicate because section 4
   already created that candidate. The application does not merge or overwrite
   the existing record.
+- Candidate review uses responsive cards without horizontal page/table scrolling.
+  Long CV filenames stay on one truncated line and expose the full filename on
+  hover. Clean rows show **Ready**, incomplete rows show **Needs review**, and
+  known matches show **Possible duplicate**.
+- **Create selected candidates (0)** is disabled until a row is selected.
+  **Select all ready** selects only clean rows, never exception or duplicate rows.
+- Candidate review appears before repeat input. **Add more CVs** is collapsed
+  below the review, and the exact-filename mapping tool is separately labelled
+  **Advanced: Match details from CSV**. An empty open batch still shows the full
+  **Add CVs** upload surface.
 
-Before creating candidates, upload
-`manual_testing/fixtures/candidate-cv-mapping.csv` under **Apply candidate
-details from CSV**.
+Before creating candidates, expand **Advanced: Match details from CSV** and
+upload `manual_testing/fixtures/candidate-cv-mapping.csv`.
 
 Expected result:
 
@@ -286,8 +297,8 @@ Expected result:
 - The CSV report shows mapped, unresolved, and invalid counts. It does not create
   a candidate by itself.
 
-Select only Drita's row. Keep **Queue only newly created CVs for background AI
-profile drafts** checked, then select **Create selected candidates**.
+Select only Drita's row. Keep **Create AI profile drafts in the background**
+checked, then select **Create selected candidates (1)**.
 
 Expected result:
 

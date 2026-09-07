@@ -950,6 +950,32 @@ no migration was added. Sign-in and reset setup now reuse password visibility,
 and successful logout displays a signed-out confirmation. Those additions still
 need browser retesting.
 
+MT-004/MT-005 now combines initial batch creation and CV staging in one submit.
+The upload-first responsive form has removable file summaries, grouped shared
+settings, progress steps, server-side empty-upload rejection, compact empty
+metrics, collapsed optional CSV mapping, and filename-specific safe failures.
+Browser retesting remains pending; no migration was added.
+
+MT-006 identity review now uses responsive candidate cards instead of a wide
+editable table. It adds direct Ready/Needs review/Possible duplicate states,
+filename truncation with full hover text, compact metrics for non-empty batches,
+severity-styled notices, **Select all ready**, a live selection count, and a
+disabled zero-selection action. The existing server-side empty-selection and
+duplicate safeguards remain unchanged. Browser retesting is pending; no migration
+was added.
+
+The MT-005 compact non-empty summary and MT-006 card layout, filename handling,
+direct state labels, and background-profile wording passed Chrome browser review
+on 2026-09-07. The zero-selection primary action now also has an explicit muted
+disabled treatment. The selection interaction still needs one short browser click
+check.
+
+That selection interaction passed on 2026-09-07. Candidate review now precedes
+repeat data-entry controls: repeat upload is a collapsed **Add more CVs** tool,
+and exact-filename spreadsheet mapping is a collapsed advanced tool whose copy
+distinguishes it from direct CSV candidate import. Empty open batches still show
+the full primary upload surface. This hierarchy needs a browser retest.
+
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
 review, production/deployment, minimized usage reporting, durable jobs, staged

@@ -152,6 +152,8 @@ def test_multi_file_upload_isolates_invalid_file_and_keeps_private_review_item(
     assert item.file.storage.exists(item.file.name)
     assert "Added 1 CV(s)" in response.content.decode()
     assert "1 file(s) were rejected" in response.content.decode()
+    assert 'class="message message-success"' in response.content.decode()
+    assert 'class="message message-error"' in response.content.decode()
     assert "not a pdf" not in item.extracted_text
 
 
@@ -164,19 +166,17 @@ def test_batch_creation_and_review_page_are_tenant_safe_and_hide_source_text(
     add_member(user, organization)
     client.force_login(user)
 
+    values = batch_values()
+    values["cv_files"] = [cv_upload()]
     response = client.post(
         reverse("candidates:candidate-intake-create", args=[organization.slug]),
-        batch_values(),
+        values,
     )
 
     assert response.status_code == 302
     batch = CandidateIntakeBatch.objects.get()
     assert batch.created_by == user
-    item = upload_candidate_intake_cv(
-        batch=batch,
-        user=user,
-        uploaded_file=cv_upload(),
-    )
+    item = batch.items.get()
     response = client.get(
         reverse(
             "candidates:candidate-intake-detail",
@@ -189,6 +189,64 @@ def test_batch_creation_and_review_page_are_tenant_safe_and_hide_source_text(
     assert "Arben Testi" in content
     assert "Built Django services and pytest suites" not in content
     assert item.file.name not in content
+    assert 'class="intake-status-strip intake-summary"' in content
+    assert 'class="intake-review-cards"' in content
+    assert 'class="intake-candidate-card"' in content
+    assert "intake-review-table" not in content
+    assert "Select all ready" in content
+    assert 'data-intake-select data-ready="true"' in content
+    assert "Ready" in content
+    assert "Create selected candidates (0)" in content
+    assert "data-create-selected disabled" in content
+    assert "Create AI profile drafts in the background" in content
+    assert content.index("Review proposed candidate identities") < content.index(
+        "Add more CVs"
+    )
+    assert content.index("Add more CVs") < content.index(
+        "Advanced: Match details from CSV"
+    )
+    assert "This is separate from importing candidates directly from CSV" in content
+    assert "Match details to CVs" in content
+
+
+def test_intake_start_leads_with_required_upload_and_does_not_create_empty_batch(
+    client,
+) -> None:
+    user = User.objects.create_user(username="intake-start-recruiter")
+    organization = Organization.objects.create(name="Northstar", slug="northstar")
+    add_member(user, organization)
+    client.force_login(user)
+    url = reverse("candidates:candidate-intake-create", args=[organization.slug])
+
+    page = client.get(url)
+    content = page.content.decode()
+    assert content.index("1. Upload") < content.index("2. Shared details")
+    assert "Drop CVs here or browse files" in content
+    assert "Create intake and add CVs" in content
+    assert "disabled" in content
+
+    response = client.post(url, batch_values())
+    assert response.status_code == 200
+    assert "This field is required" in response.content.decode()
+    assert not CandidateIntakeBatch.objects.exists()
+
+
+def test_empty_open_batch_keeps_upload_primary_and_hides_mapping_tool(client) -> None:
+    user, organization, batch = setup_batch()
+    client.force_login(user)
+
+    response = client.get(
+        reverse(
+            "candidates:candidate-intake-detail",
+            args=[organization.slug, batch.pk],
+        )
+    )
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Add CVs" in content
+    assert "Add more CVs" not in content
+    assert "Advanced: Match details from CSV" not in content
 
 
 def test_upload_form_bounds_file_count_and_combined_request_size() -> None:

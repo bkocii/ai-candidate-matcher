@@ -32,6 +32,9 @@ class MultipleFileField(forms.FileField):
 
     def clean(self, data, initial=None):
         single_clean = super().clean
+        if not data:
+            single_clean(None, initial)
+            return []
         if isinstance(data, (list, tuple)):
             return [single_clean(item, initial) for item in data]
         return [single_clean(data, initial)]

@@ -1,0 +1,8 @@
+<h2 id="intake-upload-title">{{ upload_heading }}</h2>
+<p>Every file is checked independently with the existing private PDF/DOCX safety rules. Failed files store neither a row nor private bytes.</p>
+<form class="stacked-form" method="post" enctype="multipart/form-data" action="{% url 'candidates:candidate-intake-upload' organization.slug batch.pk %}">
+    {% csrf_token %}
+    {% if upload_form.non_field_errors %}<div class="form-error">{{ upload_form.non_field_errors }}</div>{% endif %}
+    {% include "candidates/_cv_upload_field.html" with field=upload_form.cv_files %}
+    <button class="primary-button" type="submit" data-file-submit disabled>{{ upload_button }}</button>
+</form>

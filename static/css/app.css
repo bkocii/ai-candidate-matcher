@@ -173,6 +173,197 @@ a {
     color: var(--primary);
 }
 
+.step-indicator {
+    display: flex;
+    width: fit-content;
+    overflow: hidden;
+    margin-bottom: 24px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+}
+
+.step-indicator > * {
+    padding: 10px 16px;
+}
+
+.step-indicator [aria-current="step"] {
+    background: var(--accent);
+    color: var(--primary-dark);
+}
+
+.intake-start-form {
+    display: grid;
+    gap: 24px;
+}
+
+.intake-start-form .form-panel {
+    max-width: none;
+    margin: 0;
+}
+
+.intake-settings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.intake-settings-grid fieldset {
+    display: grid;
+    min-width: 0;
+    gap: 18px;
+    padding: 22px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.intake-settings-grid legend {
+    padding: 0 8px;
+    color: var(--primary-dark);
+    font-weight: 800;
+}
+
+.intake-settings-grid .retention-fields {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.retention-fields legend,
+.retention-fields > .help-text {
+    grid-column: 1 / -1;
+}
+
+.intake-start-actions {
+    justify-content: flex-end;
+}
+
+.file-upload {
+    display: grid;
+    gap: 12px;
+}
+
+.file-dropzone {
+    position: relative;
+    display: grid;
+    min-height: 190px;
+    place-items: center;
+    align-content: center;
+    gap: 8px;
+    padding: 28px;
+    border: 2px dashed #aac8bd;
+    border-radius: 16px;
+    background: var(--surface-soft);
+    color: var(--primary-dark);
+    cursor: pointer;
+    text-align: center;
+}
+
+.file-dropzone:hover,
+.file-dropzone:focus-within {
+    border-color: var(--primary);
+    background: #e4f2ed;
+}
+
+.file-dropzone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-dropzone-icon {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.file-dropzone small {
+    color: var(--muted);
+}
+
+.selected-files {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.selected-files li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+}
+
+.selected-files button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--danger);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 750;
+}
+
+[data-file-submit]:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.intake-empty-summary {
+    display: flex;
+    gap: 1px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--border);
+}
+
+.intake-empty-summary .metric-card {
+    min-height: auto;
+    flex: 1;
+    padding: 14px 18px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.intake-optional-tool {
+    padding: 0;
+}
+
+.intake-optional-tool > summary {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 24px;
+    cursor: pointer;
+}
+
+.intake-optional-tool > summary span {
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+.optional-tool-body {
+    padding: 4px 24px 24px;
+    border-top: 1px solid var(--border);
+}
+
 .auth-panel-action {
     margin: 24px 0 0;
 }
@@ -1118,6 +1309,12 @@ tbody tr:last-child td {
     background: var(--primary-dark);
 }
 
+.primary-button:disabled {
+    background: var(--primary);
+    cursor: not-allowed;
+    opacity: 0.48;
+}
+
 .danger-button {
     align-items: center;
     background: #fff;
@@ -1169,6 +1366,24 @@ tbody tr:last-child td {
     border: 1px solid var(--border);
     border-radius: 10px;
     background: var(--surface);
+}
+
+.message-success {
+    border-color: #9dcdbd;
+    background: #e9f5f1;
+    color: var(--primary-dark);
+}
+
+.message-warning {
+    border-color: #ddc98e;
+    background: #fff8e7;
+    color: #694f08;
+}
+
+.message-error {
+    border-color: #e2a6a1;
+    background: #fbeaea;
+    color: var(--danger);
 }
 
 .source-panel,
@@ -1880,9 +2095,168 @@ tbody tr:last-child td {
     margin-bottom: 24px;
 }
 
-.intake-review-table input[type="text"],
-.intake-review-table input[type="email"] {
-    min-width: 11rem;
+.intake-upload,
+.intake-optional-tool {
+    max-width: none;
+}
+
+.intake-secondary-tools {
+    display: grid;
+    gap: 14px;
+    margin: 24px 0;
+}
+
+.intake-secondary-tools .form-panel {
+    width: 100%;
+    margin-top: 0;
+}
+
+.intake-secondary-tools .optional-tool-body h2 {
+    margin-top: 18px;
+}
+
+.intake-advanced-tool > summary strong::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 9px;
+    border-radius: 50%;
+    background: var(--muted);
+    vertical-align: 0.12em;
+}
+
+.intake-status-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--border);
+}
+
+.intake-status-strip article {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-width: 0;
+    padding: 14px 18px;
+    background: var(--surface);
+}
+
+.intake-status-strip span {
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.intake-status-strip strong {
+    color: var(--primary-dark);
+    font-size: 1.25rem;
+}
+
+.intake-review-toolbar,
+.intake-candidate-card > header,
+.intake-candidate-card > footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.intake-review-toolbar {
+    margin: 24px 0 14px;
+}
+
+.intake-review-toolbar p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.intake-review-cards {
+    display: grid;
+    gap: 16px;
+}
+
+.intake-candidate-card {
+    min-width: 0;
+    padding: 22px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+}
+
+.intake-file-heading {
+    min-width: 0;
+}
+
+.intake-file-heading .eyebrow {
+    margin-bottom: 5px;
+}
+
+.intake-file-heading h3 {
+    overflow: hidden;
+    margin: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.intake-candidate-card .status-pill {
+    flex: 0 0 auto;
+}
+
+.intake-state-ready {
+    background: #d9eee7;
+    color: var(--primary-dark);
+}
+
+.intake-state-review {
+    background: #fff0c7;
+    color: #694f08;
+}
+
+.intake-state-duplicate {
+    background: #fbe0de;
+    color: var(--danger);
+}
+
+.intake-duplicate-warning {
+    margin: 16px 0 0;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #fbeaea;
+    color: var(--danger);
+}
+
+.intake-review-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.intake-review-fields .field {
+    min-width: 0;
+}
+
+.intake-review-fields .field label span {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.intake-source-reference {
+    grid-column: 1 / -1;
+}
+
+.intake-candidate-card > footer {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.intake-create-choice {
+    margin: 0;
 }
 
 .compact-flags {
@@ -1924,6 +2298,52 @@ tbody tr:last-child td {
     .danger-zone {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .step-indicator {
+        width: 100%;
+        border-radius: 14px;
+    }
+
+    .step-indicator > * {
+        flex: 1;
+        padding: 10px 8px;
+        font-size: 0.82rem;
+        text-align: center;
+    }
+
+    .intake-settings-grid,
+    .intake-settings-grid .retention-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .retention-fields legend,
+    .retention-fields > .help-text {
+        grid-column: auto;
+    }
+
+    .intake-empty-summary {
+        flex-direction: column;
+    }
+
+    .intake-status-strip,
+    .intake-review-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .intake-source-reference {
+        grid-column: auto;
+    }
+
+    .intake-review-toolbar,
+    .intake-candidate-card > header,
+    .intake-candidate-card > footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .intake-candidate-card .status-pill {
+        align-self: flex-start;
     }
 
     .site-nav {

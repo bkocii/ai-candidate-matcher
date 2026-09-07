@@ -1,0 +1,11 @@
+<div class="file-upload" data-file-upload>
+    <label class="file-dropzone" for="{{ field.id_for_label }}">
+        {{ field }}
+        <span class="file-dropzone-icon" aria-hidden="true">↑</span>
+        <strong>Drop CVs here or browse files</strong>
+        <small>PDF or DOCX · up to 10 files · 10 MB combined</small>
+    </label>
+    {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+    {% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}
+    <ul class="selected-files" data-selected-files aria-live="polite"></ul>
+</div>

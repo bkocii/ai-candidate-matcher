@@ -1,20 +1,61 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Create candidates from CVs | {{ organization.name }}{% endblock %}
 
 {% block content %}
 <section class="page-heading">
     <p class="eyebrow">Create candidates from CVs</p>
-    <h1>Record shared source details</h1>
-    <p class="lede">Use this for one CV or a batch. These values are copied to each created source record, document the organization’s assertion, and are never inferred by AI.</p>
+    <h1>Add CVs</h1>
+    <p class="lede">Upload one or more CVs, record the shared source settings once, then review the proposed candidate identities.</p>
 </section>
 
-<form class="form-panel stacked-form" method="post">
+<nav class="step-indicator" aria-label="Candidate intake progress">
+    <strong aria-current="step">1. Upload</strong><span>2. Shared details</span><span>3. Review</span>
+</nav>
+
+<form class="intake-start-form" method="post" enctype="multipart/form-data">
     {% csrf_token %}
-    {% include "candidates/_form_fields.html" %}
-    <div class="button-row">
-        <button class="primary-button" type="submit">Create intake batch</button>
-        <a class="secondary-button" href="{% url 'candidates:candidate-intake-list' organization.slug %}">Cancel</a>
+    {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
+    {% if upload_form.non_field_errors %}<div class="form-error">{{ upload_form.non_field_errors }}</div>{% endif %}
+
+    <section class="form-panel intake-upload-panel" aria-labelledby="upload-cvs-title">
+        <p class="eyebrow">Step 1</p>
+        <h2 id="upload-cvs-title">Choose CVs</h2>
+        {% include "candidates/_cv_upload_field.html" with field=upload_form.cv_files %}
+    </section>
+
+    <section class="form-panel intake-shared-panel" aria-labelledby="shared-details-title">
+        <p class="eyebrow">Step 2</p>
+        <h2 id="shared-details-title">Shared details</h2>
+        <p class="section-note">Applied to every candidate created from this upload. Nothing is inferred by AI.</p>
+        <div class="intake-settings-grid">
+            <fieldset>
+                <legend>Source</legend>
+                {% include "candidates/_intake_field.html" with field=form.source_name %}
+                {% include "candidates/_intake_field.html" with field=form.lawful_basis %}
+            </fieldset>
+            <fieldset>
+                <legend>Contact</legend>
+                {% include "candidates/_intake_field.html" with field=form.consent_status %}
+                {% include "candidates/_intake_field.html" with field=form.contact_permission %}
+                {% include "candidates/_intake_field.html" with field=form.permission_notes %}
+            </fieldset>
+            <fieldset class="retention-fields">
+                <legend>Retention review dates</legend>
+                <p class="help-text">Optional exceptions. Leave blank to use the organization’s normal retention review.</p>
+                {% include "candidates/_intake_field.html" with field=form.candidate_retention_until %}
+                {% include "candidates/_intake_field.html" with field=form.source_retention_until %}
+                {% include "candidates/_intake_field.html" with field=form.document_retention_until %}
+            </fieldset>
+        </div>
+    </section>
+
+    <div class="button-row intake-start-actions">
+        <button class="primary-button" type="submit" data-file-submit disabled>Create intake and add CVs</button>
+        <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Cancel</a>
     </div>
 </form>
 {% endblock %}
+
+{% block scripts %}<script src="{% static 'js/file-upload.js' %}" defer></script>{% endblock %}

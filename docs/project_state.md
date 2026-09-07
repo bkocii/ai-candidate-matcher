@@ -1445,3 +1445,26 @@ The mandatory first-login gate intentionally provides no Cancel escape. Browser
 testing passed on 2026-09-06. Sign-in and reset setup now reuse the visibility
 control, and successful POST-only logout shows a signed-out confirmation; those
 small additions still need browser retesting.
+
+MT-004/MT-005 intake now begins with a professional multi-CV upload surface,
+creates the batch and stages CVs in one submission, groups shared settings across
+the available desktop width, and shows a three-step progress indicator. Selected
+files can be reviewed/removed before submission; empty uploads are blocked in
+the browser and on the server. Optional CSV mapping is collapsed, empty-batch
+metrics are compact, and rejected files are named safely. Browser retesting is
+pending.
+
+MT-006 replaces the horizontally scrolling identity table with responsive review
+cards. Each card keeps its CV, editable identity, direct review state, selection,
+and discard action together; long filenames truncate with their full value in a
+tooltip. The selection count and bulk action update together, **Select all ready**
+excludes exception/duplicate rows, and the browser disables empty creation while
+the server retains its validation boundary. Intake metrics remain compact with
+items present, message severity is visually distinct, and upload/CSV panels use
+the available page width. Browser retesting is pending.
+
+Once an intake contains pending CVs, review now appears before secondary input
+tools. Repeat upload is collapsed and renamed **Add more CVs**. Exact-filename
+spreadsheet mapping remains available after review under an explicitly advanced
+label and explains how it differs from direct CSV candidate import. An empty open
+batch still leads with the full upload surface. Browser retesting is pending.

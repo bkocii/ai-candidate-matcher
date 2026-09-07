@@ -74,6 +74,36 @@ def _batch(organization: Organization, batch_id: int) -> CandidateIntakeBatch:
     )
 
 
+def _upload_intake_files(*, request, batch, files) -> tuple[int, int]:
+    created = 0
+    failures = 0
+    for uploaded_file in files:
+        try:
+            upload_candidate_intake_cv(
+                batch=batch,
+                user=request.user,
+                uploaded_file=uploaded_file,
+            )
+        except CandidateDocumentUploadError as error:
+            failures += 1
+            messages.error(request, f"{uploaded_file.name}: {error.public_message}")
+        except ValidationError as error:
+            failures += 1
+            messages.error(
+                request, f"{uploaded_file.name}: {'; '.join(error.messages)}"
+            )
+        else:
+            created += 1
+    if created:
+        messages.success(request, f"Added {created} CV(s) to the review queue.")
+    if failures:
+        messages.error(
+            request,
+            f"{failures} file(s) were rejected without storing private bytes.",
+        )
+    return created, failures
+
+
 def _initial_for_item(item: CandidateIntakeItem) -> dict:
     return {
         "full_name": item.proposed_full_name,
@@ -201,15 +231,17 @@ def candidate_intake_list(request, organization_slug: str):
 def candidate_intake_create(request, organization_slug: str):
     organization = _organization(request, organization_slug)
     form = CandidateIntakeBatchForm(request.POST or None)
-    if request.method == "POST" and form.is_valid():
+    upload_form = CandidateIntakeUploadForm(request.POST or None, request.FILES or None)
+    if request.method == "POST" and form.is_valid() and upload_form.is_valid():
         batch = create_candidate_intake_batch(
             organization=organization,
             user=request.user,
             values=form.cleaned_data,
         )
-        messages.success(
-            request,
-            "Intake batch created. Upload CVs for local identity review.",
+        _upload_intake_files(
+            request=request,
+            batch=batch,
+            files=upload_form.cleaned_data["cv_files"],
         )
         return redirect(
             "candidates:candidate-intake-detail",
@@ -219,7 +251,7 @@ def candidate_intake_create(request, organization_slug: str):
     return render(
         request,
         "candidates/candidate_intake_form.html",
-        {"organization": organization, "form": form},
+        {"organization": organization, "form": form, "upload_form": upload_form},
     )
 
 
@@ -257,33 +289,11 @@ def candidate_intake_upload(request, organization_slug: str, batch_id: int):
             upload_form=form,
         )
 
-    created = 0
-    failures = 0
-    for position, uploaded_file in enumerate(form.cleaned_data["cv_files"], start=1):
-        try:
-            upload_candidate_intake_cv(
-                batch=batch,
-                user=request.user,
-                uploaded_file=uploaded_file,
-            )
-        except CandidateDocumentUploadError as error:
-            failures += 1
-            messages.error(request, f"File {position}: {error.public_message}")
-        except ValidationError as error:
-            failures += 1
-            messages.error(request, f"File {position}: {'; '.join(error.messages)}")
-        else:
-            created += 1
-    if created:
-        messages.success(
-            request,
-            f"Added {created} CV(s) to the review queue.",
-        )
-    if failures:
-        messages.error(
-            request,
-            f"{failures} file(s) were rejected without storing private bytes.",
-        )
+    _upload_intake_files(
+        request=request,
+        batch=batch,
+        files=form.cleaned_data["cv_files"],
+    )
     return redirect(
         "candidates:candidate-intake-detail",
         organization.slug,
