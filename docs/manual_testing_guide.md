@@ -324,6 +324,10 @@ Expected result:
   status** and confirm the counts and semantic status pill change without repeating
   any mutation. A profile job not created from one intake batch must not show the
   intake backlink.
+- After completion, the job detail adds a compact processing timeline with queued,
+  started, and completed times labelled UTC plus a duration. While a task is
+  running, the same area shows **In progress** and **Elapsed** instead of claiming
+  completion.
 - Any resulting profile is a draft requiring individual evidence review and
   confirmation. No match decision or outreach action occurs.
 - Selecting Arben for creation remains blocked as a duplicate. Use **Discard**

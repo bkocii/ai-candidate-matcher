@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from candidates.models import CandidateDocument, CandidateIntakeItem, CandidateProfile
@@ -200,6 +201,19 @@ def _origin_intake_for_job(
     return next(iter(batches.values())) if len(batches) == 1 else None
 
 
+def _format_elapsed(started_at, ended_at) -> str:
+    total_seconds = max(0, round((ended_at - started_at).total_seconds()))
+    if total_seconds < 1:
+        return "< 1 sec"
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours} hr {minutes} min"
+    if minutes:
+        return f"{minutes} min {seconds} sec"
+    return f"{seconds} sec"
+
+
 @login_required
 def job_detail(request, organization_slug: str, job_id: int):
     organization = _organization(request, organization_slug)
@@ -217,6 +231,12 @@ def job_detail(request, organization_slug: str, job_id: int):
     job.running_count = task_counts[BackgroundTask.Status.RUNNING]
     job.last_updated_at = max(
         [job.updated_at, *(task.updated_at for task in tasks)],
+    )
+    job.elapsed_label = "Duration" if job.completed_at else "Elapsed"
+    job.elapsed_display = (
+        _format_elapsed(job.started_at, job.completed_at or timezone.now())
+        if job.started_at
+        else ""
     )
     return render(
         request,

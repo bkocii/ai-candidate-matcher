@@ -1491,4 +1491,10 @@ link back to an intake only when every candidate-document task is safely traced 
 the same organization-scoped batch; unrelated and mixed-origin jobs do not receive
 the link. Status pills now distinguish queued, running, succeeded, attention, and
 failed states, and the safety explanation is visually secondary. Browser retesting
-is pending; no migration was added.
+passed on 2026-09-07; no migration was added.
+
+MT-010 completed job detail now adds a compact processing timeline backed by the
+existing durable job timestamps. It shows queued, started, and completed times in
+explicit UTC plus a human-readable duration. A running job shows **In progress**
+and elapsed time; a job that has never started does not show an invented timeline.
+Browser retesting is pending; no migration was added.

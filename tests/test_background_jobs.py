@@ -74,6 +74,32 @@ def test_profile_batch_is_idempotent_and_creates_reviewable_draft():
     )
 
 
+def test_completed_job_page_shows_processing_times_and_duration(client):
+    user, organization, _, _ = make_profile_workspace()
+    job = queue_candidate_profile_batch(organization=organization, user=user).job
+    process_next_background_task(job_id=job.pk, gateway=profile_gateway())
+    completed_at = timezone.now()
+    started_at = completed_at - timedelta(seconds=65)
+    BackgroundJob.objects.filter(pk=job.pk).update(
+        started_at=started_at,
+        completed_at=completed_at,
+    )
+    client.force_login(user)
+
+    response = client.get(
+        reverse("operations:job-detail", args=[organization.slug, job.pk])
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Processing times" in content
+    assert "Started" in content
+    assert "Completed" in content
+    assert "Duration" in content
+    assert "1 min 5 sec" in content
+    assert content.count("UTC") >= 4
+
+
 def test_profile_batch_reuses_profiled_source_and_queues_new_corrected_cv_only():
     user, organization, candidate, old_document = make_profile_workspace()
     old_profile = CandidateProfile.objects.create(

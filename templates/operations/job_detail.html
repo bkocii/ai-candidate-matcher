@@ -29,6 +29,15 @@
     <article><span>Failed</span><strong>{{ job.failed_count }}</strong></article>
 </section>
 
+{% if job.started_at %}
+    <section class="job-timing-strip" aria-label="Processing times">
+        <article><span>Queued</span><time datetime="{{ job.created_at|date:'c' }}">{{ job.created_at|date:"Y-m-d H:i:s" }} UTC</time></article>
+        <article><span>Started</span><time datetime="{{ job.started_at|date:'c' }}">{{ job.started_at|date:"Y-m-d H:i:s" }} UTC</time></article>
+        <article><span>Completed</span>{% if job.completed_at %}<time datetime="{{ job.completed_at|date:'c' }}">{{ job.completed_at|date:"Y-m-d H:i:s" }} UTC</time>{% else %}<strong>In progress</strong>{% endif %}</article>
+        <article><span>{{ job.elapsed_label }}</span><strong>{{ job.elapsed_display }}</strong></article>
+    </section>
+{% endif %}
+
 <p class="human-review-note job-safety-note">Background work creates reviewable drafts or assessments only. Profile confirmation, candidate decisions, and outreach remain separate approved actions.</p>
 
 <div class="table-wrap">
