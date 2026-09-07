@@ -313,6 +313,11 @@ Expected result:
 - A targeted background job contains only Drita's newly created CV. Run
   `uv run python manage.py run_background_worker --burst` to process it when an
   AI provider is configured; otherwise leave the job queued for section 24.
+- Before the worker completes, the intake and profile-review pages show Drita as
+  **Processing**, not excluded. After a clean draft exists, the state becomes
+  **Ready to confirm**. Ambiguities, source conflicts, and safe job failures become
+  **Needs individual review**; an explicit completed confirmation becomes
+  **Already confirmed**.
 - Any resulting profile is a draft requiring individual evidence review and
   confirmation. No match decision or outreach action occurs.
 - Selecting Arben for creation remains blocked as a duplicate. Use **Discard**

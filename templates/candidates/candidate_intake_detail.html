@@ -186,10 +186,10 @@
 <section class="review-callout">
     <div>
         <p class="eyebrow">Profile confirmation</p>
-        <h2>{{ profile_review.eligible_rows|length }} eligible · {{ profile_review.excluded_rows|length }} excluded</h2>
-        <p>Clean evidence-validated drafts can be confirmed together through one explicit recruiter action. Exceptions remain individual, and every confirmed profile keeps its own actor and timestamp.</p>
+        <h2>{{ profile_review.eligible_rows|length }} ready · {{ profile_review.processing_rows|length }} processing · {{ profile_review.needs_review_rows|length }} needs review</h2>
+        <p>Clean evidence-validated drafts can be confirmed together through one explicit recruiter action. Processing work is not treated as an exception, and profiles needing attention remain individual.</p>
     </div>
-    <a class="primary-button button-link" href="{% url 'candidates:candidate-intake-confirm-profiles' organization.slug batch.pk %}">Review included and excluded profiles</a>
+    <a class="primary-button button-link" href="{% url 'candidates:candidate-intake-confirm-profiles' organization.slug batch.pk %}">Review profile status</a>
 </section>
 {% endif %}
 

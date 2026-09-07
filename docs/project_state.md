@@ -1473,5 +1473,13 @@ MT-007 successful exact-filename mappings now use Post/Redirect/Get. A capped,
 session-scoped report is consumed once on the batch detail page, so refresh cannot
 repeat the mutation and report payloads cannot grow without bound. All-success
 reports omit the empty details column; mixed results retain bounded explanations.
-Invalid uploads remain on the form with their validation errors. Browser retesting
-is pending.
+Invalid uploads remain on the form with their validation errors. Browser testing
+passed on 2026-09-07.
+
+MT-008 profile batch review no longer groups pending work with completed review
+exceptions. Linked queued/running tasks display as **Processing**, clean drafts as
+**Ready to confirm**, actual blockers as **Needs individual review**, and completed
+profiles as **Already confirmed**. The intake and confirmation pages share those
+states and use a compact status strip; batch confirmation still acts only on ready
+drafts. Collapsible intake tools now show rotating native-semantic chevrons. Browser
+retesting is pending.

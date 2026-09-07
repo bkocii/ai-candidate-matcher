@@ -245,8 +245,8 @@ This file records functional defects and visual improvements found during page-b
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-007-F01 | Functional defect | Medium | After successful mapping, the server renders the result directly at the POST-only `/apply-csv/` URL instead of redirecting. Refreshing can trigger a browser form-resubmission warning and repeat the operation. | Use Post/Redirect/Get. Redirect to the batch detail route after success and carry a bounded mapping summary through a safe one-time result mechanism. | Implemented — browser retest pending |
-| MT-007-U01 | Improvement | Low | The report's **Details** column displays only an em dash when all rows map successfully. | Omit the empty column for an all-success report or use it only for unresolved/invalid explanations. | Implemented — browser retest pending |
+| MT-007-F01 | Functional defect | Medium | After successful mapping, the server renders the result directly at the POST-only `/apply-csv/` URL instead of redirecting. Refreshing can trigger a browser form-resubmission warning and repeat the operation. | Use Post/Redirect/Get. Redirect to the batch detail route after success and carry a bounded mapping summary through a safe one-time result mechanism. | Browser tested — passed 2026-09-07 |
+| MT-007-U01 | Improvement | Low | The report's **Details** column displays only an em dash when all rows map successfully. | Omit the empty column for an all-success report or use it only for unresolved/invalid explanations. | Browser tested — passed 2026-09-07 |
 
 ### MT-008 — Create one selected candidate
 
@@ -277,8 +277,8 @@ This file records functional defects and visual improvements found during page-b
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-008-U01 | Usability defect | Medium | While background extraction is merely queued, profile confirmation reports `0 eligible · 1 excluded`. “Excluded” can incorrectly suggest a validation failure rather than a draft that is not ready yet. | Separate states into **Processing**, **Ready to confirm**, and **Needs individual review**; reserve **Excluded** for a completed eligibility decision. | Open |
-| MT-008-U02 | Usability defect | Medium | After candidates are staged or created, the still-expanded upload and CSV forms push the pending review, created candidates, and profile status far down the page. | Prioritize current batch progress and candidate review; collapse completed/optional intake tools behind **Add more CVs** and **Import CSV details** actions. | Open |
+| MT-008-U01 | Usability defect | Medium | While background extraction is merely queued, profile confirmation reports `0 eligible · 1 excluded`. “Excluded” can incorrectly suggest a validation failure rather than a draft that is not ready yet. | Separate states into **Processing**, **Ready to confirm**, and **Needs individual review**; reserve **Excluded** for a completed eligibility decision. | Implemented — browser retest pending |
+| MT-008-U02 | Usability defect | Medium | After candidates are staged or created, the still-expanded upload and CSV forms push the pending review, created candidates, and profile status far down the page. | Prioritize current batch progress and candidate review; collapse completed/optional intake tools behind **Add more CVs** and **Import CSV details** actions. | Browser tested — passed 2026-09-07 |
 | MT-008-U03 | Improvement | Medium | Audit timestamps are rendered in UTC without a timezone label or organization/user timezone preference. | Add an organization or user display timezone and show an explicit timezone where ambiguity matters, while retaining UTC storage. | Proposed |
 
 ### MT-009 — Queued candidate-profile job

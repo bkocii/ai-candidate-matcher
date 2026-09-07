@@ -348,10 +348,31 @@ a {
 }
 
 .intake-optional-tool > summary {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 12px;
     padding: 20px 24px;
     cursor: pointer;
+    list-style: none;
+}
+
+.intake-optional-tool > summary::-webkit-details-marker {
+    display: none;
+}
+
+.intake-optional-tool > summary::after {
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid var(--primary);
+    border-bottom: 2px solid var(--primary);
+    content: "";
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 160ms ease;
+}
+
+.intake-optional-tool[open] > summary::after {
+    transform: translateY(2px) rotate(225deg);
 }
 
 .intake-optional-tool > summary span {
@@ -2156,6 +2177,56 @@ tbody tr:last-child td {
     font-size: 1.25rem;
 }
 
+.profile-review-status {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--border);
+}
+
+.profile-review-status article {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 18px;
+    background: var(--surface);
+}
+
+.profile-review-status span {
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.profile-review-status strong {
+    color: var(--primary-dark);
+    font-size: 1.25rem;
+}
+
+.profile-confirmed-summary {
+    margin: -10px 0 24px;
+}
+
+.profile-status-processing {
+    background: #e8eef8;
+    color: #315680;
+}
+
+.profile-status-ready,
+.profile-status-confirmed {
+    background: var(--accent);
+    color: var(--primary-dark);
+}
+
+.profile-status-needs_review {
+    background: #fff1c7;
+    color: #705300;
+}
+
 .intake-review-toolbar,
 .intake-candidate-card > header,
 .intake-candidate-card > footer {
@@ -2327,7 +2398,8 @@ tbody tr:last-child td {
     }
 
     .intake-status-strip,
-    .intake-review-fields {
+    .intake-review-fields,
+    .profile-review-status {
         grid-template-columns: 1fr;
     }
 

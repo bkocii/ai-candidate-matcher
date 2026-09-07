@@ -23,6 +23,7 @@ from candidates.models import (
 )
 from candidates.profile_batch import review_intake_profiles
 from matching.models import ReviewDecision
+from operations.services import queue_candidate_profile_documents
 from organizations.models import Organization
 from outreach.models import OutreachDraft
 
@@ -318,8 +319,11 @@ def test_batch_profile_confirmation_includes_clean_and_excludes_ambiguity(
         )
     )
     assert page.status_code == 200
-    assert b"<span>Included</span><strong>1</strong>" in page.content
-    assert b"<span>Excluded</span><strong>1</strong>" in page.content
+    assert b"<span>Ready to confirm</span><strong>1</strong>" in page.content
+    assert b"<span>Needs individual review</span><strong>1</strong>" in page.content
+    assert b"Ready to confirm</span>" in page.content
+    assert b"Needs individual review</span>" in page.content
+    assert b">Excluded<" not in page.content
     assert b"Profile v1" in page.content
 
     response = client.post(
@@ -339,6 +343,44 @@ def test_batch_profile_confirmation_includes_clean_and_excludes_ambiguity(
     assert clean_item.candidate.skill_records.count() == 1
     assert not ReviewDecision.objects.exists()
     assert not OutreachDraft.objects.exists()
+
+
+def test_queued_profile_is_processing_instead_of_excluded(
+    client, settings, tmp_path
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    user, organization, batch = make_batch()
+    item, document, _ = accept_item(
+        batch=batch,
+        user=user,
+        filename="queued.docx",
+        name="Queued Candidate",
+        email="queued@example.test",
+    )
+    queue_candidate_profile_documents(
+        organization=organization,
+        user=user,
+        document_ids=[document.pk],
+    )
+
+    review = review_intake_profiles(batch=batch, user=user)
+    assert len(review.processing_rows) == 1
+    assert review.processing_rows[0].item == item
+    assert not review.eligible_rows
+    assert not review.needs_review_rows
+
+    client.force_login(user)
+    page = client.get(
+        reverse(
+            "candidates:candidate-intake-confirm-profiles",
+            args=[organization.slug, batch.pk],
+        )
+    )
+    content = page.content.decode()
+    assert page.status_code == 200
+    assert "Processing</span><strong>1</strong>" in content
+    assert "Profile creation is still processing" in content
+    assert "Excluded" not in content
 
 
 def test_batch_profile_confirmation_excludes_candidate_profile_conflict(
