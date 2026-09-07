@@ -249,6 +249,75 @@ def test_empty_open_batch_keeps_upload_primary_and_hides_mapping_tool(client) ->
     assert "Advanced: Match details from CSV" not in content
 
 
+def test_successful_csv_mapping_redirects_and_shows_one_time_report(
+    client, settings, tmp_path
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    user, organization, batch = setup_batch()
+    item = upload_candidate_intake_cv(
+        batch=batch,
+        user=user,
+        uploaded_file=cv_upload(name="candidate.docx"),
+    )
+    client.force_login(user)
+    mapping_url = reverse(
+        "candidates:candidate-intake-apply-csv",
+        args=[organization.slug, batch.pk],
+    )
+    detail_url = reverse(
+        "candidates:candidate-intake-detail",
+        args=[organization.slug, batch.pk],
+    )
+
+    response = client.post(
+        mapping_url,
+        {
+            "csv_file": SimpleUploadedFile(
+                "mapping.csv",
+                (
+                    b"cv_filename,full_name,email\n"
+                    b"candidate.docx,CSV Candidate,csv@example.test\n"
+                    b"missing.docx,Missing Candidate,missing@example.test\n"
+                ),
+                content_type="text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 302
+    assert response.url == f"{detail_url}#mapping-results"
+    item.refresh_from_db()
+    assert item.proposed_full_name == "CSV Candidate"
+
+    report = client.get(detail_url)
+    content = report.content.decode()
+    assert report.status_code == 200
+    assert "CSV mapping report" in content
+    assert "1 mapped · 1 unresolved · 0 invalid" in content
+    assert "candidate.docx" in content
+    assert "missing.docx" in content
+    assert "No pending CV has this exact filename" in content
+
+    refreshed = client.get(detail_url)
+    assert refreshed.status_code == 200
+    assert "CSV mapping report" not in refreshed.content.decode()
+
+    all_success = client.post(
+        mapping_url,
+        {
+            "csv_file": SimpleUploadedFile(
+                "mapping.csv",
+                b"cv_filename,full_name\ncandidate.docx,Final Candidate\n",
+                content_type="text/csv",
+            )
+        },
+    )
+    assert all_success.status_code == 302
+    success_report = client.get(detail_url).content.decode()
+    assert "1 mapped · 0 unresolved · 0 invalid" in success_report
+    assert "<th>Details</th>" not in success_report
+
+
 def test_upload_form_bounds_file_count_and_combined_request_size() -> None:
     too_many = CandidateIntakeUploadForm(
         files={

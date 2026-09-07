@@ -48,6 +48,9 @@ REVIEW_FLAG_LABELS = {
     "multiple_phones": "Multiple phone numbers found",
     "location_missing": "Location not found",
 }
+MAPPING_REPORT_SESSION_PREFIX = "candidate_intake_mapping_report"
+MAX_MAPPING_REPORT_ROWS = 100
+MAX_MAPPING_REPORT_DETAIL_LENGTH = 300
 
 
 @dataclass
@@ -56,6 +59,38 @@ class IntakeReviewRow:
     form: CandidateIntakeReviewForm
     duplicate: object | None
     flag_labels: tuple[str, ...]
+
+
+def _mapping_report_key(batch_id: int) -> str:
+    return f"{MAPPING_REPORT_SESSION_PREFIX}:{batch_id}"
+
+
+def _mapping_report_payload(result: CandidateIntakeMappingResult) -> dict:
+    issue_rows = [row for row in result.rows if row.status != "mapped"]
+    mapped_rows = [row for row in result.rows if row.status == "mapped"]
+    displayed_rows = sorted(
+        (issue_rows + mapped_rows)[:MAX_MAPPING_REPORT_ROWS],
+        key=lambda row: row.row_number,
+    )
+    return {
+        "mapped_count": result.mapped_count,
+        "unresolved_count": result.unresolved_count,
+        "invalid_count": result.invalid_count,
+        "has_details": bool(issue_rows),
+        "omitted_count": len(result.rows) - len(displayed_rows),
+        "rows": [
+            {
+                "row_number": row.row_number,
+                "cv_filename": row.cv_filename,
+                "status": row.status,
+                "details": [
+                    str(detail)[:MAX_MAPPING_REPORT_DETAIL_LENGTH]
+                    for detail in row.details
+                ],
+            }
+            for row in displayed_rows
+        ],
+    }
 
 
 def _organization(request, slug: str) -> Organization:
@@ -272,6 +307,7 @@ def candidate_intake_detail(request, organization_slug: str, batch_id: int):
         organization=organization,
         batch=batch,
         queued_job=queued_job,
+        mapping_result=request.session.pop(_mapping_report_key(batch.pk), None),
     )
 
 
@@ -339,12 +375,12 @@ def candidate_intake_apply_csv(request, organization_slug: str, batch_id: int):
             "Unresolved or invalid CSV rows were not guessed and remain in the "
             "report for recruiter review.",
         )
-    return _render_batch(
-        request,
-        organization=organization,
-        batch=batch,
-        mapping_result=result,
+    request.session[_mapping_report_key(batch.pk)] = _mapping_report_payload(result)
+    detail_url = reverse(
+        "candidates:candidate-intake-detail",
+        args=[organization.slug, batch.pk],
     )
+    return redirect(f"{detail_url}#mapping-results")
 
 
 @login_required

@@ -296,6 +296,11 @@ Expected result:
   invalid row appears as unresolved/invalid and is not guessed by name.
 - The CSV report shows mapped, unresolved, and invalid counts. It does not create
   a candidate by itself.
+- A successful submission redirects back to the ordinary intake URL and anchors
+  the one-time mapping report. Refreshing that page does not show a resubmission
+  warning and does not apply the CSV again.
+- An all-success report omits the empty **Details** column. Mixed reports retain
+  the bounded reason for every displayed unresolved or invalid row.
 
 Select only Drita's row. Keep **Create AI profile drafts in the background**
 checked, then select **Create selected candidates (1)**.

@@ -976,6 +976,16 @@ and exact-filename spreadsheet mapping is a collapsed advanced tool whose copy
 distinguishes it from direct CSV candidate import. Empty open batches still show
 the full primary upload surface. This hierarchy needs a browser retest.
 
+MT-007 successful CSV-to-CV mapping now redirects to the normal batch detail URL
+with a capped one-time session report. Refreshing the result page performs only a
+GET and cannot reapply the CSV. The report omits **Details** when every row maps,
+but retains explanations for mixed outcomes. Browser retesting is pending; no
+migration was added.
+
+The MT-006 selection controls and review-first hierarchy, including collapsed
+repeat upload and advanced mapping placement, passed Chrome browser testing on
+2026-09-07. Severity-styled upload notices still need a separate visible retest.
+
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
 review, production/deployment, minimized usage reporting, durable jobs, staged

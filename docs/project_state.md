@@ -1468,3 +1468,10 @@ tools. Repeat upload is collapsed and renamed **Add more CVs**. Exact-filename
 spreadsheet mapping remains available after review under an explicitly advanced
 label and explains how it differs from direct CSV candidate import. An empty open
 batch still leads with the full upload surface. Browser retesting is pending.
+
+MT-007 successful exact-filename mappings now use Post/Redirect/Get. A capped,
+session-scoped report is consumed once on the batch detail page, so refresh cannot
+repeat the mutation and report payloads cannot grow without bound. All-success
+reports omit the empty details column; mixed results retain bounded explanations.
+Invalid uploads remain on the form with their validation errors. Browser retesting
+is pending.

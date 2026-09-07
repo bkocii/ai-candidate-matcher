@@ -50,16 +50,19 @@
 <section class="report-section" aria-labelledby="mapping-results-title">
     <h2 id="mapping-results-title">CSV mapping report</h2>
     <p>{{ mapping_result.mapped_count }} mapped · {{ mapping_result.unresolved_count }} unresolved · {{ mapping_result.invalid_count }} invalid</p>
+    {% if mapping_result.rows %}
     <div class="table-wrap">
         <table>
-            <thead><tr><th>CSV row</th><th>Exact CV filename</th><th>Result</th><th>Details</th></tr></thead>
+            <thead><tr><th>CSV row</th><th>Exact CV filename</th><th>Result</th>{% if mapping_result.has_details %}<th>Details</th>{% endif %}</tr></thead>
             <tbody>
                 {% for row in mapping_result.rows %}
-                <tr><td>{{ row.row_number }}</td><th>{{ row.cv_filename|default:"—" }}</th><td>{{ row.status|title }}</td><td>{{ row.details|join:", "|default:"—" }}</td></tr>
-                {% empty %}<tr><td colspan="4">The CSV contained no data rows.</td></tr>{% endfor %}
+                <tr><td>{{ row.row_number }}</td><th>{{ row.cv_filename|default:"—" }}</th><td>{{ row.status|title }}</td>{% if mapping_result.has_details %}<td>{{ row.details|join:", "|default:"—" }}</td>{% endif %}</tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
+    {% else %}<p class="help-text">The CSV contained no data rows.</p>{% endif %}
+    {% if mapping_result.omitted_count %}<p class="help-text">{{ mapping_result.omitted_count }} additional result(s) are omitted from this bounded display. The totals above include every processed row.</p>{% endif %}
 </section>
 {% endif %}
 
