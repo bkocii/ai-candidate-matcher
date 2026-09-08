@@ -319,7 +319,7 @@ This file records functional defects and visual improvements found during page-b
 - **Date:** 2026-08-29
 - **Route:** `/organizations/second-agency-test/jobs/18/`
 - **Viewport:** Desktop, 1920 × 1080
-- **Visual status:** Timing improvement implemented; browser retest pending
+- **Visual status:** Pass after timing improvement
 - **Functional status:** Pass
 
 #### Completed functional checks
@@ -341,15 +341,15 @@ This file records functional defects and visual improvements found during page-b
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-010-U01 | Improvement | Medium | The completed job shows only its queued timestamp; it does not show when processing started or completed, or how long it took. | Display queued, started, and completed times plus duration using the configured display timezone. | Implemented with explicit UTC — browser retest pending |
-| MT-010-V01 | Visual defect | Low | Queued and succeeded status pills use nearly identical neutral styling, weakening quick status recognition. | Use accessible, restrained semantic styling for queued, running, succeeded, attention, and failed states without relying on color alone. | Implemented — browser retest pending |
+| MT-010-U01 | Improvement | Medium | The completed job shows only its queued timestamp; it does not show when processing started or completed, or how long it took. | Display queued, started, and completed times plus duration using the configured display timezone. | Browser tested with explicit UTC — passed 2026-09-07 |
+| MT-010-V01 | Visual defect | Low | Queued and succeeded status pills use nearly identical neutral styling, weakening quick status recognition. | Use accessible, restrained semantic styling for queued, running, succeeded, attention, and failed states without relying on color alone. | Browser tested — passed 2026-09-07 |
 
 ### MT-011 — Evidence-based candidate profile draft
 
 - **Date:** 2026-08-29
 - **Route:** `/organizations/second-agency-test/candidates/69/profiles/70/`
 - **Viewport:** Desktop, 1920 × 1020
-- **Visual status:** Improvements required
+- **Visual status:** Improvements implemented; browser retest pending
 - **Functional status:** Profile review, correction, and confirmation passed; matching consumption pending
 
 #### Completed functional checks
@@ -385,14 +385,14 @@ This file records functional defects and visual improvements found during page-b
 | MT-011-F01 | Functional defect | High | The recruiter-supplied CSV location is Prishtina, while the CV-derived profile location is Gjilan, but the profile reports **None recorded** under ambiguities. Confirming can publish a conflicting location into matching without highlighting the discrepancy. | Compare recruiter-supplied candidate fields with extracted profile facts. Present material conflicts as explicit review exceptions and exclude them from batch confirmation until resolved. | Passed browser retest — 2026-08-29 |
 | MT-011-F02 | Functional defect | High | The draft offers only **Confirm** or **Extract new version**; there is no recruiter correction workflow. Questionable facts such as treating **validated imports** as a skill cannot be removed or corrected deterministically. | Add an auditable correction action that creates a recruiter-reviewed profile version with edited facts and retained source evidence; never mutate a confirmed version. | Passed browser retest — 2026-08-29 |
 | MT-011-C01 | Usability defect | High | **AI output is not matching evidence yet** reads as an evidence-validation failure, although the intended meaning is that the draft is not yet used for candidate matching. | Rename it to **Draft profile — review before matching** or **Not yet confirmed for matching**. Show a separate explicit warning only when evidence validation actually fails. | Passed browser retest — 2026-08-29 |
-| MT-011-V01 | Visual defect | Medium | Relevant-experience and location values are immediately repeated by unlabeled evidence excerpts, making correct evidence look like duplicated content. | Label and visually distinguish **Profile value** from **CV evidence**, using quote/evidence styling consistent with the skills table. | Passed browser retest — 2026-08-29 |
-| MT-011-V02 | Visual defect | Medium | Empty ambiguity and unknown-data cards consume substantial space, making the evidence page unnecessarily long. | Compact absent fields into a single **Not stated in CV** summary and give exceptions prominence only when present. | Open |
-| MT-011-V03 | Visual defect | Low | Every skill repeats **Unknown** in the Years column, adding visual noise without information. | Hide the Years column when no skill has a supported duration, or show it only for rows with a known value. | Open |
-| MT-011-V04 | Visual defect | Medium | The correction form is a long, narrow single column with large empty evidence fields, while most desktop width is unused. Correcting one questionable skill requires scrolling through several screens. | Group fields into compact **Profile facts**, **Evidence**, **Skills**, and **Ambiguities** sections. Use a wider two-column desktop layout and collapse empty optional evidence sections. | Open |
-| MT-011-V05 | Visual defect | Medium | Skill checkboxes sit far to the right of their labels and evidence text, so the control-to-skill relationship is weak and slower to scan. | Render each skill as a compact selectable row or card with the checkbox beside the skill name and its CV evidence as secondary text. | Open |
-| MT-011-V06 | Visual defect | Low | **Confirmed** and **Draft** appear as plain table text in profile history, making version state slower to distinguish. | Use compact status badges with both text and restrained semantic styling. | Open |
-| MT-011-U01 | Improvement | Medium | The primary confirmation action appears before the recruiter has scrolled through the evidence and there is no correction option beside it. | Keep efficient confirmation, but pair it with **Correct profile** and repeat or place the action after the review content with a concise confirmation summary. | Proposed |
-| MT-011-U02 | Improvement | Low | **Extract new version** does not explain when re-extraction is appropriate or that it invokes AI again. | Use **Re-extract from CV** with helper/confirmation text explaining that it creates another draft and does not correct the current version automatically. | Proposed |
+| MT-011-V01 | Visual defect | Medium | Relevant-experience and location values are immediately repeated by unlabeled evidence excerpts, making correct evidence look like duplicated content. | Label and visually distinguish **Profile value** from **CV evidence**, using quote/evidence styling consistent with the skills table. When both strings are identical, show the value once with a **Matches CV wording** marker. | Refined after browser review — retest pending |
+| MT-011-V02 | Visual defect | Medium | Empty ambiguity and unknown-data cards consume substantial space, making the evidence page unnecessarily long. | Compact absent fields into a single **Not stated in CV** summary and give exceptions prominence only when present. | Implemented — browser retest pending |
+| MT-011-V03 | Visual defect | Low | Every skill repeats **Unknown** in the Years column, adding visual noise without information. | Hide the Years column when no skill has a supported duration, or show it only for rows with a known value. | Implemented — browser retest pending |
+| MT-011-V04 | Visual defect | Medium | The correction form is a long, narrow single column with large empty evidence fields, while most desktop width is unused. Correcting one questionable skill requires scrolling through several screens. | Group fields into compact **Profile facts**, **Evidence**, **Skills**, and **Ambiguities** sections. Use a wider two-column desktop layout and collapse empty optional evidence sections. | Implemented — browser retest pending |
+| MT-011-V05 | Visual defect | Medium | Skill checkboxes sit far to the right of their labels and evidence text, so the control-to-skill relationship is weak and slower to scan. | Render each skill as a compact selectable row or card with the checkbox beside the skill name and its CV evidence as secondary text. | Implemented — browser retest pending |
+| MT-011-V06 | Visual defect | Low | **Confirmed** and **Draft** appear as plain table text in profile history, making version state slower to distinguish. | Use compact status badges with both text and restrained semantic styling. | Implemented — browser retest pending |
+| MT-011-U01 | Improvement | Medium | The primary confirmation action appears before the recruiter has scrolled through the evidence and there is no correction option beside it. | Keep efficient confirmation, but pair it with **Correct profile** and repeat or place the action after the review content with a concise confirmation summary. | Implemented — browser retest pending |
+| MT-011-U02 | Improvement | Low | **Extract new version** does not explain when re-extraction is appropriate or that it invokes AI again. | Use **Re-extract from CV** with helper/confirmation text explaining that it creates another draft and does not correct the current version automatically. | Implemented — browser retest pending |
 
 ### MT-012 — Batch profile-confirmation eligibility
 

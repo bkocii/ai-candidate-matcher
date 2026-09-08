@@ -242,6 +242,132 @@ def test_profile_correction_creates_new_evidence_validated_version(client) -> No
     ).exists()
 
 
+def test_profile_detail_compacts_unknowns_and_places_actions_after_evidence(
+    client,
+) -> None:
+    user, organization, candidate, _, _, profile = make_workspace()
+    candidate.location = profile.location
+    candidate.save(update_fields=("location", "updated_at"))
+    client.force_login(user)
+
+    response = client.get(
+        reverse(
+            "candidates:candidate-profile-detail",
+            args=[organization.slug, candidate.pk, profile.pk],
+        )
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Not stated in CV" in content
+    assert "profile-missing-list" in content
+    assert "Work mode preference" in content
+    assert "No unresolved ambiguities recorded." in content
+    assert "<th>Years</th>" not in content
+    assert 'class="status-pill status-draft">Draft</span>' in content
+    assert "Finish reviewing this profile" in content
+    assert "Re-extract from CV" in content
+    assert "runs AI again" in content
+    assert content.index("Skills and source evidence") < content.index(
+        "Confirm profile for matching"
+    )
+
+
+def test_profile_detail_does_not_repeat_exact_cv_evidence(client) -> None:
+    user, organization, candidate, _, _, profile = make_workspace()
+    profile.relevant_experience_summary = "Exact supported summary"
+    profile.location = "Gjilan"
+    profile.fact_evidence = {
+        **profile.fact_evidence,
+        "relevant_experience_summary": "Exact supported summary",
+        "location": "Gjilan",
+    }
+    profile.save(
+        update_fields=("relevant_experience_summary", "location", "fact_evidence")
+    )
+    client.force_login(user)
+
+    response = client.get(
+        reverse(
+            "candidates:candidate-profile-detail",
+            args=[organization.slug, candidate.pk, profile.pk],
+        )
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert content.count("Exact supported summary") == 1
+    assert content.count("Matches CV wording") == 2
+    assert "profile-fact-grid" in content
+
+
+def test_profile_detail_shows_years_only_when_supported(client) -> None:
+    user, organization, candidate, _, _, profile = make_workspace()
+    profile.skills[0]["years_experience"] = 5
+    profile.save(update_fields=("skills",))
+    client.force_login(user)
+
+    response = client.get(
+        reverse(
+            "candidates:candidate-profile-detail",
+            args=[organization.slug, candidate.pk, profile.pk],
+        )
+    )
+
+    assert response.status_code == 200
+    assert "<th>Years</th>" in response.content.decode()
+
+
+def test_profile_detail_omits_empty_qualification_cards(client) -> None:
+    user, organization, candidate, _, _, profile = make_workspace()
+    profile.languages = [
+        {
+            "language": "English",
+            "proficiency": "Professional",
+            "evidence": "English used professionally",
+        }
+    ]
+    profile.save(update_fields=("languages",))
+    client.force_login(user)
+
+    response = client.get(
+        reverse(
+            "candidates:candidate-profile-detail",
+            args=[organization.slug, candidate.pk, profile.pk],
+        )
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert '<section class="profile-qualification-grid"' in content
+    assert "<h2>Languages</h2>" in content
+    assert "<h2>Education</h2>" not in content
+    assert "<h2>Certifications</h2>" not in content
+
+
+def test_profile_correction_uses_grouped_layout_and_selectable_skill_cards(
+    client,
+) -> None:
+    user, organization, candidate, _, _, profile = make_workspace()
+    client.force_login(user)
+
+    response = client.get(
+        reverse(
+            "candidates:candidate-profile-correct",
+            args=[organization.slug, candidate.pk, profile.pk],
+        )
+    )
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "profile-correction-grid" in content
+    assert "Optional supporting evidence" in content
+    assert "profile-skill-option" in content
+    assert 'id="id_retained_skills_0"' in content
+    assert 'value="0" checked' in content
+    assert "Skills: Python, validated imports" in content
+
+
 def test_correction_routes_are_tenant_scoped(client) -> None:
     _, organization, candidate, source, _, profile = make_workspace()
     outsider, other, _, _, _, _ = make_workspace(slug="other")

@@ -1005,7 +1005,19 @@ MT-010 now uses the existing durable job timestamps to show a compact UTC proces
 timeline: queued, started, completed, and duration. Running work displays elapsed
 time and **In progress**; work that has not started does not receive fabricated
 timing values. Focused coverage fixes the duration at 65 seconds and verifies the
-rendered `1 min 5 sec` result. Browser retesting is pending; no migration was added.
+rendered `1 min 5 sec` result. Chrome browser testing passed on 2026-09-07.
+
+MT-011 now treats candidate profile review as one evidence-first task. Unknown facts
+are rendered as compact tags, core values use aligned fact cards, exact repeated
+evidence is replaced by **Matches CV wording**, and different excerpts keep a labelled
+evidence block. Empty ambiguity panels and meaningless all-unknown skill-year columns
+disappear, empty qualification cards are omitted, version states use badges, and
+confirmation/correction actions follow the evidence. Re-extraction now explains that
+it invokes AI and creates a new draft. The correction form is a full-width
+responsive grouped layout with optional evidence collapsed and each retained-skill
+checkbox directly beside its name and CV excerpt.
+Focused detail/correction coverage passes; browser retesting is pending and no
+migration was added.
 
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation

@@ -9,9 +9,53 @@
     <p class="lede">This keeps the existing version unchanged, creates a new draft, and reruns deterministic evidence checks against the same CV.</p>
 </section>
 
-<form class="form-panel stacked-form" method="post">
+<form class="profile-correction-form stacked-form" method="post">
     {% csrf_token %}
-    {% include "candidates/_form_fields.html" %}
+    {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
+
+    <section class="form-panel profile-correction-section" aria-labelledby="profile-facts-title">
+        <header><p class="eyebrow">Profile facts</p><h2 id="profile-facts-title">Correct structured facts</h2><p>Leave a fact blank when the CV does not support it.</p></header>
+        <div class="profile-correction-grid">
+            <div class="field profile-correction-wide">{{ form.relevant_experience_summary.label_tag }}{{ form.relevant_experience_summary }}{% if form.relevant_experience_summary.errors %}<div class="field-errors">{{ form.relevant_experience_summary.errors }}</div>{% endif %}</div>
+            <div class="field">{{ form.location.label_tag }}{{ form.location }}{% if form.location.errors %}<div class="field-errors">{{ form.location.errors }}</div>{% endif %}</div>
+            <div class="field">{{ form.work_mode_preference.label_tag }}{{ form.work_mode_preference }}{% if form.work_mode_preference.errors %}<div class="field-errors">{{ form.work_mode_preference.errors }}</div>{% endif %}</div>
+            <div class="field profile-correction-wide">{{ form.availability.label_tag }}{{ form.availability }}{% if form.availability.errors %}<div class="field-errors">{{ form.availability.errors }}</div>{% endif %}</div>
+        </div>
+    </section>
+
+    <section class="form-panel profile-correction-section" aria-labelledby="profile-evidence-title">
+        <header><p class="eyebrow">CV evidence</p><h2 id="profile-evidence-title">Keep facts traceable</h2><p>Evidence must remain a short verbatim excerpt from the same CV.</p></header>
+        <div class="profile-correction-grid">
+            <div class="field">{{ form.relevant_experience_summary_evidence.label_tag }}{{ form.relevant_experience_summary_evidence }}{% if form.relevant_experience_summary_evidence.help_text %}<small class="help-text">{{ form.relevant_experience_summary_evidence.help_text }}</small>{% endif %}{% if form.relevant_experience_summary_evidence.errors %}<div class="field-errors">{{ form.relevant_experience_summary_evidence.errors }}</div>{% endif %}</div>
+            <div class="field">{{ form.location_evidence.label_tag }}{{ form.location_evidence }}{% if form.location_evidence.help_text %}<small class="help-text">{{ form.location_evidence.help_text }}</small>{% endif %}{% if form.location_evidence.errors %}<div class="field-errors">{{ form.location_evidence.errors }}</div>{% endif %}</div>
+        </div>
+        <details class="technical-details correction-optional-evidence"{% if form.work_mode_preference_evidence.errors or form.availability_evidence.errors %} open{% endif %}>
+            <summary><span>Optional supporting evidence</span><small>Work mode and availability</small></summary>
+            <div class="profile-correction-grid">
+                <div class="field">{{ form.work_mode_preference_evidence.label_tag }}{{ form.work_mode_preference_evidence }}{% if form.work_mode_preference_evidence.errors %}<div class="field-errors">{{ form.work_mode_preference_evidence.errors }}</div>{% endif %}</div>
+                <div class="field">{{ form.availability_evidence.label_tag }}{{ form.availability_evidence }}{% if form.availability_evidence.errors %}<div class="field-errors">{{ form.availability_evidence.errors }}</div>{% endif %}</div>
+            </div>
+        </details>
+    </section>
+
+    <section class="form-panel profile-correction-section" aria-labelledby="profile-skills-title">
+        <header><p class="eyebrow">Skills</p><h2 id="profile-skills-title">Retain supported skills</h2><p>Uncheck a misclassified skill. New skills require a new evidence-reviewed extraction.</p></header>
+        {% if profile_skill_options %}<div class="profile-skill-options">
+            {% for option in profile_skill_options %}
+                <label class="profile-skill-option" for="id_retained_skills_{{ forloop.counter0 }}">
+                    <input id="id_retained_skills_{{ forloop.counter0 }}" type="checkbox" name="retained_skills" value="{{ option.value }}"{% if option.selected %} checked{% endif %}>
+                    <span><strong>{{ option.name }}</strong><small>{{ option.evidence }}</small></span>
+                </label>
+            {% endfor %}
+        </div>{% else %}<p class="section-note">No supported skills are present in this version.</p>{% endif %}
+        {% if form.retained_skills.errors %}<div class="field-errors">{{ form.retained_skills.errors }}</div>{% endif %}
+    </section>
+
+    <section class="form-panel profile-correction-section" aria-labelledby="profile-ambiguities-title">
+        <header><p class="eyebrow">Ambiguities</p><h2 id="profile-ambiguities-title">Keep unresolved questions visible</h2></header>
+        <div class="field">{{ form.ambiguities.label_tag }}{{ form.ambiguities }}{% if form.ambiguities.help_text %}<small class="help-text">{{ form.ambiguities.help_text }}</small>{% endif %}{% if form.ambiguities.errors %}<div class="field-errors">{{ form.ambiguities.errors }}</div>{% endif %}</div>
+    </section>
+
     <div class="button-row">
         <button class="primary-button" type="submit">Create corrected draft</button>
         <a class="secondary-button" href="{% url 'candidates:candidate-profile-detail' organization.slug candidate.pk profile.pk %}">Cancel</a>

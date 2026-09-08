@@ -387,6 +387,18 @@ numbered draft stays tied to the same CV, and retained/edited facts must pass th
 source-evidence checks. Unsupported corrections save nothing. Confirmation stays
 blocked until trusted-data conflicts and recorded ambiguities are resolved.
 
+The profile review should render core facts in aligned cards and summarize absent
+structured facts as tags under **Not stated in CV**. Exact value/evidence wording is
+shown once with **Matches CV wording**; a different source excerpt remains visible in
+a labelled **CV evidence** block. The page omits the **Years** column when every skill
+duration is unsupported and shows ambiguities and qualification cards only when they
+contain information.
+Confirmation and correction appear after the evidence. **Re-extract from CV**
+explains that it invokes AI and creates another draft. On the correction screen,
+facts and evidence use a full-width responsive two-column layout, optional evidence
+is collapsed, and each retained-skill checkbox is next to its skill name and CV
+excerpt.
+
 ## 7. Test private CV upload and extraction
 
 Open `Arben Testi`, select **Upload CV**, and upload

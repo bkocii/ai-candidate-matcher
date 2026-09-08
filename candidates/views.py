@@ -267,6 +267,23 @@ def candidate_profile_detail(
         pk=profile_id,
         candidate=candidate,
     )
+    missing_facts = []
+    if not profile.relevant_experience_summary:
+        missing_facts.append("Relevant experience summary")
+    if not profile.location:
+        missing_facts.append("Location")
+    if profile.work_mode_preference == CandidateProfile.WorkMode.UNKNOWN:
+        missing_facts.append("Work mode preference")
+    if not profile.employment_type_preferences:
+        missing_facts.append("Employment preferences")
+    if not profile.availability:
+        missing_facts.append("Availability")
+    if not profile.languages:
+        missing_facts.append("Languages")
+    if not profile.education:
+        missing_facts.append("Education")
+    if not profile.certifications:
+        missing_facts.append("Certifications")
     return render(
         request,
         "candidates/candidate_profile_detail.html",
@@ -280,6 +297,10 @@ def candidate_profile_detail(
             "profile_conflicts": candidate_profile_conflicts(
                 candidate=candidate,
                 profile=profile,
+            ),
+            "profile_missing_facts": missing_facts,
+            "profile_has_skill_years": any(
+                skill.get("years_experience") is not None for skill in profile.skills
             ),
         },
     )
@@ -328,6 +349,10 @@ def candidate_profile_correct(
                 candidate_id=candidate.pk,
                 profile_id=corrected.pk,
             )
+    retained_values = form["retained_skills"].value() or []
+    if isinstance(retained_values, str):
+        retained_values = [retained_values]
+    retained_values = {str(value) for value in retained_values}
     return render(
         request,
         "candidates/candidate_profile_correct.html",
@@ -336,6 +361,15 @@ def candidate_profile_correct(
             "candidate": candidate,
             "profile": profile,
             "form": form,
+            "profile_skill_options": [
+                {
+                    "value": str(index),
+                    "name": skill["name"],
+                    "evidence": skill["evidence"],
+                    "selected": str(index) in retained_values,
+                }
+                for index, skill in enumerate(profile.skills)
+            ],
         },
     )
 

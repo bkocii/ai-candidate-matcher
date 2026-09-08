@@ -1497,4 +1497,18 @@ MT-010 completed job detail now adds a compact processing timeline backed by the
 existing durable job timestamps. It shows queued, started, and completed times in
 explicit UTC plus a human-readable duration. A running job shows **In progress**
 and elapsed time; a job that has never started does not show an invented timeline.
+Browser testing passed on 2026-09-07; no migration was added.
+
+MT-011 profile review now compacts absent structured facts into one **Not stated in
+CV** group of scannable tags and renders an ambiguity panel only when review
+exceptions exist. Core facts use consistent cards. An excerpt that differs from the
+profile value remains a labelled evidence block; exact repeated wording appears once
+with a **Matches CV wording** marker instead of duplicating the text. The
+skills table omits **Years** when every duration is unsupported, and profile history
+uses semantic draft/confirmed badges. Qualification cards render only for populated
+languages, education, or certifications. Confirmation and correction now follow the
+evidence instead of preceding it; re-extraction is explicitly labelled as another
+AI-backed draft. The correction screen uses full-width grouped fact, evidence,
+skills, and ambiguity sections, two-column desktop fields, collapsed optional
+evidence, and selectable skill cards whose checkboxes sit beside names and excerpts.
 Browser retesting is pending; no migration was added.

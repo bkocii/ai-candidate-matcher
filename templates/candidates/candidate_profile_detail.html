@@ -11,17 +11,6 @@
     </div>
     <div class="button-row">
         <a class="secondary-button" href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">Candidate details</a>
-        {% if profile.status == "draft" and not profile_conflicts %}
-            <form method="post" action="{% url 'candidates:candidate-profile-confirm' organization.slug candidate.pk profile.pk %}">
-                {% csrf_token %}
-                <button class="primary-button" type="submit">Confirm profile for matching</button>
-            </form>
-        {% endif %}
-        <a class="secondary-button" href="{% url 'candidates:candidate-profile-correct' organization.slug candidate.pk profile.pk %}">Correct profile</a>
-        <form method="post" action="{% url 'candidates:candidate-profile-extract' organization.slug candidate.pk profile.source_document.pk %}">
-            {% csrf_token %}
-            <button class="secondary-button" type="submit">Extract new version</button>
-        </form>
     </div>
 </section>
 
@@ -51,39 +40,65 @@
 {% endif %}
 
 <section class="detail-grid" aria-label="Candidate profile summary">
-    <article class="detail-panel">
+    <article class="detail-panel profile-summary-panel">
         <p class="eyebrow">Profile summary</p>
-        <h2>Relevant experience</h2>
-        <p>{{ profile.relevant_experience_summary|default:"Not recorded" }}</p>
-        {% if profile.fact_evidence.relevant_experience_summary %}<p class="evidence-note"><strong>CV evidence</strong><br>{{ profile.fact_evidence.relevant_experience_summary }}</p>{% endif %}
-        <dl class="requirement-list">
-            <div><dt>Location</dt><dd>{{ profile.location|default:"Unknown" }}{% if profile.fact_evidence.location %}<span class="inline-evidence"><strong>CV evidence:</strong> {{ profile.fact_evidence.location }}</span>{% endif %}</dd></div>
-            <div><dt>Work mode preference</dt><dd>{{ profile.get_work_mode_preference_display }}{% if profile.fact_evidence.work_mode_preference %}<span class="inline-evidence"><strong>CV evidence:</strong> {{ profile.fact_evidence.work_mode_preference }}</span>{% endif %}</dd></div>
-            <div><dt>Employment preferences</dt><dd>{{ profile.employment_type_preferences|join:", "|default:"Unknown" }}{% if profile.fact_evidence.employment_type_preferences %}<span class="inline-evidence"><strong>CV evidence:</strong> {{ profile.fact_evidence.employment_type_preferences }}</span>{% endif %}</dd></div>
-            <div><dt>Availability</dt><dd>{{ profile.availability|default:"Unknown" }}{% if profile.fact_evidence.availability %}<span class="inline-evidence"><strong>CV evidence:</strong> {{ profile.fact_evidence.availability }}</span>{% endif %}</dd></div>
-        </dl>
+        <h2>Core profile facts</h2>
+        <div class="profile-fact-grid">
+            {% if profile.relevant_experience_summary %}<section class="profile-fact-card profile-fact-wide">
+                <h3>Relevant experience</h3>
+                <p class="profile-fact-value">{{ profile.relevant_experience_summary }}</p>
+                {% if profile.fact_evidence.relevant_experience_summary %}
+                    {% if profile.fact_evidence.relevant_experience_summary == profile.relevant_experience_summary %}<span class="profile-evidence-match">Matches CV wording</span>
+                    {% else %}<blockquote class="profile-fact-evidence"><strong>CV evidence</strong><p>{{ profile.fact_evidence.relevant_experience_summary }}</p></blockquote>{% endif %}
+                {% endif %}
+            </section>{% endif %}
+            {% if profile.location %}<section class="profile-fact-card">
+                <h3>Location</h3>
+                <p class="profile-fact-value">{{ profile.location }}</p>
+                {% if profile.fact_evidence.location %}
+                    {% if profile.fact_evidence.location == profile.location %}<span class="profile-evidence-match">Matches CV wording</span>
+                    {% else %}<blockquote class="profile-fact-evidence"><strong>CV evidence</strong><p>{{ profile.fact_evidence.location }}</p></blockquote>{% endif %}
+                {% endif %}
+            </section>{% endif %}
+            {% if profile.work_mode_preference != "unknown" %}<section class="profile-fact-card">
+                <h3>Work mode preference</h3>
+                <p class="profile-fact-value">{{ profile.get_work_mode_preference_display }}</p>
+                {% if profile.fact_evidence.work_mode_preference %}<blockquote class="profile-fact-evidence"><strong>CV evidence</strong><p>{{ profile.fact_evidence.work_mode_preference }}</p></blockquote>{% endif %}
+            </section>{% endif %}
+            {% if profile.employment_type_preferences %}<section class="profile-fact-card">
+                <h3>Employment preferences</h3>
+                <p class="profile-fact-value">{{ profile.employment_type_preferences|join:", " }}</p>
+                {% if profile.fact_evidence.employment_type_preferences %}<blockquote class="profile-fact-evidence"><strong>CV evidence</strong><p>{{ profile.fact_evidence.employment_type_preferences }}</p></blockquote>{% endif %}
+            </section>{% endif %}
+            {% if profile.availability %}<section class="profile-fact-card">
+                <h3>Availability</h3>
+                <p class="profile-fact-value">{{ profile.availability }}</p>
+                {% if profile.fact_evidence.availability %}
+                    {% if profile.fact_evidence.availability == profile.availability %}<span class="profile-evidence-match">Matches CV wording</span>
+                    {% else %}<blockquote class="profile-fact-evidence"><strong>CV evidence</strong><p>{{ profile.fact_evidence.availability }}</p></blockquote>{% endif %}
+                {% endif %}
+            </section>{% endif %}
+        </div>
+        {% if profile_missing_facts %}<div class="profile-missing-summary"><strong>Not stated in CV</strong><ul class="profile-missing-list">{% for fact in profile_missing_facts %}<li>{{ fact }}</li>{% endfor %}</ul></div>{% endif %}
+        {% if not profile.ambiguities %}<p class="profile-clear-note">No unresolved ambiguities recorded.</p>{% endif %}
     </article>
-    <article class="detail-panel">
+    {% if profile.ambiguities %}<article class="detail-panel profile-ambiguity-panel">
         <p class="eyebrow">Uncertainty</p>
         <h2>Ambiguities</h2>
-        {% if profile.ambiguities %}
-            <ul>{% for ambiguity in profile.ambiguities %}<li>{{ ambiguity }}</li>{% endfor %}</ul>
-        {% else %}
-            <p>None recorded.</p>
-        {% endif %}
-    </article>
+        <ul>{% for ambiguity in profile.ambiguities %}<li>{{ ambiguity }}</li>{% endfor %}</ul>
+    </article>{% endif %}
 </section>
 
 <section class="version-history" aria-labelledby="skills-title">
     <h2 id="skills-title">Skills and source evidence</h2>
     <div class="table-wrap">
         <table>
-            <thead><tr><th>Skill</th><th>Years</th><th>CV evidence</th></tr></thead>
+            <thead><tr><th>Skill</th>{% if profile_has_skill_years %}<th>Years</th>{% endif %}<th>CV evidence</th></tr></thead>
             <tbody>
                 {% for skill in profile.skills %}
-                    <tr><th>{{ skill.name }}</th><td>{{ skill.years_experience|default:"Unknown" }}</td><td>{{ skill.evidence }}</td></tr>
+                    <tr><th>{{ skill.name }}</th>{% if profile_has_skill_years %}<td>{{ skill.years_experience|default:"—" }}</td>{% endif %}<td>{{ skill.evidence }}</td></tr>
                 {% empty %}
-                    <tr><td colspan="3">No skills were explicitly supported.</td></tr>
+                    <tr><td colspan="{% if profile_has_skill_years %}3{% else %}2{% endif %}">No skills were explicitly supported.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -107,21 +122,43 @@
 </section>
 
 {% if profile.languages or profile.education or profile.certifications %}
-<section class="detail-grid" aria-label="Qualifications and evidence">
-    <article class="detail-panel">
+<section class="profile-qualification-grid" aria-label="Qualifications and evidence">
+    {% if profile.languages %}<article class="detail-panel">
         <h2>Languages</h2>
-        {% if profile.languages %}<ul>{% for item in profile.languages %}<li><strong>{{ item.language }}{% if item.proficiency %} · {{ item.proficiency }}{% endif %}</strong><br>{{ item.evidence }}</li>{% endfor %}</ul>{% else %}<p>Unknown.</p>{% endif %}
-    </article>
-    <article class="detail-panel">
+        <ul>{% for item in profile.languages %}<li><strong>{{ item.language }}{% if item.proficiency %} · {{ item.proficiency }}{% endif %}</strong><br>{{ item.evidence }}</li>{% endfor %}</ul>
+    </article>{% endif %}
+    {% if profile.education %}<article class="detail-panel">
         <h2>Education</h2>
-        {% if profile.education %}<ul>{% for item in profile.education %}<li><strong>{{ item.qualification }}{% if item.institution %} · {{ item.institution }}{% endif %}</strong><br>{{ item.evidence }}</li>{% endfor %}</ul>{% else %}<p>Unknown.</p>{% endif %}
-    </article>
-    <article class="detail-panel">
+        <ul>{% for item in profile.education %}<li><strong>{{ item.qualification }}{% if item.institution %} · {{ item.institution }}{% endif %}</strong><br>{{ item.evidence }}</li>{% endfor %}</ul>
+    </article>{% endif %}
+    {% if profile.certifications %}<article class="detail-panel">
         <h2>Certifications</h2>
-        {% if profile.certifications %}<ul>{% for item in profile.certifications %}<li><strong>{{ item.name }}{% if item.issuer %} · {{ item.issuer }}{% endif %}</strong><br>{{ item.evidence }}</li>{% endfor %}</ul>{% else %}<p>Unknown.</p>{% endif %}
-    </article>
+        <ul>{% for item in profile.certifications %}<li><strong>{{ item.name }}{% if item.issuer %} · {{ item.issuer }}{% endif %}</strong><br>{{ item.evidence }}</li>{% endfor %}</ul>
+    </article>{% endif %}
 </section>
 {% endif %}
+
+<section class="detail-panel profile-review-actions" id="profile-review-actions" aria-labelledby="profile-review-actions-title">
+    <div>
+        <p class="eyebrow">Review decision</p>
+        <h2 id="profile-review-actions-title">{% if profile.status == "draft" %}Finish reviewing this profile{% else %}Profile version confirmed{% endif %}</h2>
+        {% if profile.status == "draft" %}<p>Confirm only when the profile values and CV evidence above are accurate. Correcting or re-extracting creates a new draft and keeps this version unchanged.</p>{% else %}<p>This immutable version is available to matching. Any correction or re-extraction creates a separate draft.</p>{% endif %}
+    </div>
+    <div class="button-row">
+        {% if profile.status == "draft" and not profile_conflicts %}
+            <form method="post" action="{% url 'candidates:candidate-profile-confirm' organization.slug candidate.pk profile.pk %}">
+                {% csrf_token %}
+                <button class="primary-button" type="submit">Confirm profile for matching</button>
+            </form>
+        {% endif %}
+        <a class="secondary-button" href="{% url 'candidates:candidate-profile-correct' organization.slug candidate.pk profile.pk %}">Correct profile</a>
+        <form method="post" action="{% url 'candidates:candidate-profile-extract' organization.slug candidate.pk profile.source_document.pk %}">
+            {% csrf_token %}
+            <button class="secondary-button" type="submit">Re-extract from CV</button>
+        </form>
+    </div>
+    <p class="section-note">Re-extraction runs AI again against the current CV and creates another reviewable draft. It does not edit or confirm this version.</p>
+</section>
 
 <p class="section-note">The source CV text, contact details, prompt, and raw provider response are not displayed on this page.</p>
 
@@ -135,7 +172,7 @@
                 {% for version in profile_versions %}
                     <tr>
                         <th><a href="{% url 'candidates:candidate-profile-detail' organization.slug candidate.pk version.pk %}">v{{ version.version }}</a></th>
-                        <td>{{ version.get_status_display }}</td>
+                        <td><span class="status-pill status-{{ version.status }}">{{ version.get_status_display }}</span></td>
                         <td>{{ version.source_document.original_filename }}</td>
                         <td>{{ version.created_by.username|default:"System" }}</td>
                         <td>{{ version.created_at|date:"Y-m-d H:i" }}</td>
