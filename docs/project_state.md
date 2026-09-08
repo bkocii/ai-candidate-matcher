@@ -23,7 +23,10 @@ functionality pass before styling/positioning; `DEF-001` is complete and the
 CV-first `CR-004` workflow, plain-language `CR-005` privacy/source pass, and
 dependency-aware `CR-002` lifecycle controls and in-app `CR-003` client-company
 management are complete. `CR-001` managed multi-organization provisioning and
-membership administration is also complete. `DEMO-002` remains next.
+membership administration is also complete. `DEMO-002` remains the next release
+item, but is paused while the user-approved manual-review corrections continue.
+Track those findings and their separate implementation/browser-test states in
+`docs/manual_testing_review.md`.
 
 ## Decisions made
 
@@ -1512,3 +1515,18 @@ AI-backed draft. The correction screen uses full-width grouped fact, evidence,
 skills, and ambiguity sections, two-column desktop fields, collapsed optional
 evidence, and selectable skill cards whose checkboxes sit beside names and excerpts.
 Browser retesting is pending; no migration was added.
+
+### MT-011-V07 — Correction action alignment — 2026-09-08
+
+The correction form's section selector now outranks the later generic form-panel
+width and margin rules. All four panels and the bottom action row share the
+available form width; buttons can wrap on narrow screens. Other forms, profile
+evidence validation, tenant authorization, and immutable version creation are
+unchanged. A CSS regression covers the scoped width/margin rules and button
+wrapping. No migration or dependency change is needed. Browser retesting remains
+pending; continue the manual-review backlog before DEMO-002.
+
+Verification: focused corrections `13 passed`; full `uv run python
+scripts/check.py` gate `585 passed`. Django system/deployment checks, static
+collection, zero migration drift, Ruff lint/formatting across 226 Python files,
+and compatibility of all 35 installed packages passed. No live AI request ran.

@@ -22,7 +22,10 @@ The user has chosen to complete approved functionality corrections before the
 final styling/positioning pass. `DEF-001`, `CR-004`, `CR-005`, and `CR-002` are
 now complete, as is `CR-003` in-app client-company management. `CR-001` managed
 multi-organization provisioning and membership administration is also complete.
-`DEMO-002` remains next.
+`DEMO-002` remains the next release-roadmap item, but the user reconfirmed on
+2026-09-08 that recorded manual-review corrections must be handled first. Use
+`docs/manual_testing_review.md` for the remaining findings; do not interpret an
+implemented change as browser-tested or silently approve proposed scope.
 
 Manual-testing correction `MT-041-S01` is implemented: every response that
 began with an authenticated user and returns HTML is private/no-store with
@@ -1019,8 +1022,31 @@ checkbox directly beside its name and CV excerpt.
 Focused detail/correction coverage passes; browser retesting is pending and no
 migration was added.
 
+MT-011-V07 is implemented on 2026-09-08 following the supplied correction-button
+video. A scoped CSS selector prevents generic panel defaults from narrowing and
+centering only the sections; panels and actions now share the full form width,
+and the buttons can wrap. The new selector regression failed before the fix and
+passes afterward. No migration, dependency, template, or business-service change
+was needed. Browser acceptance remains pending because the agent browser could
+not open the local preview. Ask the user to hard-refresh and inspect the form's
+bottom actions at desktop and narrow widths, then reconcile and continue the
+manual-review checklist before DEMO-002.
+
+MT-011-V07 verification: focused corrections `13 passed`; complete
+`uv run python scripts/check.py` gate `585 passed`, including system/deployment
+checks, static collection, no migration drift, Ruff lint/formatting, and
+dependency compatibility. No live AI call was made.
+
+Delivery workflow: provide a ZIP containing only changed files with repository-
+relative paths; keep the working project and full project archive updated.
+Include changed testing docs, check commands, and explicit Git add/commit
+commands with every patch. Warn early when the conversation becomes long and
+prepare an updated handoff before switching chats.
+
 Wait for the user's next instruction. Preserve `CR-001`, `CR-003`, `CR-002`, `CR-005`,
 `CR-004`, `DEF-001`, the reproducible demo, frozen evaluation, explanation
 review, production/deployment, minimized usage reporting, durable jobs, staged
 deletion, and separate individually approved candidate-decision and outreach
-actions. Resume `DEMO-002` unless another explicitly approved change intervenes.
+actions. Resume `DEMO-002` only after the user agrees the manual-review pass is
+ready; direct mailbox sending and other proposals still require explicit scope
+approval.

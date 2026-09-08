@@ -391,8 +391,18 @@ This file records functional defects and visual improvements found during page-b
 | MT-011-V04 | Visual defect | Medium | The correction form is a long, narrow single column with large empty evidence fields, while most desktop width is unused. Correcting one questionable skill requires scrolling through several screens. | Group fields into compact **Profile facts**, **Evidence**, **Skills**, and **Ambiguities** sections. Use a wider two-column desktop layout and collapse empty optional evidence sections. | Implemented — browser retest pending |
 | MT-011-V05 | Visual defect | Medium | Skill checkboxes sit far to the right of their labels and evidence text, so the control-to-skill relationship is weak and slower to scan. | Render each skill as a compact selectable row or card with the checkbox beside the skill name and its CV evidence as secondary text. | Implemented — browser retest pending |
 | MT-011-V06 | Visual defect | Low | **Confirmed** and **Draft** appear as plain table text in profile history, making version state slower to distinguish. | Use compact status badges with both text and restrained semantic styling. | Implemented — browser retest pending |
+| MT-011-V07 | Visual defect | Medium | The 2026-09-08 correction-page video shows the bottom buttons left of the centered form panels. Later generic `.form-panel` styles override the correction sections' width and margins while the action row retains the full form width. | Scope the section layout to the correction form so it outranks generic panel defaults; keep panels and actions on the same full-width boundary and let buttons wrap on narrow screens. | Implemented — 2026-09-08; browser retest pending |
 | MT-011-U01 | Improvement | Medium | The primary confirmation action appears before the recruiter has scrolled through the evidence and there is no correction option beside it. | Keep efficient confirmation, but pair it with **Correct profile** and repeat or place the action after the review content with a concise confirmation summary. | Implemented — browser retest pending |
 | MT-011-U02 | Improvement | Low | **Extract new version** does not explain when re-extraction is appropriate or that it invokes AI again. | Use **Re-extract from CV** with helper/confirmation text explaining that it creates another draft and does not correct the current version automatically. | Implemented — browser retest pending |
+
+The MT-011-V07 patch changes only correction-page CSS plus regression coverage
+and documentation. The selector regression failed before the fix and passes
+afterward. It preserves the existing correction submission, evidence validation,
+tenant isolation, and versioning. Automated checks do not constitute browser
+acceptance; the local preview was unavailable to the agent's browser.
+Verification on 2026-09-08: focused corrections `13 passed`; the complete quality
+gate passed all `585` tests, system/deployment and static checks, migration-drift
+detection, lint, formatting, and dependency compatibility. No live AI call ran.
 
 ### MT-012 — Batch profile-confirmation eligibility
 

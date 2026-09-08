@@ -1235,12 +1235,17 @@ h2 {
     margin-top: 30px;
 }
 
-.profile-correction-section {
+/* Keep correction sections aligned with the form actions, not generic panels. */
+.profile-correction-form > .profile-correction-section {
     display: grid;
     gap: 20px;
     width: 100%;
     max-width: none;
     margin: 0;
+}
+
+.profile-correction-form > .button-row {
+    flex-wrap: wrap;
 }
 
 .profile-correction-section > header h2,

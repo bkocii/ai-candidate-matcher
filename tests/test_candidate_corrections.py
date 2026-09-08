@@ -1,4 +1,6 @@
 import hashlib
+import re
+from pathlib import Path
 
 import pytest
 from django.core.exceptions import ValidationError
@@ -366,6 +368,26 @@ def test_profile_correction_uses_grouped_layout_and_selectable_skill_cards(
     assert 'id="id_retained_skills_0"' in content
     assert 'value="0" checked' in content
     assert "Skills: Python, validated imports" in content
+
+
+def test_profile_correction_layout_overrides_generic_panel_width() -> None:
+    css = (Path(__file__).parents[1] / "static/css/app.css").read_text(encoding="utf-8")
+    # The scoped selector must outrank the later generic .form-panel rule.
+    panel_rule = re.search(
+        r"\.profile-correction-form\s*>\s*\.profile-correction-section\s*"
+        r"\{([^}]+)\}",
+        css,
+    )
+    assert panel_rule is not None
+    for declaration in ("width: 100%;", "max-width: none;", "margin: 0;"):
+        assert declaration in panel_rule.group(1)
+
+    action_rule = re.search(
+        r"\.profile-correction-form\s*>\s*\.button-row\s*\{([^}]+)\}",
+        css,
+    )
+    assert action_rule is not None
+    assert "flex-wrap: wrap;" in action_rule.group(1)
 
 
 def test_correction_routes_are_tenant_scoped(client) -> None:

@@ -399,6 +399,22 @@ facts and evidence use a full-width responsive two-column layout, optional evide
 is collapsed, and each retained-skill checkbox is next to its skill name and CV
 excerpt.
 
+### MT-011-V07 — Correction form and bottom-action alignment
+
+After applying the patch, hard-refresh **Correct profile** with **Ctrl+F5**.
+At desktop width, verify that all four correction panels use the available form
+width and that **Create corrected draft** starts at the same left edge as the
+panels, with **Cancel** beside it. There should be no separate narrow centered
+panel column above a wider action row.
+
+Repeat at 390px and 320px viewport widths: fields become single-column, the
+buttons wrap if necessary, and neither button overlaps or causes horizontal
+scrolling. Check both collapsed and expanded optional evidence. Tab through the
+bottom controls, verify **Cancel** returns to the source profile without saving,
+and use a synthetic profile to verify a valid submission still creates a separate
+draft. Finally, sample **Edit candidate details** to ensure its ordinary compact
+form width is unchanged. Browser acceptance for this patch remains pending.
+
 ## 7. Test private CV upload and extraction
 
 Open `Arben Testi`, select **Upload CV**, and upload
