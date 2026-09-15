@@ -423,7 +423,9 @@ def test_correction_routes_are_tenant_scoped(client) -> None:
 
 
 def test_candidate_detail_uses_responsive_sources_and_shows_phone(client) -> None:
-    user, organization, candidate, _, _, _ = make_workspace()
+    user, organization, candidate, source, _, _ = make_workspace()
+    source.permission_notes = "Synthetic manual test\n<script>untrusted</script>"
+    source.save(update_fields=["permission_notes"])
     client.force_login(user)
 
     response = client.get(
@@ -436,3 +438,6 @@ def test_candidate_detail_uses_responsive_sources_and_shows_phone(client) -> Non
     assert "source-card-grid" in content
     assert "Edit details" in content
     assert "Source reference" in content
+    assert "<strong>Notes</strong><br>Synthetic manual test<br>" in content
+    assert "&lt;script&gt;untrusted&lt;/script&gt;" in content
+    assert "Created from intake:" not in content

@@ -481,17 +481,23 @@ def test_exact_document_duplicate_is_rejected_before_intake_persistence(
         organization=organization,
         full_name="Existing Candidate",
     )
+    original = cv_upload()
+    # Rebuilding a DOCX can change ZIP timestamps; this test needs exact bytes.
+    duplicate = SimpleUploadedFile(
+        original.name, original.read(), content_type=DOCX_CONTENT_TYPE
+    )
+    original.seek(0)
     upload_candidate_cv(
         candidate=candidate,
         user=user,
-        uploaded_file=cv_upload(),
+        uploaded_file=original,
     )
 
     with pytest.raises(CandidateDocumentDuplicateError):
         upload_candidate_intake_cv(
             batch=batch,
             user=user,
-            uploaded_file=cv_upload(),
+            uploaded_file=duplicate,
         )
 
     assert not batch.items.exists()

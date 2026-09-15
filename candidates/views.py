@@ -41,6 +41,8 @@ from candidates.forms import (
 from candidates.models import (
     Candidate,
     CandidateDocument,
+    CandidateIntakeBatch,
+    CandidateIntakeItem,
     CandidateProfile,
     CandidateSource,
 )
@@ -97,6 +99,14 @@ def candidate_detail(request, organization_slug: str, candidate_id: int):
         "profile_versions"
     )
     sources = candidate.sources.select_related("recorded_by")
+    intake_batches = (
+        CandidateIntakeBatch.objects.for_organization(organization)
+        .filter(
+            items__candidate=candidate, items__status=CandidateIntakeItem.Status.CREATED
+        )
+        .order_by("id")
+        .distinct()
+    )
     return render(
         request,
         "candidates/candidate_detail.html",
@@ -105,6 +115,7 @@ def candidate_detail(request, organization_slug: str, candidate_id: int):
             "candidate": candidate,
             "documents": documents,
             "sources": sources,
+            "intake_batches": intake_batches,
             "can_administer": can_administer_organization(request.user, organization),
         },
     )

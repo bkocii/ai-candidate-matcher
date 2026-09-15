@@ -393,7 +393,10 @@ and **2 profiles from this intake are already confirmed.** Repeat with one clean
 draft to verify singular wording. A conflict-only batch has no confirmation
 button and remains blocked on POST. A processing-only batch has no skill/fact
 counts until a saved profile exists. Send a screenshot of the mixed review screen
-and its result; MT-012 browser acceptance remains pending.
+and its result. Supplied evidence on 2026-09-15 passed the desktop summary,
+single-profile wording/confirmation, and ambiguity-exclusion review (intakes #14
+and #15). The location-conflict and two-clean-profile walkthrough above remains
+pending in the browser; automated regression coverage passes.
 
 ### Correct candidate, source, and profile data
 
@@ -405,6 +408,17 @@ is rejected without saving.
 Use **Edit** on a source card to record **Reason for storing data**, **Consent**,
 and **Allowed contact**. Safe defaults remain explicit, and the source reference
 cannot be changed to another candidate's stable reference.
+
+MT-013 retest: save a source note with two lines and open candidate details.
+Verify a visible **Notes** label inside the source card, retained line breaks,
+and no page overflow for a long note. Blank notes should show no empty Notes
+block. For a candidate created through reviewed CV intake, follow **Intake #N**
+under **Created from intake** in the source section: it must open the exact batch
+in the current organization. A manually added or CSV-only candidate without a
+recorded intake origin should have no such link. A user outside the organization
+must still receive 404 for both candidate and intake URLs. Send a screenshot of
+the source card and confirm the intake link destination; this browser retest is
+pending at delivery.
 
 On a profile version, choose **Correct profile**. Uncheck one questionable skill
 and create the corrected draft. The original version remains unchanged, the new

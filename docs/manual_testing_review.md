@@ -409,8 +409,8 @@ detection, lint, formatting, and dependency compatibility. No live AI call ran.
 - **Date:** 2026-08-29
 - **Route:** `/organizations/second-agency-test/candidates/intake/11/confirm-profiles/`
 - **Viewport:** Desktop, 1920 × 1080
-- **Visual status:** Count and wording improvements implemented 2026-09-15; browser retest pending
-- **Functional status:** Original conflict failure fixed in CR-006; automated batch-action coverage extended; browser retest pending
+- **Visual status:** Count summary, status strip, and singular wording passed supplied desktop screenshot/video review on 2026-09-15
+- **Functional status:** Single-profile confirmation and ambiguity exclusion passed supplied video review; location-conflict and multi-clean-profile browser checks remain pending (automated coverage passes)
 
 #### Completed functional checks
 
@@ -419,22 +419,23 @@ detection, lint, formatting, and dependency compatibility. No live AI call ran.
 - **Pass:** The page explains that profile confirmation does not approve/reject candidates or generate/approve outreach.
 - **Pass:** No confirmation occurred merely by opening the page.
 - **Original failure (2026-08-29):** Drita's conflicting location data was not treated as a review exception. CR-006 subsequently fixed the eligibility check; do not treat this historical observation as the current implementation.
+- **Pass (2026-09-15):** Intake #14 shows Arben ready and Amina requiring individual review because of ambiguities, with skill/fact counts and explicit zero location-conflict counts. After confirmation, Arben is already confirmed, Amina still needs review, and the confirmation action is replaced by the no-ready state.
+- **Pass (2026-09-15):** Intake #15 displays **Confirmed 1 profile.**, one already-confirmed row, and **No profiles are awaiting confirmation**. Evidence: `matcher-profile-confirm-list.png`, `matcher-confirming-profile.mp4`, and `matcher-profile-after-confirmation.mp4`.
 
 #### Pending functional checks
 
-- After conflict detection is fixed, conflicting profiles are excluded with a bounded actionable reason.
-- Clean profiles can still be confirmed together without additional per-profile approval.
-- One batch action records an individual confirmation actor and timestamp for every included profile.
-- Excluded profiles remain unchanged after confirming eligible profiles.
+- Browser retest of a real candidate/profile location mismatch being excluded with its reason (CR-006 implemented; automated regression passes).
+- Browser retest of two clean profiles confirmed together and their individual actor/timestamp records (automated regression passes).
+- Confirm the excluded ambiguity profile remains a draft in its individual profile detail; the supplied video verifies its batch-review status.
 
 #### Findings
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
 | MT-012-F01 | Functional defect | Critical | Drita is shown as **Included** with the reason “Evidence validated with no recorded review exception,” despite the known Prishtina/Gjilan conflict. The batch action would publish a materially conflicting profile without individual review. | Extend eligibility checks beyond AI-provided ambiguities and excerpt grounding. Compare extracted matching facts with recruiter-supplied candidate values and other trusted current data; exclude material conflicts until explicitly resolved. | Fixed in CR-006 — browser retest pending |
-| MT-012-U01 | Improvement | Medium | The batch row reports only a generic eligibility reason and no compact indication of what facts will be published. | Show a compact fact/skill count and any detected conflict count while keeping full evidence behind the profile link. | Implemented — 2026-09-15; browser retest pending |
-| MT-012-V01 | Visual defect | Low | Included/excluded count cards are oversized for two single-number summaries. | Use a compact status summary so individual results and the confirmation boundary appear higher on the page. | Already implemented in MT-008; verified in code 2026-09-15; this screen's browser retest pending |
-| MT-012-C01 | Improvement | Low | **Confirm 1 eligible profile(s)** uses mechanical pluralization. | Render **Confirm 1 eligible profile** and pluralize only for other counts. | Implemented — 2026-09-15; heading, action, success, and already-confirmed text use singular/plural wording; browser retest pending |
+| MT-012-U01 | Improvement | Medium | The batch row reports only a generic eligibility reason and no compact indication of what facts will be published. | Show a compact fact/skill count and any detected conflict count while keeping full evidence behind the profile link. | Passed supplied browser review — 2026-09-15; nonzero location-conflict browser check remains under F01 |
+| MT-012-V01 | Visual defect | Low | Included/excluded count cards are oversized for two single-number summaries. | Use a compact status summary so individual results and the confirmation boundary appear higher on the page. | Passed supplied browser review — 2026-09-15; originally implemented in MT-008 |
+| MT-012-C01 | Improvement | Low | **Confirm 1 eligible profile(s)** uses mechanical pluralization. | Render **Confirm 1 eligible profile** and pluralize only for other counts. | Singular wording passed supplied browser review — 2026-09-15; plural wording passes automated coverage |
 
 MT-012 now shows skill and other-fact counts below each saved profile link and
 location-conflict counts beside the existing reason. Counts are derived from the
@@ -443,7 +444,8 @@ evidence copies are not counted. A processing item without a profile shows no
 invented zero-content summary. The conflict count is explicitly labelled as a
 location check, not a claim that every possible conflict has been detected.
 Eligibility, source checks, tenant boundaries, and individual confirmation remain
-unchanged. Browser acceptance still needs the mixed-batch walkthrough in the guide.
+unchanged. The supplied browser evidence verifies the ambiguity-exclusion flow;
+the remaining location-conflict and multi-clean-profile checks are listed above.
 
 Automated verification on 2026-09-15: focused intake/correction coverage
 `24 passed`; complete suite `587 passed`. Django system/deployment, static
@@ -488,8 +490,23 @@ No live AI call was made. These results do not replace browser acceptance.
 | MT-013-U01 | Usability defect | Medium | The mapped phone number is stored and appears on candidate lists but is omitted from the candidate detail header and page. | Show available email, phone, and location together in a concise contact summary. | Passed browser retest — 2026-08-29 |
 | MT-013-V01 | Visual defect | High | The source/privacy table expands beyond its panel and makes the entire page wider than a 1920px viewport. Horizontal scrolling clips the candidate name, navigation, and actions. | Prevent body-level overflow. Stack the panel content and use responsive source cards or a contained table whose overflow does not move the whole application shell. | Passed browser retest — 2026-08-29 |
 | MT-013-V02 | Visual defect | Medium | The six-column source table is difficult to scan for a single provenance record and visually detaches from its explanatory panel. | Present each source as a labelled responsive record card with grouped **Provenance**, **Privacy/contact**, and **Retention** values plus an edit action. | Passed browser retest — 2026-08-29 |
-| MT-013-V03 | Visual defect | Low | The saved source note `Synthetic manual test` appears as unlabelled trailing text below the source fields, so its meaning is unclear. | Display a visible **Notes** label and preserve the note as secondary text inside the source card. | Open |
-| MT-013-U02 | Improvement | Low | The page has no direct context link back to the intake batch that created this candidate. | Add a source/intake link where the candidate originated from a reviewed batch. | Proposed |
+| MT-013-V03 | Visual defect | Low | The saved source note `Synthetic manual test` appears as unlabelled trailing text below the source fields, so its meaning is unclear. | Display a visible **Notes** label and preserve the note as secondary text inside the source card. | Implemented — 2026-09-15; browser retest pending |
+| MT-013-U02 | Improvement | Low | The page has no direct context link back to the intake batch that created this candidate. | Add a source/intake link where the candidate originated from a reviewed batch. | Implemented — 2026-09-15; browser retest pending |
+
+MT-013's remaining polish now labels saved notes, preserves their line breaks,
+escapes HTML, and wraps long values using the existing source-card styles.
+The source section links to intake batches only through this candidate's recorded
+created items in the current organization. It does not infer an origin from a
+source name/reference or invent a link for manual/CSV-only candidates. Multiple
+recorded batches are distinct links. This adds navigation only; source edits,
+privacy values, documents, confirmation, and deletion behavior remain unchanged.
+
+Automated verification: focused correction/unified-intake coverage `25 passed`;
+the final full quality gate passed with `588 passed`, no migration drift, and
+successful system/deployment, static, lint/formatting, and dependency checks.
+The gate also exposed an existing DOCX duplicate-test timestamp issue; that test
+now reuses exact bytes and passes. Notes escaping and intake tenant boundaries
+are covered. MT-013's visual/link browser retest remains pending.
 
 ### MT-014 — Empty vacancy workspace
 

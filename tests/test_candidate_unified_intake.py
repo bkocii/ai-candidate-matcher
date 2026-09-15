@@ -559,6 +559,46 @@ def test_unified_intake_routes_are_tenant_scoped(client, settings, tmp_path) -> 
     assert mapping.status_code == 404
 
 
+def test_candidate_detail_links_only_its_own_organization_intake(
+    client, settings, tmp_path
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    user, organization, batch = make_batch()
+    item, _, _ = accept_item(
+        batch=batch,
+        user=user,
+        filename="origin.docx",
+        name="Origin Candidate",
+        email="origin@example.test",
+    )
+    client.force_login(user)
+    detail_url = reverse(
+        "candidates:candidate-detail", args=[organization.slug, item.candidate_id]
+    )
+    intake_url = reverse(
+        "candidates:candidate-intake-detail", args=[organization.slug, batch.pk]
+    )
+    response = client.get(detail_url)
+    assert response.status_code == 200
+    assert f'href="{intake_url}">Intake #{batch.pk}</a>' in response.content.decode()
+    assert client.get(intake_url).status_code == 200
+
+    other = Organization.objects.create(name="Other", slug="other")
+    outsider = User.objects.create_user(username="outsider")
+    add_member(outsider, other)
+    client.force_login(outsider)
+    assert client.get(detail_url).status_code == 404
+    assert client.get(intake_url).status_code == 404
+
+    # Even malformed legacy cross-organization relations must not expose a link.
+    CandidateIntakeBatch.objects.filter(pk=batch.pk).update(organization=other)
+    client.force_login(user)
+    response = client.get(detail_url)
+    assert response.status_code == 200
+    assert "Created from intake:" not in response.content.decode()
+    assert intake_url not in response.content.decode()
+
+
 def test_candidate_list_promotes_cv_first_intake(client) -> None:
     user = User.objects.create_user(username="recruiter")
     organization = Organization.objects.create(name="Northstar", slug="northstar")

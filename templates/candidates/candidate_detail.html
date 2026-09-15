@@ -43,6 +43,9 @@
         <p class="eyebrow">Source and privacy</p>
         <h2 id="candidate-source-title">Recorded candidate sources</h2>
         <p class="section-note">Consent and allowed contact are separate. These records document the organization's assertion and do not certify legal compliance.</p>
+        {% if intake_batches %}
+            <p class="section-note">Created from intake: {% for intake in intake_batches %}<a href="{% url 'candidates:candidate-intake-detail' organization.slug intake.pk %}">Intake #{{ intake.pk }}</a>{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+        {% endif %}
     </div>
     {% if sources %}
         <div class="source-card-grid">
@@ -64,7 +67,7 @@
                         <div><dt>Allowed contact</dt><dd>{{ source.recruiter_contact_permission }}</dd></div>
                         <div><dt>Delete or review on</dt><dd>{{ source.retention_until|date:"Y-m-d"|default:"Not set" }}</dd></div>
                     </dl>
-                    {% if source.permission_notes %}<p class="source-notes">{{ source.permission_notes }}</p>{% endif %}
+                    {% if source.permission_notes %}<p class="source-notes break-value"><strong>Notes</strong><br>{{ source.permission_notes|linebreaksbr }}</p>{% endif %}
                 </article>
             {% endfor %}
         </div>

@@ -1551,3 +1551,30 @@ one overlong test-data line; after wrapping that string without changing its
 value, Ruff lint, formatting (226 Python files), and compatibility checks for
 35 installed packages passed on rerun. No live AI call was made. Browser
 acceptance remains pending.
+
+### MT-013 — Candidate source notes and intake navigation — 2026-09-15
+
+The supplied MT-012 recordings now verify the desktop summary, singular
+confirmation flow, and ambiguity exclusion: intake #14 keeps Amina in individual
+review after Arben is confirmed; intake #15 shows its single profile confirmed.
+The location-conflict and multi-clean-profile browser checks remain explicitly
+pending, with automated coverage already passing.
+
+MT-013-V03 and U02 are implemented. Source notes have a visible Notes label,
+preserved line breaks, escaped HTML, and existing long-value wrapping. Candidate
+details link back to recorded originating intake batches within the current
+organization; manual/CSV-only records without an intake relation show no link.
+No source-reference guessing, model/migration/dependency changes, AI requests,
+or changes to candidate/source editing and privacy rules are introduced.
+Browser review of the notes and intake link is the next manual step.
+
+The full check exposed an existing time-dependent duplicate-file test: it built
+two DOCX archives independently, so ZIP timestamps could change the bytes. The
+test now reuses the exact uploaded bytes, matching its intended exact-duplicate
+contract. This is a test-fixture correction, not a duplicate-detection change.
+
+Verification: focused candidate-correction/unified-intake coverage `25 passed`;
+the corrected exact-duplicate test passed individually. The final complete
+`uv run python scripts/check.py` rerun passed with `588 passed`, successful Django
+system/deployment checks, static collection, no migration drift, Ruff lint and
+formatting (226 files), and compatibility of 35 packages. No live AI request ran.

@@ -1048,14 +1048,35 @@ MT-012 verification: focused intake/correction tests `24 passed`; full suite
 `587 passed`; Django system/deployment, static collection, and migration-drift
 checks passed. Ruff found one long test-data line after the suite; wrapping the
 string preserved its value, and rerun lint, formatting (226 files), and dependency
-compatibility (35 packages) passed. No live AI request ran. The browser walkthrough
-remains the acceptance step.
+compatibility (35 packages) passed. No live AI request ran.
 
-Immediate next action: ask the user to review MT-012 with two clean drafts and
-one location-conflicting draft, then verify the result after confirming only the
-ready profiles. Browser acceptance remains pending. After that, inspect MT-013's
-remaining candidate-detail/source-card findings against the current code before
-selecting the next correction. DEMO-002 remains paused for the manual-review pass.
+MT-012 browser evidence received on 2026-09-15 passes the desktop summary,
+singular wording/confirmation, and ambiguity-exclusion flow. Intake #14 shows
+Arben confirmed while Amina remains in individual review; intake #15 shows one
+confirmed profile and no drafts awaiting confirmation. Do not report this as a
+location-conflict test: the displayed conflicts are zero, and Amina's reason is
+ambiguities. Location-conflict and two-clean-profile browser checks remain pending.
+
+MT-013-V03/U02 are implemented: labelled multiline source notes with escaped HTML
+and long-value wrapping, plus direct intake links derived only from created items
+for this candidate in the current organization. No origin is guessed for manual
+or CSV-only candidates. No migration, dependency, AI, or source-edit behavior change.
+
+The patch also stabilizes one pre-existing bulk-intake duplicate-file test found
+during the full gate: both uploads now share exact DOCX bytes rather than building
+archives whose timestamps can differ. Production duplicate detection is unchanged.
+
+MT-013 verification: focused correction/unified-intake coverage `25 passed`;
+the corrected duplicate test passed individually. Final full quality gate passed
+with `588 passed`, Django system/deployment/static checks, no migration drift,
+Ruff lint/formatting, and dependency compatibility. No live AI calls. MT-013's
+notes and intake-link browser acceptance remains pending.
+
+Immediate next action: ask the user to check the candidate source card's Notes
+label and its Intake #N link. Once accepted, inspect MT-014 and the following
+manual-review findings against current code before selecting the next correction.
+Keep the remaining MT-012 functional browser checks recorded. DEMO-002 remains
+paused for the manual-review pass.
 
 Delivery workflow: provide a ZIP containing only changed files with repository-
 relative paths; keep the working project and full project archive updated.
