@@ -1027,15 +1027,35 @@ video. A scoped CSS selector prevents generic panel defaults from narrowing and
 centering only the sections; panels and actions now share the full form width,
 and the buttons can wrap. The new selector regression failed before the fix and
 passes afterward. No migration, dependency, template, or business-service change
-was needed. Browser acceptance remains pending because the agent browser could
-not open the local preview. Ask the user to hard-refresh and inspect the form's
-bottom actions at desktop and narrow widths, then reconcile and continue the
-manual-review checklist before DEMO-002.
+was needed. The user subsequently confirmed the button alignment; MT-011-V07 is
+resolved. Continue the manual-review checklist before DEMO-002.
 
 MT-011-V07 verification: focused corrections `13 passed`; complete
 `uv run python scripts/check.py` gate `585 passed`, including system/deployment
 checks, static collection, no migration drift, Ruff lint/formatting, and
 dependency compatibility. No live AI call was made.
+
+MT-012 resumed after the environment interruption and is implemented on
+2026-09-15. The profile-confirmation review now shows saved skill/fact and
+location-conflict counts and correct singular/plural wording throughout. The
+compact summary was already implemented during MT-008; its stale Open finding
+is reconciled without rebuilding it. CR-006 remains the conflict-safety boundary;
+new regression coverage checks that two clean profiles confirm with individual
+actor/time while a conflicting profile remains a draft, and that a conflict-only
+POST is blocked. No migration, dependency, AI, or matching change was added.
+
+MT-012 verification: focused intake/correction tests `24 passed`; full suite
+`587 passed`; Django system/deployment, static collection, and migration-drift
+checks passed. Ruff found one long test-data line after the suite; wrapping the
+string preserved its value, and rerun lint, formatting (226 files), and dependency
+compatibility (35 packages) passed. No live AI request ran. The browser walkthrough
+remains the acceptance step.
+
+Immediate next action: ask the user to review MT-012 with two clean drafts and
+one location-conflicting draft, then verify the result after confirming only the
+ready profiles. Browser acceptance remains pending. After that, inspect MT-013's
+remaining candidate-detail/source-card findings against the current code before
+selecting the next correction. DEMO-002 remains paused for the manual-review pass.
 
 Delivery workflow: provide a ZIP containing only changed files with repository-
 relative paths; keep the working project and full project archive updated.

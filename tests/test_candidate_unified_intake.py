@@ -18,10 +18,11 @@ from candidates.intake_mapping import apply_candidate_intake_csv
 from candidates.models import (
     Candidate,
     CandidateIntakeBatch,
+    CandidateIntakeItem,
     CandidateProfile,
     CandidateSource,
 )
-from candidates.profile_batch import review_intake_profiles
+from candidates.profile_batch import IntakeProfileReviewRow, review_intake_profiles
 from matching.models import ReviewDecision
 from operations.services import queue_candidate_profile_documents
 from organizations.models import Organization
@@ -325,6 +326,10 @@ def test_batch_profile_confirmation_includes_clean_and_excludes_ambiguity(
     assert b"Needs individual review</span>" in page.content
     assert b">Excluded<" not in page.content
     assert b"Profile v1" in page.content
+    assert "1 skill · 1 other fact" in page.content.decode()
+    assert b"0 location conflicts" in page.content
+    assert b"Confirm 1 ready profile</button>" in page.content
+    assert b"profile(s)" not in page.content
 
     response = client.post(
         reverse(
@@ -341,6 +346,8 @@ def test_batch_profile_confirmation_includes_clean_and_excludes_ambiguity(
     assert clean_profile.confirmed_at is not None
     assert ambiguous_profile.status == CandidateProfile.Status.DRAFT
     assert clean_item.candidate.skill_records.count() == 1
+    assert b"Confirmed 1 profile." in response.content
+    assert b"1 profile from this intake is already confirmed." in response.content
     assert not ReviewDecision.objects.exists()
     assert not OutreachDraft.objects.exists()
 
@@ -381,13 +388,15 @@ def test_queued_profile_is_processing_instead_of_excluded(
     assert "Processing</span><strong>1</strong>" in content
     assert "Profile creation is still processing" in content
     assert "Excluded" not in content
+    assert "0 skills" not in content
+    assert "0 location conflicts" not in content
 
 
 def test_batch_profile_confirmation_excludes_candidate_profile_conflict(
-    settings, tmp_path
+    client, settings, tmp_path
 ) -> None:
     settings.MEDIA_ROOT = tmp_path
-    user, _, batch = make_batch()
+    user, organization, batch = make_batch()
     text = "Conflict Candidate\nconflict@example.test | Gjilan\nPython experience"
     pending = upload_candidate_intake_cv(
         batch=batch,
@@ -416,6 +425,111 @@ def test_batch_profile_confirmation_excludes_candidate_profile_conflict(
     assert not review.eligible_rows
     assert review.excluded_rows[0].profile == profile
     assert "do not match" in review.excluded_rows[0].reason
+    assert review.excluded_rows[0].conflict_count == 1
+
+    client.force_login(user)
+    url = reverse(
+        "candidates:candidate-intake-confirm-profiles",
+        args=[organization.slug, batch.pk],
+    )
+    page = client.get(url)
+    assert b"1 location conflict" in page.content
+    assert b"No profiles are ready to confirm" in page.content
+    response = client.post(url, follow=True)
+    assert b"No profile drafts are ready for confirmation." in response.content
+    profile.refresh_from_db()
+    assert profile.status == CandidateProfile.Status.DRAFT
+    assert profile.confirmed_by is None
+
+
+def test_batch_summary_counts_saved_facts_without_evidence_duplicates() -> None:
+    candidate = Candidate(location="Prishtina")
+    item = CandidateIntakeItem(candidate=candidate)
+    profile = CandidateProfile()
+    row = IntakeProfileReviewRow(item, profile, "ready", "")
+    assert (row.skill_count, row.fact_count, row.conflict_count) == (0, 0, 0)
+
+    profile.relevant_experience_summary = "Python experience"
+    profile.location = "Gjilan"
+    profile.availability = "Available immediately"
+    profile.work_mode_preference = CandidateProfile.WorkMode.REMOTE
+    profile.skills = [{"name": "Python"}, {"name": "Django"}]
+    profile.employment_history = [{"role": "Developer"}]
+    profile.languages = [{"language": "English"}, {"language": "Albanian"}]
+    profile.education = [{"qualification": "Degree"}]
+    profile.certifications = [{"name": "Certificate"}]
+    profile.employment_type_preferences = ["full_time"]
+    profile.fact_evidence = {"location": "Gjilan"}
+    profile.ambiguities = ["Needs individual review"]
+    assert (row.skill_count, row.fact_count, row.conflict_count) == (2, 10, 1)
+
+    missing = IntakeProfileReviewRow(item, None, "processing", "")
+    assert (missing.skill_count, missing.fact_count, missing.conflict_count) == (
+        0,
+        0,
+        0,
+    )
+
+
+def test_batch_confirmation_confirms_two_clean_profiles_and_preserves_conflict(
+    client, settings, tmp_path
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    user, organization, batch = make_batch()
+    profiles = []
+    pending_items = []
+    for index in range(3):
+        location = "Gjilan" if index == 2 else "Prishtina"
+        text = (
+            f"Synthetic {index}\nexample{index}@example.test | {location}\n"
+            "Python experience"
+        )
+        pending = upload_candidate_intake_cv(
+            batch=batch,
+            user=user,
+            uploaded_file=docx_upload(f"synthetic-{index}.docx", text),
+        )
+        pending_items.append((index, pending, location, text))
+    # Stage the whole batch before accepting its final pending item closes it.
+    for index, pending, location, text in pending_items:
+        item, document, _ = accept_uploaded_item(
+            item=pending,
+            user=user,
+            name=f"Synthetic {index}",
+            email=f"example{index}@example.test",
+            text=text,
+        )
+        profile = create_profile(item=item, document=document, text=text, user=user)
+        profile.location = location
+        profile.fact_evidence["location"] = location
+        profile.save()
+        profiles.append(profile)
+
+    client.force_login(user)
+    url = reverse(
+        "candidates:candidate-intake-confirm-profiles",
+        args=[organization.slug, batch.pk],
+    )
+    page = client.get(url)
+    assert b"Confirm 2 ready profiles</button>" in page.content
+    assert "1 skill · 2 other facts" in page.content.decode()
+    assert b"1 location conflict" in page.content
+    assert b"profile(s)" not in page.content
+    response = client.post(url, follow=True)
+    assert b"Confirmed 2 profiles." in response.content
+    assert b"2 profiles from this intake are already confirmed." in response.content
+    for profile in profiles[:2]:
+        profile.refresh_from_db()
+        assert profile.status == CandidateProfile.Status.CONFIRMED
+        assert profile.confirmed_by == user
+        assert profile.confirmed_at is not None
+    profiles[2].refresh_from_db()
+    assert profiles[2].status == CandidateProfile.Status.DRAFT
+    assert profiles[2].confirmed_by is None
+    assert profiles[2].confirmed_at is None
+    assert not profiles[2].candidate.skill_records.exists()
+    assert not ReviewDecision.objects.exists()
+    assert not OutreachDraft.objects.exists()
 
 
 def test_unified_intake_routes_are_tenant_scoped(client, settings, tmp_path) -> None:

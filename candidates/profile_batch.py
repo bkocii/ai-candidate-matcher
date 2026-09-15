@@ -34,6 +34,49 @@ class IntakeProfileReviewRow:
         return self.status == PROFILE_READY
 
     @property
+    def skill_count(self) -> int:
+        return len(self.profile.skills) if self.profile else 0
+
+    @property
+    def fact_count(self) -> int:
+        """Count saved non-skill facts, excluding unknowns and evidence copies."""
+        if self.profile is None:
+            return 0
+        profile = self.profile
+        scalar_count = sum(
+            bool(value.strip())
+            for value in (
+                profile.relevant_experience_summary,
+                profile.location,
+                profile.availability,
+            )
+        )
+        return (
+            scalar_count
+            + (profile.work_mode_preference != CandidateProfile.WorkMode.UNKNOWN)
+            + sum(
+                len(values)
+                for values in (
+                    profile.employment_history,
+                    profile.languages,
+                    profile.education,
+                    profile.certifications,
+                    profile.employment_type_preferences,
+                )
+            )
+        )
+
+    @property
+    def conflict_count(self) -> int:
+        if self.profile is None or self.item.candidate is None:
+            return 0
+        return len(
+            candidate_profile_conflicts(
+                candidate=self.item.candidate, profile=self.profile
+            )
+        )
+
+    @property
     def status_label(self) -> str:
         return {
             PROFILE_PROCESSING: "Processing",

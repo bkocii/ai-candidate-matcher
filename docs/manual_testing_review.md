@@ -391,7 +391,7 @@ This file records functional defects and visual improvements found during page-b
 | MT-011-V04 | Visual defect | Medium | The correction form is a long, narrow single column with large empty evidence fields, while most desktop width is unused. Correcting one questionable skill requires scrolling through several screens. | Group fields into compact **Profile facts**, **Evidence**, **Skills**, and **Ambiguities** sections. Use a wider two-column desktop layout and collapse empty optional evidence sections. | Implemented — browser retest pending |
 | MT-011-V05 | Visual defect | Medium | Skill checkboxes sit far to the right of their labels and evidence text, so the control-to-skill relationship is weak and slower to scan. | Render each skill as a compact selectable row or card with the checkbox beside the skill name and its CV evidence as secondary text. | Implemented — browser retest pending |
 | MT-011-V06 | Visual defect | Low | **Confirmed** and **Draft** appear as plain table text in profile history, making version state slower to distinguish. | Use compact status badges with both text and restrained semantic styling. | Implemented — browser retest pending |
-| MT-011-V07 | Visual defect | Medium | The 2026-09-08 correction-page video shows the bottom buttons left of the centered form panels. Later generic `.form-panel` styles override the correction sections' width and margins while the action row retains the full form width. | Scope the section layout to the correction form so it outranks generic panel defaults; keep panels and actions on the same full-width boundary and let buttons wrap on narrow screens. | Implemented — 2026-09-08; browser retest pending |
+| MT-011-V07 | Visual defect | Medium | The 2026-09-08 correction-page video shows the bottom buttons left of the centered form panels. Later generic `.form-panel` styles override the correction sections' width and margins while the action row retains the full form width. | Scope the section layout to the correction form so it outranks generic panel defaults; keep panels and actions on the same full-width boundary and let buttons wrap on narrow screens. | Resolved — user confirmed; recorded 2026-09-15 |
 | MT-011-U01 | Improvement | Medium | The primary confirmation action appears before the recruiter has scrolled through the evidence and there is no correction option beside it. | Keep efficient confirmation, but pair it with **Correct profile** and repeat or place the action after the review content with a concise confirmation summary. | Implemented — browser retest pending |
 | MT-011-U02 | Improvement | Low | **Extract new version** does not explain when re-extraction is appropriate or that it invokes AI again. | Use **Re-extract from CV** with helper/confirmation text explaining that it creates another draft and does not correct the current version automatically. | Implemented — browser retest pending |
 
@@ -409,8 +409,8 @@ detection, lint, formatting, and dependency compatibility. No live AI call ran.
 - **Date:** 2026-08-29
 - **Route:** `/organizations/second-agency-test/candidates/intake/11/confirm-profiles/`
 - **Viewport:** Desktop, 1920 × 1080
-- **Visual status:** Pass with minor improvements
-- **Functional status:** Fail — unsafe eligibility classification
+- **Visual status:** Count and wording improvements implemented 2026-09-15; browser retest pending
+- **Functional status:** Original conflict failure fixed in CR-006; automated batch-action coverage extended; browser retest pending
 
 #### Completed functional checks
 
@@ -418,7 +418,7 @@ detection, lint, formatting, and dependency compatibility. No live AI call ran.
 - **Pass:** Every row retains direct candidate and profile links for individual inspection.
 - **Pass:** The page explains that profile confirmation does not approve/reject candidates or generate/approve outreach.
 - **Pass:** No confirmation occurred merely by opening the page.
-- **Fail:** Drita's conflicting location data was not treated as a review exception; the profile is incorrectly included for batch confirmation.
+- **Original failure (2026-08-29):** Drita's conflicting location data was not treated as a review exception. CR-006 subsequently fixed the eligibility check; do not treat this historical observation as the current implementation.
 
 #### Pending functional checks
 
@@ -432,9 +432,24 @@ detection, lint, formatting, and dependency compatibility. No live AI call ran.
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
 | MT-012-F01 | Functional defect | Critical | Drita is shown as **Included** with the reason “Evidence validated with no recorded review exception,” despite the known Prishtina/Gjilan conflict. The batch action would publish a materially conflicting profile without individual review. | Extend eligibility checks beyond AI-provided ambiguities and excerpt grounding. Compare extracted matching facts with recruiter-supplied candidate values and other trusted current data; exclude material conflicts until explicitly resolved. | Fixed in CR-006 — browser retest pending |
-| MT-012-U01 | Improvement | Medium | The batch row reports only a generic eligibility reason and no compact indication of what facts will be published. | Show a compact fact/skill count and any detected conflict count while keeping full evidence behind the profile link. | Proposed |
-| MT-012-V01 | Visual defect | Low | Included/excluded count cards are oversized for two single-number summaries. | Use a compact status summary so individual results and the confirmation boundary appear higher on the page. | Open |
-| MT-012-C01 | Improvement | Low | **Confirm 1 eligible profile(s)** uses mechanical pluralization. | Render **Confirm 1 eligible profile** and pluralize only for other counts. | Proposed |
+| MT-012-U01 | Improvement | Medium | The batch row reports only a generic eligibility reason and no compact indication of what facts will be published. | Show a compact fact/skill count and any detected conflict count while keeping full evidence behind the profile link. | Implemented — 2026-09-15; browser retest pending |
+| MT-012-V01 | Visual defect | Low | Included/excluded count cards are oversized for two single-number summaries. | Use a compact status summary so individual results and the confirmation boundary appear higher on the page. | Already implemented in MT-008; verified in code 2026-09-15; this screen's browser retest pending |
+| MT-012-C01 | Improvement | Low | **Confirm 1 eligible profile(s)** uses mechanical pluralization. | Render **Confirm 1 eligible profile** and pluralize only for other counts. | Implemented — 2026-09-15; heading, action, success, and already-confirmed text use singular/plural wording; browser retest pending |
+
+MT-012 now shows skill and other-fact counts below each saved profile link and
+location-conflict counts beside the existing reason. Counts are derived from the
+saved profile without AI calls or persistence; empty/unknown fields and duplicate
+evidence copies are not counted. A processing item without a profile shows no
+invented zero-content summary. The conflict count is explicitly labelled as a
+location check, not a claim that every possible conflict has been detected.
+Eligibility, source checks, tenant boundaries, and individual confirmation remain
+unchanged. Browser acceptance still needs the mixed-batch walkthrough in the guide.
+
+Automated verification on 2026-09-15: focused intake/correction coverage
+`24 passed`; complete suite `587 passed`. Django system/deployment, static
+collection, and migration-drift checks passed. One long test-data line was wrapped
+after Ruff flagged it; rerun lint, formatting, and dependency checks passed.
+No live AI call was made. These results do not replace browser acceptance.
 
 ### MT-013 — Candidate details and source/privacy record
 

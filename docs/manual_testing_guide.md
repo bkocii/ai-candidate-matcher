@@ -352,23 +352,48 @@ and select **Review profile confirmation**.
 
 Expected result:
 
-- The screen shows included and excluded counts before any confirmation.
+- The compact summary shows **Processing**, **Ready to confirm**, and **Needs
+  individual review** counts before any confirmation. Already-confirmed profiles
+  have a separate short summary.
 - A clean evidence-validated draft with no ambiguity, sensitive-content flag,
   source change, duplicate conflict, trusted candidate/profile conflict, or
   candidate-state exception is included.
-- Pending/failed extraction, ambiguities, sensitive-content flags, changed CVs,
-  inactive/deleting candidates, missing exact accepted-CV links, and already
-  confirmed profiles are excluded with a bounded reason.
+- Queued/running extraction appears as **Processing**. Failed extraction,
+  ambiguities, sensitive-content flags, changed CVs, inactive/deleting candidates,
+  and missing exact accepted-CV links need individual review. Already-confirmed
+  profiles are labelled separately; none of these states is included in the action.
 - A recruiter-supplied candidate location that differs from the CV profile
   location is excluded with a conflict reason. Direct confirmation is blocked by
   the same check.
 - Every available profile has an individual link and can be opened before the
   batch action.
-- **Confirm all eligible profiles** is one explicit POST action. Each included
+- **Confirm 1 ready profile** (or **Confirm N ready profiles**) is one explicit
+  POST action. Each included
   profile separately becomes confirmed with the acting recruiter and timestamp;
   excluded drafts remain unchanged.
 - The action publishes grounded profile facts only. It does not approve, reject,
   revisit, assess, contact, create outreach, or send anything for a candidate.
+
+MT-012 retest: use an intake with two clean drafts and one whose candidate record
+says **Prishtina** while its CV-backed profile says **Gjilan**. Stage all CVs
+before creating candidates, since accepting the final pending item completes the
+batch. The review should show two ready profiles and one needing individual
+review. The conflicting row shows **1 location conflict** and its reason. Open
+the profile link to inspect the source evidence before proceeding.
+
+Saved-profile rows show skill counts and other-fact counts. Other facts count one
+each for a nonempty summary, location, availability, and known work mode, plus
+each employment-history, language, education, certification, and employment-type
+preference entry. Evidence excerpts and ambiguity messages are not counted again.
+These describe profile content and do not change eligibility or matching scores.
+
+Confirm the two ready drafts: both must receive their own actor and timestamp;
+the conflicting draft must remain unconfirmed. Check **Confirmed 2 profiles.**
+and **2 profiles from this intake are already confirmed.** Repeat with one clean
+draft to verify singular wording. A conflict-only batch has no confirmation
+button and remains blocked on POST. A processing-only batch has no skill/fact
+counts until a saved profile exists. Send a screenshot of the mixed review screen
+and its result; MT-012 browser acceptance remains pending.
 
 ### Correct candidate, source, and profile data
 

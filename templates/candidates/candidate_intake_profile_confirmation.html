@@ -17,10 +17,11 @@
     <article><span>Ready to confirm</span><strong>{{ review.eligible_rows|length }}</strong></article>
     <article><span>Needs individual review</span><strong>{{ review.needs_review_rows|length }}</strong></article>
 </section>
-{% if review.confirmed_rows %}<p class="help-text profile-confirmed-summary">{{ review.confirmed_rows|length }} profile(s) from this intake are already confirmed.</p>{% endif %}
+{% if review.confirmed_rows %}<p class="help-text profile-confirmed-summary">{{ review.confirmed_rows|length }} profile{{ review.confirmed_rows|length|pluralize }} from this intake {{ review.confirmed_rows|length|pluralize:"is,are" }} already confirmed.</p>{% endif %}
 
 <section class="report-section" aria-labelledby="profile-review-rows-title">
     <h2 id="profile-review-rows-title">Individual profile results</h2>
+    <p class="section-note">Open a profile to inspect its skills, other recorded facts, and supporting evidence.</p>
     <div class="table-wrap">
         <table>
             <thead><tr><th>Candidate</th><th>Profile</th><th>Status</th><th>Reason</th></tr></thead>
@@ -28,9 +29,9 @@
                 {% for row in review.rows %}
                 <tr>
                     <th>{% if row.item.candidate %}<a href="{% url 'candidates:candidate-detail' organization.slug row.item.candidate.pk %}">{{ row.item.candidate.full_name }}</a>{% else %}Candidate unavailable{% endif %}</th>
-                    <td>{% if row.profile %}<a href="{% url 'candidates:candidate-profile-detail' organization.slug row.item.candidate.pk row.profile.pk %}">Profile v{{ row.profile.version }}</a>{% else %}—{% endif %}</td>
+                    <td>{% if row.profile %}<a href="{% url 'candidates:candidate-profile-detail' organization.slug row.item.candidate.pk row.profile.pk %}">Profile v{{ row.profile.version }}</a><div class="help-text">{{ row.skill_count }} skill{{ row.skill_count|pluralize }} · {{ row.fact_count }} other fact{{ row.fact_count|pluralize }}</div>{% else %}—{% endif %}</td>
                     <td><span class="status-pill profile-status-{{ row.status }}">{{ row.status_label }}</span></td>
-                    <td>{{ row.reason }}</td>
+                    <td>{% if row.profile %}<div>{% if row.conflict_count %}<strong>{{ row.conflict_count }} location conflict{{ row.conflict_count|pluralize }}</strong>{% else %}<span class="help-text">0 location conflicts</span>{% endif %}</div>{% endif %}{{ row.reason }}</td>
                 </tr>
                 {% empty %}<tr><td colspan="4">No candidates were created from this intake.</td></tr>{% endfor %}
             </tbody>
@@ -41,12 +42,12 @@
 {% if review.eligible_rows %}
 <section class="review-callout">
     <div>
-        <h2>Confirm {{ review.eligible_rows|length }} ready profile(s)</h2>
+        <h2>Confirm {{ review.eligible_rows|length }} ready profile{{ review.eligible_rows|length|pluralize }}</h2>
         <p>This confirms extracted candidate information only. Approve/reject/revisit decisions remain individual, and outreach remains separately generated and approved.</p>
     </div>
     <form method="post">
         {% csrf_token %}
-        <button class="primary-button" type="submit">Confirm ready profiles</button>
+        <button class="primary-button" type="submit">Confirm {{ review.eligible_rows|length }} ready profile{{ review.eligible_rows|length|pluralize }}</button>
     </form>
 </section>
 {% else %}

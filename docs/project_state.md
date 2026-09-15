@@ -1524,9 +1524,30 @@ available form width; buttons can wrap on narrow screens. Other forms, profile
 evidence validation, tenant authorization, and immutable version creation are
 unchanged. A CSS regression covers the scoped width/margin rules and button
 wrapping. No migration or dependency change is needed. Browser retesting remains
-pending; continue the manual-review backlog before DEMO-002.
+pending at delivery; the user subsequently confirmed the button alignment.
+Continue the manual-review backlog before DEMO-002.
 
 Verification: focused corrections `13 passed`; full `uv run python
 scripts/check.py` gate `585 passed`. Django system/deployment checks, static
 collection, zero migration drift, Ruff lint/formatting across 226 Python files,
 and compatibility of all 35 installed packages passed. No live AI request ran.
+
+### MT-012 — Batch profile-review summary — 2026-09-15
+
+Profile rows now show saved skill/fact counts and explicit location-conflict
+counts. Unknown facts, evidence copies, and unsaved processing results are not
+counted as profile content. Heading, button, success, and already-confirmed copy
+use correct singular/plural wording. The compact status strip already existed
+from MT-008 and is retained. CR-006's conflict exclusion is unchanged and now has
+POST regression coverage for a conflict-only batch and a mixed batch with two
+clean profiles. Each clean confirmation keeps its own actor/time; the conflict
+remains a draft. No model, migration, dependency, AI, or matching change is added.
+MT-011-V07 is user-confirmed; MT-012 browser retesting is the next manual step.
+
+Verification: focused intake/correction tests `24 passed`; the complete test
+suite `587 passed`. The check script also passed Django system/deployment checks,
+static collection, and migration-drift checks. Its subsequent Ruff check caught
+one overlong test-data line; after wrapping that string without changing its
+value, Ruff lint, formatting (226 Python files), and compatibility checks for
+35 installed packages passed on rerun. No live AI call was made. Browser
+acceptance remains pending.
