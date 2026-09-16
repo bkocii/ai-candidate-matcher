@@ -702,6 +702,20 @@ normal recruiter application.
 3. Return to the draft editor. The **Typed hard-constraint rules** section must
    be visible below the normal requirements form.
 
+MT-016 approval-boundary retest: change the summary and one skill without first
+using **Save draft**, then select **Save and review**. The action must validate
+and save those edits before opening a dedicated **Review before confirming**
+page. Compare the original description with **Draft to be confirmed** and verify
+the summary, both skill lists, experience, location, work mode, languages,
+education, certifications, employment type, hard-constraint notes, ambiguities,
+and typed rules. Empty values must say **Not recorded**, not disappear. Use
+**Edit draft**, change a value, and return with **Save and review**. Finally,
+confirm only from the bottom review callout and verify the version becomes
+read-only with actor/time recorded. Submit an invalid editor form once: it must
+stay on the editor and preserve the entered values. Check desktop and narrow
+widths for overflow. Send screenshots of the review page before confirmation and
+the confirmed vacancy afterward. MT-016 browser acceptance remains pending.
+
 You may use Django admin to inspect **Matching → Requirement skills**. Expected
 result: the version has three ordered links. `Python` and `Django` are must-have;
 `PostgreSQL` is nice-to-have. **Matching → Skills** contains one

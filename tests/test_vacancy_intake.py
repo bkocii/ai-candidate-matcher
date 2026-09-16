@@ -134,9 +134,16 @@ def test_inaccessible_organization_and_vacancy_return_404(client) -> None:
             args=[organization.slug, hidden.pk, hidden_requirements.pk],
         )
     )
+    review_response = client.get(
+        reverse(
+            "vacancies:requirements-review",
+            args=[organization.slug, hidden.pk, hidden_requirements.pk],
+        )
+    )
 
     assert organization_response.status_code == 404
     assert object_response.status_code == 404
+    assert review_response.status_code == 404
 
 
 def test_create_form_lists_only_active_clients_in_organization() -> None:
@@ -327,6 +334,94 @@ def test_recruiter_edits_requirements_draft(client) -> None:
     assert requirements.must_have_skills == ["Python", "Django"]
     assert requirements.minimum_years_experience == Decimal("4.0")
     assert requirements.status == VacancyRequirements.Status.DRAFT
+
+
+def test_save_and_review_persists_edits_and_previews_complete_draft(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    client.force_login(user)
+    edit_url = reverse(
+        "vacancies:requirements-edit",
+        args=[organization.slug, vacancy.pk, requirements.pk],
+    )
+    review_url = reverse(
+        "vacancies:requirements-review",
+        args=[organization.slug, vacancy.pk, requirements.pk],
+    )
+
+    response = client.post(
+        edit_url,
+        {
+            "summary": "Senior backend role",
+            "must_have_skills": "Python\nDjango",
+            "nice_to_have_skills": "PostgreSQL",
+            "minimum_years_experience": "4.0",
+            "location_requirement": "Prishtina or remote",
+            "work_mode": VacancyRequirements.WorkMode.HYBRID,
+            "language_requirements": "English",
+            "education_requirements": "",
+            "certification_requirements": "",
+            "employment_type": VacancyRequirements.EmploymentType.FULL_TIME,
+            "hard_constraints": "Eligible to work in Kosovo",
+            "ambiguities": "On-call frequency is not stated",
+            "intent": "review",
+        },
+    )
+    requirements.refresh_from_db()
+    assert response.status_code == 302
+    assert response.url == review_url
+    assert requirements.must_have_skills == ["Python", "Django"]
+
+    review = client.get(review_url)
+    content = review.content.decode()
+    assert review.status_code == 200
+    for expected in (
+        "Build secure Django applications.",
+        "Senior backend role",
+        "Python, Django",
+        "PostgreSQL",
+        "4.0 years",
+        "Prishtina or remote",
+        "Hybrid",
+        "English",
+        "Full time",
+        "Eligible to work in Kosovo",
+        "On-call frequency is not stated",
+        "No typed rules have been added",
+    ):
+        assert expected in content
+    assert "Draft to be confirmed" in content
+    assert "Edit draft" in content
+    assert content.index("Draft to be confirmed") < content.index(
+        "Explicit confirmation"
+    )
+    assert f'href="{edit_url}">Edit draft</a>' in content
+    assert "Current confirmed requirements" not in content
+
+    detail = client.get(
+        reverse("vacancies:vacancy-detail", args=[organization.slug, vacancy.pk])
+    ).content.decode()
+    assert f'href="{review_url}">Review version 1</a>' in detail
+    assert "Confirm version 1</button>" not in detail
+
+
+def test_invalid_save_and_review_stays_on_editor_without_losing_values(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    client.force_login(user)
+    edit_url = reverse(
+        "vacancies:requirements-edit",
+        args=[organization.slug, vacancy.pk, requirements.pk],
+    )
+
+    response = client.post(
+        edit_url,
+        {"summary": "Unsaved review value", "intent": "review"},
+    )
+    requirements.refresh_from_db()
+    assert response.status_code == 200
+    assert "Unsaved review value" in response.content.decode()
+    assert requirements.summary == ""
 
 
 def test_update_service_rejects_cross_organization_user() -> None:

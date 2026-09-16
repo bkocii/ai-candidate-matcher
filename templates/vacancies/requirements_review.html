@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Review requirements v{{ requirements.version }} | {{ vacancy.title }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading" aria-labelledby="requirements-review-title">
+    <div>
+        <p class="eyebrow">Final review · requirements version {{ requirements.version }}</p>
+        <h1 id="requirements-review-title">Review before confirming</h1>
+        <p class="lede">Compare the original vacancy description with every structured requirement below. Confirmation makes this version read-only and uses it as matching input.</p>
+    </div>
+    <a class="secondary-button" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk requirements.pk %}">Edit draft</a>
+</section>
+
+<section class="detail-grid requirement-review-grid" aria-label="Source and draft requirements">
+    <article class="detail-panel">
+        <p class="eyebrow">Original input</p>
+        <h2>Vacancy description</h2>
+        <div class="source-description">{{ requirements.source_description|linebreaks }}</div>
+    </article>
+    <article class="detail-panel">
+        <p class="eyebrow">Draft to be confirmed</p>
+        <h2>Requirements version {{ requirements.version }}</h2>
+        <dl class="requirement-list">
+            <div><dt>Summary</dt><dd>{{ requirements.summary|default:"Not recorded" }}</dd></div>
+            <div><dt>Must-have skills</dt><dd>{{ requirements.must_have_skills|join:", "|default:"Not recorded" }}</dd></div>
+            <div><dt>Nice-to-have skills</dt><dd>{{ requirements.nice_to_have_skills|join:", "|default:"Not recorded" }}</dd></div>
+            <div><dt>Minimum experience</dt><dd>{% if requirements.minimum_years_experience is not None %}{{ requirements.minimum_years_experience }} years{% else %}Not recorded{% endif %}</dd></div>
+            <div><dt>Location</dt><dd>{{ requirements.location_requirement|default:"Not recorded" }}</dd></div>
+            <div><dt>Work mode</dt><dd>{{ requirements.get_work_mode_display }}</dd></div>
+            <div><dt>Languages</dt><dd>{{ requirements.language_requirements|join:", "|default:"Not recorded" }}</dd></div>
+            <div><dt>Education</dt><dd>{{ requirements.education_requirements|join:", "|default:"Not recorded" }}</dd></div>
+            <div><dt>Certifications</dt><dd>{{ requirements.certification_requirements|join:", "|default:"Not recorded" }}</dd></div>
+            <div><dt>Employment type</dt><dd>{{ requirements.get_employment_type_display }}</dd></div>
+            <div><dt>Hard-constraint notes</dt><dd>{{ requirements.hard_constraints|join:", "|default:"Not recorded" }}</dd></div>
+            <div><dt>Ambiguities</dt><dd>{{ requirements.ambiguities|join:", "|default:"None recorded" }}</dd></div>
+        </dl>
+    </article>
+</section>
+
+<section class="rule-editor" aria-labelledby="review-rules-title">
+    <div class="rule-editor-heading">
+        <div>
+            <p class="eyebrow">Candidate filtering</p>
+            <h2 id="review-rules-title">Typed hard-constraint rules</h2>
+            <p class="section-note">Review every filtering rule with this draft. Missing candidate information stays eligible for recruiter review.</p>
+        </div>
+    </div>
+    {% include "matching/_hard_constraint_rules.html" with rules=hard_constraint_rules editable=False requirements=requirements %}
+</section>
+
+<section class="review-callout requirement-confirmation" aria-labelledby="confirm-requirements-title">
+    <div>
+        <p class="eyebrow">Explicit confirmation</p>
+        <h2 id="confirm-requirements-title">Confirm requirements version {{ requirements.version }}</h2>
+        <p>Confirm only after the draft and filtering rules accurately represent the vacancy. This does not open the vacancy or evaluate candidates.</p>
+    </div>
+    <div class="button-row">
+        <a class="secondary-button" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk requirements.pk %}">Edit draft</a>
+        <form method="post" action="{% url 'vacancies:requirements-confirm' organization.slug vacancy.pk requirements.pk %}">
+            {% csrf_token %}
+            <button class="primary-button" type="submit">Confirm version {{ requirements.version }}</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

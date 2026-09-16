@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from ai_gateway import AIGatewayError
 from matching.models import MatchRun
@@ -320,6 +320,13 @@ def requirements_edit(
                 request,
                 f"Saved requirements version {requirements.version}.",
             )
+            if request.POST.get("intent") == "review":
+                return redirect(
+                    "vacancies:requirements-review",
+                    organization_slug=organization.slug,
+                    vacancy_id=vacancy.pk,
+                    requirements_id=requirements.pk,
+                )
             return redirect(
                 "vacancies:requirements-edit",
                 organization_slug=organization.slug,
@@ -335,6 +342,38 @@ def requirements_edit(
             "vacancy": vacancy,
             "requirements": requirements,
             "form": form,
+            "hard_constraint_rules": requirements.hard_constraint_rules.select_related(
+                "skill"
+            ),
+        },
+    )
+
+
+@login_required
+@require_GET
+def requirements_review(
+    request,
+    organization_slug: str,
+    vacancy_id: int,
+    requirements_id: int,
+):
+    organization = _visible_organization(request, organization_slug)
+    vacancy = _visible_vacancy(organization, vacancy_id)
+    requirements = _visible_requirements(organization, vacancy, requirements_id)
+    if requirements.status != VacancyRequirements.Status.DRAFT:
+        messages.info(request, "This requirements version is already confirmed.")
+        return redirect(
+            "vacancies:vacancy-detail",
+            organization_slug=organization.slug,
+            vacancy_id=vacancy.pk,
+        )
+    return render(
+        request,
+        "vacancies/requirements_review.html",
+        {
+            "organization": organization,
+            "vacancy": vacancy,
+            "requirements": requirements,
             "hard_constraint_rules": requirements.hard_constraint_rules.select_related(
                 "skill"
             ),
@@ -395,6 +434,12 @@ def requirements_confirm(
         confirm_requirements_draft(requirements=requirements, user=request.user)
     except ValidationError as error:
         messages.error(request, "; ".join(error.messages))
+        return redirect(
+            "vacancies:requirements-review",
+            organization_slug=organization.slug,
+            vacancy_id=vacancy.pk,
+            requirements_id=requirements.pk,
+        )
     else:
         messages.success(
             request,

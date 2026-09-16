@@ -57,10 +57,7 @@
         <h2 id="draft-title">Requirements version {{ draft.version }} is still a draft</h2>
         <p>Save any corrections first. Confirm only when the structured requirements accurately represent the role.</p>
     </div>
-    <form method="post" action="{% url 'vacancies:requirements-confirm' organization.slug vacancy.pk draft.pk %}">
-        {% csrf_token %}
-        <button class="primary-button" type="submit">Confirm version {{ draft.version }}</button>
-    </form>
+    <a class="primary-button button-link" href="{% url 'vacancies:requirements-review' organization.slug vacancy.pk draft.pk %}">Review version {{ draft.version }}</a>
 </section>
 {% endif %}
 

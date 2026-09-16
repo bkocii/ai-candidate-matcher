@@ -1611,3 +1611,21 @@ Verification: vacancy-intake tests `29 passed`; complete quality gate
 no migration drift, Ruff lint/formatting across 226 files, and compatibility of
 35 packages. No live AI request ran. Alignment still needs the user's browser
 retest; automated tests verify the rendered wording and existing creation flow.
+The user confirmed MT-015 on 2026-09-16; C01/C02/V01 are resolved.
+
+### MT-016 — Requirements confirmation preview — 2026-09-16
+
+The first MT-016 slice fixes the approval boundary. **Save and review** now
+validates and persists current form edits before redirecting. A dedicated review
+route places the original description beside the complete draft to be confirmed,
+including all structured fields, notes, ambiguities, and filtering rules. The
+final POST confirmation follows that preview and has nearby Edit draft actions;
+vacancy detail no longer presents an immediate confirmation button. Failed
+confirmation returns to the preview. Tenant scoping, immutable confirmed versions,
+actor/time audit, matching behavior, AI extraction, models, migrations, and
+dependencies are unchanged. The remaining MT-016 editor/rule issues stay open.
+
+Verification: vacancy-intake tests `31 passed`; full quality gate `590 passed`,
+including Django system/deployment checks, static collection, no migration drift,
+Ruff lint/formatting (226 Python files), and compatibility of 35 packages. No
+live AI request ran. Browser acceptance of the review boundary remains pending.

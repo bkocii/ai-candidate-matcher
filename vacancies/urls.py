@@ -49,6 +49,12 @@ urlpatterns = [
     ),
     path(
         "organizations/<slug:organization_slug>/vacancies/<int:vacancy_id>/"
+        "requirements/<int:requirements_id>/review/",
+        views.requirements_review,
+        name="requirements-review",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/vacancies/<int:vacancy_id>/"
         "requirements/<int:requirements_id>/confirm/",
         views.requirements_confirm,
         name="requirements-confirm",

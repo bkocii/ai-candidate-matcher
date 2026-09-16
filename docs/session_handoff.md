@@ -1095,11 +1095,26 @@ hiring-client wording. No model, migration, dependency, or service behavior chan
 MT-015 verification: vacancy-intake coverage `29 passed`; the complete quality
 gate passed with `588 passed`, successful system/deployment/static checks, no
 migration drift, Ruff lint/formatting, and package compatibility. No live AI
-calls ran. Browser acceptance of alignment and wording remains pending.
+calls ran. The user confirmed MT-015 on 2026-09-16; C01/C02/V01 are resolved.
 
-Immediate next action: ask the user to check Add vacancy alignment and wording,
-including a narrow window; sample Edit vacancy because it shares the template.
-Once accepted, inspect MT-016's requirements-editor findings against current code.
+MT-016's first focused slice fixes U05/F02/V02. The requirements editor now has
+**Save and review**, which validates and saves before opening a dedicated review
+route. The review shows original source, every draft field, notes, ambiguities,
+and filtering rules before its final POST-only confirm action, with Edit draft
+available. Vacancy detail links to this review rather than confirming immediately;
+failed confirmation returns to the preview. No model, migration, dependency, AI,
+matching, tenant-scope, immutability, or audit behavior change was introduced.
+
+MT-016 approval-boundary verification: focused vacancy-intake coverage
+`31 passed`; full quality gate `590 passed` with Django system/deployment/static
+checks, zero migration drift, Ruff lint/formatting, and dependency compatibility.
+No live AI calls. Browser acceptance remains pending; U01–U04, V01, F01, and U06
+remain open and must not be reported as fixed by this patch.
+
+Immediate next action: ask the user to test Save and review with unsaved edits,
+inspect the complete confirmation preview at desktop/narrow widths, use Edit draft,
+and confirm from the preview. Once accepted, continue MT-016 with eligibility-rule
+wording/integration and the compact editor; do not mark all MT-016 findings resolved.
 Keep the remaining MT-012 functional browser checks recorded. DEMO-002 remains
 paused for the manual-review pass.
 

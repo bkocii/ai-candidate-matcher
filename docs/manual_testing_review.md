@@ -584,9 +584,9 @@ is recorded separately as MT-015-V01 below.
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-015-C01 | Usability defect | Medium | The field is labelled **Client company**, although the approved recruiter-facing wording is **Hiring client (optional)**. The current label can be mistaken for the organization/tenant itself. | Rename the label to **Hiring client (optional)** and the empty choice to **No hiring client (direct employer)** without changing the underlying model. | Implemented — 2026-09-16; browser retest pending |
-| MT-015-C02 | Improvement | Low | **Description** is generic beside otherwise domain-specific wording. | Use **Job description** so the expected complete vacancy text is immediately clear. | Implemented — 2026-09-16; browser retest pending |
-| MT-015-V01 | Visual defect | Medium | The supplied creation-form video shows the heading and introductory text starting far left of the centered form panel. | Align the heading block with the form's outer edges at desktop and narrow widths. | Implemented — 2026-09-16; browser retest pending |
+| MT-015-C01 | Usability defect | Medium | The field is labelled **Client company**, although the approved recruiter-facing wording is **Hiring client (optional)**. The current label can be mistaken for the organization/tenant itself. | Rename the label to **Hiring client (optional)** and the empty choice to **No hiring client (direct employer)** without changing the underlying model. | Resolved — user confirmed 2026-09-16 |
+| MT-015-C02 | Improvement | Low | **Description** is generic beside otherwise domain-specific wording. | Use **Job description** so the expected complete vacancy text is immediately clear. | Resolved — user confirmed 2026-09-16 |
+| MT-015-V01 | Visual defect | Medium | The supplied creation-form video shows the heading and introductory text starting far left of the centered form panel. | Align the heading block with the form's outer edges at desktop and narrow widths. | Resolved — user confirmed 2026-09-16 |
 
 The shared create/edit vacancy template now centers its heading using the same
 720px maximum width as the form panel. A scoped heading class changes no other
@@ -600,7 +600,7 @@ Verification on 2026-09-16: vacancy-intake coverage `29 passed`; the complete
 deployment checks, static collection, no migration drift, Ruff lint/formatting,
 and dependency compatibility. The updated creation test checks rendered labels
 and the direct-employer choice before submitting successfully. No live AI calls
-ran. Browser acceptance of alignment and wording remains pending.
+ran. The user confirmed the alignment and wording on 2026-09-16.
 
 ### MT-016 — Vacancy requirements draft and eligibility rules
 
@@ -646,9 +646,9 @@ ran. Browser acceptance of alignment and wording remains pending.
 | MT-016-V01 | Visual defect | Medium | The long narrow form stacks many large empty text areas, while most desktop width is unused and the rule section begins only after several screens of scrolling. | Group the draft into compact sections, use skill chips/list rows instead of large textareas, and use a wider two-column desktop layout with a sticky review summary. | Open |
 | MT-016-F01 | Functional defect | Medium | AI classified **Code review** as a must-have skill even though the source describes reviewing code as a role responsibility, not an explicit mandatory qualification. Confirming it could overstate the requirement in matching. | Require explicit requirement language before promoting a responsibility to must-have; otherwise retain it in the role summary or responsibilities and flag uncertain classifications for review. | Open |
 | MT-016-U04 | Usability defect | Medium | The must-have textarea displays the raw phrase **Python development experience** without showing that matching will canonicalize it to **Python**. Recruiters cannot inspect the identity that deterministic matching will use. | Present each skill as a row/chip with **Canonical skill: Python** and **Source wording: Python development experience**, allowing correction without losing provenance. | Open |
-| MT-016-U05 | Usability defect | High | **Review and confirm** is a navigation link and does not save current form edits. Its placement beside **Save draft** makes it reasonable to assume both actions preserve changes, creating a data-loss risk during review. | Make **Review changes** submit and validate the current draft before opening confirmation, or disable it while the form is dirty and clearly require saving first. | Open |
-| MT-016-F02 | Functional defect | High | The supposed confirmation page does not display the draft structured requirements. It shows the original vacancy description, an empty **Current confirmed requirements** panel, and an immediately executable **Confirm version 1** button. The recruiter cannot verify the corrected skills, experience, location, or ambiguities at the final approval boundary. | Add a dedicated confirmation preview that displays every draft field and eligibility rule beside the original source, including a clear changes summary. Place the final POST confirmation only after this preview and provide an **Edit draft** action. | Open |
-| MT-016-V02 | Visual defect | Medium | Before first confirmation, the right-hand **Current confirmed requirements** card is mostly empty but matches the full height of the source-description card, creating a large blank panel while the actual draft is absent. | Use the right-hand panel for **Draft to be confirmed** during review; after confirmation, switch it to **Current matching input**. | Open |
+| MT-016-U05 | Usability defect | High | **Review and confirm** is a navigation link and does not save current form edits. Its placement beside **Save draft** makes it reasonable to assume both actions preserve changes, creating a data-loss risk during review. | Make **Review changes** submit and validate the current draft before opening confirmation, or disable it while the form is dirty and clearly require saving first. | Implemented — **Save and review** validates and persists first; browser retest pending |
+| MT-016-F02 | Functional defect | High | The supposed confirmation page does not display the draft structured requirements. It shows the original vacancy description, an empty **Current confirmed requirements** panel, and an immediately executable **Confirm version 1** button. The recruiter cannot verify the corrected skills, experience, location, or ambiguities at the final approval boundary. | Add a dedicated confirmation preview that displays every draft field and eligibility rule beside the original source, including a clear changes summary. Place the final POST confirmation only after this preview and provide an **Edit draft** action. | Implemented — 2026-09-16; browser retest pending |
+| MT-016-V02 | Visual defect | Medium | Before first confirmation, the right-hand **Current confirmed requirements** card is mostly empty but matches the full height of the source-description card, creating a large blank panel while the actual draft is absent. | Use the right-hand panel for **Draft to be confirmed** during review; after confirmation, switch it to **Current matching input**. | Implemented in dedicated review page — 2026-09-16; browser retest pending |
 | MT-016-U06 | Usability defect | Medium | After confirming v1, the recruiter remains at the bottom of a long detail page. The confirmed history is visible, but the page-level success state and likely next action are out of view, requiring a long scroll and extra orientation. | After confirmation, focus a concise success summary beside the next recommended action. Offer **Confirm and open vacancy** when appropriate, while retaining **Confirm only** for recruiters who are not ready to open it. | Open |
 
 #### Recommended interaction
@@ -659,6 +659,25 @@ ran. Browser acceptance of alignment and wording remains pending.
 - Source evidence is prefilled when available and remains inspectable in an expandable **Why this requirement?** detail.
 - One action saves the draft and its rule selections; final confirmation remains separate and explicit.
 - Protected or unsupported characteristics remain unavailable as rule types.
+
+The first MT-016 correction slice addresses the approval boundary. The editor's
+primary action now submits as **Save and review**; invalid values remain on the
+editor and valid values are persisted before navigation. The vacancy detail no
+longer offers immediate confirmation for a draft. Its **Review version N** link
+opens a dedicated organization-scoped page showing the original description,
+every structured draft field, ordinary hard-constraint notes, ambiguities, and
+all filtering rules. **Edit draft** appears before and beside the final POST-only
+confirmation action. A failed confirmation returns to this preview. Confirmation
+immutability, actor/time recording, AI behavior, and matching logic are unchanged.
+U01–U04, V01, F01, and U06 remain open for separate focused corrections.
+
+Verification: focused vacancy-intake coverage `31 passed`; the complete
+`uv run python scripts/check.py` gate passed with `590 passed`, Django system and
+deployment checks, static collection, no migration drift, Ruff lint/formatting,
+and dependency compatibility. Tests verify save-before-review, invalid-value
+retention, complete preview content, tenant isolation, the absence of immediate
+confirmation on vacancy detail, and the unchanged POST-only confirmation route.
+No live AI calls ran. Browser acceptance remains pending.
 
 ### MT-017 — Vacancy lifecycle: open
 

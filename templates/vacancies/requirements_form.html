@@ -30,8 +30,8 @@
     {% csrf_token %}
     {% include "vacancies/_form_fields.html" %}
     <div class="button-row">
-        <button class="primary-button" type="submit">Save draft</button>
-        <a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Review and confirm</a>
+        <button class="primary-button" type="submit" name="intent" value="review">Save and review</button>
+        <button class="secondary-button" type="submit" name="intent" value="save">Save draft</button>
     </div>
 </form>
 
