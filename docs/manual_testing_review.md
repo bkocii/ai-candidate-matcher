@@ -490,8 +490,8 @@ No live AI call was made. These results do not replace browser acceptance.
 | MT-013-U01 | Usability defect | Medium | The mapped phone number is stored and appears on candidate lists but is omitted from the candidate detail header and page. | Show available email, phone, and location together in a concise contact summary. | Passed browser retest — 2026-08-29 |
 | MT-013-V01 | Visual defect | High | The source/privacy table expands beyond its panel and makes the entire page wider than a 1920px viewport. Horizontal scrolling clips the candidate name, navigation, and actions. | Prevent body-level overflow. Stack the panel content and use responsive source cards or a contained table whose overflow does not move the whole application shell. | Passed browser retest — 2026-08-29 |
 | MT-013-V02 | Visual defect | Medium | The six-column source table is difficult to scan for a single provenance record and visually detaches from its explanatory panel. | Present each source as a labelled responsive record card with grouped **Provenance**, **Privacy/contact**, and **Retention** values plus an edit action. | Passed browser retest — 2026-08-29 |
-| MT-013-V03 | Visual defect | Low | The saved source note `Synthetic manual test` appears as unlabelled trailing text below the source fields, so its meaning is unclear. | Display a visible **Notes** label and preserve the note as secondary text inside the source card. | Implemented — 2026-09-15; browser retest pending |
-| MT-013-U02 | Improvement | Low | The page has no direct context link back to the intake batch that created this candidate. | Add a source/intake link where the candidate originated from a reviewed batch. | Implemented — 2026-09-15; browser retest pending |
+| MT-013-V03 | Visual defect | Low | The saved source note `Synthetic manual test` appears as unlabelled trailing text below the source fields, so its meaning is unclear. | Display a visible **Notes** label and preserve the note as secondary text inside the source card. | Resolved — user confirmed 2026-09-15 |
+| MT-013-U02 | Improvement | Low | The page has no direct context link back to the intake batch that created this candidate. | Add a source/intake link where the candidate originated from a reviewed batch. | Resolved — user confirmed 2026-09-15 |
 
 MT-013's remaining polish now labels saved notes, preserves their line breaks,
 escapes HTML, and wraps long values using the existing source-card styles.
@@ -506,14 +506,14 @@ the final full quality gate passed with `588 passed`, no migration drift, and
 successful system/deployment, static, lint/formatting, and dependency checks.
 The gate also exposed an existing DOCX duplicate-test timestamp issue; that test
 now reuses exact bytes and passes. Notes escaping and intake tenant boundaries
-are covered. MT-013's visual/link browser retest remains pending.
+are covered. The user confirmed MT-013's notes and intake link on 2026-09-15.
 
 ### MT-014 — Empty vacancy workspace
 
 - **Date:** 2026-08-29
 - **Route:** `/organizations/second-agency-test/vacancies/`
 - **Viewport:** Desktop, 1920 × 1020
-- **Visual status:** Pass with minor improvements
+- **Visual status:** Desktop empty-state action and icon passed supplied video review 2026-09-16; narrow-window check pending
 - **Functional status:** Empty state passed; vacancy creation pending
 
 #### Completed functional checks
@@ -534,15 +534,34 @@ are covered. MT-013's visual/link browser retest remains pending.
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-014-U01 | Improvement | Medium | The empty-state guidance and the **Add vacancy** action are separated across the page, so the explanation does not directly lead into its next step. | Add **Add vacancy** inside the empty-state card while retaining or removing the page-level action according to the final page-action pattern. | Proposed |
-| MT-014-V01 | Improvement | Low | The generic **V** icon communicates little beyond repeating the page name. | Replace it with a restrained vacancy/job icon when the shared empty-state icon system is polished. | Proposed |
+| MT-014-U01 | Improvement | Medium | The empty-state guidance and the **Add vacancy** action are separated across the page, so the explanation does not directly lead into its next step. | Add **Add vacancy** inside the empty-state card while retaining or removing the page-level action according to the final page-action pattern. | Empty-state desktop layout and creation link passed supplied video review — 2026-09-16 |
+| MT-014-V01 | Improvement | Low | The generic **V** icon communicates little beyond repeating the page name. | Replace it with a restrained vacancy/job icon when the shared empty-state icon system is polished. | Briefcase icon passed supplied desktop video review — 2026-09-16 |
+
+The empty vacancy card now puts **Add vacancy** immediately after its guidance.
+The page has one primary creation action: in the card when empty, in the heading
+when populated. A decorative briefcase uses the existing icon container and
+colors without an asset dependency or a shared-icon redesign. The creation URL,
+organization authorization, pagination, and vacancy/requirements workflow are
+unchanged. Updated list coverage exercises empty and populated states, the
+creation link, and isolation from another organization's vacancies.
+
+Verification: focused vacancy-intake coverage `29 passed`; the complete
+`uv run python scripts/check.py` gate passed with `588 passed`, Django system and
+deployment checks, static collection, no migration drift, Ruff lint/formatting,
+and dependency compatibility. No live AI calls. Browser retest remains pending.
+
+Video `matcher-vacanca=add=fixes.mp4`, reviewed 2026-09-16, shows the empty card
+with one action and the briefcase, then opens the correct test-intake creation
+form. This passes the demonstrated MT-014 desktop flow; populated-list, keyboard,
+and narrow-window checks were not shown. The video's form-heading misalignment
+is recorded separately as MT-015-V01 below.
 
 ### MT-015 — Add vacancy form
 
 - **Date:** 2026-08-29
 - **Route:** `/organizations/second-agency-test/vacancies/new/`
 - **Viewport:** Desktop, 1920 × 1020
-- **Visual status:** Pass with wording improvements
+- **Visual status:** Alignment and wording improvements implemented 2026-09-16; browser retest pending
 - **Functional status:** Form structure passed; creation pending
 
 #### Completed functional checks
@@ -565,8 +584,23 @@ are covered. MT-013's visual/link browser retest remains pending.
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-015-C01 | Usability defect | Medium | The field is labelled **Client company**, although the approved recruiter-facing wording is **Hiring client (optional)**. The current label can be mistaken for the organization/tenant itself. | Rename the label to **Hiring client (optional)** and the empty choice to **No hiring client (direct employer)** without changing the underlying model. | Open |
-| MT-015-C02 | Improvement | Low | **Description** is generic beside otherwise domain-specific wording. | Use **Job description** so the expected complete vacancy text is immediately clear. | Proposed |
+| MT-015-C01 | Usability defect | Medium | The field is labelled **Client company**, although the approved recruiter-facing wording is **Hiring client (optional)**. The current label can be mistaken for the organization/tenant itself. | Rename the label to **Hiring client (optional)** and the empty choice to **No hiring client (direct employer)** without changing the underlying model. | Implemented — 2026-09-16; browser retest pending |
+| MT-015-C02 | Improvement | Low | **Description** is generic beside otherwise domain-specific wording. | Use **Job description** so the expected complete vacancy text is immediately clear. | Implemented — 2026-09-16; browser retest pending |
+| MT-015-V01 | Visual defect | Medium | The supplied creation-form video shows the heading and introductory text starting far left of the centered form panel. | Align the heading block with the form's outer edges at desktop and narrow widths. | Implemented — 2026-09-16; browser retest pending |
+
+The shared create/edit vacancy template now centers its heading using the same
+720px maximum width as the form panel. A scoped heading class changes no other
+form layout. Creation uses the agreed hiring-client and job-description wording;
+editing uses the same hiring-client label and empty choice. Active-client filtering,
+direct-employer validation, source-description preservation, and creation of a
+separate unconfirmed requirements draft are unchanged. No AI call is added.
+
+Verification on 2026-09-16: vacancy-intake coverage `29 passed`; the complete
+`uv run python scripts/check.py` gate passed with `588 passed`, Django system and
+deployment checks, static collection, no migration drift, Ruff lint/formatting,
+and dependency compatibility. The updated creation test checks rendered labels
+and the direct-employer choice before submitting successfully. No live AI calls
+ran. Browser acceptance of alignment and wording remains pending.
 
 ### MT-016 — Vacancy requirements draft and eligibility rules
 

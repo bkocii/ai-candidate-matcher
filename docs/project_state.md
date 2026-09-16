@@ -1566,7 +1566,7 @@ details link back to recorded originating intake batches within the current
 organization; manual/CSV-only records without an intake relation show no link.
 No source-reference guessing, model/migration/dependency changes, AI requests,
 or changes to candidate/source editing and privacy rules are introduced.
-Browser review of the notes and intake link is the next manual step.
+The user confirmed the notes and intake link on 2026-09-15; MT-013-V03/U02 are resolved.
 
 The full check exposed an existing time-dependent duplicate-file test: it built
 two DOCX archives independently, so ZIP timestamps could change the bytes. The
@@ -1578,3 +1578,36 @@ the corrected exact-duplicate test passed individually. The final complete
 `uv run python scripts/check.py` rerun passed with `588 passed`, successful Django
 system/deployment checks, static collection, no migration drift, Ruff lint and
 formatting (226 files), and compatibility of 35 packages. No live AI request ran.
+
+### MT-014 — Empty vacancy workspace — 2026-09-15
+
+The vacancy empty state now places its **Add vacancy** action with the guidance
+and uses a decorative inline briefcase instead of the generic V placeholder.
+There is one primary creation action: inside the empty card, or in the page
+heading for a populated list. Existing styles and organization-scoped creation
+routes are reused. This changes no models, migrations, dependencies, vacancy
+services, or AI behavior. Browser acceptance of the empty and populated layouts
+is the next manual step; inspect MT-015's wording findings afterward.
+
+Verification: focused vacancy-intake tests `29 passed`; full quality gate
+`588 passed`, including Django system/deployment checks, static collection,
+no migration drift, Ruff lint/formatting (226 Python files), and compatibility
+of 35 installed packages. No live AI requests ran.
+
+### MT-015 — Vacancy-form alignment and wording — 2026-09-16
+
+The supplied video passes MT-014's desktop empty-state layout, briefcase, and
+creation-link flow. It also reveals the vacancy creation heading sitting left
+of its centered form. The shared create/edit template now uses a scoped heading
+class with automatic horizontal margins, aligning the heading's existing 720px
+maximum width with the form panel. Creation labels now read Hiring client
+(optional), No hiring client (direct employer), and Job description. Editing
+uses consistent hiring-client wording. Models, migrations, dependencies, client
+eligibility, description preservation, and AI behavior are unchanged.
+MT-015 browser acceptance is the next step; inspect MT-016 afterward.
+
+Verification: vacancy-intake tests `29 passed`; complete quality gate
+`588 passed`, including Django system/deployment checks, static collection,
+no migration drift, Ruff lint/formatting across 226 files, and compatibility of
+35 packages. No live AI request ran. Alignment still needs the user's browser
+retest; automated tests verify the rendered wording and existing creation flow.

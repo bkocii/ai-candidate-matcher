@@ -1069,12 +1069,37 @@ archives whose timestamps can differ. Production duplicate detection is unchange
 MT-013 verification: focused correction/unified-intake coverage `25 passed`;
 the corrected duplicate test passed individually. Final full quality gate passed
 with `588 passed`, Django system/deployment/static checks, no migration drift,
-Ruff lint/formatting, and dependency compatibility. No live AI calls. MT-013's
-notes and intake-link browser acceptance remains pending.
+Ruff lint/formatting, and dependency compatibility. No live AI calls. The user
+confirmed MT-013's notes and intake link on 2026-09-15; V03/U02 are resolved.
 
-Immediate next action: ask the user to check the candidate source card's Notes
-label and its Intake #N link. Once accepted, inspect MT-014 and the following
-manual-review findings against current code before selecting the next correction.
+MT-014-U01/V01 are implemented: the empty vacancy card contains the sole **Add
+vacancy** action beside its guidance and a decorative briefcase icon. Populated
+lists retain the action in the heading. Existing styles, authorization, and
+creation routes are reused; there are no migration, dependency, or service changes.
+
+MT-014 verification: focused vacancy-intake coverage `29 passed`; complete
+`uv run python scripts/check.py` passed with `588 passed`, successful system and
+deployment checks, static collection, no migration drift, Ruff lint/formatting,
+and dependency compatibility. No live AI call ran. Browser acceptance is pending.
+
+The supplied video reviewed on 2026-09-16 passes MT-014's desktop empty-state
+layout, icon, and creation-link flow. It does not demonstrate the populated
+list, keyboard, or narrow-window checks. The user requested correction of the
+creation heading's left offset and continuation with MT-015.
+
+MT-015-C01/C02/V01 are implemented: the create/edit vacancy heading now aligns
+with the centered 720px form panel; creation uses Hiring client (optional), No
+hiring client (direct employer), and Job description. Editing keeps consistent
+hiring-client wording. No model, migration, dependency, or service behavior change.
+
+MT-015 verification: vacancy-intake coverage `29 passed`; the complete quality
+gate passed with `588 passed`, successful system/deployment/static checks, no
+migration drift, Ruff lint/formatting, and package compatibility. No live AI
+calls ran. Browser acceptance of alignment and wording remains pending.
+
+Immediate next action: ask the user to check Add vacancy alignment and wording,
+including a narrow window; sample Edit vacancy because it shares the template.
+Once accepted, inspect MT-016's requirements-editor findings against current code.
 Keep the remaining MT-012 functional browser checks recorded. DEMO-002 remains
 paused for the manual-review pass.
 

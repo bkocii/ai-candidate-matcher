@@ -18,14 +18,14 @@ LIST_FIELD_NAMES = (
 class VacancyCreateForm(forms.Form):
     title = forms.CharField(max_length=200)
     client_company = forms.ModelChoiceField(
+        label="Hiring client (optional)",
         queryset=ClientCompany.objects.none(),
         required=False,
-        empty_label="Direct employer / no client company",
-        help_text=(
-            "Optional. Only active client companies in this organization are shown."
-        ),
+        empty_label="No hiring client (direct employer)",
+        help_text=("Only active hiring clients in this organization are shown."),
     )
     description = forms.CharField(
+        label="Job description",
         widget=forms.Textarea(attrs={"rows": 14}),
         help_text="Paste the complete vacancy or job description.",
     )
@@ -60,9 +60,10 @@ class ClientCompanyChoiceField(forms.ModelChoiceField):
 class VacancyEditForm(forms.Form):
     title = forms.CharField(max_length=200)
     client_company = ClientCompanyChoiceField(
+        label="Hiring client (optional)",
         queryset=ClientCompany.objects.none(),
         required=False,
-        empty_label="Direct employer / no client company",
+        empty_label="No hiring client (direct employer)",
         help_text=(
             "Choose an active client. A current inactive client can be retained "
             "for this historical vacancy only."

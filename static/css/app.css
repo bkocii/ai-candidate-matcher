@@ -421,6 +421,10 @@ a {
     margin-bottom: 36px;
 }
 
+.vacancy-form-heading {
+    margin-inline: auto;
+}
+
 .dashboard-heading {
     display: flex;
     max-width: none;

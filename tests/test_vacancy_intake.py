@@ -92,15 +92,31 @@ def test_vacancy_pages_require_login(client) -> None:
 def test_vacancy_list_is_scoped_to_requested_organization(client) -> None:
     user, organization = make_workspace()
     other = Organization.objects.create(name="Other", slug="other")
-    visible, _ = make_vacancy(organization, user=user, title="Visible vacancy")
     hidden, _ = make_vacancy(other, title="Hidden vacancy")
     client.force_login(user)
+    list_url = reverse("vacancies:vacancy-list", args=[organization.slug])
+    create_url = reverse("vacancies:vacancy-create", args=[organization.slug])
+    action = f'href="{create_url}">Add vacancy</a>'
 
-    response = client.get(reverse("vacancies:vacancy-list", args=[organization.slug]))
+    empty_response = client.get(list_url)
+    empty_content = empty_response.content.decode()
+    assert empty_response.status_code == 200
+    assert empty_content.count(action) == 1
+    empty_section = empty_content.split('aria-labelledby="empty-vacancies-title"')[1]
+    assert action in empty_section.split("</section>")[0]
+    assert hidden.title not in empty_content
+    assert client.get(create_url).status_code == 200
+
+    visible, _ = make_vacancy(organization, user=user, title="Visible vacancy")
+    response = client.get(list_url)
+    content = response.content.decode()
 
     assert response.status_code == 200
-    assert visible.title in response.content.decode()
-    assert hidden.title not in response.content.decode()
+    assert visible.title in content
+    assert hidden.title not in content
+    assert content.count(action) == 1
+    assert action in content.split("</section>")[0]
+    assert "No vacancies yet" not in content
 
 
 def test_inaccessible_organization_and_vacancy_return_404(client) -> None:
@@ -146,6 +162,12 @@ def test_create_form_lists_only_active_clients_in_organization() -> None:
     form = VacancyCreateForm(organization=organization)
 
     assert list(form.fields["client_company"].queryset) == [visible]
+    assert form.fields["client_company"].label == "Hiring client (optional)"
+    assert (
+        form.fields["client_company"].empty_label
+        == "No hiring client (direct employer)"
+    )
+    assert form.fields["description"].label == "Job description"
 
 
 def test_recruiter_creates_vacancy_and_initial_draft_atomically(client) -> None:
@@ -186,6 +208,14 @@ def test_recruiter_creates_vacancy_and_initial_draft_atomically(client) -> None:
 def test_direct_employer_creation_accepts_no_client(client) -> None:
     user, organization = make_workspace()
     client.force_login(user)
+
+    page = client.get(reverse("vacancies:vacancy-create", args=[organization.slug]))
+    assert page.status_code == 200
+    assert b"Hiring client (optional):</label>" in page.content
+    assert b"Job description:</label>" in page.content
+    assert b'<option value="" selected>No hiring client (direct employer)</option>' in (
+        page.content
+    )
 
     response = client.post(
         reverse("vacancies:vacancy-create", args=[organization.slug]),

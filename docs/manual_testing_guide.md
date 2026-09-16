@@ -417,8 +417,8 @@ under **Created from intake** in the source section: it must open the exact batc
 in the current organization. A manually added or CSV-only candidate without a
 recorded intake origin should have no such link. A user outside the organization
 must still receive 404 for both candidate and intake URLs. Send a screenshot of
-the source card and confirm the intake link destination; this browser retest is
-pending at delivery.
+the source card and confirm the intake link destination. The user confirmed this
+MT-013 browser review on 2026-09-15.
 
 On a profile version, choose **Correct profile**. Uncheck one questionable skill
 and create the corrected draft. The original version remains unchanged, the new
@@ -537,11 +537,32 @@ Expected result:
 
 ## 8. Test vacancy creation and requirements version 1
 
+MT-014 browser retest: open **Vacancies** in a workspace without vacancies. Check
+that the empty card shows a briefcase icon, its guidance, and one **Add vacancy**
+button together; no duplicate creation button should appear in the page heading.
+Use Tab and Enter to follow the button and verify the creation form belongs to
+the same workspace. Then inspect a populated vacancy list: its single **Add
+vacancy** action should be in the heading, and the empty card should be absent.
+Check desktop and a narrow window for overflow. Use an empty test workspace
+rather than deleting existing vacancies. Send a screenshot of the empty state;
+The supplied video reviewed on 2026-09-16 passes the desktop empty-state and
+creation-link checks. Populated-list, keyboard, and narrow-window checks were
+not demonstrated in that recording.
+
+MT-015 browser retest: on **Add vacancy**, confirm the heading and introduction
+align with the centered form panel's outer edges. Check **Hiring client
+(optional)**, **No hiring client (direct employer)**, and **Job description**.
+Resize to a narrow window and ensure the text and panel stay aligned without
+horizontal overflow. Check **Edit vacancy** too: it shares the alignment and
+hiring-client wording, while the original description remains uneditable there.
+Use the existing direct-employer creation check below and verify validation
+errors stay within the same aligned layout. MT-015 browser acceptance is pending.
+
 Open **Vacancies** and select **Add vacancy**. Use:
 
 - Title: `Senior Django Developer`
-- Client company: `Acme Test Industries`
-- Description: paste `manual_testing/fixtures/vacancy-description.txt`
+- Hiring client (optional): `Acme Test Industries`
+- Job description: paste `manual_testing/fixtures/vacancy-description.txt`
 
 Expected result:
 
