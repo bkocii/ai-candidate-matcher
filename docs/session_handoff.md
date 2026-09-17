@@ -1209,6 +1209,22 @@ Immediate next action: deliver the changed-files package and ask the user to
 retest both confirmation buttons and the focused landing position. Do not provide
 a full-project ZIP unless requested or needed for a major handoff.
 
+The user confirmed MT-016-U06, which also resolves the equivalent MT-017-U01
+proposal. The next slice implements MT-018-U01/C01/V01: recruiter-facing
+**Eligibility check** wording, **Eligible for scoring** rather than **Passed**, a
+prominent no-rule warning with **Review eligibility rules**, and a compact
+responsive summary strip. Evaluation and shortlist behavior are unchanged.
+Focused filtering coverage passes with `27 passed`; the complete quality gate
+passes with `607 passed`, successful Django system, deployment, static,
+migration-drift, Ruff, formatting, and dependency checks. No live AI request
+ran. Package only this slice's changed files and ask for one no-rule
+desktop/narrow browser recording. Twenty-seven findings remain Open after this
+slice moves to implemented/browser-retest pending.
+
+Immediate next action: deliver the changed-files package for
+MT-018-U01/C01/V01 and wait for browser confirmation. Do not provide a
+full-project ZIP unless requested or needed for a major handoff.
+
 Delivery workflow: provide a ZIP containing only changed files with repository-
 relative paths; keep the working project and full project archive updated.
 Include changed testing docs, check commands, and explicit Git add/commit

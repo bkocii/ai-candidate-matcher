@@ -649,7 +649,7 @@ ran. The user confirmed the alignment and wording on 2026-09-16.
 | MT-016-U05 | Usability defect | High | **Review and confirm** is a navigation link and does not save current form edits. Its placement beside **Save draft** makes it reasonable to assume both actions preserve changes, creating a data-loss risk during review. | Make **Review changes** submit and validate the current draft before opening confirmation, or disable it while the form is dirty and clearly require saving first. | Resolved — user confirmed 2026-09-16 |
 | MT-016-F02 | Functional defect | High | The supposed confirmation page does not display the draft structured requirements. It shows the original vacancy description, an empty **Current confirmed requirements** panel, and an immediately executable **Confirm version 1** button. The recruiter cannot verify the corrected skills, experience, location, or ambiguities at the final approval boundary. | Add a dedicated confirmation preview that displays every draft field and eligibility rule beside the original source, including a clear changes summary. Place the final POST confirmation only after this preview and provide an **Edit draft** action. | Resolved — user confirmed 2026-09-16 |
 | MT-016-V02 | Visual defect | Medium | Before first confirmation, the right-hand **Current confirmed requirements** card is mostly empty but matches the full height of the source-description card, creating a large blank panel while the actual draft is absent. | Use the right-hand panel for **Draft to be confirmed** during review; after confirmation, switch it to **Current matching input**. | Resolved — user confirmed 2026-09-16 |
-| MT-016-U06 | Usability defect | Medium | After confirming v1, the recruiter remains at the bottom of a long detail page. The confirmed history is visible, but the page-level success state and likely next action are out of view, requiring a long scroll and extra orientation. | After confirmation, focus a concise success summary beside the next recommended action. Offer **Confirm and open vacancy** when appropriate, while retaining **Confirm only** for recruiters who are not ready to open it. | Implemented — 2026-09-17; browser retest pending |
+| MT-016-U06 | Usability defect | Medium | After confirming v1, the recruiter remains at the bottom of a long detail page. The confirmed history is visible, but the page-level success state and likely next action are out of view, requiring a long scroll and extra orientation. | After confirmation, focus a concise success summary beside the next recommended action. Offer **Confirm and open vacancy** when appropriate, while retaining **Confirm only** for recruiters who are not ready to open it. | Resolved — user confirmed 2026-09-17 |
 | MT-016-F03 | Functional defect | High | **Save draft** and **Save and review** are blocked by browser validation for the blank **Why is this required?** field even when the recruiter is not adding an eligibility rule. | Keep the reason mandatory for **Add eligibility rule**, but remove its browser-level required state so unrelated draft actions reach their own server validation. | Resolved — user confirmed 2026-09-16 |
 | MT-016-V03 | Visual defect | Medium | The draft heading, source panel, AI-assistance callout, and requirements form use different widths and left edges. | Give all four draft-page sections one centered content width, retaining their existing internal padding and responsive behavior. | Resolved — user confirmed 2026-09-16 |
 
@@ -794,7 +794,7 @@ Browser acceptance remains pending.
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-017-U01 | Improvement | Medium | A recruiter must confirm requirements, return to the long vacancy detail page, scroll to the lifecycle section, and perform a second action to open a routine vacancy. | On the confirmation boundary, offer **Confirm requirements and open vacancy** as the primary routine action and **Confirm only** as the secondary option. Keep both transitions explicit and audited. | Proposed |
+| MT-017-U01 | Improvement | Medium | A recruiter must confirm requirements, return to the long vacancy detail page, scroll to the lifecycle section, and perform a second action to open a routine vacancy. | On the confirmation boundary, offer **Confirm requirements and open vacancy** as the primary routine action and **Confirm only** as the secondary option. Keep both transitions explicit and audited. | Resolved by MT-016-U06 — user confirmed 2026-09-17 |
 | MT-017-C01 | Improvement | Low | **Choose the next valid lifecycle state** describes the system model rather than the recruiter's task. | Use direct guidance such as **Open, pause, close, or archive this vacancy when its hiring stage changes. Confirmed requirements remain unchanged.** Show only currently available actions. | Proposed |
 
 ### MT-018 — Candidate eligibility filtering
@@ -824,10 +824,10 @@ Browser acceptance remains pending.
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-018-U01 | Usability defect | High | The prominent **Passed** result can be read as “the candidate meets the vacancy requirements,” but no must-have skill, experience, location, language, or work-eligibility criterion was actually used as an exclusion rule. The candidate passed only because no eligibility rules exist. | Use **Eligible for scoring** as the outcome and show a visible warning: **No eligibility rules are active; all candidates continue to scoring.** Provide a direct **Review eligibility rules** action for authorized recruiters. | Open |
+| MT-018-U01 | Usability defect | High | The prominent **Passed** result can be read as “the candidate meets the vacancy requirements,” but no must-have skill, experience, location, language, or work-eligibility criterion was actually used as an exclusion rule. The candidate passed only because no eligibility rules exist. | Use **Eligible for scoring** as the outcome and show a visible warning: **No eligibility rules are active; all candidates continue to scoring.** Provide a direct **Review eligibility rules** action for authorized recruiters. | Implemented — 2026-09-17; browser retest pending |
 | MT-018-U02 | Improvement | High | **Evaluate candidates** and **Generate shortlist** are separate routine steps even though filtering has no recruiter input on this page. This adds a page and click before every shortlist. | Make **Generate shortlist** the normal vacancy action and run eligibility filtering plus scoring together. Show the filter report inside the resulting shortlist; keep a separate preview only when the recruiter explicitly requests it or exceptions need review. | Proposed |
-| MT-018-C01 | Usability defect | Medium | **Deterministic filtering**, **hard-constraint results**, and **passes this filtering stage by default** are implementation-oriented and difficult for a recruiter to interpret. | Use **Eligibility check**, **Eligibility results**, and **No eligibility rules are active, so this candidate continues to scoring**. Keep algorithm terminology in audit details. | Open |
-| MT-018-V01 | Visual defect | Low | Four large metric cards consume most of the first screen for a one-candidate result, while the decisive no-rule explanation is lower and visually quieter. | Use a compact result summary and elevate the no-rule state above the counts. Expand to richer metrics only for larger candidate pools. | Open |
+| MT-018-C01 | Usability defect | Medium | **Deterministic filtering**, **hard-constraint results**, and **passes this filtering stage by default** are implementation-oriented and difficult for a recruiter to interpret. | Use **Eligibility check**, **Eligibility results**, and **No eligibility rules are active, so this candidate continues to scoring**. Keep algorithm terminology in audit details. | Implemented — 2026-09-17; browser retest pending |
+| MT-018-V01 | Visual defect | Low | Four large metric cards consume most of the first screen for a one-candidate result, while the decisive no-rule explanation is lower and visually quieter. | Use a compact result summary and elevate the no-rule state above the counts. Expand to richer metrics only for larger candidate pools. | Implemented — 2026-09-17; browser retest pending |
 | MT-018-F01 | Functional defect | High | A candidate recorded in `Prishtina` fails a required location of `Prishtina, Kosovo`, even though both identify the same city. | Treat an exact city-only value as matching the first component of `city, country`, while retaining exact full-location comparison and rejecting unsafe partial names or conflicting full locations. | Resolved — user confirmed 2026-09-17 |
 
 #### Structured-location recording — 2026-09-17
@@ -839,6 +839,21 @@ hierarchy case: when one side is city-only and the other is comma-separated,
 their first components must match exactly. **Prishtina e Re** remains distinct,
 and two full values such as **Prishtina, Albania** and **Prishtina, Kosovo** still
 fail. No unrestricted substring, fuzzy, or external-geocoding match is used.
+
+The next MT-018 slice addresses U01/C01/V01 without changing filtering logic.
+The page now uses **Eligibility check** and **Eligibility results**, maps the
+internal passed outcome to **Eligible for scoring**, and maps failure to **Not
+eligible**. When the confirmed version has no eligibility rules, a prominent
+warning appears before the summary and links directly to **Review eligibility
+rules**. The four large count cards are replaced by one compact summary strip
+that stacks at narrow widths. Tenant access, confirmed-version selection,
+unknown-fact behavior, scoring, shortlist generation, and persisted outcomes are
+unchanged. Browser acceptance is pending.
+
+Verification: focused filtering coverage `27 passed`; the complete quality gate
+passed with `607 passed`, successful Django system, deployment, static,
+migration-drift, Ruff, formatting, and dependency checks. No live AI request
+ran.
 
 ### MT-019 — Deterministic shortlist
 

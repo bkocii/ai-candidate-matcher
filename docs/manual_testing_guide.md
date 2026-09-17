@@ -856,8 +856,10 @@ Return to the vacancy detail page and select
 
 Expected result:
 
+- The page is labelled **Eligibility check** and **Eligibility results** rather
+  than exposing filtering implementation terms.
 - The page identifies confirmed requirements version 1.
-- `Synthetic Pass` passes both rules.
+- `Synthetic Pass` is **Eligible for scoring** and passes both rules.
 - A candidate location of `Prishtina` passes a required location of `Prishtina,
   Kosovo`; the city component matches exactly.
 - `Synthetic Review` has unknown results and remains in **Needs review**. A
@@ -867,10 +869,19 @@ Expected result:
   the comparison does not use unrestricted substring matching.
 - Every rule row shows the recruiter source wording, expected value, candidate
   fact, evidence when present, and explanation.
-- Summary counts distinguish passed, needs-review, failed, and total evaluated.
+- One compact summary distinguishes evaluated, continuing to scoring,
+  needs-review, and excluded candidates.
 - Inactive, deletion-requested, and deleted candidates are not evaluated.
 - Candidate email, phone, raw extracted CV text, and private storage paths are
   not displayed on the report.
+
+Repeat with a separate confirmed vacancy that has no eligibility rules. Expected
+result: a prominent **No eligibility rules are active; all candidates continue
+to scoring** warning appears above the compact summary. **Review eligibility
+rules** returns directly to the vacancy's confirmed rules, and every candidate
+is labelled **Eligible for scoring** rather than **Passed**. Check both desktop
+and narrow widths; the warning action and compact summary must stack without
+horizontal overflow.
 
 A minimum-experience rule can pass when a recorded candidate skill contains at
 least that many years. A lower skill-specific value remains unknown because it

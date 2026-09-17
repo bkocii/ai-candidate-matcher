@@ -584,6 +584,48 @@ def test_filter_page_shows_version_summary_results_and_evidence(client) -> None:
     assert "Candidate record location" in content
     assert "private@example.test" not in content
     assert "1 candidate remains eligible" in content
+    assert "Eligibility check" in content
+    assert "No eligibility rules are active" not in content
+    assert "Eligible for scoring" in content
+
+
+def test_filter_page_explains_no_rule_result_before_compact_summary(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_requirements(organization=organization, user=user)
+    confirm_requirements_draft(requirements=requirements, user=user)
+    Candidate.objects.create(
+        organization=organization,
+        full_name="No Rule Candidate",
+    )
+    client.force_login(user)
+
+    response = client.get(
+        reverse(
+            "matching:candidate-filter-report",
+            args=[organization.slug, vacancy.pk],
+        )
+    )
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert (
+        "No eligibility rules are active; all candidates continue to scoring."
+        in content
+    )
+    assert "Review eligibility rules" in content
+    vacancy_detail_url = reverse(
+        "vacancies:vacancy-detail",
+        args=[organization.slug, vacancy.pk],
+    )
+    assert f'href="{vacancy_detail_url}#confirmed-rules-title"' in content
+    assert content.index("No eligibility rules are active") < content.index(
+        'class="filter-summary"'
+    )
+    assert "Continue to scoring" in content
+    assert "Eligible for scoring" in content
+    assert "No eligibility rules were applied to this candidate." in content
+    assert "Deterministic filtering" not in content
+    assert "hard-constraint results" not in content
 
 
 def test_filter_page_without_confirmed_requirements_is_safe(client) -> None:

@@ -265,7 +265,9 @@ def candidate_filter_report(request, organization_slug: str, vacancy_id: int):
     page = None
     latest_run = None
     latest_run_staleness = None
+    eligibility_rule_count = 0
     if requirements is not None:
+        eligibility_rule_count = requirements.hard_constraint_rules.count()
         report = filter_candidates(requirements=requirements, user=request.user)
         page = Paginator(report.results, 25).get_page(request.GET.get("page"))
         latest_run = (
@@ -290,6 +292,7 @@ def candidate_filter_report(request, organization_slug: str, vacancy_id: int):
             "page": page,
             "latest_run": latest_run,
             "latest_run_staleness": latest_run_staleness,
+            "eligibility_rule_count": eligibility_rule_count,
         },
     )
 

@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Candidate filter | {{ vacancy.title }}{% endblock %}
+{% block title %}Eligibility check | {{ vacancy.title }}{% endblock %}
 
 {% block content %}
 <section class="page-heading action-heading" aria-labelledby="filter-title">
     <div>
-        <p class="eyebrow">Deterministic filtering</p>
+        <p class="eyebrow">Eligibility check</p>
         <h1 id="filter-title">{{ vacancy.title }}</h1>
         {% if requirements %}
-            <p class="lede">Inspectable hard-constraint results using confirmed requirements version {{ requirements.version }}. Unknown facts stay eligible for recruiter review.</p>
+            <p class="lede">Eligibility results from confirmed requirements version {{ requirements.version }}. Missing candidate information stays in Needs review.</p>
         {% else %}
             <p class="lede">Confirm a requirements version before evaluating candidates.</p>
         {% endif %}
@@ -28,11 +28,22 @@
 </section>
 
 {% if report %}
-    <section class="filter-summary" aria-label="Filtering summary">
+    {% if eligibility_rule_count == 0 %}
+        <section class="eligibility-warning" role="status" aria-labelledby="no-eligibility-rules-title">
+            <div>
+                <p class="eyebrow">Scoring continues</p>
+                <h2 id="no-eligibility-rules-title">No eligibility rules are active</h2>
+                <p>No eligibility rules are active; all candidates continue to scoring. Review the vacancy before relying on this result.</p>
+            </div>
+            <a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}#confirmed-rules-title">Review eligibility rules</a>
+        </section>
+    {% endif %}
+
+    <section class="filter-summary" aria-label="Eligibility summary">
         <article><span>Evaluated</span><strong>{{ report.evaluated_count }}</strong></article>
-        <article><span>Passed</span><strong>{{ report.passed_count }}</strong></article>
+        <article><span>Continue to scoring</span><strong>{{ report.eligible_count }}</strong></article>
         <article><span>Needs review</span><strong>{{ report.review_count }}</strong></article>
-        <article><span>Failed</span><strong>{{ report.failed_count }}</strong></article>
+        <article><span>Excluded</span><strong>{{ report.failed_count }}</strong></article>
     </section>
 
     <p class="section-note">{{ report.eligible_count }} candidate{{ report.eligible_count|pluralize }} {% if report.eligible_count == 1 %}remains{% else %}remain{% endif %} eligible. Generate a bounded shortlist to rank eligible candidates by recorded must-have and nice-to-have skill evidence. This filter is not a hiring decision.</p>
@@ -47,7 +58,7 @@
                             <h2><a href="{% url 'candidates:candidate-detail' organization.slug result.candidate.pk %}">{{ result.candidate.full_name }}</a></h2>
                         </div>
                         <span class="filter-outcome filter-outcome-{{ result.outcome }}">
-                            {% if result.outcome == "review" %}Needs review{% else %}{{ result.outcome|title }}{% endif %}
+                            {% if result.outcome == "passed" %}Eligible for scoring{% elif result.outcome == "review" %}Needs review{% else %}Not eligible{% endif %}
                         </span>
                     </header>
 
@@ -81,7 +92,7 @@
                             </table>
                         </div>
                     {% else %}
-                        <p class="section-note">No explicit hard-constraint rules are defined. The candidate passes this filtering stage by default.</p>
+                        <p class="section-note">No eligibility rules were applied to this candidate.</p>
                     {% endif %}
                 </article>
             {% endfor %}
@@ -98,7 +109,7 @@
         <section class="empty-state">
             <span class="empty-icon" aria-hidden="true">0</span>
             <h2>No active candidates</h2>
-            <p>Add active candidates before running deterministic filtering.</p>
+            <p>Add active candidates before running the eligibility check.</p>
         </section>
     {% endif %}
 {% else %}

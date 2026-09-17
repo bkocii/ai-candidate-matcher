@@ -1728,3 +1728,19 @@ Verification: focused vacancy-intake coverage `40 passed`; the complete quality
 gate passed with `606 passed`, successful Django system, deployment, static,
 migration-drift, Ruff, formatting, and dependency checks. No live AI request
 ran. Browser acceptance of MT-016-U06 is pending.
+
+The user confirmed MT-016-U06 on 2026-09-17; the equivalent MT-017-U01 proposal
+is also resolved by that accepted flow. The next manual-review slice implements
+MT-018-U01/C01/V01. Candidate filtering is now presented as an **Eligibility
+check**. Internal passed/failed outcomes display as **Eligible for scoring** and
+**Not eligible**, and a no-rule vacancy shows a prominent warning before the
+counts with a direct **Review eligibility rules** action. Four large summary
+cards are replaced by one compact responsive strip. Filtering, unknown-fact
+handling, confirmed requirements, tenant boundaries, scoring, and shortlist
+generation are unchanged. Twenty-seven findings remain marked Open; proposals
+and implemented items awaiting browser retest are tracked separately.
+
+Verification: focused filtering coverage `27 passed`; the complete quality gate
+passed with `607 passed`, successful Django system, deployment, static,
+migration-drift, Ruff, formatting, and dependency checks. No live AI request
+ran. Browser acceptance of MT-018-U01/C01/V01 is pending.

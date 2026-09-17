@@ -2124,11 +2124,14 @@ tbody tr:last-child td {
 .filter-summary {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
+    gap: 0;
     margin-bottom: 20px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
 }
 
-.filter-summary article,
 .filter-candidate {
     border: 1px solid var(--border);
     border-radius: 18px;
@@ -2137,7 +2140,12 @@ tbody tr:last-child td {
 }
 
 .filter-summary article {
-    padding: 20px;
+    padding: 13px 18px;
+    border-right: 1px solid var(--border);
+}
+
+.filter-summary article:last-child {
+    border-right: 0;
 }
 
 .filter-summary span,
@@ -2152,8 +2160,34 @@ tbody tr:last-child td {
 }
 
 .filter-summary strong {
-    margin-top: 8px;
-    font-size: 2rem;
+    margin-top: 3px;
+    font-size: 1.35rem;
+}
+
+.eligibility-warning {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+    margin-bottom: 18px;
+    padding: 20px 22px;
+    border: 1px solid #e5c86f;
+    border-radius: 16px;
+    background: #fff8df;
+}
+
+.eligibility-warning h2,
+.eligibility-warning p:last-child {
+    margin-bottom: 0;
+}
+
+.eligibility-warning p:last-child {
+    color: #65501b;
+    line-height: 1.5;
+}
+
+.eligibility-warning .secondary-button {
+    flex: 0 0 auto;
 }
 
 .filter-results {
@@ -3154,6 +3188,20 @@ tbody tr:last-child td {
     .detail-grid,
     .filter-summary {
         grid-template-columns: 1fr;
+    }
+
+    .filter-summary article {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .filter-summary article:last-child {
+        border-bottom: 0;
+    }
+
+    .eligibility-warning {
+        align-items: stretch;
+        flex-direction: column;
     }
 
     .report-filters {
