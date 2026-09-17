@@ -181,6 +181,31 @@ def _evaluate_minimum_experience(
     )
 
 
+def _location_components(value: str) -> tuple[str, ...]:
+    return tuple(
+        normalize_taxonomy_value(component)
+        for component in value.split(",")
+        if component.strip()
+    )
+
+
+def _locations_match(candidate_location: str, required_location: str) -> bool:
+    candidate_key = normalize_taxonomy_value(candidate_location)
+    required_key = normalize_taxonomy_value(required_location)
+    if candidate_key == required_key:
+        return True
+
+    candidate_components = _location_components(candidate_location)
+    required_components = _location_components(required_location)
+    if not candidate_components or not required_components:
+        return False
+
+    one_side_is_city_only = (
+        len(candidate_components) == 1 or len(required_components) == 1
+    )
+    return one_side_is_city_only and candidate_components[0] == required_components[0]
+
+
 def _evaluate_location(
     rule: HardConstraintRule,
     candidate: Candidate,
@@ -200,8 +225,7 @@ def _evaluate_location(
     candidate_location = " ".join(candidate_location.split())
     outcome = (
         RuleOutcome.PASSED
-        if normalize_taxonomy_value(candidate_location)
-        == rule.normalized_expected_value
+        if _locations_match(candidate_location, rule.expected_value)
         else RuleOutcome.FAILED
     )
     explanation = (

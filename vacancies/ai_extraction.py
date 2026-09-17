@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+import unicodedata
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Annotated, Literal
@@ -39,6 +41,33 @@ from vacancies.services import REQUIREMENTS_COPY_FIELDS, update_requirements_dra
 
 VACANCY_EXTRACTION_SCHEMA_VERSION = "vacancy_requirements_extraction.v1"
 MAX_SOURCE_DESCRIPTION_CHARACTERS = 30_000
+
+_WORD_RE = re.compile(r"[^\W_]+", re.UNICODE)
+_STATEMENT_SPLIT_RE = re.compile(r"(?<=[.!?;])\s+|\r?\n+")
+_MANDATORY_CUE_RE = re.compile(
+    r"\b(?:must|required|requires|require|mandatory|essential|minimum|at\s+least|"
+    r"needs?|needed|proficiency|strong(?:\s+recent)?\s+experience)\b",
+    re.IGNORECASE,
+)
+_OPTIONAL_CUE_RE = re.compile(
+    r"\b(?:optional|preferred|helpful|desirable|bonus|nice[- ]to[- ]have|"
+    r"not\s+mandatory|not\s+required)\b",
+    re.IGNORECASE,
+)
+_MANDATORY_SECTION_RE = re.compile(
+    r"^(?:requirements?|required\s+skills?|must[- ]haves?|qualifications?|"
+    r"what\s+you\s+(?:need|bring))\s*:?$",
+    re.IGNORECASE,
+)
+_OPTIONAL_SECTION_RE = re.compile(
+    r"^(?:preferred|optional|nice[- ]to[- ]have|bonus)\s*(?:skills?|"
+    r"qualifications?)?\s*:?$",
+    re.IGNORECASE,
+)
+_RESPONSIBILITY_SECTION_RE = re.compile(
+    r"^(?:responsibilities|duties|what\s+you(?:'|’)ll\s+do|the\s+role)\s*:?$",
+    re.IGNORECASE,
+)
 
 BoundedItem = Annotated[
     str,
@@ -161,6 +190,10 @@ value \"unknown\" as appropriate. Represent missing list facts with an empty lis
 
 Classification rules:
 - Put a skill in must_have_skills only when the source clearly makes it mandatory.
+- A responsibility or task is not a must-have skill by itself. Only promote it
+  when the source separately marks it as required, mandatory, essential, or lists
+  it in a clearly required skills/requirements section. Otherwise keep it in the
+  summary or add an ambiguity when its classification needs recruiter review.
 - Put a skill in nice_to_have_skills only when it is clearly preferred or optional.
 - Never put the same skill in both groups.
 - minimum_years_experience must be null unless a minimum is explicit.
@@ -179,6 +212,81 @@ The JSON string below is the complete source value:
 <vacancy_source_json>
 {source_json}
 </vacancy_source_json>"""
+
+
+def _words(value: str) -> set[str]:
+    normalized = unicodedata.normalize("NFKC", value).casefold()
+    return set(_WORD_RE.findall(normalized))
+
+
+def _source_statements(source_description: str) -> tuple[tuple[str, str], ...]:
+    statements: list[tuple[str, str]] = []
+    section = "neutral"
+    for raw_line in source_description.splitlines():
+        line = raw_line.strip().lstrip("-*• ").strip()
+        if not line:
+            continue
+        if _MANDATORY_SECTION_RE.fullmatch(line):
+            section = "mandatory"
+            continue
+        if _OPTIONAL_SECTION_RE.fullmatch(line):
+            section = "optional"
+            continue
+        if _RESPONSIBILITY_SECTION_RE.fullmatch(line):
+            section = "responsibility"
+            continue
+        statements.extend(
+            (section, statement.strip())
+            for statement in _STATEMENT_SPLIT_RE.split(line)
+            if statement.strip()
+        )
+    return tuple(statements)
+
+
+def _source_explicitly_requires_skill(
+    *,
+    skill: str,
+    source_description: str,
+) -> bool:
+    skill_words = _words(skill)
+    if not skill_words:
+        return False
+    for section, statement in _source_statements(source_description):
+        if not skill_words.issubset(_words(statement)):
+            continue
+        if _OPTIONAL_CUE_RE.search(statement) or section == "optional":
+            continue
+        if section == "mandatory" or _MANDATORY_CUE_RE.search(statement):
+            return True
+    return False
+
+
+def _requirements_values_for_source(
+    *,
+    extraction: VacancyRequirementsExtraction,
+    source_description: str,
+) -> dict:
+    values = extraction.as_requirements_values()
+    supported_skills: list[str] = []
+    ambiguities = list(values["ambiguities"])
+    ambiguity_keys = {item.casefold() for item in ambiguities}
+    for skill in extraction.must_have_skills:
+        if _source_explicitly_requires_skill(
+            skill=skill,
+            source_description=source_description,
+        ):
+            supported_skills.append(skill)
+            continue
+        ambiguity = (
+            f'AI suggested "{skill}" as must-have, but the source does not clearly '
+            "state it as mandatory. Review this classification."
+        )
+        if ambiguity.casefold() not in ambiguity_keys:
+            ambiguities.append(ambiguity)
+            ambiguity_keys.add(ambiguity.casefold())
+    values["must_have_skills"] = supported_skills
+    values["ambiguities"] = ambiguities
+    return values
 
 
 def _draft_signature(requirements: VacancyRequirements) -> str:
@@ -270,7 +378,10 @@ def extract_vacancy_requirements(
             updated = update_requirements_draft(
                 requirements=locked,
                 user=user,
-                values=gateway_result.data.as_requirements_values(),
+                values=_requirements_values_for_source(
+                    extraction=gateway_result.data,
+                    source_description=locked.source_description,
+                ),
             )
             updated.creation_method = VacancyRequirements.CreationMethod.AI_ASSISTED
             updated.save(update_fields=("creation_method",))

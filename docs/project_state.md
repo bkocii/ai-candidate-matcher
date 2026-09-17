@@ -1690,3 +1690,24 @@ Verification: focused eligibility-rule/vacancy-intake coverage `52 passed`; the
 complete quality gate passed with `599 passed`, successful Django system,
 deployment, static, migration-drift, Ruff, formatting, and dependency checks.
 No live AI request ran.
+
+The 2026-09-17 filter screenshot exposed MT-018-F01: city-only **Prishtina** was
+treated as different from **Prishtina, Kosovo**. Deterministic location matching
+now permits only exact normalized equality or one bounded city-hierarchy case in
+which one side is city-only and both first comma-delimited components are equal.
+Longer names and conflicting full locations remain failures; no substring,
+fuzzy, or geocoding behavior was introduced.
+
+The same slice implements the next approved MT-016-F01 task. Vacancy extraction
+now tells the provider not to promote responsibilities to must-have skills and
+applies an application-owned guard before persistence. Each proposed must-have
+must have explicit mandatory wording or occur in a clearly required source
+section. Unsupported proposals are removed from must-haves and recorded as
+classification ambiguities for recruiter review. The draft remains editable,
+and no eligibility rule is created automatically. Models, migrations,
+dependencies, tenant boundaries, and confirmed-version behavior are unchanged.
+
+Verification: focused matching/extraction coverage `42 passed`; the complete
+quality gate passed with `603 passed`, successful Django system, deployment,
+static, migration-drift, Ruff, formatting, and dependency checks. No live AI
+request ran.

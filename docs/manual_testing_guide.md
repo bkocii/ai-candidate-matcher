@@ -847,9 +847,13 @@ Expected result:
 
 - The page identifies confirmed requirements version 1.
 - `Synthetic Pass` passes both rules.
+- A candidate location of `Prishtina` passes a required location of `Prishtina,
+  Kosovo`; the city component matches exactly.
 - `Synthetic Review` has unknown results and remains in **Needs review**. A
   missing skill or location is never treated as proof of failure.
 - `Synthetic Fail` fails the explicit location equality rule.
+- `Prishtina e Re` and `Prishtina, Albania` do not match `Prishtina, Kosovo`;
+  the comparison does not use unrestricted substring matching.
 - Every rule row shows the recruiter source wording, expected value, candidate
   fact, evidence when present, and explanation.
 - Summary counts distinguish passed, needs-review, failed, and total evaluated.
@@ -1006,6 +1010,10 @@ Expected result:
   populated only when supported by the source.
 - Missing information stays blank, null, or **Unknown** instead of being guessed.
 - Must-have and nice-to-have skills do not overlap.
+- Responsibilities such as **review code** are not promoted to must-have skills
+  unless the source separately marks them as mandatory or places them in a
+  clearly required section. If the provider proposes **Code review** anyway, it
+  is removed from must-haves and shown as a classification ambiguity for review.
 - No eligibility rule is created automatically. Add any filtering rule
   deliberately in the Eligibility rules section.
 - You can edit every suggestion before using the separate confirmation action.

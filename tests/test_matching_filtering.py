@@ -83,13 +83,14 @@ def add_location_rule(
     requirements: VacancyRequirements,
     user: User,
     position: int = 1,
+    expected_value: str = "Prishtina",
 ) -> HardConstraintRule:
     return create_hard_constraint_rule(
         requirements=requirements,
         user=user,
         rule_type=HardConstraintRule.RuleType.LOCATION,
         source_text="Candidate must be based in Prishtina.",
-        expected_value="Prishtina",
+        expected_value=expected_value,
         position=position,
     )
 
@@ -172,6 +173,64 @@ def test_known_location_mismatch_is_an_explicit_failure() -> None:
     assert result.is_eligible is False
     assert result.rule_results[0].outcome == RuleOutcome.FAILED
     assert result.rule_results[0].candidate_value == "Peja"
+
+
+def test_city_only_location_matches_city_and_country_requirement() -> None:
+    user, organization = make_workspace()
+    _, requirements = make_requirements(organization=organization, user=user)
+    add_location_rule(
+        requirements=requirements,
+        user=user,
+        expected_value="Prishtina, Kosovo",
+    )
+    confirm_requirements_draft(requirements=requirements, user=user)
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="City-only Location",
+        location="Prishtina",
+    )
+
+    result = evaluate_candidate_constraints(
+        requirements=requirements,
+        candidate=candidate,
+        user=user,
+    )
+
+    assert result.outcome == FilterOutcome.PASSED
+    assert result.rule_results[0].outcome == RuleOutcome.PASSED
+    assert result.rule_results[0].expected_value == "Prishtina, Kosovo"
+    assert result.rule_results[0].candidate_value == "Prishtina"
+
+
+@pytest.mark.parametrize(
+    "candidate_location",
+    ["Prishtina e Re", "Prishtina, Albania"],
+)
+def test_location_hierarchy_does_not_allow_unsafe_partial_matches(
+    candidate_location: str,
+) -> None:
+    user, organization = make_workspace()
+    _, requirements = make_requirements(organization=organization, user=user)
+    add_location_rule(
+        requirements=requirements,
+        user=user,
+        expected_value="Prishtina, Kosovo",
+    )
+    confirm_requirements_draft(requirements=requirements, user=user)
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Different Location",
+        location=candidate_location,
+    )
+
+    result = evaluate_candidate_constraints(
+        requirements=requirements,
+        candidate=candidate,
+        user=user,
+    )
+
+    assert result.outcome == FilterOutcome.FAILED
+    assert result.rule_results[0].outcome == RuleOutcome.FAILED
 
 
 def test_missing_location_remains_unknown() -> None:

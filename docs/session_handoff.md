@@ -1171,11 +1171,26 @@ drift, Ruff lint/formatting across 226 files, and compatible dependencies. No
 live AI call ran. Deliver the changed-files/full archives, then ask for a desktop
 and narrow-width layout retest. If accepted, continue MT-016-F01 before U06.
 
-Immediate next action: finish the V01 layout verification and packaging. Ask the
-user to inspect the contained skill rows, saved-rule cards, aligned custom-rule
-fields, and narrow-width stacking. If accepted, continue MT-016-F01 before U06.
-Keep the remaining MT-012 functional browser checks recorded. DEMO-002 remains
-paused for the manual-review pass.
+The next screenshot shows MT-018-F01: candidate location **Prishtina** fails the
+required **Prishtina, Kosovo**. The correction adds a bounded city-hierarchy
+match only when one side is city-only and the first comma-delimited components
+are exactly equal. Unsafe partial names and conflicting full locations still
+fail. The user also approved continuing with MT-016-F01. Vacancy extraction now
+requires explicit mandatory wording or a required-section context before saving
+an AI-proposed must-have skill. Unsupported responsibilities such as **Code
+review** are removed from must-haves and surfaced as recruiter-review
+ambiguities. Focused matching/extraction tests pass with `42 passed`; the
+complete quality gate passes with `603 passed`, including Django system,
+deployment, static, migration-drift, Ruff, formatting, and dependency checks.
+No live AI request ran. Package only changed files and request browser checks for
+both the filter result and one fresh AI extraction. After acceptance, continue
+MT-016-U06. V01 layout acceptance remains pending unless the user explicitly
+confirms it.
+
+Immediate next action: complete verification and packaging for MT-018-F01 plus
+MT-016-F01. Do not provide the full-project ZIP unless the user requests it or a
+major checkpoint/session handoff requires it. Keep the remaining MT-012 checks
+recorded. DEMO-002 remains paused for the manual-review pass.
 
 Delivery workflow: provide a ZIP containing only changed files with repository-
 relative paths; keep the working project and full project archive updated.

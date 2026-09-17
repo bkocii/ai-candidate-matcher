@@ -644,7 +644,7 @@ ran. The user confirmed the alignment and wording on 2026-09-16.
 | MT-016-U03 | Usability defect | High | Existing structured fields and executable rules must be entered separately even when they express the same requirement, such as four years, Python, location, work mode, language, or employment type. | Add a recruiter-controlled **Required for eligibility** toggle beside each supported structured criterion. Create the typed rule behind the scenes and show its effect in plain language. | Resolved — supplied browser recording confirmed 2026-09-17 |
 | MT-016-C01 | Usability defect | Medium | **Typed hard-constraint**, **executable**, **deterministic filtering**, and **unknown outcome** are implementation terms rather than normal recruiter language. | Use **Eligibility rule**, **Affects candidate filtering**, and **If information is missing: keep for review**. Reserve technical terms for audit/detail views. | Resolved — user confirmed 2026-09-16 |
 | MT-016-V01 | Visual defect | Medium | The long narrow form stacks many large empty text areas, while most desktop width is unused and the rule section begins only after several screens of scrolling. | Group the draft into compact sections, use skill chips/list rows instead of large textareas, and use a wider two-column desktop layout with a sticky review summary. | Refined after browser review — 2026-09-17; retest pending |
-| MT-016-F01 | Functional defect | Medium | AI classified **Code review** as a must-have skill even though the source describes reviewing code as a role responsibility, not an explicit mandatory qualification. Confirming it could overstate the requirement in matching. | Require explicit requirement language before promoting a responsibility to must-have; otherwise retain it in the role summary or responsibilities and flag uncertain classifications for review. | Open |
+| MT-016-F01 | Functional defect | Medium | AI classified **Code review** as a must-have skill even though the source describes reviewing code as a role responsibility, not an explicit mandatory qualification. Confirming it could overstate the requirement in matching. | Require explicit requirement language before promoting a responsibility to must-have; otherwise retain it in the role summary or responsibilities and flag uncertain classifications for review. | Implemented — 2026-09-17; browser retest pending |
 | MT-016-U04 | Usability defect | Medium | The must-have textarea displays the raw phrase **Python development experience** without showing that matching will canonicalize it to **Python**. Recruiters cannot inspect the identity that deterministic matching will use. | Present each skill as a row/chip with **Canonical skill: Python** and **Source wording: Python development experience**, allowing correction without losing provenance. | Resolved — supplied browser recording confirmed 2026-09-17 |
 | MT-016-U05 | Usability defect | High | **Review and confirm** is a navigation link and does not save current form edits. Its placement beside **Save draft** makes it reasonable to assume both actions preserve changes, creating a data-loss risk during review. | Make **Review changes** submit and validate the current draft before opening confirmation, or disable it while the form is dirty and clearly require saving first. | Resolved — user confirmed 2026-09-16 |
 | MT-016-F02 | Functional defect | High | The supposed confirmation page does not display the draft structured requirements. It shows the original vacancy description, an empty **Current confirmed requirements** panel, and an immediately executable **Confirm version 1** button. The recruiter cannot verify the corrected skills, experience, location, or ambiguities at the final approval boundary. | Add a dedicated confirmation preview that displays every draft field and eligibility rule beside the original source, including a clear changes summary. Place the final POST confirmation only after this preview and provide an **Edit draft** action. | Resolved — user confirmed 2026-09-16 |
@@ -693,6 +693,22 @@ Verification: focused eligibility-rule/vacancy-intake coverage `52 passed`; the
 complete quality gate passed with `599 passed`, Django system/deployment/static
 checks, no migration drift, Ruff lint/formatting across 226 files, and compatible
 dependencies. No live AI request ran.
+
+MT-016-F01 is implemented as an application-owned extraction safeguard. The AI
+prompt now states that a responsibility or task is not a must-have skill by
+itself. Before saving provider output, every proposed must-have skill must appear
+with explicit mandatory wording or inside a clearly required section of the
+source. An unsupported proposal such as **Code review** is removed from the
+must-have list and added as an inspectable classification ambiguity for recruiter
+review. Optional and responsibility sections do not satisfy the safeguard. No
+eligibility rule is created automatically, and recruiters can still correct the
+draft before confirmation. Browser retesting with the synthetic vacancy fixture
+is pending.
+
+Verification for MT-018-F01 and MT-016-F01: focused matching/extraction coverage
+`42 passed`; the complete quality gate passed with `603 passed`, Django system,
+deployment, static, migration-drift, Ruff, formatting, and dependency checks.
+No live AI request ran.
 
 #### Recommended interaction
 
@@ -800,6 +816,17 @@ Browser acceptance remains pending.
 | MT-018-U02 | Improvement | High | **Evaluate candidates** and **Generate shortlist** are separate routine steps even though filtering has no recruiter input on this page. This adds a page and click before every shortlist. | Make **Generate shortlist** the normal vacancy action and run eligibility filtering plus scoring together. Show the filter report inside the resulting shortlist; keep a separate preview only when the recruiter explicitly requests it or exceptions need review. | Proposed |
 | MT-018-C01 | Usability defect | Medium | **Deterministic filtering**, **hard-constraint results**, and **passes this filtering stage by default** are implementation-oriented and difficult for a recruiter to interpret. | Use **Eligibility check**, **Eligibility results**, and **No eligibility rules are active, so this candidate continues to scoring**. Keep algorithm terminology in audit details. | Open |
 | MT-018-V01 | Visual defect | Low | Four large metric cards consume most of the first screen for a one-candidate result, while the decisive no-rule explanation is lower and visually quieter. | Use a compact result summary and elevate the no-rule state above the counts. Expand to richer metrics only for larger candidate pools. | Open |
+| MT-018-F01 | Functional defect | High | A candidate recorded in `Prishtina` fails a required location of `Prishtina, Kosovo`, even though both identify the same city. | Treat an exact city-only value as matching the first component of `city, country`, while retaining exact full-location comparison and rejecting unsafe partial names or conflicting full locations. | Implemented — 2026-09-17; browser retest pending |
+
+#### Structured-location recording — 2026-09-17
+
+The supplied `matcher-location-eligibility-fail.png` captures MT-018-F01: the
+candidate value **Prishtina** fails the required value **Prishtina, Kosovo**.
+Location evaluation now retains exact normalized equality and adds one bounded
+hierarchy case: when one side is city-only and the other is comma-separated,
+their first components must match exactly. **Prishtina e Re** remains distinct,
+and two full values such as **Prishtina, Albania** and **Prishtina, Kosovo** still
+fail. No unrestricted substring, fuzzy, or external-geocoding match is used.
 
 ### MT-019 — Deterministic shortlist
 
