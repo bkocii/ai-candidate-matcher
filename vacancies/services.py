@@ -281,6 +281,23 @@ def confirm_requirements_draft(
 
 
 @transaction.atomic
+def confirm_requirements_and_open_vacancy(
+    *,
+    requirements: VacancyRequirements,
+    user: User,
+) -> tuple[VacancyRequirements, Vacancy]:
+    """Confirm one draft and open its draft vacancy as one recruiter action."""
+    require_organization_object_access(user, requirements)
+    confirmed = confirm_requirements_draft(requirements=requirements, user=user)
+    vacancy = change_vacancy_status(
+        vacancy=confirmed.vacancy,
+        user=user,
+        new_status=Vacancy.Status.OPEN,
+    )
+    return confirmed, vacancy
+
+
+@transaction.atomic
 def create_next_requirements_draft(
     *,
     vacancy: Vacancy,

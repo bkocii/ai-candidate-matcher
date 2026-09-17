@@ -53,14 +53,24 @@
     <div>
         <p class="eyebrow">Explicit confirmation</p>
         <h2 id="confirm-requirements-title">Confirm requirements version {{ requirements.version }}</h2>
-        <p>Confirm only after the draft and filtering rules accurately represent the vacancy. This does not open the vacancy or evaluate candidates.</p>
+        {% if vacancy.status == "draft" %}
+            <p>Confirm only after the draft and filtering rules accurately represent the vacancy. The routine action confirms this version and opens the vacancy; neither option evaluates candidates.</p>
+        {% else %}
+            <p>Confirm only after the draft and filtering rules accurately represent the vacancy. This does not evaluate candidates or change the vacancy status.</p>
+        {% endif %}
     </div>
     <div class="button-row">
         <a class="secondary-button" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk requirements.pk %}">Edit draft</a>
         <form method="post" action="{% url 'vacancies:requirements-confirm' organization.slug vacancy.pk requirements.pk %}">
             {% csrf_token %}
-            <button class="primary-button" type="submit">Confirm version {{ requirements.version }}</button>
+            <button class="{% if vacancy.status == 'draft' %}secondary-button{% else %}primary-button{% endif %}" type="submit" name="intent" value="confirm_only">Confirm only</button>
         </form>
+        {% if vacancy.status == "draft" %}
+            <form method="post" action="{% url 'vacancies:requirements-confirm' organization.slug vacancy.pk requirements.pk %}">
+                {% csrf_token %}
+                <button class="primary-button" type="submit" name="intent" value="confirm_and_open">Confirm and open vacancy</button>
+            </form>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

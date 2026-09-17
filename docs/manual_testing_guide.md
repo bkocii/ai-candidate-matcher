@@ -612,13 +612,23 @@ Expected result:
 
 ## 9. Test confirmation and immutable corrections
 
-On the vacancy detail page, select **Confirm version 1**.
+From the requirements editor, select **Save and review**. On the review page,
+inspect the complete draft and eligibility rules, then select **Confirm and open
+vacancy**.
 
 Expected result:
 
 - Version 1 becomes `Confirmed` with the acting recruiter and timestamp.
 - It becomes the current confirmed requirements.
 - It is read-only; the app does not offer in-place editing.
+- The vacancy becomes `Open` in the same atomic action.
+- The vacancy page focuses a concise success summary near the top and offers
+  **Evaluate candidates** as the next action.
+
+Repeat with a disposable draft vacancy and select **Confirm only**. Expected
+result: the version is confirmed, the vacancy remains `Draft`, and the focused
+success summary offers **Open vacancy**. A failed open transition must roll back
+confirmation rather than leaving half of the combined action saved.
 
 Select **Create correction draft**.
 
@@ -651,8 +661,9 @@ structured requirement. The version remains a draft.
 
 ## 11. Test vacancy lifecycle and dashboard count
 
-New vacancies remain `Draft`; confirming requirements alone does not make the
-dashboard's **Open vacancies** count increase.
+New vacancies remain `Draft`; using **Confirm only** does not make the
+dashboard's **Open vacancies** count increase. The routine **Confirm and open
+vacancy** action performs both explicit transitions together.
 
 1. Before confirming requirements, confirm that **Change to Open** is unavailable
    and the page explains that a confirmed version is required.

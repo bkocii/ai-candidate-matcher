@@ -1192,6 +1192,23 @@ MT-016-F01. Do not provide the full-project ZIP unless the user requests it or a
 major checkpoint/session handoff requires it. Keep the remaining MT-012 checks
 recorded. DEMO-002 remains paused for the manual-review pass.
 
+The user confirmed MT-018-F01 and MT-016-F01 and asked for the next task. The
+tracker contained 31 Open findings before starting MT-016-U06; proposals and
+implemented items awaiting browser retest were counted separately. U06 now adds
+an atomic **Confirm and open vacancy** primary action while retaining **Confirm
+only**. Both confirmation paths redirect to a focused success summary near the
+top of vacancy detail with a state-appropriate **Evaluate candidates** or **Open
+vacancy** action. A failed combined lifecycle transition rolls back confirmation.
+Focused vacancy-intake coverage passes with `40 passed`; the complete quality
+gate passes with `606 passed`, successful Django system, deployment, static,
+migration-drift, Ruff, formatting, and dependency checks. No live AI request
+ran. Thirty findings remain Open after U06 moves to implemented/browser-retest
+pending. V01 layout acceptance remains separately pending.
+
+Immediate next action: deliver the changed-files package and ask the user to
+retest both confirmation buttons and the focused landing position. Do not provide
+a full-project ZIP unless requested or needed for a major handoff.
+
 Delivery workflow: provide a ZIP containing only changed files with repository-
 relative paths; keep the working project and full project archive updated.
 Include changed testing docs, check commands, and explicit Git add/commit

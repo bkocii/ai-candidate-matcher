@@ -422,6 +422,8 @@ def test_save_and_review_persists_edits_and_previews_complete_draft(client) -> N
         assert expected in content
     assert "Draft to be confirmed" in content
     assert "Edit draft" in content
+    assert "Confirm only" in content
+    assert "Confirm and open vacancy" in content
     assert content.index("Draft to be confirmed") < content.index(
         "Explicit confirmation"
     )
@@ -771,6 +773,105 @@ def test_recruiter_confirms_meaningful_requirements(client) -> None:
     assert requirements.confirmed_by == user
     assert requirements.confirmed_at is not None
     assert vacancy.current_requirements == requirements
+
+
+def test_recruiter_confirms_and_opens_vacancy_with_focused_next_action(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    update_requirements_draft(
+        requirements=requirements,
+        user=user,
+        values=requirements_values(),
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse(
+            "vacancies:requirements-confirm",
+            args=[organization.slug, vacancy.pk, requirements.pk],
+        ),
+        {"intent": "confirm_and_open"},
+        follow=True,
+    )
+
+    requirements.refresh_from_db()
+    vacancy.refresh_from_db()
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert requirements.status == VacancyRequirements.Status.CONFIRMED
+    assert vacancy.status == Vacancy.Status.OPEN
+    assert "Confirmed requirements version 1 and opened the vacancy" in content
+    assert "Version 1 is now the matching input" in content
+    assert "The vacancy is open and ready for candidate evaluation" in content
+    assert "Evaluate candidates" in content
+    assert "data-confirmation-focus" in content
+    assert "confirmation-focus.js" in content
+
+
+def test_confirm_only_keeps_draft_vacancy_and_offers_open_action(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    update_requirements_draft(
+        requirements=requirements,
+        user=user,
+        values=requirements_values(),
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse(
+            "vacancies:requirements-confirm",
+            args=[organization.slug, vacancy.pk, requirements.pk],
+        ),
+        {"intent": "confirm_only"},
+        follow=True,
+    )
+
+    requirements.refresh_from_db()
+    vacancy.refresh_from_db()
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert requirements.status == VacancyRequirements.Status.CONFIRMED
+    assert vacancy.status == Vacancy.Status.DRAFT
+    assert "The confirmed version is saved" in content
+    assert "Open vacancy" in content
+
+
+def test_confirm_and_open_rolls_back_confirmation_when_vacancy_is_already_open(
+    client,
+) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    confirm_requirements_for_status(
+        vacancy=vacancy,
+        requirements=requirements,
+        user=user,
+    )
+    change_vacancy_status(
+        vacancy=vacancy,
+        user=user,
+        new_status=Vacancy.Status.OPEN,
+    )
+    correction, _ = create_next_requirements_draft(vacancy=vacancy, user=user)
+    correction.summary = "Corrected requirements"
+    correction.save(update_fields=("summary",))
+    client.force_login(user)
+
+    response = client.post(
+        reverse(
+            "vacancies:requirements-confirm",
+            args=[organization.slug, vacancy.pk, correction.pk],
+        ),
+        {"intent": "confirm_and_open"},
+        follow=True,
+    )
+
+    correction.refresh_from_db()
+    vacancy.refresh_from_db()
+    assert response.status_code == 200
+    assert correction.status == VacancyRequirements.Status.DRAFT
+    assert vacancy.status == Vacancy.Status.OPEN
+    assert "already open" in response.content.decode()
 
 
 def test_confirm_service_repeats_object_permission_check() -> None:

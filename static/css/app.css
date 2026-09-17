@@ -2596,6 +2596,15 @@ tbody tr:last-child td {
     margin-bottom: 0;
 }
 
+.confirmation-success {
+    scroll-margin-top: 24px;
+}
+
+.confirmation-success:focus {
+    outline: 3px solid rgba(23, 107, 82, 0.22);
+    outline-offset: 3px;
+}
+
 .decision-panel .field:first-of-type ul {
     display: flex;
     flex-wrap: wrap;

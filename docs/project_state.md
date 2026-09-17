@@ -1711,3 +1711,20 @@ Verification: focused matching/extraction coverage `42 passed`; the complete
 quality gate passed with `603 passed`, successful Django system, deployment,
 static, migration-drift, Ruff, formatting, and dependency checks. No live AI
 request ran.
+
+The user confirmed MT-016-F01 and MT-018-F01 on 2026-09-17. The next approved
+manual-review task, MT-016-U06, is implemented. A draft-vacancy review now makes
+**Confirm and open vacancy** the routine primary action while retaining
+**Confirm only**. The combined action confirms requirements and opens the
+vacancy in one transaction, so an invalid lifecycle transition rolls back both.
+After either confirmation path, the vacancy detail page renders and focuses a
+concise success summary near the top with **Evaluate candidates** or **Open
+vacancy** as the state-appropriate next action. Confirmed-version immutability,
+tenant authorization, eligibility rules, and candidate evaluation remain
+unchanged. Thirty manual-review findings remain marked Open after this slice;
+proposals and implemented items awaiting browser retest are tracked separately.
+
+Verification: focused vacancy-intake coverage `40 passed`; the complete quality
+gate passed with `606 passed`, successful Django system, deployment, static,
+migration-drift, Ruff, formatting, and dependency checks. No live AI request
+ran. Browser acceptance of MT-016-U06 is pending.

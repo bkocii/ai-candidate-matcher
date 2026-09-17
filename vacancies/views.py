@@ -33,6 +33,7 @@ from vacancies.models import Vacancy, VacancyRequirements
 from vacancies.services import (
     available_vacancy_status_transitions,
     change_vacancy_status,
+    confirm_requirements_and_open_vacancy,
     confirm_requirements_draft,
     create_next_requirements_draft,
     create_vacancy_with_requirements,
@@ -223,6 +224,15 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
         if current_requirements is not None
         else ()
     )
+    requirements_confirmed = bool(
+        current_requirements is not None
+        and request.GET.get("confirmed") == str(current_requirements.version)
+    )
+    confirmation_opened = bool(
+        requirements_confirmed
+        and request.GET.get("opened") == "1"
+        and vacancy.status == Vacancy.Status.OPEN
+    )
     return render(
         request,
         "vacancies/vacancy_detail.html",
@@ -236,6 +246,8 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
             "draft": draft,
             "versions": versions,
             "status_transitions": available_vacancy_status_transitions(vacancy),
+            "requirements_confirmed": requirements_confirmed,
+            "confirmation_opened": confirmation_opened,
             "can_administer": can_administer_organization(request.user, organization),
         },
     )
@@ -508,8 +520,18 @@ def requirements_confirm(
     organization = _visible_organization(request, organization_slug)
     vacancy = _visible_vacancy(organization, vacancy_id)
     requirements = _visible_requirements(organization, vacancy, requirements_id)
+    open_vacancy = request.POST.get("intent") == "confirm_and_open"
     try:
-        confirm_requirements_draft(requirements=requirements, user=request.user)
+        if open_vacancy:
+            requirements, vacancy = confirm_requirements_and_open_vacancy(
+                requirements=requirements,
+                user=request.user,
+            )
+        else:
+            requirements = confirm_requirements_draft(
+                requirements=requirements,
+                user=request.user,
+            )
     except ValidationError as error:
         messages.error(request, "; ".join(error.messages))
         return redirect(
@@ -519,15 +541,22 @@ def requirements_confirm(
             requirements_id=requirements.pk,
         )
     else:
+        action = " and opened the vacancy" if open_vacancy else ""
         messages.success(
             request,
-            f"Confirmed requirements version {requirements.version}.",
+            f"Confirmed requirements version {requirements.version}{action}.",
         )
-    return redirect(
+    detail_url = reverse(
         "vacancies:vacancy-detail",
-        organization_slug=organization.slug,
-        vacancy_id=vacancy.pk,
+        args=[organization.slug, vacancy.pk],
     )
+    query = urlencode(
+        {
+            "confirmed": requirements.version,
+            "opened": "1" if open_vacancy else "0",
+        }
+    )
+    return redirect(f"{detail_url}?{query}#requirements-confirmed")
 
 
 @login_required

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ vacancy.title }} | {{ organization.name }}{% endblock %}
 
@@ -24,6 +25,33 @@
         {% endif %}
     </div>
 </section>
+
+{% if requirements_confirmed %}
+<section class="success-callout confirmation-success" id="requirements-confirmed" data-confirmation-focus tabindex="-1" aria-labelledby="requirements-confirmed-title">
+    <div>
+        <p class="eyebrow">Requirements confirmed</p>
+        <h2 id="requirements-confirmed-title">Version {{ current_requirements.version }} is now the matching input</h2>
+        {% if confirmation_opened %}
+            <p>The vacancy is open and ready for candidate evaluation.</p>
+        {% elif vacancy.status == "draft" %}
+            <p>The confirmed version is saved. Open the vacancy when you are ready to evaluate candidates.</p>
+        {% else %}
+            <p>The confirmed correction is active. The vacancy remains {{ vacancy.get_status_display|lower }}.</p>
+        {% endif %}
+    </div>
+    <div class="button-row">
+        {% if vacancy.status == "draft" %}
+            <form method="post" action="{% url 'vacancies:vacancy-status-change' organization.slug vacancy.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="status" value="open">
+                <button class="primary-button" type="submit">Open vacancy</button>
+            </form>
+        {% elif vacancy.status == "open" %}
+            <a class="primary-button button-link" href="{% url 'matching:candidate-filter-report' organization.slug vacancy.pk %}">Evaluate candidates</a>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
 
 <section class="status-actions" aria-labelledby="vacancy-status-title">
     <div>
@@ -150,4 +178,8 @@
     </div>
     <a class="danger-button button-link" href="{% url 'vacancies:vacancy-delete' organization.slug vacancy.pk %}">Delete vacancy</a>
 </section>
+{% endblock %}
+
+{% block scripts %}
+    {% if requirements_confirmed %}<script src="{% static 'js/confirmation-focus.js' %}" defer></script>{% endif %}
 {% endblock %}
