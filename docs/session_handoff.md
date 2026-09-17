@@ -1225,6 +1225,22 @@ Immediate next action: deliver the changed-files package for
 MT-018-U01/C01/V01 and wait for browser confirmation. Do not provide a
 full-project ZIP unless requested or needed for a major handoff.
 
+The user continued after the MT-018-U01/C01/V01 delivery, confirming that slice.
+The next Open task, MT-019-V01, now rounds the recruiter-facing deterministic
+score to a whole percentage on both shortlist and assessment review pages.
+Skill rows use **Full weight** or **No points** and keep the exact decimal
+awarded/possible values inside a closed **Exact calculation** detail. Stored
+scores and all ranking behavior are unchanged. Focused shortlist/review coverage
+passes with `22 passed`; the complete quality gate passes with `607 passed`,
+successful Django system, deployment, static, migration-drift, Ruff,
+formatting, and dependency checks. No live AI request ran. Package only this
+slice's changed files and request a shortlist browser retest. Twenty-six
+findings remain Open.
+
+Immediate next action: deliver the changed-files package for MT-019-V01 and wait
+for browser confirmation. Do not provide a full-project ZIP unless requested or
+needed for a major handoff.
+
 Delivery workflow: provide a ZIP containing only changed files with repository-
 relative paths; keep the working project and full project archive updated.
 Include changed testing docs, check commands, and explicit Git add/commit

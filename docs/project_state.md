@@ -1744,3 +1744,18 @@ Verification: focused filtering coverage `27 passed`; the complete quality gate
 passed with `607 passed`, successful Django system, deployment, static,
 migration-drift, Ruff, formatting, and dependency checks. No live AI request
 ran. Browser acceptance of MT-018-U01/C01/V01 is pending.
+
+The user confirmed MT-018-U01/C01/V01 on 2026-09-17. The next Open finding,
+MT-019-V01, is implemented as a display-only precision correction. Shortlist
+candidate headers and the assessment review show the deterministic score as a
+rounded whole percentage. Skill rows show **Full weight** or **No points** and
+place exact awarded/possible decimals inside a closed **Exact calculation**
+detail. Stored scores, score snapshots, weighting, ranking, filtering, AI
+assessment inputs, and tenant boundaries are unchanged. Twenty-six findings
+remain marked Open; proposals and implemented items awaiting browser retest are
+tracked separately.
+
+Verification: focused shortlist/review coverage `22 passed`; the complete
+quality gate passed with `607 passed`, successful Django system, deployment,
+static, migration-drift, Ruff, formatting, and dependency checks. No live AI
+request ran. Browser acceptance of MT-019-V01 is pending.

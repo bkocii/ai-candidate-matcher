@@ -910,6 +910,9 @@ Expected result:
   the combined weights are apportioned to exactly `100.00` points.
 - Algorithm v3 matches controlled canonical skill identities while preserving
   the existing two-to-one weighting and original evidence display.
+- Candidate headers display the deterministic score as a rounded whole
+  percentage. The exact stored decimal remains available only by opening
+  **Exact calculation** in a skill row.
 - With two must-have and two nice-to-have skills, a candidate matching one of
   each receives `50.00`: `33.33` must-have points plus `16.67` nice-to-have
   points.
@@ -925,7 +928,8 @@ Expected result:
   filters appears before a candidate who still needs review. The final tie-break
   uses stable record ID rather than candidate name.
 - Every row shows requirement wording, importance, recorded candidate wording,
-  evidence, and awarded/possible points.
+  evidence, and **Full weight** or **No points**. Opening **Exact calculation**
+  shows the stored awarded/possible decimal points for audit.
 - Candidate contact fields, raw CV text, and storage paths are absent.
 - Generating again creates a new run; it does not overwrite the earlier report.
 

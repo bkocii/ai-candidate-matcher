@@ -2417,6 +2417,23 @@ tbody tr:last-child td {
     font-size: 0.82rem;
 }
 
+.score-audit-detail {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.score-audit-detail summary {
+    cursor: pointer;
+    color: var(--primary);
+    font-weight: 750;
+}
+
+.score-audit-detail span {
+    display: block;
+    margin-top: 4px;
+}
+
 .shortlist-match-counts {
     display: flex;
     gap: 24px;

@@ -824,10 +824,10 @@ Browser acceptance remains pending.
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-018-U01 | Usability defect | High | The prominent **Passed** result can be read as “the candidate meets the vacancy requirements,” but no must-have skill, experience, location, language, or work-eligibility criterion was actually used as an exclusion rule. The candidate passed only because no eligibility rules exist. | Use **Eligible for scoring** as the outcome and show a visible warning: **No eligibility rules are active; all candidates continue to scoring.** Provide a direct **Review eligibility rules** action for authorized recruiters. | Implemented — 2026-09-17; browser retest pending |
+| MT-018-U01 | Usability defect | High | The prominent **Passed** result can be read as “the candidate meets the vacancy requirements,” but no must-have skill, experience, location, language, or work-eligibility criterion was actually used as an exclusion rule. The candidate passed only because no eligibility rules exist. | Use **Eligible for scoring** as the outcome and show a visible warning: **No eligibility rules are active; all candidates continue to scoring.** Provide a direct **Review eligibility rules** action for authorized recruiters. | Resolved — user confirmed 2026-09-17 |
 | MT-018-U02 | Improvement | High | **Evaluate candidates** and **Generate shortlist** are separate routine steps even though filtering has no recruiter input on this page. This adds a page and click before every shortlist. | Make **Generate shortlist** the normal vacancy action and run eligibility filtering plus scoring together. Show the filter report inside the resulting shortlist; keep a separate preview only when the recruiter explicitly requests it or exceptions need review. | Proposed |
-| MT-018-C01 | Usability defect | Medium | **Deterministic filtering**, **hard-constraint results**, and **passes this filtering stage by default** are implementation-oriented and difficult for a recruiter to interpret. | Use **Eligibility check**, **Eligibility results**, and **No eligibility rules are active, so this candidate continues to scoring**. Keep algorithm terminology in audit details. | Implemented — 2026-09-17; browser retest pending |
-| MT-018-V01 | Visual defect | Low | Four large metric cards consume most of the first screen for a one-candidate result, while the decisive no-rule explanation is lower and visually quieter. | Use a compact result summary and elevate the no-rule state above the counts. Expand to richer metrics only for larger candidate pools. | Implemented — 2026-09-17; browser retest pending |
+| MT-018-C01 | Usability defect | Medium | **Deterministic filtering**, **hard-constraint results**, and **passes this filtering stage by default** are implementation-oriented and difficult for a recruiter to interpret. | Use **Eligibility check**, **Eligibility results**, and **No eligibility rules are active, so this candidate continues to scoring**. Keep algorithm terminology in audit details. | Resolved — user confirmed 2026-09-17 |
+| MT-018-V01 | Visual defect | Low | Four large metric cards consume most of the first screen for a one-candidate result, while the decisive no-rule explanation is lower and visually quieter. | Use a compact result summary and elevate the no-rule state above the counts. Expand to richer metrics only for larger candidate pools. | Resolved — user confirmed 2026-09-17 |
 | MT-018-F01 | Functional defect | High | A candidate recorded in `Prishtina` fails a required location of `Prishtina, Kosovo`, even though both identify the same city. | Treat an exact city-only value as matching the first component of `city, country`, while retaining exact full-location comparison and rejecting unsafe partial names or conflicting full locations. | Resolved — user confirmed 2026-09-17 |
 
 #### Structured-location recording — 2026-09-17
@@ -871,7 +871,7 @@ ran.
 - **Pass:** The removed vacancy criterion `Code review` does not appear in the scoring breakdown.
 - **Pass:** The removed candidate-profile skill `validated imports` does not influence the result.
 - **Pass:** The displayed counts are correct: 4/5 must-have skills and 1/2 nice-to-have skills.
-- **Pass:** The score of 75.01 follows the documented weighting: four must-haves at about 16.67 points plus Docker at about 8.33 points.
+- **Pass:** The stored exact score of 75.01 follows the documented weighting: four must-haves at about 16.67 points plus Docker at about 8.33 points.
 - **Pass:** No AI assessment or recruiter decision was created automatically by shortlist generation.
 - **Pass:** The page states that the shortlist supports recruiter decisions and does not approve, reject, contact, or hire anyone.
 
@@ -889,8 +889,21 @@ ran.
 | MT-019-U01 | Improvement | High | The normal path currently requires separate actions/pages for eligibility evaluation, shortlist generation, AI assessment generation, opening assessment review, and recording the recruiter decision. Most of those stages require no routine recruiter input. | Offer one **Create shortlist and assess candidates** action that runs filtering, scoring, and resumable assessment generation in the background. Bring the recruiter directly to an exception-focused review queue when work completes; retain every intermediate report for inspection. | Proposed |
 | MT-019-U02 | Improvement | Medium | The page offers both whole-shortlist assessment and per-candidate assessment actions. For normal runs this makes the recruiter choose an execution method rather than a hiring task. | Make batch assessment the default routine action, label it **Assess shortlisted candidates**, and reserve per-candidate generation for retries or intentional reassessment. | Proposed |
 | MT-019-U03 | Improvement | Medium | After generating the only candidate's assessment, the recruiter must still locate and open a separate assessment review before recording a decision. | For a one-candidate shortlist, redirect directly to its completed assessment review. For larger batches, redirect to the pending review queue with exceptions first. | Proposed |
-| MT-019-V01 | Visual defect | Low | `75.01 of 100` and row values such as `16.67 / 16.67` imply more decision precision than the simple weighting policy supports. | Display the overall score as a rounded whole number or percentage and keep detailed unrounded calculation only in an expandable audit explanation. | Open |
+| MT-019-V01 | Visual defect | Low | `75.01 of 100` and row values such as `16.67 / 16.67` imply more decision precision than the simple weighting policy supports. | Display the overall score as a rounded whole number or percentage and keep detailed unrounded calculation only in an expandable audit explanation. | Implemented — 2026-09-17; browser retest pending |
 | MT-019-V02 | Improvement | Low | The scoring-method panel and full evidence table make the page long even for one candidate, pushing the next action below the fold. | Keep the candidate summary and next action visible first; collapse calculation details and the full evidence breakdown behind **Show score details** by default. | Proposed |
+
+The MT-019-V01 presentation pass keeps the exact stored score and deterministic
+ranking unchanged. Candidate headers now show a rounded whole percentage, and
+the assessment review uses the same whole-percentage deterministic score. Each
+skill row says **Full weight** or **No points**; its exact awarded/possible
+decimal values remain inspectable only after opening **Exact calculation**.
+Evidence, weighting, tie-breaks, eligibility, and immutable snapshots are
+unchanged. Browser acceptance is pending.
+
+Verification for MT-019-V01: focused shortlist/review coverage `22 passed`; the
+complete quality gate passed with `607 passed`, successful Django system,
+deployment, static, migration-drift, Ruff, formatting, and dependency checks.
+No live AI request ran.
 
 ### MT-020 — AI assessment embedded in shortlist
 

@@ -34,7 +34,7 @@
         <span class="assessment-light assessment-light-{{ assessment.traffic_light }}">{{ assessment.get_traffic_light_display }}</span>
         <div>
             <strong>{{ assessment.score }}/100</strong>
-            <small>AI decision-support score; deterministic score {{ entry.score|floatformat:2 }}/100</small>
+            <small>AI decision-support score; deterministic score {{ entry.score|floatformat:0 }}%</small>
         </div>
     </div>
     <p>{{ assessment.summary }}</p>

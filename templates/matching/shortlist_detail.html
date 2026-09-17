@@ -86,8 +86,8 @@
                         </div>
                     </div>
                     <div class="shortlist-score">
-                        <strong>{{ entry.score|floatformat:2 }}</strong>
-                        <span>of 100</span>
+                        <strong>{{ entry.score|floatformat:0 }}%</strong>
+                        <span>skill match</span>
                         <span class="filter-outcome filter-outcome-{{ entry.filter_outcome }}">
                             {% if entry.filter_outcome == "review" %}Needs review{% else %}Passed filters{% endif %}
                         </span>
@@ -125,7 +125,13 @@
                                             {% endif %}
                                         </td>
                                         <td>{{ item.evidence|default:"No source evidence recorded" }}</td>
-                                        <td>{{ item.awarded_points }} / {{ item.possible_points }}</td>
+                                        <td>
+                                            <span>{% if item.matched %}Full weight{% else %}No points{% endif %}</span>
+                                            <details class="score-audit-detail">
+                                                <summary>Exact calculation</summary>
+                                                <span>{{ item.awarded_points }} / {{ item.possible_points }} points</span>
+                                            </details>
+                                        </td>
                                     </tr>
                                 {% endfor %}
                             </tbody>

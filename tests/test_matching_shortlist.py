@@ -513,7 +513,10 @@ def test_generate_route_is_post_only_and_redirects_to_report(client) -> None:
     assert get_response.status_code == 405
     assert post_response.status_code == 200
     assert "Visible Candidate" in content
-    assert "66.67" in content
+    assert "<strong>67%</strong>" in content
+    assert '<details class="score-audit-detail">' in content
+    assert "<summary>Exact calculation</summary>" in content
+    assert "66.67 / 66.67 points" in content
     assert "Inspectable evidence only." in content
     assert "Requirements version 1" in content
     assert "private@example.test" not in content
