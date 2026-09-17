@@ -7,20 +7,20 @@ from vacancies.models import VacancyRequirements
 class HardConstraintRuleForm(forms.Form):
     rule_type = forms.ChoiceField(
         choices=HardConstraintRule.RuleType.choices,
-        label="Rule type",
+        label="Eligibility criterion",
     )
     source_text = forms.CharField(
-        label="Exact source wording",
+        required=False,
+        label="Why is this required?",
         widget=forms.Textarea(attrs={"rows": 3}),
         help_text=(
-            "Copy the explicit wording from the vacancy or record the recruiter's "
-            "confirmed interpretation."
+            "Use explicit wording from the vacancy or the recruiter's confirmed "
+            "interpretation."
         ),
     )
     skill = forms.ChoiceField(
         required=False,
-        label="Required must-have skill",
-        help_text="Used only for a Required skill rule.",
+        label="Required skill",
     )
     numeric_value = forms.DecimalField(
         required=False,
@@ -28,16 +28,12 @@ class HardConstraintRuleForm(forms.Form):
         max_digits=5,
         decimal_places=1,
         label="Minimum years",
-        help_text="Used only for a Minimum years of experience rule.",
     )
     expected_value = forms.CharField(
         required=False,
         max_length=200,
         label="Required value",
-        help_text=(
-            "Used for location, work mode, language, education, certification, "
-            "or employment type. Examples: Prishtina, Remote, English B2, Full time."
-        ),
+        help_text="Examples: Prishtina, Remote, English B2, Full time.",
     )
 
     def __init__(
@@ -55,10 +51,11 @@ class HardConstraintRuleForm(forms.Form):
         must_have = requirements.skill_records.filter(
             importance=RequirementSkill.Importance.MUST_HAVE
         ).select_related("skill")
-        self.must_have_by_id = {str(record.skill_id): record for record in must_have}
+        self.must_have_by_label = {
+            record.source_label.casefold(): record for record in must_have
+        }
         self.fields["skill"].choices = [("", "Select a saved must-have skill")] + [
-            (skill_id, record.source_label)
-            for skill_id, record in self.must_have_by_id.items()
+            (record.source_label, record.source_label) for record in must_have
         ]
 
     @staticmethod
@@ -66,18 +63,29 @@ class HardConstraintRuleForm(forms.Form):
         return {
             "rule_type": rule.rule_type,
             "source_text": rule.source_text,
-            "skill": str(rule.skill_id or ""),
+            "skill": (
+                rule.requirements.skill_records.filter(
+                    skill_id=rule.skill_id,
+                    importance=RequirementSkill.Importance.MUST_HAVE,
+                )
+                .values_list("source_label", flat=True)
+                .first()
+                or ""
+            ),
             "numeric_value": rule.numeric_value,
             "expected_value": rule.expected_value,
         }
 
     def clean_source_text(self) -> str:
-        return self.cleaned_data["source_text"].strip()
+        source_text = self.cleaned_data["source_text"].strip()
+        if not source_text:
+            raise forms.ValidationError("Explain why this criterion is required.")
+        return source_text
 
     def clean(self):
         cleaned_data = super().clean()
         rule_type = cleaned_data.get("rule_type")
-        skill_id = cleaned_data.get("skill", "")
+        skill_label = cleaned_data.get("skill", "")
         numeric_value = cleaned_data.get("numeric_value")
         expected_value = cleaned_data.get("expected_value", "").strip()
 
@@ -86,7 +94,7 @@ class HardConstraintRuleForm(forms.Form):
         cleaned_data["expected_value"] = ""
 
         if rule_type == HardConstraintRule.RuleType.REQUIRED_SKILL:
-            record = self.must_have_by_id.get(skill_id)
+            record = self.must_have_by_label.get(skill_label.casefold())
             if record is None:
                 self.add_error("skill", "Select a saved must-have skill.")
             else:

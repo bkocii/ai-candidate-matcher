@@ -639,17 +639,60 @@ ran. The user confirmed the alignment and wording on 2026-09-16.
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-016-U01 | Usability defect | High | Recruiters face two competing representations: **Hard-constraint notes (not executable)** and a separate **Typed hard-constraint rules** editor. It is easy to enter a real requirement in the notes and incorrectly expect it to affect filtering. | Rename the executable concept to **Eligibility rules**. Keep ordinary notes under **Other requirements**, and clearly state that only enabled eligibility rules affect filtering. | Open |
-| MT-016-U02 | Usability defect | High | Adding a rule leaves the requirements page, asks the recruiter to choose a technical rule type, and exposes source wording plus payload fields that are irrelevant to most selected types. Required-skill rules also require saving the skills form first. | Integrate rules into the requirements page. Show only the value control relevant to the chosen criterion and save the structured requirements plus rule selections in one validated action. | Open |
-| MT-016-U03 | Usability defect | High | Existing structured fields and executable rules must be entered separately even when they express the same requirement, such as four years, Python, location, work mode, language, or employment type. | Add a recruiter-controlled **Required for eligibility** toggle beside each supported structured criterion. Create the typed rule behind the scenes and show its effect in plain language. | Open |
-| MT-016-C01 | Usability defect | Medium | **Typed hard-constraint**, **executable**, **deterministic filtering**, and **unknown outcome** are implementation terms rather than normal recruiter language. | Use **Eligibility rule**, **Affects candidate filtering**, and **If information is missing: keep for review**. Reserve technical terms for audit/detail views. | Open |
-| MT-016-V01 | Visual defect | Medium | The long narrow form stacks many large empty text areas, while most desktop width is unused and the rule section begins only after several screens of scrolling. | Group the draft into compact sections, use skill chips/list rows instead of large textareas, and use a wider two-column desktop layout with a sticky review summary. | Open |
+| MT-016-U01 | Usability defect | High | Recruiters face two competing representations: **Hard-constraint notes (not executable)** and a separate **Typed hard-constraint rules** editor. It is easy to enter a real requirement in the notes and incorrectly expect it to affect filtering. | Rename the executable concept to **Eligibility rules**. Keep ordinary notes under **Other requirements**, and clearly state that only enabled eligibility rules affect filtering. | Resolved — user confirmed 2026-09-16 |
+| MT-016-U02 | Usability defect | High | Adding a rule leaves the requirements page, asks the recruiter to choose a technical rule type, and exposes source wording plus payload fields that are irrelevant to most selected types. Required-skill rules also require saving the skills form first. | Integrate rules into the requirements page. Show only the value control relevant to the chosen criterion and save the structured requirements plus rule selections in one validated action. | Resolved for rule creation — user confirmed 2026-09-16 |
+| MT-016-U03 | Usability defect | High | Existing structured fields and executable rules must be entered separately even when they express the same requirement, such as four years, Python, location, work mode, language, or employment type. | Add a recruiter-controlled **Required for eligibility** toggle beside each supported structured criterion. Create the typed rule behind the scenes and show its effect in plain language. | Resolved — supplied browser recording confirmed 2026-09-17 |
+| MT-016-C01 | Usability defect | Medium | **Typed hard-constraint**, **executable**, **deterministic filtering**, and **unknown outcome** are implementation terms rather than normal recruiter language. | Use **Eligibility rule**, **Affects candidate filtering**, and **If information is missing: keep for review**. Reserve technical terms for audit/detail views. | Resolved — user confirmed 2026-09-16 |
+| MT-016-V01 | Visual defect | Medium | The long narrow form stacks many large empty text areas, while most desktop width is unused and the rule section begins only after several screens of scrolling. | Group the draft into compact sections, use skill chips/list rows instead of large textareas, and use a wider two-column desktop layout with a sticky review summary. | Refined after browser review — 2026-09-17; retest pending |
 | MT-016-F01 | Functional defect | Medium | AI classified **Code review** as a must-have skill even though the source describes reviewing code as a role responsibility, not an explicit mandatory qualification. Confirming it could overstate the requirement in matching. | Require explicit requirement language before promoting a responsibility to must-have; otherwise retain it in the role summary or responsibilities and flag uncertain classifications for review. | Open |
-| MT-016-U04 | Usability defect | Medium | The must-have textarea displays the raw phrase **Python development experience** without showing that matching will canonicalize it to **Python**. Recruiters cannot inspect the identity that deterministic matching will use. | Present each skill as a row/chip with **Canonical skill: Python** and **Source wording: Python development experience**, allowing correction without losing provenance. | Open |
-| MT-016-U05 | Usability defect | High | **Review and confirm** is a navigation link and does not save current form edits. Its placement beside **Save draft** makes it reasonable to assume both actions preserve changes, creating a data-loss risk during review. | Make **Review changes** submit and validate the current draft before opening confirmation, or disable it while the form is dirty and clearly require saving first. | Implemented — **Save and review** validates and persists first; browser retest pending |
-| MT-016-F02 | Functional defect | High | The supposed confirmation page does not display the draft structured requirements. It shows the original vacancy description, an empty **Current confirmed requirements** panel, and an immediately executable **Confirm version 1** button. The recruiter cannot verify the corrected skills, experience, location, or ambiguities at the final approval boundary. | Add a dedicated confirmation preview that displays every draft field and eligibility rule beside the original source, including a clear changes summary. Place the final POST confirmation only after this preview and provide an **Edit draft** action. | Implemented — 2026-09-16; browser retest pending |
-| MT-016-V02 | Visual defect | Medium | Before first confirmation, the right-hand **Current confirmed requirements** card is mostly empty but matches the full height of the source-description card, creating a large blank panel while the actual draft is absent. | Use the right-hand panel for **Draft to be confirmed** during review; after confirmation, switch it to **Current matching input**. | Implemented in dedicated review page — 2026-09-16; browser retest pending |
+| MT-016-U04 | Usability defect | Medium | The must-have textarea displays the raw phrase **Python development experience** without showing that matching will canonicalize it to **Python**. Recruiters cannot inspect the identity that deterministic matching will use. | Present each skill as a row/chip with **Canonical skill: Python** and **Source wording: Python development experience**, allowing correction without losing provenance. | Resolved — supplied browser recording confirmed 2026-09-17 |
+| MT-016-U05 | Usability defect | High | **Review and confirm** is a navigation link and does not save current form edits. Its placement beside **Save draft** makes it reasonable to assume both actions preserve changes, creating a data-loss risk during review. | Make **Review changes** submit and validate the current draft before opening confirmation, or disable it while the form is dirty and clearly require saving first. | Resolved — user confirmed 2026-09-16 |
+| MT-016-F02 | Functional defect | High | The supposed confirmation page does not display the draft structured requirements. It shows the original vacancy description, an empty **Current confirmed requirements** panel, and an immediately executable **Confirm version 1** button. The recruiter cannot verify the corrected skills, experience, location, or ambiguities at the final approval boundary. | Add a dedicated confirmation preview that displays every draft field and eligibility rule beside the original source, including a clear changes summary. Place the final POST confirmation only after this preview and provide an **Edit draft** action. | Resolved — user confirmed 2026-09-16 |
+| MT-016-V02 | Visual defect | Medium | Before first confirmation, the right-hand **Current confirmed requirements** card is mostly empty but matches the full height of the source-description card, creating a large blank panel while the actual draft is absent. | Use the right-hand panel for **Draft to be confirmed** during review; after confirmation, switch it to **Current matching input**. | Resolved — user confirmed 2026-09-16 |
 | MT-016-U06 | Usability defect | Medium | After confirming v1, the recruiter remains at the bottom of a long detail page. The confirmed history is visible, but the page-level success state and likely next action are out of view, requiring a long scroll and extra orientation. | After confirmation, focus a concise success summary beside the next recommended action. Offer **Confirm and open vacancy** when appropriate, while retaining **Confirm only** for recruiters who are not ready to open it. | Open |
+| MT-016-F03 | Functional defect | High | **Save draft** and **Save and review** are blocked by browser validation for the blank **Why is this required?** field even when the recruiter is not adding an eligibility rule. | Keep the reason mandatory for **Add eligibility rule**, but remove its browser-level required state so unrelated draft actions reach their own server validation. | Resolved — user confirmed 2026-09-16 |
+| MT-016-V03 | Visual defect | Medium | The draft heading, source panel, AI-assistance callout, and requirements form use different widths and left edges. | Give all four draft-page sections one centered content width, retaining their existing internal padding and responsive behavior. | Resolved — user confirmed 2026-09-16 |
+
+#### Integrated-rule recording — 2026-09-16
+
+The supplied `matcher-editing-draft-vacancies.mp4` recording confirms that draft
+edits and a newly added eligibility rule both persist correctly. It also captures
+MT-016-F03: with no new rule being added, **Save and review** focuses the empty
+rule-reason field because its HTML `required` attribute participates in the whole
+form's browser validation. The same recording captures MT-016-V03: the centered
+source panel and requirements form are narrower than the page heading and
+AI-assistance callout. The correction keeps rule-reason validation on the rule
+action's server path and gives all four editor blocks one shared width. Browser
+retesting of the correction is pending.
+
+The user confirmed the F03/V03 correction on 2026-09-16 and asked to continue.
+The next slice implements U03/U04 and the compact V01 editor pass. Supported
+structured values now have explicit **Required for eligibility** controls. One
+save synchronizes only rules represented by current structured values; removing
+or unchecking a must-have skill removes its dependent rule, while a different
+custom rule remains unchanged. Newly typed list entries become selectable in the
+browser before saving. Skill preview rows retain source wording and show the
+canonical matching identity, such as **Python development experience** matched
+as **Python**. The editor is grouped into role, skills, work requirements,
+qualifications, and notes; desktop uses two/three-column groups with a sticky save
+summary, and the custom rule builder is collapsed as an advanced action. Confirmed
+immutability, tenant authorization, missing-information review behavior, and the
+underlying filtering model are unchanged. Browser retesting is pending.
+
+The supplied `matcher-eligibility-rules.mp4` recording on 2026-09-17 confirms
+that the structured eligibility rules save correctly and that canonical skill
+matching remains visible. It also shows that the skill editor and six-column
+saved-rule table are visually crowded. The presentation-only refinement places
+the must-have input and eligibility selection in one contained row, uses compact
+two-column identity rows, presents saved rules as labelled two-row cards, and
+aligns the active custom-rule value beside its criterion. The same information,
+actions, validation, and filtering behavior remain unchanged. V01 requires one
+final desktop and narrow-width browser retest.
+
+Verification: focused eligibility-rule/vacancy-intake coverage `52 passed`; the
+complete quality gate passed with `599 passed`, Django system/deployment/static
+checks, no migration drift, Ruff lint/formatting across 226 files, and compatible
+dependencies. No live AI request ran.
 
 #### Recommended interaction
 
@@ -678,6 +721,26 @@ and dependency compatibility. Tests verify save-before-review, invalid-value
 retention, complete preview content, tenant isolation, the absence of immediate
 confirmation on vacancy detail, and the unchanged POST-only confirmation route.
 No live AI calls ran. Browser acceptance remains pending.
+
+The user confirmed the approval-boundary slice (U05/F02/V02) on 2026-09-16.
+The next slice integrates creation directly into the draft form. **Other
+requirements** is explicitly notes-only; **Eligibility rules** is the only list
+that affects candidate filtering. Selecting a criterion reveals only its relevant
+value control (required skill, minimum years, or required value). **Add eligibility
+rule** validates the draft and rule together inside one transaction, saves newly
+entered must-have skills, creates the rule, and returns to the same section. An
+invalid rule rolls back draft fields, canonical skill links, and the rule. Existing
+edit/delete routes remain available but use recruiter-facing eligibility language.
+U03, V01, F01, U04, and U06 remain open.
+
+Verification: combined eligibility-rule/vacancy-intake coverage `46 passed`;
+the full `uv run python scripts/check.py` gate passed with `593 passed`, Django
+system/deployment checks, static collection, zero migration drift, Ruff
+lint/formatting, and dependency compatibility. Coverage verifies same-action
+creation with a newly entered skill, complete rollback on invalid rule input,
+criterion-specific field behavior, existing add/edit/delete authorization,
+confirmed immutability, and filtering-service compatibility. No live AI call ran.
+Browser acceptance remains pending.
 
 ### MT-017 — Vacancy lifecycle: open
 

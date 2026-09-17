@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Delete typed rule | {{ vacancy.title }}{% endblock %}
+{% block title %}Delete eligibility rule | {{ vacancy.title }}{% endblock %}
 
 {% block content %}
 <section class="page-heading">
     <p class="eyebrow">Requirements version {{ requirements.version }} · Draft</p>
-    <h1>Delete typed hard constraint?</h1>
-    <p class="lede">This removes the rule from the current draft. It does not reinterpret or delete the vacancy's free-text notes.</p>
+    <h1>Delete eligibility rule?</h1>
+    <p class="lede">This removes the rule from the current draft. It does not reinterpret or delete the vacancy's Other requirements notes.</p>
 </section>
 
 <section class="form-panel danger-panel">
@@ -18,7 +18,7 @@
     <form method="post">
         {% csrf_token %}
         <div class="button-row">
-            <button class="danger-button" type="submit">Delete typed rule</button>
+            <button class="danger-button" type="submit">Delete eligibility rule</button>
             <a class="secondary-button" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk requirements.pk %}">Keep rule</a>
         </div>
     </form>

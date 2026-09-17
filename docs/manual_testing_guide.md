@@ -689,26 +689,26 @@ Expected result:
 - Django admin still contains the closed vacancy, its requirements history, and
   the deletion actor/timestamp.
 
-## 12. Inspect skills, typed rules, and deterministic filtering
+## 12. Inspect skills, eligibility rules, and candidate filtering
 
 Use only synthetic evidence. Candidate skills can be published by confirming an
 AI-extracted profile as described in section 17; Django admin remains useful for
-precise manual test setup. Vacancy hard-constraint rules are managed in the
-normal recruiter application.
+precise manual test setup. Vacancy eligibility rules are managed in the normal
+recruiter application.
 
 1. Create or open an unconfirmed vacancy requirements draft in the normal app.
 2. Enter `Python` and `Django` as must-have skills and `PostgreSQL` as a
    nice-to-have skill, then select **Save draft**.
-3. Return to the draft editor. The **Typed hard-constraint rules** section must
-   be visible below the normal requirements form.
+3. Return to the draft editor. The **Eligibility rules** section must be visible
+   inside the normal requirements form.
 
 MT-016 approval-boundary retest: change the summary and one skill without first
 using **Save draft**, then select **Save and review**. The action must validate
 and save those edits before opening a dedicated **Review before confirming**
 page. Compare the original description with **Draft to be confirmed** and verify
 the summary, both skill lists, experience, location, work mode, languages,
-education, certifications, employment type, hard-constraint notes, ambiguities,
-and typed rules. Empty values must say **Not recorded**, not disappear. Use
+education, certifications, employment type, Other requirements notes, ambiguities,
+and eligibility rules. Empty values must say **Not recorded**, not disappear. Use
 **Edit draft**, change a value, and return with **Save and review**. Finally,
 confirm only from the bottom review callout and verify the version becomes
 read-only with actor/time recorded. Submit an invalid editor form once: it must
@@ -763,33 +763,66 @@ add:
 
 Cross-organization candidate, document, and skill combinations must be rejected.
 
-In the normal draft editor, select **Add typed rule** and add:
+In the normal draft editor's **Eligibility rules** section, select:
 
-- Rule type: `Required skill`
-- Exact source wording: `Python is explicitly required.`
-- Required must-have skill: `Python`
+- Eligibility criterion: `Required skill`
+- Why is this required?: `Python is explicitly required.`
+- Required skill: `Python`
 
-The app selects `Has skill`, assigns the next position, and fixes a missing fact
-as **Keep for recruiter review**. Those internal fields are not recruiter-editable.
+Select **Add eligibility rule**. The app saves current draft changes and the rule
+together, selects the internal comparison, assigns the next position, and fixes
+missing information as **Keep for recruiter review**. Those internal details are
+not recruiter-editable.
 
-Add a second typed rule:
+Add a second eligibility rule:
 
-- Rule type: `Location`
-- Exact source wording: `Candidate must be based in Prishtina`
+- Eligibility criterion: `Location`
+- Why is this required?: `Candidate must be based in Prishtina`
 - Required value: `Prishtina`
 
-Expected result: both rules appear in the draft table. Edit the location rule,
+Expected result: changing the criterion displays only the relevant value field;
+the other value inputs are hidden and disabled. Both rules appear in the draft
+table without leaving the requirements page during creation. Edit the location rule,
 save a different synthetic value, and then restore `Prishtina`. Open **Delete**
 and select **Keep rule**. A GET of the confirmation screen must not delete data.
+
+One-action required-skill check: add `Go` to Must-have skills and, without first
+saving, add a Required skill eligibility rule for `Go`. Both the draft skill and
+rule must persist. Repeat with the **Why is this required?** field blank: show the
+validation error and verify neither the draft changes nor the rule persisted.
+
+MT-016 regression retest: leave the eligibility-rule builder blank, change a
+requirements field, and select **Save draft**. Repeat with **Save and review**.
+Neither action may focus or demand **Why is this required?**; each must save the
+draft and follow its own destination. Then select **Add eligibility rule** with
+the reason blank: the editor must show **Explain why this criterion is required**
+and atomically preserve the previously saved draft. On desktop, the page heading,
+source-description panel, AI-assistance callout, and requirements form must share
+the same left edge, right edge, and centered width. At a narrow viewport they must
+shrink without horizontal overflow.
+
+MT-016 structured eligibility retest: enter `Python development experience` as a
+must-have skill. Its preview must retain that source wording and show **Matching
+skill: Python**. Check **Required for eligibility** for that skill, minimum
+experience, location, work mode, one language, and employment type, then select
+**Save draft**. The saved eligibility table must contain one corresponding rule
+for each checked value without requiring duplicate entry in the advanced custom
+builder. Uncheck location and save again: only the matching structured location
+rule is removed; a separately added custom rule with a different value remains.
+Remove the checked skill and save: its dependent rule is removed in the same
+action. A checked control without its structured value must show an inline error
+and save nothing. Verify the grouped desktop layout, sticky draft controls,
+contained skill editor, labelled saved-rule cards, collapsed custom-rule action,
+and single-column narrow layout without horizontal overflow.
 
 Try removing `Python` from the draft's must-have skills while the required-skill
 rule still exists. Expected result: saving is rejected, the previous skill list
 is preserved, and the page explains that the rule must reference a must-have
 skill. Delete or edit the dependent rule before removing the skill.
 
-Free-text values previously entered in the vacancy’s **Hard-constraint notes
-(not executable)** box
-remain recruiter notes. They are not silently converted into executable rules.
+Free-text values entered in **Other requirements** remain recruiter notes. The
+screen explicitly says they do not affect candidate filtering, and they are not
+silently converted into eligibility rules.
 
 Before confirming, create three active synthetic candidates in the same
 organization:
@@ -799,11 +832,13 @@ organization:
 - `Synthetic Fail`: location `Peja`, with or without the `Python` skill.
 
 Confirm the requirements in the normal app. Expected result: the vacancy detail
-page shows the confirmed typed-rule table without edit or delete actions. Opening
+page shows the confirmed eligibility-rule table without edit or delete actions. Opening
 an old draft rule edit URL redirects back to the read-only vacancy. Create a
-correction draft and confirm that the normalized links and typed rules were copied
+correction draft and confirm that the normalized links and eligibility rules were copied
 instead of changing history; continue this test with the original confirmed
-version.
+version. MT-016's integrated-rule browser acceptance remains pending; send one
+desktop screenshot showing the rule builder and saved rule, plus a narrow-width
+view demonstrating that the fields stack without horizontal overflow.
 
 Return to the vacancy detail page and select
 **Evaluate candidates**.
@@ -967,12 +1002,12 @@ Expected result:
   were saved to the draft.
 - The version remains **Draft** and its method becomes **AI assisted**.
 - Skills, experience, location, work mode, languages, education, certifications,
-  employment type, non-executable hard-constraint notes, and ambiguities are
+  employment type, notes-only Other requirements, and ambiguities are
   populated only when supported by the source.
 - Missing information stays blank, null, or **Unknown** instead of being guessed.
 - Must-have and nice-to-have skills do not overlap.
-- No typed hard-constraint rule is created automatically. Add any executable rule
-  deliberately in the typed-rule editor.
+- No eligibility rule is created automatically. Add any filtering rule
+  deliberately in the Eligibility rules section.
 - You can edit every suggestion before using the separate confirmation action.
 
 To test bounded failure behavior, remove the API key, restart the server, and run
@@ -1987,7 +2022,7 @@ The current milestone is behaving correctly when all of these are true:
   CV, contact, prompt, response, note, or outreach content.
 - Requirement skills normalize case and spacing without merging meaningful
   punctuation; controlled unambiguous aliases match at runtime without merging
-  unsafe near-matches, and typed rules keep unknown candidate facts eligible for
+  unsafe near-matches, and eligibility rules keep unknown candidate facts eligible for
   review.
 - Deterministic filtering shows inspectable pass/fail/unknown rule outcomes and
   excludes only candidates with an explicit failed fact.
@@ -1998,7 +2033,7 @@ The current milestone is behaving correctly when all of these are true:
   stale; regeneration creates a separate current run without rewriting history.
 - Confirmed matching definitions cannot be edited; correction drafts copy them.
 - AI vacancy extraction is POST-only, writes only to a draft, preserves explicit
-  unknowns, creates no executable typed rules, and leaves the draft unchanged on
+  unknowns, creates no eligibility rules, and leaves the draft unchanged on
   bounded failure.
 - AI candidate-profile extraction sends only bounded redacted CV text, verifies
   exact source evidence, creates a versioned draft, and changes matching only

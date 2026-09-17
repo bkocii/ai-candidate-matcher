@@ -1,24 +1,25 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Requirements v{{ requirements.version }} | {{ vacancy.title }}{% endblock %}
 
 {% block content %}
-<section class="page-heading">
+<section class="page-heading requirements-page-block">
     <p class="eyebrow">Editable requirements version {{ requirements.version }}</p>
     <h1>{{ vacancy.title }}</h1>
     <p class="lede">Translate the source description into explicit requirements. Enter list items one per line and leave unknown information blank or Unknown.</p>
 </section>
 
-<details class="source-panel">
+<details class="source-panel requirements-page-block">
     <summary>View source vacancy description</summary>
     <div class="source-description">{{ requirements.source_description|linebreaks }}</div>
 </details>
 
-<section class="review-callout" aria-labelledby="ai-extraction-title">
+<section class="review-callout requirements-page-block" aria-labelledby="ai-extraction-title">
     <div>
         <p class="eyebrow">Optional AI assistance</p>
         <h2 id="ai-extraction-title">Extract suggestions from the source</h2>
-        <p>AI extraction replaces the structured fields in this draft. It never confirms the version or creates executable hard-constraint rules. Review and correct every suggestion before confirming.</p>
+        <p>AI extraction replaces the structured fields in this draft. It never confirms the version or creates eligibility rules. Review and correct every suggestion before confirming.</p>
     </div>
     <form method="post" action="{% url 'vacancies:requirements-extract' organization.slug vacancy.pk requirements.pk %}">
         {% csrf_token %}
@@ -26,24 +27,43 @@
     </form>
 </section>
 
-<form class="form-panel requirements-form stacked-form" method="post">
+<form class="form-panel requirements-form requirements-page-block stacked-form" method="post">
     {% csrf_token %}
-    {% include "vacancies/_form_fields.html" %}
-    <div class="button-row">
-        <button class="primary-button" type="submit" name="intent" value="review">Save and review</button>
-        <button class="secondary-button" type="submit" name="intent" value="save">Save draft</button>
+    <input type="hidden" name="eligibility_controls_present" value="1">
+    <div class="requirements-editor-layout">
+        <div class="requirements-editor-main">
+            {% include "vacancies/_requirements_editor_fields.html" %}
+            <section class="inline-rule-editor" id="eligibility-rules" aria-labelledby="eligibility-rules-title">
+                <div>
+                    <p class="eyebrow">Candidate filtering</p>
+                    <h2 id="eligibility-rules-title">Eligibility rules</h2>
+                    <p class="section-note">Checked structured values become filtering rules when you save. Explicitly conflicting information can exclude a candidate; missing information always stays in recruiter review.</p>
+                </div>
+                <div class="eligibility-rule-list">
+                    {% include "matching/_hard_constraint_rules.html" with rules=hard_constraint_rules editable=True %}
+                </div>
+                <details class="eligibility-rule-builder advanced-rule-builder"{% if eligibility_form.errors %} open{% endif %}>
+                    <summary>Add a custom eligibility rule</summary>
+                    <p class="section-note">Use this only when a requirement is not already represented by a structured field above.</p>
+                    <div class="advanced-rule-builder-fields">
+                        {% include "matching/_eligibility_rule_form_fields.html" %}
+                        <button class="secondary-button" type="submit" name="intent" value="add_rule">Add eligibility rule</button>
+                    </div>
+                </details>
+            </section>
+        </div>
+        <aside class="requirements-save-panel" aria-labelledby="save-draft-title">
+            <p class="eyebrow">Draft controls</p>
+            <h2 id="save-draft-title">Save this version</h2>
+            <p><strong>{{ hard_constraint_rules|length }} saved eligibility rule{{ hard_constraint_rules|length|pluralize }}</strong></p>
+            <p class="section-note">Only checked values and saved custom rules affect filtering. Saving never confirms the version.</p>
+            <div class="button-row">
+                <button class="primary-button" type="submit" name="intent" value="review">Save and review</button>
+                <button class="secondary-button" type="submit" name="intent" value="save">Save draft</button>
+            </div>
+        </aside>
     </div>
 </form>
-
-<section class="rule-editor" aria-labelledby="typed-rules-title">
-    <div class="rule-editor-heading">
-        <div>
-            <p class="eyebrow">Deterministic filtering</p>
-            <h2 id="typed-rules-title">Typed hard-constraint rules</h2>
-            <p class="section-note">Only these typed rules affect candidate filtering. Save must-have skill changes before adding a required-skill rule. Missing candidate facts always stay eligible for recruiter review.</p>
-        </div>
-        <a class="primary-button button-link" href="{% url 'matching:hard-constraint-add' organization.slug vacancy.pk requirements.pk %}">Add typed rule</a>
-    </div>
-    {% include "matching/_hard_constraint_rules.html" with rules=hard_constraint_rules editable=True %}
-</section>
 {% endblock %}
+
+{% block scripts %}<script src="{% static 'js/eligibility-rule-form.js' %}" defer></script>{% endblock %}

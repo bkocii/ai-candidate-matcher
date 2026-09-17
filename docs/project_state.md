@@ -1629,3 +1629,64 @@ Verification: vacancy-intake tests `31 passed`; full quality gate `590 passed`,
 including Django system/deployment checks, static collection, no migration drift,
 Ruff lint/formatting (226 Python files), and compatibility of 35 packages. No
 live AI request ran. Browser acceptance of the review boundary remains pending.
+
+The user confirmed the MT-016 approval preview on 2026-09-16. The next slice
+implements U01/C01 and the rule-creation portion of U02. Recruiter-facing screens
+now distinguish notes-only **Other requirements** from filtering **Eligibility
+rules**. The add-rule builder lives inside the requirements form and reveals only
+the value field for its selected criterion. Adding a rule validates and saves the
+draft plus rule atomically, including a newly entered must-have skill; any error
+rolls back draft fields, normalized skill links, and rule creation. Existing rule
+storage, filtering semantics, protected-characteristic boundaries, immutability,
+tenant isolation, and audit behavior remain unchanged. U03, V01, F01, U04, and
+U06 remain open.
+
+Verification: focused eligibility-rule and vacancy-intake tests `46 passed`;
+complete quality gate `593 passed`, including Django system/deployment checks,
+static collection, no migration drift, Ruff lint/formatting (226 files), and
+compatibility of 35 packages. No live AI request ran. Browser acceptance of the
+integrated builder and responsive field behavior remains pending.
+
+The user's integrated-rule recording confirms that the requirements draft and
+new eligibility rule both persist. It exposed MT-016-F03 and V03: browser-native
+validation incorrectly required the unused rule-reason field during **Save draft**
+and **Save and review**, and the heading/AI callout did not share the centered
+width of the source panel and form. The rule reason now omits browser-level
+`required` while retaining explicit server validation on the add-rule action.
+The heading, source panel, AI callout, and form now share one centered 820px
+editor width. Focused coverage passes with `48 passed`; the complete quality gate
+passes with `595 passed`, successful Django system/deployment/static checks, no
+migration drift, Ruff lint/formatting across 226 files, and compatibility of all
+35 installed packages. No live AI call ran. Browser retesting is pending.
+
+The user confirmed MT-016-F03/V03 and the earlier integrated rule terminology/
+creation flow on 2026-09-16. The next MT-016 slice implements U03/U04 and the
+compact V01 editor pass. Supported structured values have explicit **Required
+for eligibility** controls that synchronize their typed rules in the same save
+transaction. Only exact current structured-value rules are managed; unrelated
+custom rules remain intact, while removing an unchecked must-have skill also
+removes its now-invalid dependent rule. Newly typed list values become selectable
+before save. Skill preview rows retain source wording and expose the canonical
+matching identity. Grouped desktop sections, a sticky save summary, and a
+collapsed advanced custom-rule builder shorten the editor while stacking at
+narrow widths. No model, migration, dependency, AI, filtering, tenant, or
+confirmed-immutability boundary changes. Focused eligibility/vacancy coverage
+passes with `52 passed`; the complete quality gate passes with `599 passed`,
+successful Django system/deployment/static checks, no migration drift, Ruff
+lint/formatting across 226 files, and compatibility of all 35 installed packages.
+No live AI call ran. Browser retesting is pending.
+
+The user's 2026-09-17 browser recording confirms the structured eligibility
+controls and canonical skill display, resolving MT-016-U03/U04. It also refines
+the remaining V01 visual finding: the skill area and saved six-column rule table
+were crowded inside the main editor column. A presentation-only pass now pairs
+the must-have input with its eligibility choices, lays out matching identities
+compactly, renders each saved rule as a labelled two-row card, and aligns the
+custom criterion with its active value control. Models, migrations, services,
+validation, filtering behavior, and dependencies are unchanged. V01 awaits one
+desktop and narrow-width browser retest before resolution.
+
+Verification: focused eligibility-rule/vacancy-intake coverage `52 passed`; the
+complete quality gate passed with `599 passed`, successful Django system,
+deployment, static, migration-drift, Ruff, formatting, and dependency checks.
+No live AI request ran.

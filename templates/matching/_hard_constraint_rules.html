@@ -4,23 +4,23 @@
             <thead>
                 <tr>
                     <th scope="col">Order</th>
-                    <th scope="col">Rule</th>
+                    <th scope="col">Eligibility criterion</th>
                     <th scope="col">Required value</th>
                     <th scope="col">Source wording</th>
-                    <th scope="col">Missing fact</th>
+                    <th scope="col">If information is missing</th>
                     {% if editable %}<th scope="col">Actions</th>{% endif %}
                 </tr>
             </thead>
             <tbody>
                 {% for rule in rules %}
                     <tr>
-                        <td>{{ rule.position }}</td>
-                        <td>{{ rule.get_rule_type_display }}</td>
-                        <td>{{ rule.expected_display }}</td>
-                        <td>{{ rule.source_text }}</td>
-                        <td>{{ rule.get_unknown_outcome_display }}</td>
+                        <td data-label="Order">{{ rule.position }}</td>
+                        <td data-label="Eligibility criterion">{{ rule.get_rule_type_display }}</td>
+                        <td data-label="Required value">{{ rule.expected_display }}</td>
+                        <td data-label="Source wording">{{ rule.source_text }}</td>
+                        <td data-label="If information is missing">{{ rule.get_unknown_outcome_display }}</td>
                         {% if editable %}
-                            <td>
+                            <td data-label="Actions">
                                 <div class="table-actions">
                                     <a href="{% url 'matching:hard-constraint-edit' organization.slug vacancy.pk requirements.pk rule.pk %}">Edit</a>
                                     <a class="danger-link" href="{% url 'matching:hard-constraint-delete' organization.slug vacancy.pk requirements.pk rule.pk %}">Delete</a>
@@ -34,6 +34,6 @@
     </div>
 {% else %}
     <div class="empty-rule-list">
-        <p>No typed rules have been added. Free-text notes above do not affect filtering.</p>
+        <p>No eligibility rules have been added. Other requirements notes do not affect candidate filtering.</p>
     </div>
 {% endif %}

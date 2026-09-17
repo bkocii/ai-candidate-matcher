@@ -1,0 +1,32 @@
+{% if eligibility_form.non_field_errors %}
+    <div class="form-error">{{ eligibility_form.non_field_errors }}</div>
+{% endif %}
+<div class="eligibility-rule-fields" data-eligibility-rule-form>
+    <div class="field">
+        {{ eligibility_form.rule_type.label_tag }}
+        {{ eligibility_form.rule_type }}
+        {% if eligibility_form.rule_type.errors %}<div class="field-errors">{{ eligibility_form.rule_type.errors }}</div>{% endif %}
+    </div>
+    <div class="field">
+        {{ eligibility_form.source_text.label_tag }}
+        {{ eligibility_form.source_text }}
+        {% if eligibility_form.source_text.help_text %}<small class="help-text">{{ eligibility_form.source_text.help_text }}</small>{% endif %}
+        {% if eligibility_form.source_text.errors %}<div class="field-errors">{{ eligibility_form.source_text.errors }}</div>{% endif %}
+    </div>
+    <div class="field" data-rule-value="skill">
+        {{ eligibility_form.skill.label_tag }}
+        {{ eligibility_form.skill }}
+        {% if eligibility_form.skill.errors %}<div class="field-errors">{{ eligibility_form.skill.errors }}</div>{% endif %}
+    </div>
+    <div class="field" data-rule-value="numeric">
+        {{ eligibility_form.numeric_value.label_tag }}
+        {{ eligibility_form.numeric_value }}
+        {% if eligibility_form.numeric_value.errors %}<div class="field-errors">{{ eligibility_form.numeric_value.errors }}</div>{% endif %}
+    </div>
+    <div class="field" data-rule-value="expected">
+        {{ eligibility_form.expected_value.label_tag }}
+        {{ eligibility_form.expected_value }}
+        {% if eligibility_form.expected_value.help_text %}<small class="help-text">{{ eligibility_form.expected_value.help_text }}</small>{% endif %}
+        {% if eligibility_form.expected_value.errors %}<div class="field-errors">{{ eligibility_form.expected_value.errors }}</div>{% endif %}
+    </div>
+</div>

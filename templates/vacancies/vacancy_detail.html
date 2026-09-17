@@ -83,7 +83,7 @@
                 <div><dt>Education</dt><dd>{{ current_requirements.education_requirements|join:", "|default:"Not recorded" }}</dd></div>
                 <div><dt>Certifications</dt><dd>{{ current_requirements.certification_requirements|join:", "|default:"Not recorded" }}</dd></div>
                 <div><dt>Employment type</dt><dd>{{ current_requirements.get_employment_type_display }}</dd></div>
-                <div><dt>Hard constraints</dt><dd>{{ current_requirements.hard_constraints|join:", "|default:"Not recorded" }}</dd></div>
+                <div><dt>Other requirements</dt><dd>{{ current_requirements.hard_constraints|join:", "|default:"Not recorded" }}</dd></div>
                 <div><dt>Ambiguities</dt><dd>{{ current_requirements.ambiguities|join:", "|default:"None recorded" }}</dd></div>
             </dl>
         {% else %}
@@ -97,8 +97,8 @@
     <div class="rule-editor-heading">
         <div>
             <p class="eyebrow">Confirmed matching definition</p>
-            <h2 id="confirmed-rules-title">Typed hard-constraint rules · v{{ current_requirements.version }}</h2>
-            <p class="section-note">These executable rules are immutable with the confirmed requirements version. Create a correction draft to change them.</p>
+            <h2 id="confirmed-rules-title">Eligibility rules · v{{ current_requirements.version }}</h2>
+            <p class="section-note">These rules affect candidate filtering and are read-only with the confirmed requirements version. Create a correction draft to change them.</p>
         </div>
         {% if not draft %}
             <form method="post" action="{% url 'vacancies:requirements-new-draft' organization.slug vacancy.pk %}">

@@ -32,7 +32,7 @@
             <div><dt>Education</dt><dd>{{ requirements.education_requirements|join:", "|default:"Not recorded" }}</dd></div>
             <div><dt>Certifications</dt><dd>{{ requirements.certification_requirements|join:", "|default:"Not recorded" }}</dd></div>
             <div><dt>Employment type</dt><dd>{{ requirements.get_employment_type_display }}</dd></div>
-            <div><dt>Hard-constraint notes</dt><dd>{{ requirements.hard_constraints|join:", "|default:"Not recorded" }}</dd></div>
+            <div><dt>Other requirements</dt><dd>{{ requirements.hard_constraints|join:", "|default:"Not recorded" }}</dd></div>
             <div><dt>Ambiguities</dt><dd>{{ requirements.ambiguities|join:", "|default:"None recorded" }}</dd></div>
         </dl>
     </article>
@@ -42,7 +42,7 @@
     <div class="rule-editor-heading">
         <div>
             <p class="eyebrow">Candidate filtering</p>
-            <h2 id="review-rules-title">Typed hard-constraint rules</h2>
+            <h2 id="review-rules-title">Eligibility rules</h2>
             <p class="section-note">Review every filtering rule with this draft. Missing candidate information stays eligible for recruiter review.</p>
         </div>
     </div>

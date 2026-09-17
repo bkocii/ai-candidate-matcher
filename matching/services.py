@@ -11,6 +11,7 @@ from matching.models import (
     HardConstraintRule,
     RequirementSkill,
     Skill,
+    normalize_taxonomy_value,
 )
 from matching.skill_taxonomy import canonical_skill_key, canonicalize_skill
 from organizations.models import Organization
@@ -285,6 +286,208 @@ def validate_hard_constraint_rules(
     require_organization_object_access(user, requirements)
     for rule in requirements.hard_constraint_rules.select_related("skill"):
         rule.full_clean()
+
+
+def _structured_rule_key(rule: HardConstraintRule) -> tuple[str, object]:
+    if rule.rule_type == HardConstraintRule.RuleType.REQUIRED_SKILL:
+        return (rule.rule_type, canonical_skill_key(rule.skill.name))
+    if rule.rule_type == HardConstraintRule.RuleType.MINIMUM_EXPERIENCE:
+        return (rule.rule_type, rule.numeric_value)
+    return (rule.rule_type, rule.normalized_expected_value)
+
+
+@transaction.atomic
+def sync_structured_eligibility_rules(
+    *,
+    requirements: VacancyRequirements,
+    user: User,
+    selections: dict,
+) -> tuple[HardConstraintRule, ...]:
+    """Make current structured-value toggles match their typed rules.
+
+    Rules whose payload is not represented by a current structured value are
+    left untouched so the advanced custom-rule editor remains lossless.
+    """
+    require_organization_object_access(user, requirements)
+    requirements = VacancyRequirements.objects.select_for_update().get(
+        pk=requirements.pk
+    )
+    if requirements.status != VacancyRequirements.Status.DRAFT:
+        raise ValidationError(
+            "Confirmed eligibility rules are immutable; create a new version."
+        )
+
+    selected_skill_keys = {
+        canonical_skill_key(value) for value in selections["required_skills"]
+    }
+    selected_text = {
+        HardConstraintRule.RuleType.LANGUAGE: {
+            normalize_taxonomy_value(value) for value in selections["languages"]
+        },
+        HardConstraintRule.RuleType.EDUCATION: {
+            normalize_taxonomy_value(value) for value in selections["education"]
+        },
+        HardConstraintRule.RuleType.CERTIFICATION: {
+            normalize_taxonomy_value(value) for value in selections["certifications"]
+        },
+    }
+
+    options: dict[tuple[str, object], dict] = {}
+
+    def add_option(
+        *,
+        rule_type: str,
+        value: object,
+        selected: bool,
+        source_text: str,
+        skill_label: str = "",
+        expected_value: str = "",
+        numeric_value: Decimal | None = None,
+    ) -> None:
+        key = (rule_type, value)
+        option = options.setdefault(
+            key,
+            {
+                "selected": False,
+                "rule_type": rule_type,
+                "source_text": source_text,
+                "skill_label": skill_label,
+                "expected_value": expected_value,
+                "numeric_value": numeric_value,
+            },
+        )
+        option["selected"] = option["selected"] or selected
+
+    for label in requirements.must_have_skills:
+        canonical_key = canonical_skill_key(label)
+        add_option(
+            rule_type=HardConstraintRule.RuleType.REQUIRED_SKILL,
+            value=canonical_key,
+            selected=canonical_key in selected_skill_keys,
+            source_text=f"Required skill: {label}.",
+            skill_label=label,
+        )
+
+    if requirements.minimum_years_experience is not None:
+        years = requirements.minimum_years_experience
+        add_option(
+            rule_type=HardConstraintRule.RuleType.MINIMUM_EXPERIENCE,
+            value=years,
+            selected=bool(selections["minimum_experience"]),
+            source_text=f"Minimum experience: {years} years.",
+            numeric_value=years,
+        )
+
+    text_options = (
+        (
+            HardConstraintRule.RuleType.LOCATION,
+            requirements.location_requirement,
+            bool(selections["location"]),
+            "Required location",
+        ),
+        (
+            HardConstraintRule.RuleType.WORK_MODE,
+            (
+                requirements.work_mode
+                if requirements.work_mode != VacancyRequirements.WorkMode.UNKNOWN
+                else ""
+            ),
+            bool(selections["work_mode"]),
+            "Required work mode",
+        ),
+        *(
+            (
+                HardConstraintRule.RuleType.LANGUAGE,
+                value,
+                normalize_taxonomy_value(value)
+                in selected_text[HardConstraintRule.RuleType.LANGUAGE],
+                "Required language",
+            )
+            for value in requirements.language_requirements
+        ),
+        *(
+            (
+                HardConstraintRule.RuleType.EDUCATION,
+                value,
+                normalize_taxonomy_value(value)
+                in selected_text[HardConstraintRule.RuleType.EDUCATION],
+                "Required education",
+            )
+            for value in requirements.education_requirements
+        ),
+        *(
+            (
+                HardConstraintRule.RuleType.CERTIFICATION,
+                value,
+                normalize_taxonomy_value(value)
+                in selected_text[HardConstraintRule.RuleType.CERTIFICATION],
+                "Required certification",
+            )
+            for value in requirements.certification_requirements
+        ),
+        (
+            HardConstraintRule.RuleType.EMPLOYMENT_TYPE,
+            (
+                requirements.employment_type
+                if requirements.employment_type
+                != VacancyRequirements.EmploymentType.UNKNOWN
+                else ""
+            ),
+            bool(selections["employment_type"]),
+            "Required employment type",
+        ),
+    )
+    for rule_type, value, selected, label in text_options:
+        if not value:
+            continue
+        normalized = normalize_taxonomy_value(value)
+        display_value = value
+        if rule_type == HardConstraintRule.RuleType.WORK_MODE:
+            display_value = requirements.get_work_mode_display()
+        elif rule_type == HardConstraintRule.RuleType.EMPLOYMENT_TYPE:
+            display_value = requirements.get_employment_type_display()
+        add_option(
+            rule_type=rule_type,
+            value=normalized,
+            selected=selected,
+            source_text=f"{label}: {display_value}.",
+            expected_value=value,
+        )
+
+    existing = tuple(
+        requirements.hard_constraint_rules.select_related("skill").order_by(
+            "position", "id"
+        )
+    )
+    existing_keys = {_structured_rule_key(rule) for rule in existing}
+    for rule in existing:
+        key = _structured_rule_key(rule)
+        option = options.get(key)
+        orphaned_required_skill = (
+            rule.rule_type == HardConstraintRule.RuleType.REQUIRED_SKILL
+            and option is None
+        )
+        if orphaned_required_skill or (option is not None and not option["selected"]):
+            rule.delete()
+            existing_keys.discard(key)
+
+    created = []
+    for key, option in options.items():
+        if option["selected"] and key not in existing_keys:
+            created.append(
+                create_hard_constraint_rule(
+                    requirements=requirements,
+                    user=user,
+                    rule_type=option["rule_type"],
+                    source_text=option["source_text"],
+                    skill_label=option["skill_label"],
+                    expected_value=option["expected_value"],
+                    numeric_value=option["numeric_value"],
+                )
+            )
+            existing_keys.add(key)
+    validate_hard_constraint_rules(requirements=requirements, user=user)
+    return tuple(created)
 
 
 @transaction.atomic

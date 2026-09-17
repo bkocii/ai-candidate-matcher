@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from accounts.models import OrganizationMembership, User
 from audit.models import AuditEvent
+from matching.services import create_hard_constraint_rule
 from organizations.models import ClientCompany, Organization
 from vacancies.forms import VacancyCreateForm, VacancyRequirementsForm
 from vacancies.models import Vacancy, VacancyRequirements
@@ -75,6 +76,27 @@ def requirements_values(**overrides) -> dict:
         "employment_type": VacancyRequirements.EmploymentType.FULL_TIME,
         "hard_constraints": ["Eligible to work in Kosovo"],
         "ambiguities": ["On-call frequency is not stated"],
+    }
+    values.update(overrides)
+    return values
+
+
+def requirements_form_data(**overrides) -> dict:
+    values = {
+        "summary": "Senior backend role",
+        "must_have_skills": "Python\nDjango",
+        "nice_to_have_skills": "PostgreSQL",
+        "minimum_years_experience": "4.0",
+        "location_requirement": "Prishtina",
+        "work_mode": VacancyRequirements.WorkMode.HYBRID,
+        "language_requirements": "English",
+        "education_requirements": "",
+        "certification_requirements": "",
+        "employment_type": VacancyRequirements.EmploymentType.FULL_TIME,
+        "hard_constraints": "",
+        "ambiguities": "",
+        "eligibility_controls_present": "1",
+        "intent": "save",
     }
     values.update(overrides)
     return values
@@ -349,6 +371,14 @@ def test_save_and_review_persists_edits_and_previews_complete_draft(client) -> N
         args=[organization.slug, vacancy.pk, requirements.pk],
     )
 
+    editor = client.get(edit_url)
+    editor_content = editor.content.decode()
+    assert editor.status_code == 200
+    assert editor_content.count("requirements-page-block") == 4
+    source_text_start = editor_content.index('<textarea name="eligibility-source_text"')
+    source_text_end = editor_content.index(">", source_text_start)
+    assert " required" not in editor_content[source_text_start:source_text_end]
+
     response = client.post(
         edit_url,
         {
@@ -387,7 +417,7 @@ def test_save_and_review_persists_edits_and_previews_complete_draft(client) -> N
         "Full time",
         "Eligible to work in Kosovo",
         "On-call frequency is not stated",
-        "No typed rules have been added",
+        "No eligibility rules have been added",
     ):
         assert expected in content
     assert "Draft to be confirmed" in content
@@ -403,6 +433,253 @@ def test_save_and_review_persists_edits_and_previews_complete_draft(client) -> N
     ).content.decode()
     assert f'href="{review_url}">Review version 1</a>' in detail
     assert "Confirm version 1</button>" not in detail
+
+
+def test_add_eligibility_rule_saves_new_requirement_skill_in_one_action(
+    client,
+) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    client.force_login(user)
+    edit_url = reverse(
+        "vacancies:requirements-edit",
+        args=[organization.slug, vacancy.pk, requirements.pk],
+    )
+
+    response = client.post(
+        edit_url,
+        {
+            "summary": "Backend role with a newly entered skill",
+            "must_have_skills": "Python\nGo",
+            "nice_to_have_skills": "PostgreSQL",
+            "minimum_years_experience": "4.0",
+            "location_requirement": "Prishtina",
+            "work_mode": VacancyRequirements.WorkMode.HYBRID,
+            "language_requirements": "English",
+            "education_requirements": "",
+            "certification_requirements": "",
+            "employment_type": VacancyRequirements.EmploymentType.FULL_TIME,
+            "hard_constraints": "Lawful work eligibility",
+            "ambiguities": "",
+            "eligibility-rule_type": "required_skill",
+            "eligibility-source_text": "Go is required.",
+            "eligibility-skill": "Go",
+            "eligibility-numeric_value": "",
+            "eligibility-expected_value": "",
+            "eligibility_controls_present": "1",
+            "intent": "add_rule",
+        },
+    )
+
+    requirements.refresh_from_db()
+    rule = requirements.hard_constraint_rules.select_related("skill").get()
+    assert response.status_code == 302
+    assert response.url == f"{edit_url}#eligibility-rules"
+    assert requirements.must_have_skills == ["Python", "Go"]
+    assert rule.skill.name == "Go"
+    assert rule.source_text == "Go is required."
+
+    page = client.get(response.url)
+    content = page.content.decode()
+    assert page.status_code == 200
+    assert "Eligibility rules" in content
+    assert "Go is required." in content
+    assert "Other requirements" in content
+    assert "If information is missing" in content
+    assert "Add typed rule" not in content
+
+
+def test_save_draft_syncs_structured_eligibility_toggles(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    client.force_login(user)
+    edit_url = reverse(
+        "vacancies:requirements-edit",
+        args=[organization.slug, vacancy.pk, requirements.pk],
+    )
+
+    response = client.post(
+        edit_url,
+        requirements_form_data(
+            must_have_skills="Python development experience\nDjango",
+            eligibility_required_skills=["Python development experience"],
+            eligibility_minimum_experience="on",
+            eligibility_location="on",
+            eligibility_work_mode="on",
+            eligibility_languages=["English"],
+            eligibility_employment_type="on",
+        ),
+    )
+
+    requirements.refresh_from_db()
+    rules = list(
+        requirements.hard_constraint_rules.select_related("skill").order_by("position")
+    )
+    assert response.status_code == 302
+    assert [rule.rule_type for rule in rules] == [
+        "required_skill",
+        "minimum_experience",
+        "location",
+        "work_mode",
+        "language",
+        "employment_type",
+    ]
+    assert rules[0].skill.name == "Python"
+    assert rules[0].source_text == "Required skill: Python development experience."
+    assert rules[1].numeric_value == Decimal("4.0")
+    assert rules[2].expected_value == "Prishtina"
+    assert rules[3].expected_value == VacancyRequirements.WorkMode.HYBRID
+    assert rules[4].expected_value == "English"
+    assert rules[5].expected_value == VacancyRequirements.EmploymentType.FULL_TIME
+
+    editor = client.get(edit_url)
+    content = editor.content.decode()
+    assert "Matching skill: Python" in content
+    assert "Python development experience" in content
+    assert "Required for eligibility" in content
+    assert "Add a custom eligibility rule" in content
+    assert "requirements-editor-layout" in content
+    assert "skills-editor-stack" in content
+    assert "eligibility-rule-list" in content
+    assert 'data-label="Source wording"' in content
+
+
+def test_unchecking_structured_value_preserves_different_custom_rule(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    update_requirements_draft(
+        requirements=requirements,
+        user=user,
+        values=requirements_values(location_requirement="Prishtina"),
+    )
+    create_hard_constraint_rule(
+        requirements=requirements,
+        user=user,
+        rule_type="location",
+        source_text="The structured location is required.",
+        expected_value="Prishtina",
+    )
+    create_hard_constraint_rule(
+        requirements=requirements,
+        user=user,
+        rule_type="location",
+        source_text="A separate custom area rule.",
+        expected_value="Peja",
+    )
+    client.force_login(user)
+    edit_url = reverse(
+        "vacancies:requirements-edit",
+        args=[organization.slug, vacancy.pk, requirements.pk],
+    )
+
+    response = client.post(edit_url, requirements_form_data())
+
+    assert response.status_code == 302
+    assert list(
+        requirements.hard_constraint_rules.values_list("expected_value", flat=True)
+    ) == ["Peja"]
+
+
+def test_removing_must_have_skill_also_removes_its_unchecked_rule(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    update_requirements_draft(
+        requirements=requirements,
+        user=user,
+        values=requirements_values(must_have_skills=["Python", "Django"]),
+    )
+    create_hard_constraint_rule(
+        requirements=requirements,
+        user=user,
+        rule_type="required_skill",
+        source_text="Python is required.",
+        skill_label="Python",
+    )
+    client.force_login(user)
+    edit_url = reverse(
+        "vacancies:requirements-edit",
+        args=[organization.slug, vacancy.pk, requirements.pk],
+    )
+
+    response = client.post(
+        edit_url,
+        requirements_form_data(must_have_skills="Django"),
+    )
+
+    requirements.refresh_from_db()
+    assert response.status_code == 302
+    assert requirements.must_have_skills == ["Django"]
+    assert not requirements.hard_constraint_rules.exists()
+
+
+def test_eligibility_toggle_requires_its_structured_value(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    client.force_login(user)
+    edit_url = reverse(
+        "vacancies:requirements-edit",
+        args=[organization.slug, vacancy.pk, requirements.pk],
+    )
+
+    response = client.post(
+        edit_url,
+        requirements_form_data(
+            summary="Must not save",
+            minimum_years_experience="",
+            eligibility_minimum_experience="on",
+        ),
+    )
+
+    requirements.refresh_from_db()
+    assert response.status_code == 200
+    assert (
+        "Enter minimum years before making it required for eligibility"
+        in response.content.decode()
+    )
+    assert requirements.summary == ""
+    assert not requirements.hard_constraint_rules.exists()
+
+
+def test_invalid_eligibility_rule_rolls_back_draft_changes(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    client.force_login(user)
+    edit_url = reverse(
+        "vacancies:requirements-edit",
+        args=[organization.slug, vacancy.pk, requirements.pk],
+    )
+
+    response = client.post(
+        edit_url,
+        {
+            "summary": "Must roll back",
+            "must_have_skills": "Python\nGo",
+            "nice_to_have_skills": "",
+            "minimum_years_experience": "",
+            "location_requirement": "",
+            "work_mode": VacancyRequirements.WorkMode.UNKNOWN,
+            "language_requirements": "",
+            "education_requirements": "",
+            "certification_requirements": "",
+            "employment_type": VacancyRequirements.EmploymentType.UNKNOWN,
+            "hard_constraints": "",
+            "ambiguities": "",
+            "eligibility-rule_type": "required_skill",
+            "eligibility-source_text": "",
+            "eligibility-skill": "Go",
+            "eligibility-numeric_value": "",
+            "eligibility-expected_value": "",
+            "intent": "add_rule",
+        },
+    )
+
+    requirements.refresh_from_db()
+    assert response.status_code == 200
+    assert "Explain why this criterion is required" in response.content.decode()
+    assert requirements.summary == ""
+    assert requirements.must_have_skills == []
+    assert not requirements.hard_constraint_rules.exists()
+    assert not requirements.skill_records.exists()
 
 
 def test_invalid_save_and_review_stays_on_editor_without_losing_values(client) -> None:

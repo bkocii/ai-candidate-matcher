@@ -1,0 +1,194 @@
+{% if form.non_field_errors %}
+    <div class="form-error">{{ form.non_field_errors }}</div>
+{% endif %}
+
+<section class="requirements-editor-section requirements-editor-section-wide" aria-labelledby="role-overview-title">
+    <div class="section-heading-compact">
+        <p class="eyebrow">Role overview</p>
+        <h2 id="role-overview-title">What this role needs</h2>
+    </div>
+    <div class="field">
+        {{ form.summary.label_tag }}
+        {{ form.summary }}
+        {% if form.summary.help_text %}<small class="help-text">{{ form.summary.help_text }}</small>{% endif %}
+        {% if form.summary.errors %}<div class="field-errors">{{ form.summary.errors }}</div>{% endif %}
+    </div>
+</section>
+
+<section class="requirements-editor-section requirements-editor-section-wide" aria-labelledby="skills-title">
+    <div class="section-heading-compact">
+        <p class="eyebrow">Skills</p>
+        <h2 id="skills-title">Required and useful skills</h2>
+        <p class="section-note">Source wording stays visible. The matching identity shows how controlled skill matching will compare candidates.</p>
+    </div>
+    <div class="skills-editor-stack">
+        <div class="skill-editor-block skill-editor-block-required">
+            <div class="field skill-entry-field">
+                {{ form.must_have_skills.label_tag }}
+                {{ form.must_have_skills }}
+                {% if form.must_have_skills.help_text %}<small class="help-text">{{ form.must_have_skills.help_text }}</small>{% endif %}
+                {% if form.must_have_skills.errors %}<div class="field-errors">{{ form.must_have_skills.errors }}</div>{% endif %}
+            </div>
+
+            <div class="eligibility-toggle-group" data-eligibility-list data-source-id="{{ form.must_have_skills.id_for_label }}" data-field-name="eligibility_required_skills">
+                <div>
+                    <strong>{{ form.eligibility_required_skills.label }}</strong>
+                    {{ form.eligibility_required_skills }}
+                    <small>Explicitly lacking a checked skill will exclude a candidate. Missing skill information stays in review.</small>
+                    {% if form.eligibility_required_skills.errors %}<div class="field-errors">{{ form.eligibility_required_skills.errors }}</div>{% endif %}
+                </div>
+                <small class="eligibility-empty-note"{% if form.eligibility_required_skills.field.choices %} hidden{% endif %}>Enter a must-have skill to make it required for eligibility.</small>
+            </div>
+
+            {% if form.must_have_skill_previews %}
+                <div class="skill-identity-list" aria-label="Must-have skill matching identities">
+                    {% for skill in form.must_have_skill_previews %}
+                        <div class="skill-identity-row">
+                            <strong>{{ skill.source_label }}</strong>
+                            <span>Matching skill: {{ skill.canonical_name }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        <div class="skill-editor-block skill-editor-block-useful">
+            <div class="field skill-entry-field">
+                {{ form.nice_to_have_skills.label_tag }}
+                {{ form.nice_to_have_skills }}
+                {% if form.nice_to_have_skills.help_text %}<small class="help-text">{{ form.nice_to_have_skills.help_text }}</small>{% endif %}
+                {% if form.nice_to_have_skills.errors %}<div class="field-errors">{{ form.nice_to_have_skills.errors }}</div>{% endif %}
+            </div>
+            {% if form.nice_to_have_skill_previews %}
+                <div class="skill-identity-list" aria-label="Nice-to-have skill matching identities">
+                    {% for skill in form.nice_to_have_skill_previews %}
+                        <div class="skill-identity-row">
+                            <strong>{{ skill.source_label }}</strong>
+                            <span>Matching skill: {{ skill.canonical_name }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="requirements-editor-section requirements-editor-section-wide" aria-labelledby="work-requirements-title">
+    <div class="section-heading-compact">
+        <p class="eyebrow">Work requirements</p>
+        <h2 id="work-requirements-title">Experience and working arrangement</h2>
+    </div>
+    <div class="requirements-field-grid">
+        <div class="field field-with-eligibility">
+            {{ form.minimum_years_experience.label_tag }}
+            {{ form.minimum_years_experience }}
+            {% if form.minimum_years_experience.errors %}<div class="field-errors">{{ form.minimum_years_experience.errors }}</div>{% endif %}
+            <label class="eligibility-toggle" for="{{ form.eligibility_minimum_experience.id_for_label }}">
+                {{ form.eligibility_minimum_experience }}
+                <span><strong>{{ form.eligibility_minimum_experience.label }}</strong><small>Less experience excludes; missing evidence stays in review.</small></span>
+            </label>
+            {% if form.eligibility_minimum_experience.errors %}<div class="field-errors">{{ form.eligibility_minimum_experience.errors }}</div>{% endif %}
+        </div>
+        <div class="field field-with-eligibility">
+            {{ form.location_requirement.label_tag }}
+            {{ form.location_requirement }}
+            {% if form.location_requirement.errors %}<div class="field-errors">{{ form.location_requirement.errors }}</div>{% endif %}
+            <label class="eligibility-toggle" for="{{ form.eligibility_location.id_for_label }}">
+                {{ form.eligibility_location }}
+                <span><strong>{{ form.eligibility_location.label }}</strong><small>A different recorded location excludes; missing location stays in review.</small></span>
+            </label>
+            {% if form.eligibility_location.errors %}<div class="field-errors">{{ form.eligibility_location.errors }}</div>{% endif %}
+        </div>
+        <div class="field field-with-eligibility">
+            {{ form.work_mode.label_tag }}
+            {{ form.work_mode }}
+            {% if form.work_mode.errors %}<div class="field-errors">{{ form.work_mode.errors }}</div>{% endif %}
+            <label class="eligibility-toggle" for="{{ form.eligibility_work_mode.id_for_label }}">
+                {{ form.eligibility_work_mode }}
+                <span><strong>{{ form.eligibility_work_mode.label }}</strong><small>A different recorded work mode excludes; missing preference stays in review.</small></span>
+            </label>
+            {% if form.eligibility_work_mode.errors %}<div class="field-errors">{{ form.eligibility_work_mode.errors }}</div>{% endif %}
+        </div>
+        <div class="field field-with-eligibility">
+            {{ form.employment_type.label_tag }}
+            {{ form.employment_type }}
+            {% if form.employment_type.errors %}<div class="field-errors">{{ form.employment_type.errors }}</div>{% endif %}
+            <label class="eligibility-toggle" for="{{ form.eligibility_employment_type.id_for_label }}">
+                {{ form.eligibility_employment_type }}
+                <span><strong>{{ form.eligibility_employment_type.label }}</strong><small>A different recorded type excludes; missing preference stays in review.</small></span>
+            </label>
+            {% if form.eligibility_employment_type.errors %}<div class="field-errors">{{ form.eligibility_employment_type.errors }}</div>{% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="requirements-editor-section requirements-editor-section-wide" aria-labelledby="qualifications-title">
+    <div class="section-heading-compact">
+        <p class="eyebrow">Qualifications</p>
+        <h2 id="qualifications-title">Language, education, and certification</h2>
+    </div>
+    <div class="requirements-field-grid requirements-field-grid-three">
+        <div class="field">
+            {{ form.language_requirements.label_tag }}
+            {{ form.language_requirements }}
+            {% if form.language_requirements.help_text %}<small class="help-text">{{ form.language_requirements.help_text }}</small>{% endif %}
+            {% if form.language_requirements.errors %}<div class="field-errors">{{ form.language_requirements.errors }}</div>{% endif %}
+            <div class="eligibility-toggle-group" data-eligibility-list data-source-id="{{ form.language_requirements.id_for_label }}" data-field-name="eligibility_languages">
+                <div>
+                    <strong>{{ form.eligibility_languages.label }}</strong>
+                    {{ form.eligibility_languages }}
+                    {% if form.eligibility_languages.errors %}<div class="field-errors">{{ form.eligibility_languages.errors }}</div>{% endif %}
+                </div>
+                <small class="eligibility-empty-note"{% if form.eligibility_languages.field.choices %} hidden{% endif %}>Enter a language to make it required for eligibility.</small>
+            </div>
+        </div>
+        <div class="field">
+            {{ form.education_requirements.label_tag }}
+            {{ form.education_requirements }}
+            {% if form.education_requirements.help_text %}<small class="help-text">{{ form.education_requirements.help_text }}</small>{% endif %}
+            {% if form.education_requirements.errors %}<div class="field-errors">{{ form.education_requirements.errors }}</div>{% endif %}
+            <div class="eligibility-toggle-group" data-eligibility-list data-source-id="{{ form.education_requirements.id_for_label }}" data-field-name="eligibility_education">
+                <div>
+                    <strong>{{ form.eligibility_education.label }}</strong>
+                    {{ form.eligibility_education }}
+                    {% if form.eligibility_education.errors %}<div class="field-errors">{{ form.eligibility_education.errors }}</div>{% endif %}
+                </div>
+                <small class="eligibility-empty-note"{% if form.eligibility_education.field.choices %} hidden{% endif %}>Enter an education requirement to make it required for eligibility.</small>
+            </div>
+        </div>
+        <div class="field">
+            {{ form.certification_requirements.label_tag }}
+            {{ form.certification_requirements }}
+            {% if form.certification_requirements.help_text %}<small class="help-text">{{ form.certification_requirements.help_text }}</small>{% endif %}
+            {% if form.certification_requirements.errors %}<div class="field-errors">{{ form.certification_requirements.errors }}</div>{% endif %}
+            <div class="eligibility-toggle-group" data-eligibility-list data-source-id="{{ form.certification_requirements.id_for_label }}" data-field-name="eligibility_certifications">
+                <div>
+                    <strong>{{ form.eligibility_certifications.label }}</strong>
+                    {{ form.eligibility_certifications }}
+                    {% if form.eligibility_certifications.errors %}<div class="field-errors">{{ form.eligibility_certifications.errors }}</div>{% endif %}
+                </div>
+                <small class="eligibility-empty-note"{% if form.eligibility_certifications.field.choices %} hidden{% endif %}>Enter a certification to make it required for eligibility.</small>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="requirements-editor-section requirements-editor-section-wide" aria-labelledby="notes-title">
+    <div class="section-heading-compact">
+        <p class="eyebrow">Review notes</p>
+        <h2 id="notes-title">Other requirements and open questions</h2>
+    </div>
+    <div class="requirements-field-grid">
+        <div class="field">
+            {{ form.hard_constraints.label_tag }}
+            {{ form.hard_constraints }}
+            {% if form.hard_constraints.help_text %}<small class="help-text">{{ form.hard_constraints.help_text }}</small>{% endif %}
+            {% if form.hard_constraints.errors %}<div class="field-errors">{{ form.hard_constraints.errors }}</div>{% endif %}
+        </div>
+        <div class="field">
+            {{ form.ambiguities.label_tag }}
+            {{ form.ambiguities }}
+            {% if form.ambiguities.help_text %}<small class="help-text">{{ form.ambiguities.help_text }}</small>{% endif %}
+            {% if form.ambiguities.errors %}<div class="field-errors">{{ form.ambiguities.errors }}</div>{% endif %}
+        </div>
+    </div>
+</section>

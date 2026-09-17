@@ -116,7 +116,7 @@ def hard_constraint_add(
         except ValidationError as error:
             form.add_error(None, "; ".join(error.messages))
         else:
-            messages.success(request, "Added typed hard-constraint rule.")
+            messages.success(request, "Added eligibility rule.")
             return redirect(
                 "vacancies:requirements-edit",
                 organization_slug=organization.slug,
@@ -178,7 +178,7 @@ def hard_constraint_edit(
         except ValidationError as error:
             form.add_error(None, "; ".join(error.messages))
         else:
-            messages.success(request, "Updated typed hard-constraint rule.")
+            messages.success(request, "Updated eligibility rule.")
             return redirect(
                 "vacancies:requirements-edit",
                 organization_slug=organization.slug,
@@ -231,7 +231,7 @@ def hard_constraint_delete(
         except ValidationError as error:
             messages.error(request, "; ".join(error.messages))
         else:
-            messages.success(request, "Deleted typed hard-constraint rule.")
+            messages.success(request, "Deleted eligibility rule.")
         return redirect(
             "vacancies:requirements-edit",
             organization_slug=organization.slug,

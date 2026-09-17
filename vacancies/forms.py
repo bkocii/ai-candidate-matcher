@@ -1,6 +1,8 @@
 from django import forms
 from django.db.models import Q
 
+from matching.models import HardConstraintRule, normalize_taxonomy_value
+from matching.skill_taxonomy import canonical_skill_key, canonicalize_skill
 from organizations.models import ClientCompany, Organization
 from vacancies.models import Vacancy, VacancyRequirements
 
@@ -12,6 +14,32 @@ LIST_FIELD_NAMES = (
     "certification_requirements",
     "hard_constraints",
     "ambiguities",
+)
+
+REQUIREMENTS_VALUE_FIELDS = (
+    "summary",
+    "must_have_skills",
+    "nice_to_have_skills",
+    "minimum_years_experience",
+    "location_requirement",
+    "work_mode",
+    "language_requirements",
+    "education_requirements",
+    "certification_requirements",
+    "employment_type",
+    "hard_constraints",
+    "ambiguities",
+)
+
+ELIGIBILITY_SELECTION_FIELDS = (
+    "eligibility_required_skills",
+    "eligibility_minimum_experience",
+    "eligibility_location",
+    "eligibility_work_mode",
+    "eligibility_languages",
+    "eligibility_education",
+    "eligibility_certifications",
+    "eligibility_employment_type",
 )
 
 
@@ -158,18 +186,54 @@ class VacancyRequirementsForm(forms.Form):
     )
     hard_constraints = forms.CharField(
         required=False,
-        label="Hard-constraint notes (not executable)",
+        label="Other requirements",
         widget=forms.Textarea(attrs={"rows": 4}),
         help_text=(
-            "Optional notes only. Use the typed-rule editor below for constraints "
-            "that deterministic filtering must evaluate. Do not enter protected "
-            "characteristics."
+            "Notes only; these do not affect candidate filtering. Add an eligibility "
+            "rule below for a requirement that should filter candidates. Do not "
+            "enter protected characteristics."
         ),
     )
     ambiguities = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={"rows": 4}),
         help_text="Enter one unanswered question or ambiguity per line.",
+    )
+    eligibility_required_skills = forms.MultipleChoiceField(
+        required=False,
+        label="Required for eligibility",
+        widget=forms.CheckboxSelectMultiple,
+    )
+    eligibility_minimum_experience = forms.BooleanField(
+        required=False,
+        label="Required for eligibility",
+    )
+    eligibility_location = forms.BooleanField(
+        required=False,
+        label="Required for eligibility",
+    )
+    eligibility_work_mode = forms.BooleanField(
+        required=False,
+        label="Required for eligibility",
+    )
+    eligibility_languages = forms.MultipleChoiceField(
+        required=False,
+        label="Required for eligibility",
+        widget=forms.CheckboxSelectMultiple,
+    )
+    eligibility_education = forms.MultipleChoiceField(
+        required=False,
+        label="Required for eligibility",
+        widget=forms.CheckboxSelectMultiple,
+    )
+    eligibility_certifications = forms.MultipleChoiceField(
+        required=False,
+        label="Required for eligibility",
+        widget=forms.CheckboxSelectMultiple,
+    )
+    eligibility_employment_type = forms.BooleanField(
+        required=False,
+        label="Required for eligibility",
     )
 
     def __init__(
@@ -179,8 +243,45 @@ class VacancyRequirementsForm(forms.Form):
         **kwargs,
     ) -> None:
         if requirements is not None and "initial" not in kwargs:
-            kwargs["initial"] = requirements_form_initial(requirements)
+            kwargs["initial"] = {
+                **requirements_form_initial(requirements),
+                **eligibility_form_initial(requirements),
+            }
         super().__init__(*args, **kwargs)
+        self.requirements = requirements
+        list_values = {
+            field_name: self._list_values(field_name)
+            for field_name in (
+                "must_have_skills",
+                "nice_to_have_skills",
+                "language_requirements",
+                "education_requirements",
+                "certification_requirements",
+            )
+        }
+        choice_fields = {
+            "eligibility_required_skills": "must_have_skills",
+            "eligibility_languages": "language_requirements",
+            "eligibility_education": "education_requirements",
+            "eligibility_certifications": "certification_requirements",
+        }
+        for eligibility_field, value_field in choice_fields.items():
+            values = list_values[value_field]
+            self.fields[eligibility_field].choices = [
+                (value, value) for value in values
+            ]
+
+        self.must_have_skill_previews = _skill_previews(list_values["must_have_skills"])
+        self.nice_to_have_skill_previews = _skill_previews(
+            list_values["nice_to_have_skills"]
+        )
+
+    def _list_values(self, field_name: str) -> list[str]:
+        if self.is_bound:
+            return _parse_line_list(self.data.get(field_name, ""))
+        if self.requirements is None:
+            return []
+        return list(getattr(self.requirements, field_name))
 
     def clean(self):
         cleaned_data = super().clean()
@@ -193,6 +294,34 @@ class VacancyRequirementsForm(forms.Form):
             value = cleaned_data.get(field_name)
             if isinstance(value, str):
                 cleaned_data[field_name] = value.strip()
+
+        required_values = (
+            (
+                "eligibility_minimum_experience",
+                cleaned_data.get("minimum_years_experience") is not None,
+                "Enter minimum years before making it required for eligibility.",
+            ),
+            (
+                "eligibility_location",
+                bool(cleaned_data.get("location_requirement")),
+                "Enter a location before making it required for eligibility.",
+            ),
+            (
+                "eligibility_work_mode",
+                cleaned_data.get("work_mode")
+                not in {None, VacancyRequirements.WorkMode.UNKNOWN},
+                "Select a work mode before making it required for eligibility.",
+            ),
+            (
+                "eligibility_employment_type",
+                cleaned_data.get("employment_type")
+                not in {None, VacancyRequirements.EmploymentType.UNKNOWN},
+                "Select an employment type before making it required for eligibility.",
+            ),
+        )
+        for field_name, has_value, message in required_values:
+            if cleaned_data.get(field_name) and not has_value:
+                self.add_error(field_name, message)
         return cleaned_data
 
 
@@ -222,6 +351,85 @@ def requirements_form_initial(requirements: VacancyRequirements) -> dict:
     return initial
 
 
+def _skill_previews(values: list[str]) -> list[dict[str, str | bool]]:
+    previews = []
+    for source_label in values:
+        canonical = canonicalize_skill(source_label)
+        previews.append(
+            {
+                "source_label": source_label,
+                "canonical_name": canonical.display_name,
+                "is_alias": canonical_skill_key(source_label)
+                != normalize_taxonomy_value(source_label),
+            }
+        )
+    return previews
+
+
+def eligibility_form_initial(requirements: VacancyRequirements) -> dict:
+    rules = tuple(
+        requirements.hard_constraint_rules.select_related("skill").order_by(
+            "position", "id"
+        )
+    )
+
+    def has_text_rule(rule_type: str, value: str) -> bool:
+        if not value:
+            return False
+        normalized = normalize_taxonomy_value(value)
+        return any(
+            rule.rule_type == rule_type and rule.normalized_expected_value == normalized
+            for rule in rules
+        )
+
+    selected_skills = []
+    for label in requirements.must_have_skills:
+        key = canonical_skill_key(label)
+        if any(
+            rule.rule_type == HardConstraintRule.RuleType.REQUIRED_SKILL
+            and rule.skill_id
+            and canonical_skill_key(rule.skill.name) == key
+            for rule in rules
+        ):
+            selected_skills.append(label)
+
+    return {
+        "eligibility_required_skills": selected_skills,
+        "eligibility_minimum_experience": any(
+            rule.rule_type == HardConstraintRule.RuleType.MINIMUM_EXPERIENCE
+            and rule.numeric_value == requirements.minimum_years_experience
+            for rule in rules
+        ),
+        "eligibility_location": has_text_rule(
+            HardConstraintRule.RuleType.LOCATION,
+            requirements.location_requirement,
+        ),
+        "eligibility_work_mode": has_text_rule(
+            HardConstraintRule.RuleType.WORK_MODE,
+            requirements.work_mode,
+        ),
+        "eligibility_languages": [
+            value
+            for value in requirements.language_requirements
+            if has_text_rule(HardConstraintRule.RuleType.LANGUAGE, value)
+        ],
+        "eligibility_education": [
+            value
+            for value in requirements.education_requirements
+            if has_text_rule(HardConstraintRule.RuleType.EDUCATION, value)
+        ],
+        "eligibility_certifications": [
+            value
+            for value in requirements.certification_requirements
+            if has_text_rule(HardConstraintRule.RuleType.CERTIFICATION, value)
+        ],
+        "eligibility_employment_type": has_text_rule(
+            HardConstraintRule.RuleType.EMPLOYMENT_TYPE,
+            requirements.employment_type,
+        ),
+    }
+
+
 def vacancy_values_from_form(form: VacancyCreateForm) -> dict:
     return {
         "title": form.cleaned_data["title"],
@@ -238,4 +446,14 @@ def vacancy_edit_values_from_form(form: VacancyEditForm) -> dict:
 
 
 def requirements_values_from_form(form: VacancyRequirementsForm) -> dict:
-    return {field_name: form.cleaned_data[field_name] for field_name in form.fields}
+    return {
+        field_name: form.cleaned_data[field_name]
+        for field_name in REQUIREMENTS_VALUE_FIELDS
+    }
+
+
+def eligibility_values_from_form(form: VacancyRequirementsForm) -> dict:
+    return {
+        field_name.removeprefix("eligibility_"): form.cleaned_data[field_name]
+        for field_name in ELIGIBILITY_SELECTION_FIELDS
+    }

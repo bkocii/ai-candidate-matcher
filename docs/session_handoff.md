@@ -1109,12 +1109,71 @@ MT-016 approval-boundary verification: focused vacancy-intake coverage
 `31 passed`; full quality gate `590 passed` with Django system/deployment/static
 checks, zero migration drift, Ruff lint/formatting, and dependency compatibility.
 No live AI calls. Browser acceptance remains pending; U01–U04, V01, F01, and U06
-remain open and must not be reported as fixed by this patch.
+remain open and must not be reported as fixed by that patch. The user confirmed
+the approval-boundary browser flow on 2026-09-16; U05/F02/V02 are resolved.
 
-Immediate next action: ask the user to test Save and review with unsaved edits,
-inspect the complete confirmation preview at desktop/narrow widths, use Edit draft,
-and confirm from the preview. Once accepted, continue MT-016 with eligibility-rule
-wording/integration and the compact editor; do not mark all MT-016 findings resolved.
+The next MT-016 slice implements U01/C01 and rule creation under U02. **Other
+requirements** holds notes that do not filter; **Eligibility rules** is used on
+the editor, preview, vacancy detail, standalone edit/delete, messages, and table.
+The rule builder is inside the requirements form and JavaScript progressively
+shows only required skill, minimum years, or required value for the selected
+criterion. One Add eligibility rule submission validates and atomically saves
+draft edits, canonical skill links, and the rule, including newly typed must-have
+skills. Invalid rule input rolls everything back. The existing model, filtering
+logic, tenant checks, immutable confirmation, and audit rules are unchanged.
+
+Eligibility-rule verification: focused hard-constraint editor/vacancy-intake
+coverage `46 passed`; full quality gate `593 passed` with Django system,
+deployment, static, migration-drift, Ruff, formatting, and dependency checks.
+No live AI call ran. Browser acceptance is pending; U03, V01, F01, U04, and U06
+remain open.
+
+The next supplied browser recording confirms that structured draft edits and the
+new rule save together. It also exposes MT-016-F03/V03. The unused rule-reason
+textarea's HTML `required` state blocks **Save draft** and **Save and review**, and
+the editor heading/AI callout are wider than the source panel/form. The correction
+makes the reason optional only at the browser-widget layer, then raises a specific
+server error when **Add eligibility rule** actually validates a blank reason. A
+shared `requirements-page-block` class aligns the heading, source, AI callout, and
+form at the centered 820px editor width. Focused tests pass with `48 passed`; the
+complete quality gate passes with `595 passed`, Django system/deployment/static
+checks, no migration drift, Ruff lint/formatting across 226 files, and compatible
+dependencies. No live AI call ran. Ask the user to retest both ordinary save
+actions plus desktop/narrow widths.
+
+The user confirmed MT-016-F03/V03 and asked to continue. The current slice
+implements MT-016-U03/U04 and the compact V01 editor pass. Structured skills,
+experience, location, work mode, language, education, certification, and
+employment values now expose **Required for eligibility** controls. Saving the
+draft synchronizes exact current-value rules atomically, deletes an unchecked
+dependent skill rule when its must-have value is removed, and preserves unrelated
+custom rules. JavaScript keeps newly typed list values selectable before save.
+Skill rows show preserved source wording and canonical matching identity. The
+form is grouped and wider on desktop with sticky save controls; the advanced
+custom-rule builder is collapsed and the layout stacks below 900px. No schema,
+migration, dependency, AI, filtering, tenant, or confirmed-version behavior
+changed. Focused tests pass with `52 passed`; run the full quality gate, package
+the changed files, refresh the full ZIP, and request browser confirmation. The
+complete quality gate subsequently passed with `599 passed`, Django system/
+deployment/static checks, no migration drift, Ruff lint/formatting across 226
+files, and compatible dependencies. No live AI call ran.
+
+The next supplied browser recording confirms that the structured toggles save
+properly and canonical matching identities are visible, resolving U03/U04. The
+user reported the layout as messy. A presentation-only V01 refinement groups the
+must-have editor with its eligibility choices, compacts skill identity rows,
+replaces the compressed six-column saved-rule table with labelled two-row rule
+cards, and aligns the custom-rule criterion with its active value field. No data,
+validation, rule-sync, filtering, model, migration, or dependency behavior
+changes. Focused coverage passes with `52 passed`; the complete quality gate
+passes with `599 passed`, Django system/deployment/static checks, no migration
+drift, Ruff lint/formatting across 226 files, and compatible dependencies. No
+live AI call ran. Deliver the changed-files/full archives, then ask for a desktop
+and narrow-width layout retest. If accepted, continue MT-016-F01 before U06.
+
+Immediate next action: finish the V01 layout verification and packaging. Ask the
+user to inspect the contained skill rows, saved-rule cards, aligned custom-rule
+fields, and narrow-width stacking. If accepted, continue MT-016-F01 before U06.
 Keep the remaining MT-012 functional browser checks recorded. DEMO-002 remains
 paused for the manual-review pass.
 

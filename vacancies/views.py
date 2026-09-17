@@ -4,12 +4,18 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_POST
 
 from ai_gateway import AIGatewayError
+from matching.forms import HardConstraintRuleForm, hard_constraint_values_from_form
 from matching.models import MatchRun
+from matching.services import (
+    create_hard_constraint_rule,
+    sync_structured_eligibility_rules,
+)
 from matching.staleness import assess_match_run_staleness
 from organizations.models import ClientCompany, Organization
 from organizations.permissions import can_administer_organization
@@ -18,6 +24,7 @@ from vacancies.forms import (
     VacancyCreateForm,
     VacancyEditForm,
     VacancyRequirementsForm,
+    eligibility_values_from_form,
     requirements_values_from_form,
     vacancy_edit_values_from_form,
     vacancy_values_from_form,
@@ -306,16 +313,86 @@ def requirements_edit(
         request.POST or None,
         requirements=requirements,
     )
-    if request.method == "POST" and form.is_valid():
-        try:
-            update_requirements_draft(
-                requirements=requirements,
-                user=request.user,
-                values=requirements_values_from_form(form),
+    intent = request.POST.get("intent", "")
+    sync_eligibility_controls = request.POST.get("eligibility_controls_present") == "1"
+    eligibility_form = HardConstraintRuleForm(
+        request.POST if request.method == "POST" and intent == "add_rule" else None,
+        prefix="eligibility",
+        requirements=requirements,
+    )
+    if request.method == "POST" and intent == "add_rule" and form.is_valid():
+        rule_created = False
+        with transaction.atomic():
+            try:
+                update_requirements_draft(
+                    requirements=requirements,
+                    user=request.user,
+                    values=requirements_values_from_form(form),
+                    validate_rules=not sync_eligibility_controls,
+                )
+                requirements.refresh_from_db()
+                if sync_eligibility_controls:
+                    sync_structured_eligibility_rules(
+                        requirements=requirements,
+                        user=request.user,
+                        selections=eligibility_values_from_form(form),
+                    )
+            except ValidationError as error:
+                form.add_error(None, "; ".join(error.messages))
+            else:
+                eligibility_form = HardConstraintRuleForm(
+                    request.POST,
+                    prefix="eligibility",
+                    requirements=requirements,
+                )
+                if eligibility_form.is_valid():
+                    try:
+                        create_hard_constraint_rule(
+                            requirements=requirements,
+                            user=request.user,
+                            **hard_constraint_values_from_form(eligibility_form),
+                        )
+                    except ValidationError as error:
+                        eligibility_form.add_error(None, "; ".join(error.messages))
+                    else:
+                        rule_created = True
+                if not rule_created:
+                    transaction.set_rollback(True)
+        if rule_created:
+            messages.success(
+                request,
+                "Saved the requirements draft and added the eligibility rule.",
             )
-        except ValidationError as error:
-            form.add_error(None, "; ".join(error.messages))
-        else:
+            return redirect(
+                reverse(
+                    "vacancies:requirements-edit",
+                    args=[organization.slug, vacancy.pk, requirements.pk],
+                )
+                + "#eligibility-rules"
+            )
+    elif request.method == "POST" and form.is_valid():
+        saved = False
+        with transaction.atomic():
+            try:
+                update_requirements_draft(
+                    requirements=requirements,
+                    user=request.user,
+                    values=requirements_values_from_form(form),
+                    validate_rules=not sync_eligibility_controls,
+                )
+                requirements.refresh_from_db()
+                if sync_eligibility_controls:
+                    sync_structured_eligibility_rules(
+                        requirements=requirements,
+                        user=request.user,
+                        selections=eligibility_values_from_form(form),
+                    )
+            except ValidationError as error:
+                form.add_error(None, "; ".join(error.messages))
+                transaction.set_rollback(True)
+            else:
+                saved = True
+        if saved:
             messages.success(
                 request,
                 f"Saved requirements version {requirements.version}.",
@@ -342,6 +419,7 @@ def requirements_edit(
             "vacancy": vacancy,
             "requirements": requirements,
             "form": form,
+            "eligibility_form": eligibility_form,
             "hard_constraint_rules": requirements.hard_constraint_rules.select_related(
                 "skill"
             ),
@@ -408,7 +486,7 @@ def requirements_extract(
         messages.success(
             request,
             "AI suggestions were saved to the draft. Review every field and add "
-            "any executable typed rules before confirming.",
+            "any eligibility rules before confirming.",
         )
         requirements = result.requirements
     return redirect(

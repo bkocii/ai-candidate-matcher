@@ -196,6 +196,7 @@ def update_requirements_draft(
     requirements: VacancyRequirements,
     user: User,
     values: dict,
+    validate_rules: bool = True,
 ) -> VacancyRequirements:
     require_organization_object_access(user, requirements)
     requirements = VacancyRequirements.objects.select_for_update().get(
@@ -217,7 +218,8 @@ def update_requirements_draft(
     )
 
     sync_requirement_skills(requirements=requirements, user=user)
-    validate_hard_constraint_rules(requirements=requirements, user=user)
+    if validate_rules:
+        validate_hard_constraint_rules(requirements=requirements, user=user)
     return requirements
 
 

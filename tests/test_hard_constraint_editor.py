@@ -1,4 +1,5 @@
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -72,11 +73,10 @@ def requirements_values(**overrides) -> dict:
 
 
 def rule_form_data(requirements: VacancyRequirements, **overrides) -> dict:
-    python_skill_id = requirements.skill_records.get(source_label="Python").skill_id
     values = {
         "rule_type": HardConstraintRule.RuleType.REQUIRED_SKILL,
         "source_text": "Python is mandatory.",
-        "skill": str(python_skill_id),
+        "skill": "Python",
         "numeric_value": "",
         "expected_value": "",
     }
@@ -114,6 +114,47 @@ def test_rule_form_offers_only_saved_must_have_skills() -> None:
     assert "Python" in choices.values()
     assert "Django" in choices.values()
     assert "PostgreSQL" not in choices.values()
+
+
+def test_rule_reason_is_validated_by_the_rule_action_without_browser_blocking() -> None:
+    _, _, _, requirements = make_workspace()
+    form = HardConstraintRuleForm(
+        data=rule_form_data(requirements, source_text=""),
+        requirements=requirements,
+    )
+
+    assert form.fields["source_text"].required is False
+    assert not form.is_valid()
+    assert form.errors["source_text"] == ["Explain why this criterion is required."]
+
+
+def test_requirements_page_blocks_share_the_draft_width() -> None:
+    stylesheet = (
+        Path(__file__).resolve().parents[1] / "static" / "css" / "app.css"
+    ).read_text()
+
+    assert ".requirements-page-block," in stylesheet
+    assert "max-width: 1080px;" in stylesheet
+    assert "margin-inline: auto;" in stylesheet
+    assert "grid-template-columns: minmax(0, 1fr) 250px;" in stylesheet
+    assert "position: sticky;" in stylesheet
+
+
+def test_eligibility_rule_script_shows_only_relevant_value_control() -> None:
+    script = (
+        Path(__file__).resolve().parents[1]
+        / "static"
+        / "js"
+        / "eligibility-rule-form.js"
+    ).read_text()
+
+    assert 'criterion.value === "required_skill"' in script
+    assert 'criterion.value === "minimum_experience"' in script
+    assert "field.hidden = name !== visible" in script
+    assert "control.disabled = name !== visible" in script
+    assert 'document.querySelectorAll("[data-eligibility-list]")' in script
+    assert 'source.addEventListener("input", render)' in script
+    assert "target.replaceChildren()" in script
 
 
 def test_rule_form_accepts_controlled_choice_labels() -> None:
@@ -170,9 +211,9 @@ def test_recruiter_adds_required_skill_rule_from_draft_editor(client) -> None:
 
     editor = client.get(response.url)
     content = editor.content.decode()
-    assert "Typed hard-constraint rules" in content
+    assert "Eligibility rules" in content
     assert "Python is mandatory." in content
-    assert "Free-text notes above do not affect filtering" not in content
+    assert "Other requirements notes do not affect candidate filtering" not in content
 
     add_page = client.get(add_url(organization, vacancy, requirements))
     assert 'name="operator"' not in add_page.content.decode()
@@ -245,7 +286,7 @@ def test_rule_delete_requires_confirmation_page(client) -> None:
 
     confirmation = client.get(delete_url(organization, vacancy, requirements, rule))
     assert confirmation.status_code == 200
-    assert "Delete typed hard constraint?" in confirmation.content.decode()
+    assert "Delete eligibility rule?" in confirmation.content.decode()
     assert HardConstraintRule.objects.filter(pk=rule.pk).exists()
 
     response = client.post(delete_url(organization, vacancy, requirements, rule))
@@ -272,7 +313,7 @@ def test_confirmed_rules_are_visible_but_not_editable(client) -> None:
         )
     )
     content = detail.content.decode()
-    assert "Typed hard-constraint rules · v1" in content
+    assert "Eligibility rules · v1" in content
     assert "Prishtina required." in content
     assert edit_url(organization, vacancy, requirements, rule) not in content
 
