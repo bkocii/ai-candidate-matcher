@@ -520,6 +520,15 @@ def assessment_review_detail(
         user=request.user,
     )
     latest_decision = decision_history[0] if decision_history else None
+    current_decision = (
+        latest_decision
+        if latest_decision is not None
+        and latest_decision.assessment_id == assessment.pk
+        else None
+    )
+    decision_saved = current_decision is not None and request.GET.get(
+        "decision"
+    ) == str(current_decision.version)
     if latest_decision is None:
         outreach_eligibility = OutreachDraftEligibility(
             False,
@@ -553,6 +562,8 @@ def assessment_review_detail(
             "decision_eligibility": decision_eligibility,
             "decision_form": ReviewDecisionForm(),
             "latest_decision": latest_decision,
+            "current_decision": current_decision,
+            "decision_saved": decision_saved,
             "outreach_eligibility": outreach_eligibility,
             "outreach_history": outreach_history,
             "vacancy": assessment.requirements.vacancy,
@@ -584,6 +595,7 @@ def assessment_review_decide(
         shortlist_entry__match_run__requirements__vacancy__deleted_at__isnull=True,
     )
     form = ReviewDecisionForm(request.POST)
+    saved_decision = None
     if not form.is_valid():
         messages.error(
             request,
@@ -600,13 +612,18 @@ def assessment_review_decide(
         except ValidationError as error:
             messages.error(request, "; ".join(error.messages))
         else:
+            saved_decision = decision
             messages.success(
                 request,
                 f"Decision version {decision.version} was recorded as "
                 f"{decision.get_decision_display().lower()}.",
             )
-    return redirect(
+    detail_url = reverse(
         "matching:assessment-review-detail",
-        organization_slug=organization.slug,
-        assessment_id=assessment.pk,
+        args=[organization.slug, assessment.pk],
     )
+    if saved_decision is not None:
+        return redirect(
+            f"{detail_url}?decision={saved_decision.version}#decision-saved"
+        )
+    return redirect(f"{detail_url}#decision-section")

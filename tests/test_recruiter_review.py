@@ -135,9 +135,13 @@ def test_changed_inputs_are_visible_and_assessment_detail_keeps_history(client):
     assert (
         "active candidate pool or candidate matching evidence changed" in detail_content
     )
-    assert "Matching requirements" in detail_content
-    assert "Evidence-backed gaps" in detail_content
-    assert "Profile evidence exceptions" in detail_content
+    assert "Matches" in detail_content
+    assert "Gaps" in detail_content
+    assert "Verify" in detail_content
+    assert "Profile exceptions" in detail_content
+    assert '<details class="assessment-finding-group" open>' in detail_content
+    assert "Decision history" in detail_content
+    assert "Assessment history" in detail_content
     assert f"Version {latest.version}" in detail_content
     assert f"Version {first.version}" in detail_content
     assert (

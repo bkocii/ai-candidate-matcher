@@ -1227,11 +1227,13 @@ Open **Inspect and decide** for one queue item.
 Expected detail behavior:
 
 - The AI score and deterministic score remain separate.
-- Matching requirements, evidence-backed gaps, uncertainties, vacancy evidence,
-  candidate evidence, confirmed-profile ambiguities, and recruiter review focus
-  are individually inspectable.
-- Every immutable assessment version for that shortlist entry is linked. Opening
-  an older version does not alter it.
+- The compact **Matches**, **Gaps**, and **Verify** sections expose each finding;
+  complete vacancy and candidate source evidence remains one click away.
+- The recruiter-review focus and sticky/adjacent **Your decision** surface remain
+  visible in the same main workspace. Empty profile exceptions use a summary
+  badge; recorded exceptions are expandable.
+- Every immutable assessment version and decision version remains linked inside
+  collapsed history disclosures. Opening an older version does not alter it.
 - If candidate or vacancy matching evidence changed, the page clearly labels the
   assessment historical and explains why.
 - Decision controls appear only for the latest assessment while its shortlist
@@ -1245,16 +1247,20 @@ re-extracted or reconfirmed merely by opening either review screen.
 ## 20. Test individual recruiter decisions
 
 Use a current latest assessment from section 18 and select **Inspect and decide**.
-The page must show the full evidence before the decision form.
+The page must show a compact evidence summary beside the decision controls; full
+source evidence remains expandable.
 
 1. Select **Approve**.
 2. Enter notes such as `Evidence inspected; suitable for the next recruiter-controlled step.`
-3. Select **Record decision**.
+3. Select **Save decision**.
 
 Expected result:
 
-- **Decision version 1** is added with **Approve**, the exact notes, your username,
-  and a timestamp.
+- A focused **Decision saved** summary appears with **Approve**, decision version
+  1, and **Generate outreach draft** as the next valid action.
+- **Current decision** shows the exact notes, your username, and a timestamp. The
+  empty form is no longer primary; **Change decision** expands a warning that a
+  new immutable version will be created.
 - The decision references the exact assessment version shown on the page.
 - The assessment, AI score, deterministic score, evidence, rank, and shortlist
   membership remain unchanged.
@@ -1263,10 +1269,12 @@ Expected result:
 - No outreach draft is created, approved, copied, exported, or sent.
 
 Record another decision from the same current assessment, choosing **Revisit
-later** with new notes. Expected result: decision version 2 is appended while
-version 1 remains visible and unchanged. Repeat with **Reject** on another
-synthetic candidate to confirm all three explicit choices work. No decision is
-automatic, and no score or traffic-light band selects a decision for you.
+later** with new notes through **Change decision**. Expected result: decision
+version 2 is appended while version 1 remains visible and unchanged in
+**Decision history**. The focused summary offers **Back to review queue**, not
+outreach. Repeat with **Reject** on another synthetic candidate to confirm all
+three explicit choices work. No decision is automatic, and no score or
+traffic-light band selects a decision for you.
 
 Test validation and currentness:
 

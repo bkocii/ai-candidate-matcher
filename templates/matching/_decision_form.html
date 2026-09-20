@@ -1,0 +1,29 @@
+<form class="decision-form" method="post" action="{% url 'matching:assessment-review-decide' organization.slug assessment.pk %}">
+    {% csrf_token %}
+    {% if decision_form.non_field_errors %}<div class="form-error">{{ decision_form.non_field_errors }}</div>{% endif %}
+    <fieldset class="decision-options">
+        <legend>{{ decision_form.decision.label }}</legend>
+        {% for choice in decision_form.decision %}
+            <label class="decision-option-card" for="{{ choice.id_for_label }}">
+                {{ choice.tag }}
+                <span>
+                    <strong>{{ choice.choice_label }}</strong>
+                    <small>
+                        {% if forloop.counter == 1 %}Advance this candidate and enable outreach drafting.
+                        {% elif forloop.counter == 2 %}Close this review without generating outreach.
+                        {% else %}Keep this candidate pending for later review.
+                        {% endif %}
+                    </small>
+                </span>
+            </label>
+        {% endfor %}
+        {% if decision_form.decision.errors %}<div class="field-errors">{{ decision_form.decision.errors }}</div>{% endif %}
+    </fieldset>
+    <div class="field decision-notes-field">
+        {{ decision_form.notes.label_tag }}
+        {{ decision_form.notes }}
+        {% if decision_form.notes.help_text %}<small class="help-text">{{ decision_form.notes.help_text }}</small>{% endif %}
+        {% if decision_form.notes.errors %}<div class="field-errors">{{ decision_form.notes.errors }}</div>{% endif %}
+    </div>
+    <button class="primary-button" type="submit">Save decision</button>
+</form>

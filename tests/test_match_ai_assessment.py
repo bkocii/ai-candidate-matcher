@@ -543,7 +543,9 @@ def test_recruiter_generates_and_reviews_assessment_on_shortlist(client):
     assert "data-page-focus" in content
     assert "confirmation-focus.js" in content
     assert "82/100" in content
-    assert "Matching requirements" in content
+    assert "Matches" in content
+    assert "Gaps" in content
+    assert "Verify" in content
     assert "Candidate evidence: Python: five years" in content
     assert candidate.email not in content
     assert CV_TEXT not in content

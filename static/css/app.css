@@ -2874,6 +2874,236 @@ tbody tr:last-child td {
     line-height: 1.8;
 }
 
+.assessment-review-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 0.58fr);
+    gap: 24px;
+    align-items: start;
+    padding: 24px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: white;
+    box-shadow: var(--shadow);
+}
+
+.assessment-review-content {
+    min-width: 0;
+}
+
+.assessment-summary-compact {
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+}
+
+.assessment-summary-compact .assessment-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.assessment-summary-compact .assessment-heading div {
+    display: grid;
+    justify-items: end;
+}
+
+.assessment-summary-compact .assessment-heading strong {
+    font-size: 1.45rem;
+}
+
+.assessment-summary-compact .assessment-heading small {
+    color: var(--muted);
+}
+
+.review-focus-callout {
+    margin: 18px 0;
+    padding: 16px 18px;
+    border-left: 4px solid var(--primary);
+    border-radius: 0 12px 12px 0;
+    background: var(--accent);
+}
+
+.review-focus-callout h2 {
+    margin: 2px 0 5px;
+    font-size: 1.05rem;
+}
+
+.review-focus-callout p:last-child {
+    margin: 0;
+}
+
+.assessment-empty-finding,
+.profile-exception-list {
+    margin: 0;
+    padding: 14px;
+}
+
+.profile-exception-list ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.decision-surface {
+    position: sticky;
+    top: 24px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface-soft);
+    scroll-margin-top: 24px;
+}
+
+.decision-surface h2 {
+    margin: 2px 0 4px;
+}
+
+.decision-form {
+    display: grid;
+    gap: 16px;
+    margin-top: 18px;
+}
+
+.decision-options {
+    display: grid;
+    gap: 9px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.decision-options legend {
+    margin-bottom: 8px;
+    font-size: 0.88rem;
+    font-weight: 800;
+}
+
+.decision-option-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 11px;
+    align-items: start;
+    padding: 12px;
+    border: 1px solid #bdc9c4;
+    border-radius: 11px;
+    background: white;
+    cursor: pointer;
+}
+
+.decision-option-card:hover,
+.decision-option-card:has(input:checked) {
+    border-color: var(--primary);
+    background: var(--accent);
+}
+
+.decision-option-card:focus-within {
+    outline: 3px solid rgba(23, 107, 82, 0.14);
+    outline-offset: 1px;
+}
+
+.decision-option-card input {
+    width: auto;
+    margin: 3px 0 0;
+    accent-color: var(--primary);
+}
+
+.decision-option-card span {
+    display: grid;
+    gap: 2px;
+}
+
+.decision-option-card small {
+    color: var(--muted);
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.decision-notes-field textarea {
+    min-height: 112px;
+    resize: vertical;
+}
+
+.current-decision-card {
+    margin-top: 16px;
+    padding: 15px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: white;
+}
+
+.current-decision-card p {
+    margin: 12px 0 7px;
+}
+
+.current-decision-card small {
+    color: var(--muted);
+}
+
+.change-decision {
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: white;
+}
+
+.change-decision > summary {
+    padding: 13px 15px;
+    color: var(--primary);
+    cursor: pointer;
+    font-weight: 800;
+}
+
+.change-decision > div {
+    padding: 0 15px 15px;
+    border-top: 1px solid var(--border);
+}
+
+.outreach-lock-note {
+    margin: 16px 0 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+.decision-saved-summary form,
+.decision-saved-summary .button-row {
+    margin: 0;
+}
+
+.review-secondary-sections {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.review-secondary-detail {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: white;
+}
+
+.review-secondary-detail > summary {
+    padding: 14px 16px;
+    color: var(--primary);
+    cursor: pointer;
+    font-weight: 800;
+}
+
+.review-secondary-detail > div {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.review-secondary-detail .decision-list,
+.review-secondary-detail .assessment-history-list {
+    margin-top: 0;
+}
+
+.review-secondary-detail ul {
+    margin-bottom: 0;
+}
+
 .intake-summary {
     margin-bottom: 24px;
 }
@@ -3232,11 +3462,13 @@ tbody tr:last-child td {
 @media (max-width: 900px) {
     .requirements-editor-layout,
     .requirements-field-grid,
-    .requirements-field-grid-three {
+    .requirements-field-grid-three,
+    .assessment-review-workspace {
         grid-template-columns: 1fr;
     }
 
-    .requirements-save-panel {
+    .requirements-save-panel,
+    .decision-surface {
         position: static;
     }
 

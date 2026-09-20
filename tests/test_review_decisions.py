@@ -152,13 +152,28 @@ def test_recruiter_records_individual_decision_and_queue_updates(client):
     pending_queue = client.get(queue_url(organization))
     all_queue = client.get(queue_url(organization, scope="all"))
     content = post_response.content.decode()
+    before_content = detail_before.content.decode()
+    expected_detail_url = detail_url(organization, assessment)
 
     assert get_response.status_code == 405
     assert detail_before.status_code == 200
-    assert "Record individual recruiter decision" in detail_before.content.decode()
+    assert "Your decision" in before_content
+    assert before_content.count('class="decision-option-card"') == 3
+    assert before_content.index('class="decision-options"') < before_content.index(
+        'class="field decision-notes-field"'
+    )
     assert post_response.status_code == 200
+    assert post_response.redirect_chain == [
+        (f"{expected_detail_url}?decision=1#decision-saved", 302)
+    ]
     assert "Decision version 1 was recorded as approve" in content
-    assert "Decision v1" in content
+    assert "Decision saved" in content
+    assert 'id="decision-saved" data-page-focus' in content
+    assert "Current decision · v1" in content
+    assert "Change decision" in content
+    assert "This creates decision v2" in content
+    assert "Generate outreach draft" in content
+    assert 'class="review-secondary-detail"' in content
     assert "The recruiter inspected the supplied evidence" in content
     assert user.username in content
     assert "No assessments in this view" in pending_queue.content.decode()
@@ -166,6 +181,39 @@ def test_recruiter_records_individual_decision_and_queue_updates(client):
     decision = ReviewDecision.objects.get()
     assert decision.created_by == user
     assert decision.assessment == assessment
+
+
+@pytest.mark.parametrize(
+    "decision_value",
+    [ReviewDecision.Decision.REJECTED, ReviewDecision.Decision.REVISIT],
+)
+def test_non_approval_save_focuses_current_state_and_returns_to_queue(
+    client,
+    decision_value,
+):
+    user, organization, _, _, profile, _, _, entry = make_workspace()
+    assessment = create_assessment(user, profile, entry)
+    client.force_login(user)
+
+    response = client.post(
+        decision_url(organization, assessment),
+        {
+            "decision": decision_value,
+            "notes": "The recruiter recorded the individual review outcome.",
+        },
+        follow=True,
+    )
+    content = response.content.decode()
+
+    assert response.redirect_chain == [
+        (f"{detail_url(organization, assessment)}?decision=1#decision-saved", 302)
+    ]
+    assert "Decision saved" in content
+    assert "Back to review queue" in content
+    saved_summary = content.split('id="decision-saved"', 1)[1].split("</section>", 1)[0]
+    assert "Generate outreach draft" not in saved_summary
+    assert "Current decision · v1" in content
+    assert "Change decision" in content
 
 
 def test_decision_on_older_assessment_is_not_carried_to_new_version(client):

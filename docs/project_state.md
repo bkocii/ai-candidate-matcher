@@ -1782,3 +1782,23 @@ Verification: focused extraction/taxonomy/shortlist/assessment/review coverage
 Django system, deployment, static, migration-drift, Ruff, formatting, and
 dependency checks. No live AI request ran. Browser acceptance of the combined
 MT-020 batch is pending.
+
+The user confirmed the combined MT-020 batch on 2026-09-17. The next combined
+batch implements all five Open MT-021 findings. The dedicated assessment page
+now uses one compact review workspace with separate AI and skill signals,
+review focus, expandable Matches/Gaps/Verify evidence, and an adjacent sticky
+decision surface. Approve, Reject, and Revisit are selectable cards with notes
+directly below. After saving, the route focuses a **Decision saved** summary
+showing the immutable current version and the next valid action: outreach draft
+generation after approval or return to the review queue otherwise. The current
+decision replaces the empty primary form; **Change decision** explicitly creates
+the next version. Decision/assessment history and eligible outreach are
+secondary disclosures. Compatible MT-021-U02/U03/C01 proposals were absorbed.
+Sixteen findings remain marked Open; proposals and browser-retest items are
+tracked separately.
+
+Verification: focused assessment/decision/outreach coverage `48 passed`; the
+complete quality gate passed with `616 passed`, successful Django system,
+deployment, static, migration-drift, Ruff, formatting, and dependency checks.
+No live AI request ran. Browser acceptance of the combined MT-021 batch is
+pending.

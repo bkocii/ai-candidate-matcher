@@ -1260,6 +1260,26 @@ Immediate next action: deliver the changed-files package for the combined
 MT-020 batch and wait for browser confirmation. Do not provide a full-project
 ZIP unless requested or needed for a major handoff.
 
+The user confirmed the combined MT-020 batch. The combined MT-021 batch now
+implements U01/V01/V02/U04/U06 and absorbs compatible U02/U03/C01 proposals.
+The assessment detail is one compact decision-focused workspace with expandable
+evidence and a sticky/adjacent decision surface. Decision choices are labelled
+cards with notes immediately below. A successful save redirects to and focuses
+**Decision saved**, showing the immutable current version and either **Generate
+outreach draft** after approval or **Back to review queue** after reject/revisit.
+The saved current decision replaces the open empty form; **Change decision**
+expands the next-version warning and form. History and outreach are secondary
+collapsed sections. Focused assessment/decision/outreach coverage passes with
+`48 passed`; the full quality gate passes with `616 passed`, successful Django
+system/deployment/static/migration checks, Ruff lint/formatting, and dependency
+compatibility. No live AI request ran. Sixteen findings remain Open.
+
+Immediate next action: deliver the changed-files-only MT-021 package and ask for
+one desktop browser recording covering the initial decision page, an approved
+save/landing state, and the collapsed **Change decision** form. After browser
+confirmation, continue with the combined MT-022 outreach batch. Do not provide
+a full-project ZIP unless requested or needed for a major handoff.
+
 Delivery workflow: provide a ZIP containing only changed files with repository-
 relative paths; keep the working project and full project archive updated.
 Include changed testing docs, check commands, and explicit Git add/commit

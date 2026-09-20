@@ -41,152 +41,197 @@
     </section>
 {% endif %}
 
-<section class="assessment-review-summary" id="assessment-review-summary" aria-label="Assessment summary">
-    <div class="assessment-heading">
-        <span class="assessment-light assessment-light-{{ assessment.traffic_light }}">{{ assessment.get_traffic_light_display }}</span>
+{% if decision_saved %}
+    <section class="success-callout confirmation-success decision-saved-summary" id="decision-saved" data-page-focus tabindex="-1" aria-labelledby="decision-saved-title">
         <div>
-            <strong>{{ assessment.score }}/100</strong>
-            <small>AI decision-support score; deterministic score {{ entry.score|floatformat:0 }}%</small>
+            <p class="eyebrow">Decision saved</p>
+            <h2 id="decision-saved-title">{{ current_decision.get_decision_display }} · decision v{{ current_decision.version }}</h2>
+            <p>Your decision is recorded against assessment v{{ assessment.version }}. Later changes create a new immutable version.</p>
+            {% if current_decision.decision == "approved" and not outreach_eligibility.can_generate %}<small>{{ outreach_eligibility.reason }}</small>{% endif %}
+        </div>
+        <div class="button-row">
+            {% if current_decision.decision == "approved" and outreach_eligibility.can_generate %}
+                <form method="post" action="{% url 'outreach:outreach-draft-generate' organization.slug current_decision.pk %}">
+                    {% csrf_token %}
+                    <button class="primary-button" type="submit">Generate outreach draft</button>
+                </form>
+            {% else %}
+                <a class="primary-button" href="{% url 'matching:assessment-review-queue' organization.slug %}">Back to review queue</a>
+            {% endif %}
+        </div>
+    </section>
+{% endif %}
+
+<section class="assessment-review-workspace" id="assessment-review-summary" aria-label="Assessment review workspace">
+    <div class="assessment-review-content">
+        <header class="assessment-summary-compact">
+            <div class="assessment-heading">
+                <span class="assessment-light assessment-light-{{ assessment.traffic_light }}">{{ assessment.get_traffic_light_display }}</span>
+                <div>
+                    <strong>{{ assessment.score }}/100</strong>
+                    <small>AI decision support · skill match {{ entry.score|floatformat:0 }}%</small>
+                </div>
+            </div>
+            <p>{{ assessment.summary }}</p>
+            <div class="review-badges">
+                <span class="review-badge">{{ assessment.matching_requirements|length }} match{{ assessment.matching_requirements|length|pluralize:"es" }}</span>
+                <span class="review-badge">{{ review_item.gap_count }} gap{{ review_item.gap_count|pluralize }}</span>
+                <span class="review-badge">{{ review_item.uncertainty_count }} to verify</span>
+                {% if review_item.profile_ambiguity_count %}<span class="review-badge review-badge-changed">{{ review_item.profile_ambiguity_count }} profile exception{{ review_item.profile_ambiguity_count|pluralize }}</span>{% else %}<span class="review-badge review-badge-routine">No profile exceptions</span>{% endif %}
+                {% if review_item.deterministic_review_needed %}<span class="review-badge review-badge-changed">Unknown hard-filter fact</span>{% endif %}
+            </div>
+        </header>
+
+        <section class="review-focus-callout" aria-labelledby="review-focus-title">
+            <p class="eyebrow">Recruiter review focus</p>
+            <h2 id="review-focus-title">Check before deciding</h2>
+            <p>{{ assessment.review_recommendation }}</p>
+        </section>
+
+        <div class="assessment-finding-groups" aria-label="Evidence-linked assessment findings">
+            <details class="assessment-finding-group">
+                <summary><span>Matches</span><strong>{{ assessment.matching_requirements|length }}</strong></summary>
+                <div>
+                    {% for finding in assessment.matching_requirements %}
+                        <article class="assessment-finding-row">
+                            <strong>{{ finding.requirement_label }}</strong>
+                            <p>{{ finding.explanation }}</p>
+                            <details class="assessment-evidence-detail">
+                                <summary>Source evidence</summary>
+                                <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                                {% for evidence in finding.candidate_evidence %}<small>Candidate evidence: {{ evidence.evidence }}</small>{% endfor %}
+                            </details>
+                        </article>
+                    {% empty %}<p class="assessment-empty-finding">No evidence-backed matches were recorded.</p>{% endfor %}
+                </div>
+            </details>
+            <details class="assessment-finding-group" open>
+                <summary><span>Gaps</span><strong>{{ assessment.gaps|length }}</strong></summary>
+                <div>
+                    {% for finding in assessment.gaps %}
+                        <article class="assessment-finding-row">
+                            <strong>{{ finding.requirement_label }}</strong>
+                            <p>{{ finding.explanation }}</p>
+                            <details class="assessment-evidence-detail">
+                                <summary>Source evidence</summary>
+                                <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                                {% for evidence in finding.candidate_evidence %}<small>Candidate evidence: {{ evidence.evidence }}</small>{% endfor %}
+                            </details>
+                        </article>
+                    {% empty %}<p class="assessment-empty-finding">No proven gaps were recorded.</p>{% endfor %}
+                </div>
+            </details>
+            <details class="assessment-finding-group" open>
+                <summary><span>Verify</span><strong>{{ assessment.uncertainties|length }}</strong></summary>
+                <div>
+                    {% for finding in assessment.uncertainties %}
+                        <article class="assessment-finding-row">
+                            <strong>{{ finding.requirement_label }}</strong>
+                            <p>{{ finding.explanation }}</p>
+                            <details class="assessment-evidence-detail">
+                                <summary>Source evidence</summary>
+                                <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                                {% for evidence in finding.candidate_evidence %}<small>Related candidate evidence: {{ evidence.evidence }}</small>{% endfor %}
+                            </details>
+                        </article>
+                    {% empty %}<p class="assessment-empty-finding">No verification items were recorded.</p>{% endfor %}
+                </div>
+            </details>
+            {% if assessment.candidate_profile.ambiguities %}
+                <details class="assessment-finding-group">
+                    <summary><span>Profile exceptions</span><strong>{{ assessment.candidate_profile.ambiguities|length }}</strong></summary>
+                    <div class="profile-exception-list"><ul>{% for ambiguity in assessment.candidate_profile.ambiguities %}<li>{{ ambiguity }}</li>{% endfor %}</ul></div>
+                </details>
+            {% endif %}
         </div>
     </div>
-    <p>{{ assessment.summary }}</p>
-    <div class="review-badges">
-        <span class="review-badge">{{ review_item.gap_count }} gap{{ review_item.gap_count|pluralize }}</span>
-        <span class="review-badge">{{ review_item.uncertainty_count }} uncertaint{{ review_item.uncertainty_count|pluralize:"y,ies" }}</span>
-        <span class="review-badge">{{ review_item.profile_ambiguity_count }} profile ambiguit{{ review_item.profile_ambiguity_count|pluralize:"y,ies" }}</span>
-        {% if review_item.deterministic_review_needed %}<span class="review-badge">Unknown hard-filter fact</span>{% endif %}
-    </div>
-</section>
 
-<section class="assessment-detail-grid" aria-label="Evidence-linked assessment findings">
-    <div>
-        <h2>Matching requirements</h2>
-        {% for finding in assessment.matching_requirements %}
-            <article class="assessment-finding">
-                <strong>{{ finding.requirement_label }}</strong>
-                <p>{{ finding.explanation }}</p>
-                <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
-                {% for evidence in finding.candidate_evidence %}<small>Candidate evidence: {{ evidence.evidence }}</small>{% endfor %}
-            </article>
-        {% empty %}<p>No evidence-backed matches were recorded.</p>{% endfor %}
-    </div>
-    <div>
-        <h2>Evidence-backed gaps</h2>
-        {% for finding in assessment.gaps %}
-            <article class="assessment-finding">
-                <strong>{{ finding.requirement_label }}</strong>
-                <p>{{ finding.explanation }}</p>
-                <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
-                {% for evidence in finding.candidate_evidence %}<small>Candidate evidence: {{ evidence.evidence }}</small>{% endfor %}
-            </article>
-        {% empty %}<p>No proven gaps were recorded.</p>{% endfor %}
-    </div>
-    <div>
-        <h2>Uncertainties</h2>
-        {% for finding in assessment.uncertainties %}
-            <article class="assessment-finding">
-                <strong>{{ finding.requirement_label }}</strong>
-                <p>{{ finding.explanation }}</p>
-                <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
-                {% for evidence in finding.candidate_evidence %}<small>Related candidate evidence: {{ evidence.evidence }}</small>{% endfor %}
-            </article>
-        {% empty %}<p>No uncertainties were recorded.</p>{% endfor %}
-    </div>
-</section>
-
-<section class="workspace-panel" aria-labelledby="profile-ambiguities-title">
-    <div>
-        <p class="eyebrow">Confirmed reusable profile</p>
-        <h2 id="profile-ambiguities-title">Profile evidence exceptions</h2>
-    </div>
-    {% if assessment.candidate_profile.ambiguities %}
-        <ul>{% for ambiguity in assessment.candidate_profile.ambiguities %}<li>{{ ambiguity }}</li>{% endfor %}</ul>
-    {% else %}
-        <p>No profile ambiguities were recorded.</p>
-    {% endif %}
-</section>
-
-<p class="human-review-note"><strong>Recruiter review focus:</strong> {{ assessment.review_recommendation }}</p>
-
-<section class="decision-panel" aria-labelledby="decision-title">
-    <div>
+    <aside class="decision-surface" id="decision-section" aria-labelledby="decision-title">
         <p class="eyebrow">Human-controlled decision</p>
-        <h2 id="decision-title">Record individual recruiter decision</h2>
-        <p>A saved decision is tied to this exact assessment and cannot be edited. A later correction creates another decision version.</p>
-    </div>
-    {% if decision_eligibility.can_record %}
-        <form method="post" action="{% url 'matching:assessment-review-decide' organization.slug assessment.pk %}">
-            {% csrf_token %}
-            {% include "candidates/_form_fields.html" with form=decision_form %}
-            <button class="primary-button" type="submit">Record decision</button>
-        </form>
-    {% else %}
-        <p class="section-note"><strong>A new decision cannot be recorded from this version:</strong> {{ decision_eligibility.reason }}</p>
-    {% endif %}
+        <h2 id="decision-title">Your decision</h2>
+        <p class="section-note">Saved with this assessment; later changes create a new version.</p>
+        {% if current_decision %}
+            <article class="current-decision-card">
+                <div class="decision-heading">
+                    <span class="decision-state decision-state-{{ current_decision.decision }}">{{ current_decision.get_decision_display }}</span>
+                    <strong>Current decision · v{{ current_decision.version }}</strong>
+                </div>
+                <p>{{ current_decision.notes }}</p>
+                <small>{{ current_decision.created_by.get_username }} · {{ current_decision.created_at|date:"Y-m-d H:i" }}</small>
+            </article>
+            {% if decision_eligibility.can_record %}
+                <details class="change-decision">
+                    <summary>Change decision</summary>
+                    <div>
+                        <p><strong>This creates decision v{{ current_decision.version|add:"1" }}.</strong> The current version remains in the audit history.</p>
+                        {% include "matching/_decision_form.html" %}
+                    </div>
+                </details>
+            {% else %}
+                <p class="section-note"><strong>A new decision cannot be recorded from this version:</strong> {{ decision_eligibility.reason }}</p>
+            {% endif %}
+        {% elif decision_eligibility.can_record %}
+            {% include "matching/_decision_form.html" %}
+        {% else %}
+            <p class="section-note"><strong>A decision cannot be recorded from this version:</strong> {{ decision_eligibility.reason }}</p>
+        {% endif %}
+
+        {% if not outreach_eligibility.can_generate %}
+            <p class="outreach-lock-note"><strong>Outreach locked.</strong> {{ outreach_eligibility.reason }}</p>
+        {% endif %}
+    </aside>
 </section>
 
-<section class="decision-history" aria-labelledby="decision-history-title">
-    <p class="eyebrow">Human decision history</p>
-    <h2 id="decision-history-title">Recruiter decisions</h2>
-    {% if decision_history %}
-        <div class="decision-list">
-            {% for decision in decision_history %}
-                <article>
-                    <div class="decision-heading">
-                        <span class="decision-state decision-state-{{ decision.decision }}">{{ decision.get_decision_display }}</span>
-                        <strong>Decision v{{ decision.version }}</strong>
-                    </div>
-                    <p>{{ decision.notes }}</p>
-                    <small>Assessment v{{ decision.assessment.version }} · {{ decision.created_by.get_username }} · {{ decision.created_at|date:"Y-m-d H:i" }}</small>
-                </article>
+<section class="review-secondary-sections" aria-label="Review history and outreach">
+    {% if outreach_eligibility.can_generate or outreach_history %}
+        <details class="review-secondary-detail">
+            <summary>Outreach {% if outreach_history %}· {{ outreach_history|length }} draft{{ outreach_history|length|pluralize }}{% endif %}</summary>
+            <div>
+                <p>Draft generation is separate from approval and never sends a message automatically.</p>
+                {% if outreach_eligibility.can_generate %}
+                    <form method="post" action="{% url 'outreach:outreach-draft-generate' organization.slug latest_decision.pk %}">
+                        {% csrf_token %}
+                        <button class="secondary-button" type="submit">Generate outreach draft</button>
+                    </form>
+                {% endif %}
+                {% if outreach_history %}
+                    <ul>{% for draft in outreach_history %}<li><a href="{% url 'outreach:outreach-draft-detail' organization.slug draft.pk %}">Draft v{{ draft.version }}</a> · decision v{{ draft.review_decision.version }} · {{ draft.created_by.get_username }} · {{ draft.created_at|date:"Y-m-d H:i" }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+        </details>
+    {% endif %}
+    <details class="review-secondary-detail">
+        <summary>Decision history · {{ decision_history|length }} version{{ decision_history|length|pluralize }}</summary>
+        <div>
+            {% if decision_history %}
+                <div class="decision-list">
+                    {% for decision in decision_history %}
+                        <article>
+                            <div class="decision-heading">
+                                <span class="decision-state decision-state-{{ decision.decision }}">{{ decision.get_decision_display }}</span>
+                                <strong>Decision v{{ decision.version }}</strong>
+                            </div>
+                            <p>{{ decision.notes }}</p>
+                            <small>Assessment v{{ decision.assessment.version }} · {{ decision.created_by.get_username }} · {{ decision.created_at|date:"Y-m-d H:i" }}</small>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}<p>No recruiter decision has been recorded for this shortlist entry.</p>{% endif %}
+        </div>
+    </details>
+    <details class="review-secondary-detail">
+        <summary>Assessment history · {{ assessment_history|length }} version{{ assessment_history|length|pluralize }}</summary>
+        <div class="assessment-history-list">
+            {% for version in assessment_history %}
+                <a href="{% url 'matching:assessment-review-detail' organization.slug version.pk %}">{% if version.pk == assessment.pk %}<strong>{% endif %}Version {{ version.version }} · {{ version.score }}/100 · {{ version.get_traffic_light_display }} · {{ version.created_at|date:"Y-m-d H:i" }}{% if version.pk == assessment.pk %}</strong>{% endif %}</a>
             {% endfor %}
         </div>
-    {% else %}
-        <p>No recruiter decision has been recorded for this shortlist entry.</p>
-    {% endif %}
-</section>
-
-<section class="decision-panel" aria-labelledby="outreach-generation-title">
-    <div>
-        <p class="eyebrow">Separate outreach action</p>
-        <h2 id="outreach-generation-title">Generate an outreach draft</h2>
-        <p>Generation requires the latest explicit approval and current evidence. It creates an inspectable draft only; it does not approve or send a message.</p>
-    </div>
-    {% if outreach_eligibility.can_generate %}
-        <form method="post" action="{% url 'outreach:outreach-draft-generate' organization.slug latest_decision.pk %}">
-            {% csrf_token %}
-            <button class="primary-button" type="submit">Generate outreach draft</button>
-        </form>
-    {% else %}
-        <p class="section-note"><strong>A draft cannot be generated:</strong> {{ outreach_eligibility.reason }}</p>
-    {% endif %}
-    {% if outreach_history %}
-        <ul>
-            {% for draft in outreach_history %}
-                <li><a href="{% url 'outreach:outreach-draft-detail' organization.slug draft.pk %}">Draft v{{ draft.version }}</a> · decision v{{ draft.review_decision.version }} · {{ draft.created_by.get_username }} · {{ draft.created_at|date:"Y-m-d H:i" }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-</section>
-
-<section class="assessment-history" aria-labelledby="assessment-history-title">
-    <p class="eyebrow">Immutable history</p>
-    <h2 id="assessment-history-title">Assessment versions</h2>
-    <ul>
-        {% for version in assessment_history %}
-            <li>
-                {% if version.pk == assessment.pk %}<strong>{% endif %}
-                <a href="{% url 'matching:assessment-review-detail' organization.slug version.pk %}">Version {{ version.version }} · {{ version.score }}/100 · {{ version.get_traffic_light_display }}</a>
-                · {{ version.created_at|date:"Y-m-d H:i" }}
-                {% if version.pk == assessment.pk %}</strong>{% endif %}
-            </li>
-        {% endfor %}
-    </ul>
+    </details>
 </section>
 
 <p class="human-review-note">Decisions do not change deterministic ranking or AI evidence. Outreach draft generation is separate, and no draft is finally approved or sent automatically.</p>
 {% endblock %}
 
 {% block scripts %}
-    {% if assessment_created %}<script src="{% static 'js/confirmation-focus.js' %}" defer></script>{% endif %}
+    {% if assessment_created or decision_saved %}<script src="{% static 'js/confirmation-focus.js' %}" defer></script>{% endif %}
 {% endblock %}
