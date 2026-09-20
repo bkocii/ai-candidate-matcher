@@ -530,13 +530,45 @@ def test_recruiter_generates_and_reviews_assessment_on_shortlist(client):
     assert get_response.status_code == 405
     assert response.status_code == 200
     assert "AI assessment version 1" in content
-    assert "Evidence-based match assessment" in content
+    assessment = MatchAssessment.objects.get()
+    review_url = reverse(
+        "matching:assessment-review-detail",
+        args=[organization.slug, assessment.pk],
+    )
+    assert response.redirect_chain == [
+        (f"{review_url}?created=1#assessment-ready", 302)
+    ]
+    assert "Assessment ready" in content
+    assert "Review assessment" in content
+    assert "data-page-focus" in content
+    assert "confirmation-focus.js" in content
     assert "82/100" in content
     assert "Matching requirements" in content
     assert "Candidate evidence: Python: five years" in content
     assert candidate.email not in content
     assert CV_TEXT not in content
     assert MatchAssessment.objects.count() == 1
+
+    shortlist_response = client.get(
+        reverse(
+            "matching:shortlist-detail",
+            args=[organization.slug, vacancy.pk, run.pk],
+        )
+    )
+    shortlist_content = shortlist_response.content.decode()
+    assert shortlist_response.status_code == 200
+    assert "Skill match" in shortlist_content
+    assert "AI assessment" in shortlist_content
+    assert "82/100 · Green" in shortlist_content
+    assert "Review assessment" in shortlist_content
+    assert "Score evidence" in shortlist_content
+    assert "Matches" in shortlist_content
+    assert "Gaps" in shortlist_content
+    assert "Verify" in shortlist_content
+    assert '<details class="assessment-finding-group" open>' in shortlist_content
+    assert "Assessment history" in shortlist_content
+    assert "Generate new assessment" in shortlist_content
+    assert "Evidence-based match assessment" not in shortlist_content
 
 
 def test_assessment_route_does_not_disclose_cross_organization_data(client):

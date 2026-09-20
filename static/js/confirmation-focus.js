@@ -1,5 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const confirmation = document.querySelector("[data-confirmation-focus]");
+    const confirmation = document.querySelector(
+        "[data-page-focus], [data-confirmation-focus]"
+    );
     if (!confirmation) {
         return;
     }

@@ -1759,3 +1759,26 @@ Verification: focused shortlist/review coverage `22 passed`; the complete
 quality gate passed with `607 passed`, successful Django system, deployment,
 static, migration-drift, Ruff, formatting, and dependency checks. No live AI
 request ran. Browser acceptance of MT-019-V01 is pending.
+
+The user confirmed MT-019-V01 and requested that compatible remaining findings
+be delivered in batches. The 26 Open findings were consolidated into six
+deliveries: MT-020 assessment/shortlist (5), MT-021 decision review (5), MT-022
+outreach (4), MT-023 review queue (5), dashboard/onboarding duplication (6), and
+the candidate-list action bar (1).
+
+The first combined batch implements MT-020-F01/U01/V01/V02/U02. Controlled
+skill aliases now match `pytest`, `automated test suites`, and `test automation`
+to canonical **Automated testing** while retaining conservative unsafe-near-match
+boundaries. The shortlist algorithm advances to v4. The shortlist presents one
+compact candidate summary with separate skill and AI signals, concise counts,
+collapsed score evidence, compact Matches/Gaps/Verify accordions, collapsed
+assessment history, and one primary review action. Successful per-candidate
+assessment generation redirects to a focused success summary on the dedicated
+review page. Twenty-one findings remain marked Open; proposals and implemented
+items awaiting browser retest are tracked separately.
+
+Verification: focused extraction/taxonomy/shortlist/assessment/review coverage
+`86 passed`; the complete quality gate passed with `614 passed`, successful
+Django system, deployment, static, migration-drift, Ruff, formatting, and
+dependency checks. No live AI request ran. Browser acceptance of the combined
+MT-020 batch is pending.

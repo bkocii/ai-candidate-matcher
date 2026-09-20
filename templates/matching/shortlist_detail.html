@@ -70,7 +70,7 @@
 {% if entries %}
     <div class="filter-results">
         {% for entry in entries %}
-            <article class="filter-candidate" id="assessment-entry-{{ entry.pk }}">
+            <article class="filter-candidate shortlist-candidate" id="assessment-entry-{{ entry.pk }}">
                 <header>
                     <div class="shortlist-rank">
                         <span>#{{ entry.rank }}</span>
@@ -85,20 +85,56 @@
                             </h2>
                         </div>
                     </div>
-                    <div class="shortlist-score">
-                        <strong>{{ entry.score|floatformat:0 }}%</strong>
-                        <span>skill match</span>
-                        <span class="filter-outcome filter-outcome-{{ entry.filter_outcome }}">
-                            {% if entry.filter_outcome == "review" %}Needs review{% else %}Passed filters{% endif %}
-                        </span>
-                    </div>
+                    <span class="filter-outcome filter-outcome-{{ entry.filter_outcome }}">
+                        {% if entry.filter_outcome == "review" %}Needs review{% else %}Eligible for scoring{% endif %}
+                    </span>
                 </header>
 
-                <div class="shortlist-match-counts">
-                    <span>Must-have: <strong>{{ entry.matched_must_have }}/{{ entry.total_must_have }}</strong></span>
-                    <span>Nice-to-have: <strong>{{ entry.matched_nice_to_have }}/{{ entry.total_nice_to_have }}</strong></span>
+                <div class="shortlist-signal-grid">
+                    <article>
+                        <span>Skill match</span>
+                        <strong>{{ entry.score|floatformat:0 }}%</strong>
+                        <small>Recorded requirement skills only</small>
+                    </article>
+                    <article>
+                        <span>AI assessment</span>
+                        {% if entry.latest_assessment %}
+                            <strong>{{ entry.latest_assessment.score }}/100 · {{ entry.latest_assessment.get_traffic_light_display }}</strong>
+                            <small>Evidence-linked decision support · v{{ entry.latest_assessment.version }}</small>
+                        {% else %}
+                            <strong>Not assessed</strong>
+                            <small>Separate from skill scoring and eligibility</small>
+                        {% endif %}
+                    </article>
                 </div>
 
+                <div class="shortlist-match-counts">
+                    <span>Must-have <strong>{{ entry.matched_must_have }}/{{ entry.total_must_have }}</strong></span>
+                    <span>Nice-to-have <strong>{{ entry.matched_nice_to_have }}/{{ entry.total_nice_to_have }}</strong></span>
+                    {% if entry.latest_assessment %}
+                        <span>Matches <strong>{{ entry.latest_assessment.matching_requirements|length }}</strong></span>
+                        <span>Gaps <strong>{{ entry.latest_assessment.gaps|length }}</strong></span>
+                        <span>Verify <strong>{{ entry.latest_assessment.uncertainties|length }}</strong></span>
+                    {% endif %}
+                </div>
+
+                <div class="shortlist-primary-action">
+                    {% if entry.latest_assessment %}
+                        <a class="primary-button" href="{% url 'matching:assessment-review-detail' organization.slug entry.latest_assessment.pk %}">Review assessment</a>
+                    {% elif not staleness.is_stale and entry.confirmed_profile %}
+                        <form method="post" action="{% url 'matching:shortlist-assessment-generate' organization.slug vacancy.pk run.pk entry.pk %}">
+                            {% csrf_token %}
+                            <button class="primary-button" type="submit">Generate AI assessment</button>
+                        </form>
+                    {% elif staleness.is_stale %}
+                        <p class="section-note">Generate a current shortlist before requesting an AI assessment.</p>
+                    {% else %}
+                        <p class="section-note">Confirm a structured candidate profile before requesting an AI assessment.</p>
+                    {% endif %}
+                </div>
+
+                <details class="shortlist-detail-disclosure">
+                    <summary>Score evidence · {{ entry.score_breakdown|length }} requirement{{ entry.score_breakdown|length|pluralize }}</summary>
                 {% if entry.score_breakdown %}
                     <div class="table-wrap">
                         <table class="filter-rule-table">
@@ -140,92 +176,87 @@
                 {% else %}
                     <p class="section-note shortlist-empty-score">No normalized skill requirements were recorded, so the deterministic relevance score is 0.00. The candidate remains visible because the hard-filter stage found no explicit failure.</p>
                 {% endif %}
+                </details>
 
-                <section class="assessment-panel" aria-labelledby="assessment-title-{{ entry.pk }}">
-                    <div class="action-heading">
+                {% if entry.latest_assessment %}
+                    <section class="assessment-panel assessment-panel-compact" aria-labelledby="assessment-title-{{ entry.pk }}">
                         <div>
-                            <p class="eyebrow">AI decision support</p>
-                            <h3 id="assessment-title-{{ entry.pk }}">Evidence-based match assessment</h3>
-                            <p class="section-note">The AI score is separate from the deterministic rank and cannot change hard-filter eligibility.</p>
+                            <p class="eyebrow">Latest AI decision support</p>
+                            <h3 id="assessment-title-{{ entry.pk }}">Assessment findings</h3>
                         </div>
-                        {% if not staleness.is_stale and entry.confirmed_profile %}
-                            <form method="post" action="{% url 'matching:shortlist-assessment-generate' organization.slug vacancy.pk run.pk entry.pk %}">
-                                {% csrf_token %}
-                                <button class="secondary-button" type="submit">
-                                    {% if entry.latest_assessment %}Generate new assessment{% else %}Generate AI assessment{% endif %}
-                                </button>
-                            </form>
-                        {% endif %}
-                    </div>
 
-                    {% if staleness.is_stale %}
-                        <p class="section-note">Generate a current deterministic shortlist before requesting another AI assessment.</p>
-                    {% elif not entry.confirmed_profile %}
-                        <p class="section-note">Confirm a structured candidate profile before requesting an AI assessment.</p>
-                    {% endif %}
-
-                    {% for assessment in entry.assessments.all %}
-                        <details class="assessment-version" {% if forloop.first %}open{% endif %}>
-                            <summary>
-                                Assessment v{{ assessment.version }} · {{ assessment.score }}/100 · {{ assessment.get_traffic_light_display }}
-                            </summary>
-                            <div class="assessment-heading">
-                                <span class="assessment-light assessment-light-{{ assessment.traffic_light }}">{{ assessment.get_traffic_light_display }}</span>
+                        <div class="assessment-finding-groups">
+                            <details class="assessment-finding-group">
+                                <summary><span>Matches</span><strong>{{ entry.latest_assessment.matching_requirements|length }}</strong></summary>
                                 <div>
-                                    <strong>{{ assessment.score }}/100</strong>
-                                    <small>Profile v{{ assessment.candidate_profile.version }} · requirements v{{ assessment.requirements.version }} · {{ assessment.created_at|date:"Y-m-d H:i" }}</small>
-                                </div>
-                            </div>
-                            <p>{{ assessment.summary }}</p>
-                            <p><a class="secondary-button" href="{% url 'matching:assessment-review-detail' organization.slug assessment.pk %}">Open assessment review</a></p>
-
-                            <div class="assessment-findings">
-                                <div>
-                                    <h4>Matching requirements</h4>
-                                    {% for finding in assessment.matching_requirements %}
-                                        <article class="assessment-finding">
+                                    {% for finding in entry.latest_assessment.matching_requirements %}
+                                        <article class="assessment-finding-row">
                                             <strong>{{ finding.requirement_label }}</strong>
                                             <p>{{ finding.explanation }}</p>
-                                            <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
-                                            {% for evidence in finding.candidate_evidence %}
-                                                <small>Candidate evidence: {{ evidence.evidence }}</small>
-                                            {% endfor %}
+                                            <details class="assessment-evidence-detail">
+                                                <summary>Source evidence</summary>
+                                                <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                                                {% for evidence in finding.candidate_evidence %}<small>Candidate evidence: {{ evidence.evidence }}</small>{% endfor %}
+                                            </details>
                                         </article>
                                     {% empty %}<p>No evidence-backed matches were recorded.</p>{% endfor %}
                                 </div>
+                            </details>
+
+                            <details class="assessment-finding-group" open>
+                                <summary><span>Gaps</span><strong>{{ entry.latest_assessment.gaps|length }}</strong></summary>
                                 <div>
-                                    <h4>Evidence-backed gaps</h4>
-                                    {% for finding in assessment.gaps %}
-                                        <article class="assessment-finding">
+                                    {% for finding in entry.latest_assessment.gaps %}
+                                        <article class="assessment-finding-row">
                                             <strong>{{ finding.requirement_label }}</strong>
                                             <p>{{ finding.explanation }}</p>
-                                            <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
-                                            {% for evidence in finding.candidate_evidence %}
-                                                <small>Candidate evidence: {{ evidence.evidence }}</small>
-                                            {% endfor %}
+                                            <details class="assessment-evidence-detail">
+                                                <summary>Source evidence</summary>
+                                                <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                                                {% for evidence in finding.candidate_evidence %}<small>Candidate evidence: {{ evidence.evidence }}</small>{% endfor %}
+                                            </details>
                                         </article>
                                     {% empty %}<p>No proven gaps were recorded.</p>{% endfor %}
                                 </div>
+                            </details>
+
+                            <details class="assessment-finding-group" open>
+                                <summary><span>Verify</span><strong>{{ entry.latest_assessment.uncertainties|length }}</strong></summary>
                                 <div>
-                                    <h4>Uncertainties</h4>
-                                    {% for finding in assessment.uncertainties %}
-                                        <article class="assessment-finding">
+                                    {% for finding in entry.latest_assessment.uncertainties %}
+                                        <article class="assessment-finding-row">
                                             <strong>{{ finding.requirement_label }}</strong>
                                             <p>{{ finding.explanation }}</p>
-                                            <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
-                                            {% for evidence in finding.candidate_evidence %}
-                                                <small>Related candidate evidence: {{ evidence.evidence }}</small>
-                                            {% endfor %}
+                                            <details class="assessment-evidence-detail">
+                                                <summary>Source evidence</summary>
+                                                <small>Vacancy evidence: {{ finding.requirement_evidence }}</small>
+                                                {% for evidence in finding.candidate_evidence %}<small>Related candidate evidence: {{ evidence.evidence }}</small>{% endfor %}
+                                            </details>
                                         </article>
-                                    {% empty %}<p>No uncertainties were recorded.</p>{% endfor %}
+                                    {% empty %}<p>No verification items were recorded.</p>{% endfor %}
                                 </div>
+                            </details>
+                        </div>
+
+                        <details class="assessment-history">
+                            <summary>Assessment history · {{ entry.assessments.all|length }} version{{ entry.assessments.all|length|pluralize }}</summary>
+                            <div class="assessment-history-list">
+                                {% for assessment in entry.assessments.all %}
+                                    <a href="{% url 'matching:assessment-review-detail' organization.slug assessment.pk %}">
+                                        Assessment v{{ assessment.version }} · {{ assessment.score }}/100 · {{ assessment.get_traffic_light_display }}
+                                    </a>
+                                {% endfor %}
                             </div>
-                            <p class="human-review-note"><strong>Recruiter review focus:</strong> {{ assessment.review_recommendation }}</p>
+                            {% if not staleness.is_stale and entry.confirmed_profile %}
+                                <p class="section-note">Generating again creates another immutable assessment version and uses AI.</p>
+                                <form method="post" action="{% url 'matching:shortlist-assessment-generate' organization.slug vacancy.pk run.pk entry.pk %}">
+                                    {% csrf_token %}
+                                    <button class="secondary-button" type="submit">Generate new assessment</button>
+                                </form>
+                            {% endif %}
                         </details>
-                    {% empty %}
-                        <p class="section-note">No AI assessment has been requested for this shortlist entry.</p>
-                    {% endfor %}
-                </section>
+                    </section>
+                {% endif %}
             </article>
         {% endfor %}
     </div>

@@ -70,6 +70,10 @@ def make_requirements(
         ("Python-development", "python", "Python"),
         ("Python developer", "python", "Python"),
         ("Django development", "django", "Django"),
+        ("pytest", "automated testing", "Automated testing"),
+        ("automated test suites", "automated testing", "Automated testing"),
+        ("test automation", "automated testing", "Automated testing"),
+        ("manual testing", "manual testing", "manual testing"),
         ("Java", "java", "Java"),
         ("JavaScript", "javascript", "JavaScript"),
     ],
@@ -202,7 +206,73 @@ def test_existing_saved_aliases_match_for_hard_filter_and_shortlist() -> None:
     assert entry.score_breakdown[0]["skill_label"] == "Python development"
     assert entry.score_breakdown[0]["candidate_label"] == "Python"
     assert run.algorithm_version == ALGORITHM_VERSION
-    assert ALGORITHM_VERSION == "deterministic_skill_relevance.v3"
+    assert ALGORITHM_VERSION == "deterministic_skill_relevance.v4"
+
+
+def test_existing_pytest_skill_matches_automated_testing_with_source_evidence() -> None:
+    user, organization = make_workspace()
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Synthetic Test Engineer",
+    )
+    pytest_skill = Skill.objects.create(
+        organization=organization,
+        name="pytest",
+        created_by=user,
+    )
+    CandidateSkill.objects.create(
+        candidate=candidate,
+        skill=pytest_skill,
+        source_label="pytest",
+        evidence="Built automated test suites with pytest.",
+        created_by=user,
+    )
+    requirements = make_requirements(
+        organization=organization,
+        user=user,
+        must_have=["Automated testing"],
+    )
+    sync_requirement_skills(requirements=requirements, user=user)
+    confirm_requirements_draft(requirements=requirements, user=user)
+
+    run = generate_shortlist(requirements=requirements, user=user)
+    entry = run.entries.get()
+
+    assert entry.score == Decimal("100.00")
+    assert entry.matched_must_have == 1
+    assert entry.score_breakdown[0]["candidate_label"] == "pytest"
+    assert (
+        entry.score_breakdown[0]["evidence"]
+        == "Built automated test suites with pytest."
+    )
+    assert run.algorithm_version == "deterministic_skill_relevance.v4"
+
+
+@pytest.mark.parametrize("unsafe_label", ["manual testing", "test management"])
+def test_unsafe_testing_near_matches_score_zero(unsafe_label: str) -> None:
+    user, organization = make_workspace()
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Synthetic Testing Candidate",
+    )
+    assign_candidate_skill(
+        candidate=candidate,
+        user=user,
+        label=unsafe_label,
+        evidence=f"Synthetic CV states {unsafe_label}.",
+    )
+    requirements = make_requirements(
+        organization=organization,
+        user=user,
+        must_have=["Automated testing"],
+    )
+    sync_requirement_skills(requirements=requirements, user=user)
+    confirm_requirements_draft(requirements=requirements, user=user)
+
+    entry = generate_shortlist(requirements=requirements, user=user).entries.get()
+
+    assert entry.score == Decimal("0.00")
+    assert entry.matched_must_have == 0
 
 
 def test_unsafe_near_match_remains_unknown_and_scores_zero() -> None:

@@ -432,6 +432,11 @@ def shortlist_assessment_generate(
             f"AI assessment version {result.assessment.version} was saved as "
             "recruiter decision support.",
         )
+        review_url = reverse(
+            "matching:assessment-review-detail",
+            args=[organization.slug, result.assessment.pk],
+        )
+        return redirect(f"{review_url}?created=1#assessment-ready")
     detail_url = reverse(
         "matching:shortlist-detail",
         args=[organization.slug, vacancy.pk, run.pk],
@@ -553,6 +558,7 @@ def assessment_review_detail(
             "vacancy": assessment.requirements.vacancy,
             "entry": assessment.shortlist_entry,
             "run": assessment.shortlist_entry.match_run,
+            "assessment_created": request.GET.get("created") == "1",
         },
     )
 

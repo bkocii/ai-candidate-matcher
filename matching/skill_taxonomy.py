@@ -29,6 +29,11 @@ _CONTROLLED_SKILL_ALIASES: dict[str, tuple[str, ...]] = {
         "Django development",
         "Django-development",
     ),
+    "Automated testing": (
+        "automated test suites",
+        "pytest",
+        "test automation",
+    ),
 }
 
 

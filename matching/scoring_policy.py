@@ -1,1 +1,1 @@
-ALGORITHM_VERSION = "deterministic_skill_relevance.v3"
+ALGORITHM_VERSION = "deterministic_skill_relevance.v4"

@@ -889,7 +889,7 @@ ran.
 | MT-019-U01 | Improvement | High | The normal path currently requires separate actions/pages for eligibility evaluation, shortlist generation, AI assessment generation, opening assessment review, and recording the recruiter decision. Most of those stages require no routine recruiter input. | Offer one **Create shortlist and assess candidates** action that runs filtering, scoring, and resumable assessment generation in the background. Bring the recruiter directly to an exception-focused review queue when work completes; retain every intermediate report for inspection. | Proposed |
 | MT-019-U02 | Improvement | Medium | The page offers both whole-shortlist assessment and per-candidate assessment actions. For normal runs this makes the recruiter choose an execution method rather than a hiring task. | Make batch assessment the default routine action, label it **Assess shortlisted candidates**, and reserve per-candidate generation for retries or intentional reassessment. | Proposed |
 | MT-019-U03 | Improvement | Medium | After generating the only candidate's assessment, the recruiter must still locate and open a separate assessment review before recording a decision. | For a one-candidate shortlist, redirect directly to its completed assessment review. For larger batches, redirect to the pending review queue with exceptions first. | Proposed |
-| MT-019-V01 | Visual defect | Low | `75.01 of 100` and row values such as `16.67 / 16.67` imply more decision precision than the simple weighting policy supports. | Display the overall score as a rounded whole number or percentage and keep detailed unrounded calculation only in an expandable audit explanation. | Implemented — 2026-09-17; browser retest pending |
+| MT-019-V01 | Visual defect | Low | `75.01 of 100` and row values such as `16.67 / 16.67` imply more decision precision than the simple weighting policy supports. | Display the overall score as a rounded whole number or percentage and keep detailed unrounded calculation only in an expandable audit explanation. | Resolved — user confirmed 2026-09-17 |
 | MT-019-V02 | Improvement | Low | The scoring-method panel and full evidence table make the page long even for one candidate, pushing the next action below the fold. | Keep the candidate summary and next action visible first; collapse calculation details and the full evidence breakdown behind **Show score details** by default. | Proposed |
 
 The MT-019-V01 presentation pass keeps the exact stored score and deterministic
@@ -936,11 +936,11 @@ No live AI request ran.
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-020-F01 | Functional defect | High | Deterministic scoring reports **Automated testing — Not recorded**, but the AI assessment identifies it as a match using explicit candidate evidence for automated test suites and pytest coverage. The saved CV also explicitly states both. The shortlist therefore understates an inspectable must-have match. | Extend the controlled, tested skill taxonomy so unambiguous variants such as `pytest`, `automated test suites`, and `test automation` can match canonical **Automated testing** while preserving original wording/evidence. Bump the shortlist algorithm version and add unsafe-near-match regression tests. | Open |
-| MT-020-U01 | Usability defect | High | After assessment generation, the redirect targets the top of the entire candidate entry. The recruiter lands above the full deterministic evidence table and must scroll to find the newly created AI result. | Redirect and move keyboard focus directly to the new assessment summary or its dedicated review page. Show a concise success state and the primary **Review assessment** action immediately. | Open |
-| MT-020-V01 | Visual defect | High | Candidate rank, deterministic score, seven-row evidence table, AI score, assessment summary, three finding columns, review focus, and version history are stacked into one very long card. Results feel scattered and the next decision is several screens away. | Use one compact candidate row/card showing rank, candidate, eligibility, skill score, AI signal, match/gap/verify counts, and **Review**. Move deterministic evidence and full AI findings into expandable details or the dedicated review page. | Open |
-| MT-020-V02 | Visual defect | Medium | The three assessment columns contain many separate cards with unequal lengths and large blank areas, making related evidence difficult to compare. | Replace them with compact labelled rows or accordions: **Matches (6)**, **Gap (1)**, and **Verify (6)**. Open only the gap and verification summary by default; keep full source evidence one click away. | Open |
-| MT-020-U02 | Usability defect | Medium | The deterministic score and AI score both display approximately `75`, but their different meanings are separated vertically and easy to confuse or interpret as duplicate confirmation. | Show a compact side-by-side summary labelled **Skill match: 75%** and **AI assessment: 75/100 · Green**, with short explanations and no blended total. | Open |
+| MT-020-F01 | Functional defect | High | Deterministic scoring reports **Automated testing — Not recorded**, but the AI assessment identifies it as a match using explicit candidate evidence for automated test suites and pytest coverage. The saved CV also explicitly states both. The shortlist therefore understates an inspectable must-have match. | Extend the controlled, tested skill taxonomy so unambiguous variants such as `pytest`, `automated test suites`, and `test automation` can match canonical **Automated testing** while preserving original wording/evidence. Bump the shortlist algorithm version and add unsafe-near-match regression tests. | Implemented — 2026-09-17; browser retest pending |
+| MT-020-U01 | Usability defect | High | After assessment generation, the redirect targets the top of the entire candidate entry. The recruiter lands above the full deterministic evidence table and must scroll to find the newly created AI result. | Redirect and move keyboard focus directly to the new assessment summary or its dedicated review page. Show a concise success state and the primary **Review assessment** action immediately. | Implemented — 2026-09-17; browser retest pending |
+| MT-020-V01 | Visual defect | High | Candidate rank, deterministic score, seven-row evidence table, AI score, assessment summary, three finding columns, review focus, and version history are stacked into one very long card. Results feel scattered and the next decision is several screens away. | Use one compact candidate row/card showing rank, candidate, eligibility, skill score, AI signal, match/gap/verify counts, and **Review**. Move deterministic evidence and full AI findings into expandable details or the dedicated review page. | Implemented — 2026-09-17; browser retest pending |
+| MT-020-V02 | Visual defect | Medium | The three assessment columns contain many separate cards with unequal lengths and large blank areas, making related evidence difficult to compare. | Replace them with compact labelled rows or accordions: **Matches (6)**, **Gap (1)**, and **Verify (6)**. Open only the gap and verification summary by default; keep full source evidence one click away. | Implemented — 2026-09-17; browser retest pending |
+| MT-020-U02 | Usability defect | Medium | The deterministic score and AI score both display approximately `75`, but their different meanings are separated vertically and easy to confuse or interpret as duplicate confirmation. | Show a compact side-by-side summary labelled **Skill match: 75%** and **AI assessment: 75/100 · Green**, with short explanations and no blended total. | Implemented — 2026-09-17; browser retest pending |
 | MT-020-U03 | Improvement | Medium | **Generate new assessment** is prominent before the existing assessment has been reviewed, while **Open assessment review** is visually secondary. Reassessment creates another immutable AI version and consumes additional AI usage. | Make **Review assessment** the primary action. Move **Generate new assessment** into a secondary menu and explain that it creates a new version and incurs AI usage; require a reason when no input changed. | Proposed |
 
 #### Recommended compact candidate presentation
@@ -949,6 +949,28 @@ No live AI request ran.
 - Expand **Score evidence** only when deterministic details are needed.
 - Expand **Assessment findings** only when reviewing source evidence; keep the dedicated assessment page as the full decision surface.
 - Keep historical versions in a collapsed **History** section rather than the main reading path.
+
+The combined MT-020 batch implements F01/U01/V01/V02/U02. Controlled skill
+identity now maps `pytest`, `automated test suites`, and `test automation` to
+canonical **Automated testing** while leaving unsafe near-matches such as
+`manual testing` and `test management` distinct. The shortlist algorithm is
+version `deterministic_skill_relevance.v4`; stored source wording and evidence
+remain visible.
+
+Each candidate now has a compact summary with eligibility, **Skill match**, **AI
+assessment**, must-have/nice-to-have counts, Matches/Gaps/Verify counts, and one
+primary **Review assessment** action. Score evidence is collapsed. Latest AI
+findings use compact accordions; gaps and verification items start open, while
+source evidence and assessment history remain one click away. Successful
+single-candidate assessment generation redirects to the dedicated review page
+and focuses an **Assessment ready** summary. AI safety, immutable versions,
+ranking, tenant boundaries, and explicit recruiter decisions are unchanged.
+Browser acceptance is pending.
+
+Verification: focused extraction/taxonomy/shortlist/assessment/review coverage
+`86 passed`; the complete quality gate passed with `614 passed`, successful
+Django system, deployment, static, migration-drift, Ruff, formatting, and
+dependency checks. No live AI request ran.
 
 ### MT-021 — Dedicated assessment review and decision form
 

@@ -391,7 +391,7 @@ def test_prompt_extracts_explicit_skills_from_the_complete_cv() -> None:
     assert "automated testing systems" in prompt
 
 
-def test_narrative_skill_is_published_without_inferring_it_from_pytest() -> None:
+def test_narrative_and_pytest_share_one_published_matching_identity() -> None:
     user, _, candidate, document = make_workspace()
     candidate.full_name = "Arben Testi"
     candidate.email = "arben.testi@example.test"
@@ -432,12 +432,10 @@ def test_narrative_skill_is_published_without_inferring_it_from_pytest() -> None
         "Automated testing",
         "pytest",
     }
-    assert set(
-        CandidateSkill.objects.filter(candidate=candidate).values_list(
-            "skill__name",
-            flat=True,
-        )
-    ) == {"Automated testing", "pytest"}
+    published_skill = CandidateSkill.objects.get(candidate=candidate)
+    assert published_skill.skill.name == "Automated testing"
+    assert published_skill.source_label == "Automated testing"
+    assert "automated testing systems" in published_skill.evidence
     assert candidate.full_name not in gateway.calls[0].prompt
     assert candidate.email not in gateway.calls[0].prompt
     assert candidate.phone not in gateway.calls[0].prompt

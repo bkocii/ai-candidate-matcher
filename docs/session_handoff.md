@@ -1241,6 +1241,25 @@ Immediate next action: deliver the changed-files package for MT-019-V01 and wait
 for browser confirmation. Do not provide a full-project ZIP unless requested or
 needed for a major handoff.
 
+The user confirmed MT-019-V01 and asked to combine compatible remaining work.
+The 26 Open findings are now grouped into six deliveries: MT-020 (5), MT-021
+(5), MT-022 (4), MT-023 (5), dashboard/onboarding duplication (6), and the
+candidate-list action bar (1). The first batch implements all five Open MT-020
+findings. Algorithm v4 adds conservative **Automated testing** aliases for
+`pytest`, `automated test suites`, and `test automation`. The shortlist now uses
+a compact candidate summary, side-by-side skill/AI signals, Matches/Gaps/Verify
+counts and accordions, collapsed score evidence/history, and a primary review
+action. Successful assessment generation opens the dedicated review page at a
+focused **Assessment ready** summary. Focused taxonomy/shortlist/assessment/
+review coverage passes with `86 passed`; the complete quality gate passes with
+`614 passed`, successful Django system, deployment, static, migration-drift,
+Ruff, formatting, and dependency checks. No live AI request ran. Package only
+this combined batch. Twenty-one findings remain Open.
+
+Immediate next action: deliver the changed-files package for the combined
+MT-020 batch and wait for browser confirmation. Do not provide a full-project
+ZIP unless requested or needed for a major handoff.
+
 Delivery workflow: provide a ZIP containing only changed files with repository-
 relative paths; keep the working project and full project archive updated.
 Include changed testing docs, check commands, and explicit Git add/commit

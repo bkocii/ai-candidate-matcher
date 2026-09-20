@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Assessment review | {{ entry.candidate.full_name }}{% endblock %}
 
@@ -15,6 +16,17 @@
     </div>
 </section>
 
+{% if assessment_created %}
+    <section class="success-callout confirmation-success" id="assessment-ready" data-page-focus tabindex="-1" aria-labelledby="assessment-ready-title">
+        <div>
+            <p class="eyebrow">Assessment ready</p>
+            <h2 id="assessment-ready-title">Review assessment v{{ assessment.version }}</h2>
+            <p>The evidence-linked result is ready for recruiter review. No hiring decision was made automatically.</p>
+        </div>
+        <a class="primary-button" href="#assessment-review-summary">Review assessment</a>
+    </section>
+{% endif %}
+
 {% if review_item.inputs_changed %}
     <section class="stale-result-callout" role="alert" aria-labelledby="assessment-stale-title">
         <div>
@@ -29,7 +41,7 @@
     </section>
 {% endif %}
 
-<section class="assessment-review-summary" aria-label="Assessment summary">
+<section class="assessment-review-summary" id="assessment-review-summary" aria-label="Assessment summary">
     <div class="assessment-heading">
         <span class="assessment-light assessment-light-{{ assessment.traffic_light }}">{{ assessment.get_traffic_light_display }}</span>
         <div>
@@ -173,4 +185,8 @@
 </section>
 
 <p class="human-review-note">Decisions do not change deterministic ranking or AI evidence. Outreach draft generation is separate, and no draft is finally approved or sent automatically.</p>
+{% endblock %}
+
+{% block scripts %}
+    {% if assessment_created %}<script src="{% static 'js/confirmation-focus.js' %}" defer></script>{% endif %}
 {% endblock %}

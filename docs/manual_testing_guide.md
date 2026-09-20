@@ -908,8 +908,10 @@ Expected result:
   count, and fixed limit of 20.
 - Every must-have skill has two weight units and every nice-to-have skill has one;
   the combined weights are apportioned to exactly `100.00` points.
-- Algorithm v3 matches controlled canonical skill identities while preserving
-  the existing two-to-one weighting and original evidence display.
+- Algorithm v4 matches controlled canonical skill identities while preserving
+  the existing two-to-one weighting and original evidence display. `pytest`,
+  `automated test suites`, and `test automation` match canonical **Automated
+  testing**; `manual testing` and `test management` remain distinct.
 - Candidate headers display the deterministic score as a rounded whole
   percentage. The exact stored decimal remains available only by opening
   **Exact calculation** in a skill row.
@@ -1165,9 +1167,15 @@ Expected result:
 
 - Only that candidate receives **AI assessment version 1**. Other shortlist
   entries remain usable and unchanged.
-- The result shows a separate AI score and application-derived red, amber, or
-  green band, evidence-linked matching requirements, gaps, uncertainties, and a
-  recruiter review focus.
+- Successful generation opens the dedicated assessment review and focuses an
+  **Assessment ready** summary with **Review assessment**. Returning to the
+  shortlist shows one compact candidate card.
+- **Skill match** and **AI assessment** appear side by side with their separate
+  explanations; there is no blended score. The compact card shows match, gap,
+  and verify counts plus one primary **Review assessment** action.
+- **Score evidence** is collapsed. Assessment findings use compact **Matches**,
+  **Gaps**, and **Verify** accordions; gaps and verification start open, while
+  full source evidence remains one click away.
 - Every confirmed requirement appears once in exactly one result group. Matches
   and gaps display candidate evidence from the confirmed profile. Missing support
   is shown as uncertainty rather than an invented fact or automatic rejection.
@@ -1177,8 +1185,9 @@ Expected result:
 - Candidate email/phone, raw CV text, prompt content, provider output, and vacancy
   identity are absent from the assessment display.
 
-Select **Generate new assessment version** for the same candidate. Confirm that
-version 2 is added and version 1 remains inspectable and unchanged.
+Open **Assessment history**, then select **Generate new assessment** for the same
+candidate. Confirm that version 2 is added and version 1 remains inspectable and
+unchanged through its dedicated review link.
 
 To test safeguards:
 
