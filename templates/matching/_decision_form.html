@@ -9,7 +9,7 @@
                 <span>
                     <strong>{{ choice.choice_label }}</strong>
                     <small>
-                        {% if forloop.counter == 1 %}Advance this candidate and enable outreach drafting.
+                        {% if forloop.counter == 1 %}Approve this candidate and prepare an email when contact is allowed.
                         {% elif forloop.counter == 2 %}Close this review without generating outreach.
                         {% else %}Keep this candidate pending for later review.
                         {% endif %}

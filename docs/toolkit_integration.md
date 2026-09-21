@@ -93,11 +93,12 @@ toolkit never sees Django outreach models and never approves or sends a message.
 Generation itself does not edit, finally approve, copy, export, or send.
 
 `OUT-002` completes the application-owned human workflow without another AI
-request. Recruiter edits append immutable draft versions; final approval binds
-the exact subject/body after current-decision, evidence, and recorded contact-
-permission checks; copy and plain-text export are manual audited actions. These
-steps do not call Python AI Toolkit, create AI usage events, select a recipient,
-or send outreach.
+request. Recruiter edits append immutable draft versions. Open-in-email-app,
+copy, and plain-text export each bind approval to the exact current draft after
+current-decision, evidence, recorded-email, and contact-permission checks. The
+email-app handoff uses application-owned `mailto:` construction and records no
+provider delivery. These steps do not call Python AI Toolkit, create AI usage
+events, or send outreach.
 
 ## Application wrapper
 

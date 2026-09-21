@@ -50,10 +50,16 @@
             {% if current_decision.decision == "approved" and not outreach_eligibility.can_generate %}<small>{{ outreach_eligibility.reason }}</small>{% endif %}
         </div>
         <div class="button-row">
-            {% if current_decision.decision == "approved" and outreach_eligibility.can_generate %}
+            {% if current_decision.decision == "approved" and current_outreach_draft %}
+                <a class="primary-button" href="{% url 'outreach:outreach-draft-detail' organization.slug current_outreach_draft.pk %}#email-composer">Review prepared email</a>
+            {% elif current_decision.decision == "approved" and not entry.candidate.email %}
+                <a class="primary-button" href="{% url 'candidates:candidate-edit' organization.slug entry.candidate.pk %}">Add candidate email</a>
+            {% elif current_decision.decision == "approved" and not contact_eligibility.can_proceed %}
+                <a class="primary-button" href="{% url 'candidates:candidate-detail' organization.slug entry.candidate.pk %}#candidate-source-title">Review source and contact</a>
+            {% elif current_decision.decision == "approved" and outreach_eligibility.can_generate %}
                 <form method="post" action="{% url 'outreach:outreach-draft-generate' organization.slug current_decision.pk %}">
                     {% csrf_token %}
-                    <button class="primary-button" type="submit">Generate outreach draft</button>
+                    <button class="primary-button" type="submit">Prepare email</button>
                 </form>
             {% else %}
                 <a class="primary-button" href="{% url 'matching:assessment-review-queue' organization.slug %}">Back to review queue</a>
@@ -176,7 +182,9 @@
             <p class="section-note"><strong>A decision cannot be recorded from this version:</strong> {{ decision_eligibility.reason }}</p>
         {% endif %}
 
-        {% if not outreach_eligibility.can_generate %}
+        {% if current_decision and current_decision.decision == "approved" and not contact_eligibility.can_proceed %}
+            <p class="outreach-lock-note"><strong>Email preparation blocked.</strong> {{ contact_eligibility.reason }}</p>
+        {% elif not outreach_eligibility.can_generate %}
             <p class="outreach-lock-note"><strong>Outreach locked.</strong> {{ outreach_eligibility.reason }}</p>
         {% endif %}
     </aside>
@@ -187,11 +195,13 @@
         <details class="review-secondary-detail">
             <summary>Outreach {% if outreach_history %}· {{ outreach_history|length }} draft{{ outreach_history|length|pluralize }}{% endif %}</summary>
             <div>
-                <p>Draft generation is separate from approval and never sends a message automatically.</p>
-                {% if outreach_eligibility.can_generate %}
+                <p>Approved candidates can have a prepared email reviewed here. Preparing a draft never sends it.</p>
+                {% if current_outreach_draft %}
+                    <a class="secondary-button" href="{% url 'outreach:outreach-draft-detail' organization.slug current_outreach_draft.pk %}#email-composer">Review prepared email</a>
+                {% elif outreach_eligibility.can_generate and contact_eligibility.can_proceed and entry.candidate.email %}
                     <form method="post" action="{% url 'outreach:outreach-draft-generate' organization.slug latest_decision.pk %}">
                         {% csrf_token %}
-                        <button class="secondary-button" type="submit">Generate outreach draft</button>
+                        <button class="secondary-button" type="submit">Prepare email</button>
                     </form>
                 {% endif %}
                 {% if outreach_history %}
@@ -229,7 +239,7 @@
     </details>
 </section>
 
-<p class="human-review-note">Decisions do not change deterministic ranking or AI evidence. Outreach draft generation is separate, and no draft is finally approved or sent automatically.</p>
+<p class="human-review-note">Decisions do not change deterministic ranking or AI evidence. Preparing an email does not send it; opening, copying, or exporting the reviewed version is the explicit final action.</p>
 {% endblock %}
 
 {% block scripts %}

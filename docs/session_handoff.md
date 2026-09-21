@@ -1293,3 +1293,26 @@ deletion, and separate individually approved candidate-decision and outreach
 actions. Resume `DEMO-002` only after the user agrees the manual-review pass is
 ready; direct mailbox sending and other proposals still require explicit scope
 approval.
+
+The user confirmed the combined MT-021 decision-review batch on 2026-09-20.
+The combined MT-022 batch now implements U01/U02/C01/V01 plus the approved first
+stage of F01. Saving an approval prepares an outreach email only when the
+candidate has an email address and recorded contact permission passes. Missing
+email or blocked contact leaves the human decision recorded, creates no unusable
+draft, and shows a correction path. The routine draft page is one composer with
+exact recipient, editable subject/body, compact contact status, and a primary
+**Open in email app** action. Email-app, copy, and export actions repeat
+currentness/contact checks and create the exact-version approval and immutable
+action record. The `mailto:` handoff records actor/time but neither sends nor
+claims delivery. Connected Gmail/Microsoft 365 delivery remains proposed.
+
+Verification: focused decision/outreach/demo/lifecycle coverage passes with
+`52 passed`; the complete quality gate passes with `619 passed`, successful
+Django system/deployment/static/migration checks, Ruff lint/formatting, and
+dependency compatibility. No live AI request ran. Twelve findings remain Open.
+
+Immediate next action: deliver the changed-files-only MT-022 package and ask
+for one desktop browser test covering safe approval-to-composer, inline edit,
+**Open in email app**, and the blocked/missing-email correction state. After
+browser confirmation, continue with the combined MT-023 review-queue batch.
+Do not implement connected mailbox sending without explicit scope approval.

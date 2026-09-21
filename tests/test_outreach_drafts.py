@@ -7,6 +7,7 @@ from pydantic import ValidationError as PydanticValidationError
 from ai_gateway import AIGatewayUnavailableError
 from ai_gateway.testing import FakeAIGateway
 from audit.models import AIUsageEvent
+from candidates.models import CandidateSource
 from candidates.services import delete_candidate, request_candidate_deletion
 from matching.decisions import record_review_decision
 from matching.models import ReviewDecision
@@ -253,9 +254,18 @@ def test_approval_is_rechecked_after_provider_returns():
 @override_settings(
     AI_GATEWAY_FACTORY="tests.test_outreach_drafts.ConfiguredOutreachGateway"
 )
-def test_recruiter_generates_and_inspects_draft_but_cannot_send(client):
+def test_recruiter_generates_and_reviews_email_without_automatic_send(client):
     user, organization, candidate, _, _, _, _, _, assessment, decision = (
         approved_workspace()
+    )
+    CandidateSource.objects.create(
+        candidate=candidate,
+        source_type=CandidateSource.SourceType.MANUAL_ENTRY,
+        source_name="Synthetic permitted source",
+        lawful_basis=CandidateSource.LawfulBasis.LEGITIMATE_INTERESTS,
+        consent_status=CandidateSource.ConsentStatus.NOT_REQUIRED,
+        contact_permission=CandidateSource.ContactPermission.PERMITTED,
+        recorded_by=user,
     )
     client.force_login(user)
 
@@ -265,18 +275,33 @@ def test_recruiter_generates_and_inspects_draft_but_cannot_send(client):
     content = response.content.decode()
 
     assert review.status_code == 200
-    assert "Generate outreach draft" in review.content.decode()
+    assert "Prepare email" in review.content.decode()
     assert get_generate.status_code == 405
     assert response.status_code == 200
     assert "Outreach draft version 1 was generated for review" in content
-    assert "Not finally approved or sent" in content
-    assert "Edit into new version" in content
-    assert "Approve this exact draft" in content
+    assert "Review email" in content
+    assert "Email composer" in content
+    assert "No email is sent automatically" in content
     assert candidate.full_name in content
     assert "Your Python experience may be relevant" in content
-    assert "Send" not in content
+    assert "Send email" not in content
     draft = OutreachDraft.objects.get()
     assert detail_url(organization, draft) in response.redirect_chain[-1][0]
+
+
+@override_settings(
+    AI_GATEWAY_FACTORY="tests.test_outreach_drafts.ConfiguredOutreachGateway"
+)
+def test_routine_generation_route_blocks_unusable_email_draft(client):
+    user, organization, _, _, _, _, _, _, assessment, decision = approved_workspace()
+    client.force_login(user)
+
+    response = client.post(generate_url(organization, decision), follow=True)
+
+    assert response.status_code == 200
+    assert "Record the candidate source" in response.content.decode()
+    assert review_url(organization, assessment) in response.redirect_chain[-1][0]
+    assert not OutreachDraft.objects.exists()
 
 
 def test_cross_organization_access_is_hidden_at_service_and_routes(client):

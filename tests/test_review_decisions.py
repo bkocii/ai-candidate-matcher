@@ -1,13 +1,16 @@
 import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.test import override_settings
 from django.urls import reverse
 
+from candidates.models import CandidateSource
 from candidates.services import delete_candidate, request_candidate_deletion
 from matching.decisions import (
     assess_review_decision_eligibility,
     record_review_decision,
 )
 from matching.models import ReviewDecision
+from outreach.models import OutreachDraft
 from tests.test_match_ai_assessment import make_workspace
 from tests.test_recruiter_review import create_assessment
 
@@ -172,7 +175,8 @@ def test_recruiter_records_individual_decision_and_queue_updates(client):
     assert "Current decision · v1" in content
     assert "Change decision" in content
     assert "This creates decision v2" in content
-    assert "Generate outreach draft" in content
+    assert "Email was not prepared" in content
+    assert "Review source and contact" in content
     assert 'class="review-secondary-detail"' in content
     assert "The recruiter inspected the supplied evidence" in content
     assert user.username in content
@@ -181,6 +185,50 @@ def test_recruiter_records_individual_decision_and_queue_updates(client):
     decision = ReviewDecision.objects.get()
     assert decision.created_by == user
     assert decision.assessment == assessment
+    assert not OutreachDraft.objects.exists()
+
+
+@override_settings(
+    AI_GATEWAY_FACTORY="tests.test_outreach_drafts.ConfiguredOutreachGateway"
+)
+def test_approval_prepares_email_and_opens_focused_composer(client):
+    user, organization, candidate, _, profile, _, _, entry = make_workspace()
+    assessment = create_assessment(user, profile, entry)
+    CandidateSource.objects.create(
+        candidate=candidate,
+        source_type=CandidateSource.SourceType.MANUAL_ENTRY,
+        source_name="Synthetic permitted source",
+        lawful_basis=CandidateSource.LawfulBasis.LEGITIMATE_INTERESTS,
+        consent_status=CandidateSource.ConsentStatus.NOT_REQUIRED,
+        contact_permission=CandidateSource.ContactPermission.PERMITTED,
+        recorded_by=user,
+    )
+    client.force_login(user)
+
+    response = client.post(
+        decision_url(organization, assessment),
+        {
+            "decision": ReviewDecision.Decision.APPROVED,
+            "notes": "The recruiter approved this candidate and prepared an email.",
+        },
+        follow=True,
+    )
+    draft = OutreachDraft.objects.get()
+    draft_url = reverse(
+        "outreach:outreach-draft-detail",
+        args=[organization.slug, draft.pk],
+    )
+    content = response.content.decode()
+
+    assert response.redirect_chain == [(f"{draft_url}?prepared=1#email-composer", 302)]
+    assert "Candidate approved and email draft version 1 prepared" in content
+    assert "Email ready for review" in content
+    assert 'id="email-ready" data-page-focus' in content
+    assert "Email composer" in content
+    assert candidate.email in content
+    assert "Contact allowed" in content
+    assert "Open in email app" in content
+    assert draft.review_decision == ReviewDecision.objects.get()
 
 
 @pytest.mark.parametrize(

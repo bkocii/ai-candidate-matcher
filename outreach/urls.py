@@ -28,6 +28,12 @@ urlpatterns = [
         name="outreach-draft-approve",
     ),
     path(
+        "organizations/<slug:organization_slug>/outreach/drafts/"
+        "<int:draft_id>/email-app/",
+        views.outreach_draft_email_app,
+        name="outreach-draft-email-app",
+    ),
+    path(
         "organizations/<slug:organization_slug>/outreach/drafts/<int:draft_id>/copy/",
         views.outreach_draft_copy,
         name="outreach-draft-copy",

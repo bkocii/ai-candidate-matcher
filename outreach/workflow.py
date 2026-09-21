@@ -60,7 +60,7 @@ def assess_contact_permission(
         return OutreachWorkflowEligibility(
             False,
             "Record the candidate source, reason for storing data, and allowed "
-            "contact before final approval.",
+            "contact before preparing outreach.",
         )
     if any(
         source.consent_status == CandidateSource.ConsentStatus.WITHDRAWN
@@ -68,7 +68,7 @@ def assess_contact_permission(
     ):
         return OutreachWorkflowEligibility(
             False,
-            "Consent is Withdrawn. Final outreach approval is blocked.",
+            "Consent is Withdrawn. Outreach is blocked.",
         )
     if any(
         source.contact_permission == CandidateSource.ContactPermission.WITHDRAWN
@@ -76,7 +76,7 @@ def assess_contact_permission(
     ):
         return OutreachWorkflowEligibility(
             False,
-            "Allowed contact is Do not contact. Final outreach approval is blocked.",
+            "Allowed contact is Do not contact. Outreach is blocked.",
         )
     if any(
         source.contact_permission == CandidateSource.ContactPermission.RESTRICTED
@@ -94,7 +94,7 @@ def assess_contact_permission(
         return OutreachWorkflowEligibility(
             False,
             "Record a Reason for storing data for every candidate source before "
-            "final outreach approval.",
+            "preparing outreach.",
         )
     if any(
         source.lawful_basis == CandidateSource.LawfulBasis.CONSENT
@@ -113,7 +113,7 @@ def assess_contact_permission(
         return OutreachWorkflowEligibility(
             False,
             "At least one candidate source must record Allowed contact as Future "
-            "roles allowed before final outreach approval.",
+            "roles allowed before preparing outreach.",
         )
     return OutreachWorkflowEligibility(True)
 
@@ -150,12 +150,30 @@ def assess_manual_action_eligibility(
     current = _assess_current_draft_boundary(draft=draft, user=user)
     if not current.can_proceed:
         return current
-    if not OutreachDraftApproval.objects.filter(draft=draft).exists():
+    return assess_contact_permission(candidate=draft.shortlist_entry.candidate)
+
+
+def assess_email_app_eligibility(
+    *,
+    draft: OutreachDraft,
+    user: User,
+) -> OutreachWorkflowEligibility:
+    current = assess_manual_action_eligibility(draft=draft, user=user)
+    if not current.can_proceed:
+        return current
+    candidate_email = (
+        Candidate.objects.filter(pk=draft.shortlist_entry.candidate_id)
+        .values_list("email", flat=True)
+        .first()
+        or ""
+    )
+    if not candidate_email.strip():
         return OutreachWorkflowEligibility(
             False,
-            "Approve this exact draft before copying or exporting it.",
+            "Add the candidate's email address before opening this draft in an "
+            "email app.",
         )
-    return assess_contact_permission(candidate=draft.shortlist_entry.candidate)
+    return OutreachWorkflowEligibility(True)
 
 
 def _load_locked_draft(draft: OutreachDraft) -> OutreachDraft:
@@ -236,15 +254,29 @@ def record_outreach_draft_action(
     user: User,
     action_type: str,
 ) -> OutreachDraftAction:
-    """Record one manual copy/export action for an exact approved current draft."""
+    """Approve and record one explicit external-use action for the exact draft."""
     require_organization_object_access(user, draft)
     valid_actions = {value for value, _label in OutreachDraftAction.ActionType.choices}
     if action_type not in valid_actions:
         raise ValidationError("Select a supported outreach draft action.")
     draft = _load_locked_draft(draft)
-    eligibility = assess_manual_action_eligibility(draft=draft, user=user)
+    if action_type == OutreachDraftAction.ActionType.EMAIL_APP:
+        eligibility = assess_email_app_eligibility(draft=draft, user=user)
+    else:
+        eligibility = assess_manual_action_eligibility(draft=draft, user=user)
     if not eligibility.can_proceed:
         raise ValidationError(eligibility.reason)
+    if not OutreachDraftApproval.objects.filter(draft=draft).exists():
+        action_label = OutreachDraftAction.ActionType(action_type).label
+        OutreachDraftApproval.objects.create(
+            draft=draft,
+            notes=(
+                f"Approved through the {action_label} action after automatic "
+                "currentness and contact checks."
+            ),
+            contact_permission_confirmed=True,
+            approved_by=user,
+        )
     return OutreachDraftAction.objects.create(
         draft=draft,
         action_type=action_type,

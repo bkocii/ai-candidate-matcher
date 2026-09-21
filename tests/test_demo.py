@@ -139,7 +139,7 @@ def test_demo_pages_are_real_tenant_scoped_workflow_views(client, tmp_path):
                 "outreach:outreach-draft-detail",
                 args=[organization.slug, draft.pk],
             ),
-            "Final approval is unavailable",
+            "Email use blocked",
         ),
     )
     for route, expected_text in routes_and_text:

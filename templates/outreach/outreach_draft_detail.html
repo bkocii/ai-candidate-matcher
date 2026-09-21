@@ -1,149 +1,207 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Outreach draft | {{ candidate.full_name }}{% endblock %}
+{% block title %}Review email | {{ candidate.full_name }}{% endblock %}
 
 {% block content %}
 <section class="page-heading action-heading" aria-labelledby="outreach-draft-title">
     <div>
-        <p class="eyebrow">{{ draft.get_creation_method_display }} outreach · {{ vacancy.title }}</p>
-        <h1 id="outreach-draft-title">Draft v{{ draft.version }} for {{ candidate.full_name }}</h1>
-        <p class="lede">Created by {{ draft.created_by.get_username }} on {{ draft.created_at|date:"Y-m-d H:i" }} from approved decision v{{ draft.review_decision.version }}{% if draft.parent_draft %}, based on draft v{{ draft.parent_draft.version }}{% endif %}.</p>
+        <p class="eyebrow">Prepared email · {{ vacancy.title }}</p>
+        <h1 id="outreach-draft-title">Review email for {{ candidate.full_name }}</h1>
+        <p class="lede">Draft v{{ draft.version }} · {{ draft.get_creation_method_display }} · decision v{{ draft.review_decision.version }} · {{ draft.created_by.get_username }} · {{ draft.created_at|date:"Y-m-d H:i" }}</p>
     </div>
-    <div class="button-row">
-        {% if edit_eligibility.can_proceed %}
-            <a class="secondary-button" href="{% url 'outreach:outreach-draft-edit' organization.slug draft.pk %}">Edit into new version</a>
-        {% endif %}
-        <a class="secondary-button" href="{% url 'matching:assessment-review-detail' organization.slug draft.review_decision.assessment.pk %}">Back to assessment review</a>
-    </div>
+    <a class="secondary-button" href="{% url 'matching:assessment-review-detail' organization.slug draft.review_decision.assessment.pk %}">Back to assessment review</a>
 </section>
 
-{% if approval %}
-    <section class="success-callout" role="status" aria-labelledby="outreach-boundary-title">
+{% if composer_focus %}
+    <section class="success-callout confirmation-success" id="email-ready" data-page-focus tabindex="-1" aria-labelledby="email-ready-title">
         <div>
-            <p class="eyebrow">Exact draft approved</p>
-            <h2 id="outreach-boundary-title">Final approval recorded — nothing was sent</h2>
-            <p>Approved by {{ approval.approved_by.get_username }} on {{ approval.approved_at|date:"Y-m-d H:i" }}. Approval applies only to draft v{{ draft.version }}.</p>
-            <p><strong>Approval notes:</strong> {{ approval.notes }}</p>
+            <p class="eyebrow">Email ready for review</p>
+            <h2 id="email-ready-title">Check the recipient and wording</h2>
+            <p>Nothing has been sent. Opening, copying, or exporting this exact saved version is the final recruiter-controlled action.</p>
         </div>
-    </section>
-{% else %}
-    <section class="stale-result-callout" role="status" aria-labelledby="outreach-boundary-title">
-        <div>
-            <p class="eyebrow">Human approval required</p>
-            <h2 id="outreach-boundary-title">Not finally approved or sent</h2>
-            <p>This exact subject and body must receive separate final recruiter approval before copy or export is available.</p>
-        </div>
+        <a class="primary-button" href="#email-composer">Review email</a>
     </section>
 {% endif %}
 
-<section class="workspace-panel outreach-message" aria-labelledby="outreach-message-title">
-    <p class="eyebrow">Subject</p>
-    <h2 id="outreach-message-title">{{ draft.subject }}</h2>
-    <p class="outreach-body">{{ draft.body }}</p>
-</section>
+<section class="outreach-composer" id="email-composer" aria-labelledby="email-composer-title">
+    <header class="outreach-composer-header">
+        <div>
+            <p class="eyebrow">Email composer</p>
+            <h2 id="email-composer-title">Recipient and message</h2>
+        </div>
+        {% if approval %}<span class="review-badge review-badge-routine">Exact version approved</span>{% else %}<span class="review-badge">Review required</span>{% endif %}
+    </header>
 
-<section class="workspace-panel outreach-permission" aria-labelledby="outreach-permission-title">
-    <div>
-        <p class="eyebrow">Contact safety check</p>
-        <h2 id="outreach-permission-title">Recorded source and contact basis</h2>
-        <p class="section-note">Final approval and later copy/export require a recorded reason for storing data, valid consent when consent is that reason, and Future roles allowed. Application only, Do not contact, or withdrawn consent blocks this rediscovery outreach.</p>
+    <div class="outreach-recipient-row">
+        <span>To</span>
+        {% if candidate.email %}<strong>{{ candidate.email }}</strong>{% else %}<strong class="text-danger">No email recorded</strong>{% endif %}
     </div>
-    {% if candidate_sources %}
-        <ul class="permission-list">
-            {% for source in candidate_sources %}
-                <li><strong>{{ source.source_name }}</strong> · Allowed contact: {{ source.recruiter_contact_permission }} · Consent: {{ source.recruiter_consent_status }} · Reason for storing data: {{ source.recruiter_lawful_basis }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No candidate provenance record is available.</p>
-    {% endif %}
-</section>
 
-<section class="decision-panel" aria-labelledby="outreach-final-approval-title">
-    <div>
-        <p class="eyebrow">Separate human action</p>
-        <h2 id="outreach-final-approval-title">Approve this exact draft</h2>
-        <p>Approval is immutable and applies only to draft v{{ draft.version }}. Editing later creates a new version that needs new approval.</p>
-    </div>
-    {% if approval %}
-        <p class="section-note">This exact version is already finally approved.</p>
-    {% elif approval_eligibility.can_proceed %}
-        <form method="post" action="{% url 'outreach:outreach-draft-approve' organization.slug draft.pk %}">
-            {% csrf_token %}
-            {% include "candidates/_form_fields.html" with form=approval_form %}
-            <button class="primary-button" type="submit">Approve exact draft</button>
-        </form>
-    {% else %}
-        <p class="section-note"><strong>Final approval is unavailable:</strong> {{ approval_eligibility.reason }}</p>
-    {% endif %}
-</section>
-
-<section class="decision-panel" aria-labelledby="outreach-manual-actions-title">
-    <div>
-        <p class="eyebrow">Manual use only</p>
-        <h2 id="outreach-manual-actions-title">Copy or export approved text</h2>
-        <p>The application records the acting recruiter and time. It does not choose a recipient, open an email client, or send a message.</p>
-        <p id="copy-status" class="section-note" role="status" aria-live="polite"></p>
-    </div>
-    {% if action_eligibility.can_proceed %}
-        <div class="outreach-action-buttons">
-            <form id="outreach-copy-form" method="post" action="{% url 'outreach:outreach-draft-copy' organization.slug draft.pk %}">
-                {% csrf_token %}
-                <button id="outreach-copy-button" class="primary-button" type="button">Copy approved draft</button>
-            </form>
-            <form method="post" action="{% url 'outreach:outreach-draft-export' organization.slug draft.pk %}">
-                {% csrf_token %}
-                <button class="secondary-button" type="submit">Export approved .txt</button>
-            </form>
+    {% if contact_eligibility.can_proceed %}
+        <div class="outreach-safety-strip outreach-safety-allowed" role="status">
+            <strong>Contact allowed</strong>
+            <span>{{ lawful_basis_summary|default:"Reason recorded" }}</span>
+            <span>Consent: {{ consent_summary|default:"Recorded" }}</span>
         </div>
     {% else %}
-        <p class="section-note"><strong>Copy and export are unavailable:</strong> {{ action_eligibility.reason }}</p>
+        <div class="outreach-safety-blocker" role="alert">
+            <div>
+                <strong>Email use blocked</strong>
+                <p>{{ contact_eligibility.reason }}</p>
+            </div>
+            <a class="secondary-button" href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}#candidate-source-title">Review source and contact</a>
+        </div>
     {% endif %}
-</section>
 
-<section class="decision-history" aria-labelledby="outreach-action-history-title">
-    <p class="eyebrow">Manual action history</p>
-    <h2 id="outreach-action-history-title">Copy and export events for this version</h2>
-    {% if action_history %}
-        <ul>
-            {% for action in action_history %}
-                <li>{{ action.get_action_type_display }} · {{ action.actor.get_username }} · {{ action.created_at|date:"Y-m-d H:i" }}</li>
-            {% endfor %}
-        </ul>
+    {% if not candidate.email %}
+        <div class="outreach-safety-blocker" role="alert">
+            <div>
+                <strong>Recipient missing</strong>
+                <p>Add the candidate's recorded email address before opening this message in an email app.</p>
+            </div>
+            <a class="secondary-button" href="{% url 'candidates:candidate-edit' organization.slug candidate.pk %}">Add candidate email</a>
+        </div>
+    {% endif %}
+
+    <details class="outreach-safety-details">
+        <summary>Contact-safety details · {{ candidate_sources|length }} source{{ candidate_sources|length|pluralize }}</summary>
+        <div>
+            {% if candidate_sources %}
+                <ul class="permission-list">
+                    {% for source in candidate_sources %}
+                        <li><strong>{{ source.source_name }}</strong> · Allowed contact: {{ source.recruiter_contact_permission }} · Consent: {{ source.recruiter_consent_status }} · Reason: {{ source.recruiter_lawful_basis }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}<p>No candidate source record is available.</p>{% endif %}
+        </div>
+    </details>
+
+    {% if edit_eligibility.can_proceed %}
+        <form class="outreach-composer-form" id="outreach-composer-form" method="post" action="{% url 'outreach:outreach-draft-edit' organization.slug draft.pk %}">
+            {% csrf_token %}
+            <div class="field">
+                {{ edit_form.subject.label_tag }}
+                {{ edit_form.subject }}
+                {% if edit_form.subject.help_text %}<small class="help-text">{{ edit_form.subject.help_text }}</small>{% endif %}
+            </div>
+            <div class="field">
+                {{ edit_form.body.label_tag }}
+                {{ edit_form.body }}
+                {% if edit_form.body.help_text %}<small class="help-text">{{ edit_form.body.help_text }}</small>{% endif %}
+            </div>
+            <div class="outreach-save-row">
+                <button class="secondary-button" type="submit">Save changes as new version</button>
+                <span id="outreach-unsaved-status" class="section-note" role="status" aria-live="polite">Draft v{{ draft.version }} is the current saved version.</span>
+            </div>
+        </form>
     {% else %}
-        <p>No copy or export action has been recorded for this version.</p>
+        <div class="outreach-readonly-message">
+            <div><span>Subject</span><strong>{{ draft.subject }}</strong></div>
+            <p class="outreach-body">{{ draft.body }}</p>
+            <p class="section-note">{{ edit_eligibility.reason }}</p>
+        </div>
     {% endif %}
+
+    <div class="outreach-final-actions" aria-labelledby="outreach-final-action-title">
+        <div>
+            <p class="eyebrow">Final action</p>
+            <h3 id="outreach-final-action-title">Use this exact saved email</h3>
+            <p>Each action rechecks the decision and contact basis, approves draft v{{ draft.version }}, and records the recruiter and time. Opening an email app does not confirm delivery.</p>
+            <p id="outreach-action-status" class="section-note" role="status" aria-live="polite"></p>
+        </div>
+        {% if email_app_eligibility.can_proceed %}
+            <form id="outreach-email-app-form" method="post" action="{% url 'outreach:outreach-draft-email-app' organization.slug draft.pk %}">
+                {% csrf_token %}
+                <button id="outreach-email-app-button" class="primary-button" data-external-action type="button">Open in email app</button>
+            </form>
+        {% else %}
+            <p class="section-note"><strong>Open in email app is unavailable:</strong> {{ email_app_eligibility.reason }}</p>
+        {% endif %}
+    </div>
+
+    <details class="outreach-more-actions">
+        <summary>More options</summary>
+        <div>
+            {% if action_eligibility.can_proceed %}
+                <div class="outreach-action-buttons">
+                    <form id="outreach-copy-form" method="post" action="{% url 'outreach:outreach-draft-copy' organization.slug draft.pk %}">
+                        {% csrf_token %}
+                        <button id="outreach-copy-button" class="secondary-button" data-external-action type="button">Copy email</button>
+                    </form>
+                    <form method="post" action="{% url 'outreach:outreach-draft-export' organization.slug draft.pk %}">
+                        {% csrf_token %}
+                        <button class="secondary-button" data-external-action type="submit">Export .txt</button>
+                    </form>
+                </div>
+            {% else %}<p class="section-note">{{ action_eligibility.reason }}</p>{% endif %}
+        </div>
+    </details>
 </section>
 
-<section class="assessment-history" aria-labelledby="outreach-history-title">
-    <p class="eyebrow">Immutable history</p>
-    <h2 id="outreach-history-title">Outreach draft versions</h2>
-    <ul>
-        {% for version in history %}
-            <li>
-                {% if version.pk == draft.pk %}<strong>{% endif %}
-                <a href="{% url 'outreach:outreach-draft-detail' organization.slug version.pk %}">Draft v{{ version.version }} · {{ version.get_creation_method_display }} · decision v{{ version.review_decision.version }}</a>
-                · {{ version.created_by.get_username }} · {{ version.created_at|date:"Y-m-d H:i" }}
-                {% if version.final_approval %}· finally approved{% endif %}
-                {% if version.pk == draft.pk %}</strong>{% endif %}
-            </li>
-        {% endfor %}
-    </ul>
+<section class="review-secondary-sections" aria-label="Email audit and version history">
+    <details class="review-secondary-detail">
+        <summary>Action history · {{ action_history|length }} event{{ action_history|length|pluralize }}</summary>
+        <div>
+            {% if action_history %}
+                <ul>{% for action in action_history %}<li>{{ action.get_action_type_display }} · {{ action.actor.get_username }} · {{ action.created_at|date:"Y-m-d H:i" }}</li>{% endfor %}</ul>
+            {% else %}<p>No external-use action has been recorded for this version.</p>{% endif %}
+        </div>
+    </details>
+    <details class="review-secondary-detail">
+        <summary>Draft history · {{ history|length }} version{{ history|length|pluralize }}</summary>
+        <div class="assessment-history-list">
+            {% for version in history %}
+                <a href="{% url 'outreach:outreach-draft-detail' organization.slug version.pk %}">{% if version.pk == draft.pk %}<strong>{% endif %}Draft v{{ version.version }} · {{ version.get_creation_method_display }} · decision v{{ version.review_decision.version }} · {{ version.created_by.get_username }} · {{ version.created_at|date:"Y-m-d H:i" }}{% if version.final_approval %} · approved{% endif %}{% if version.pk == draft.pk %}</strong>{% endif %}</a>
+            {% endfor %}
+        </div>
+    </details>
 </section>
 
-<p class="human-review-note">No outreach is sent automatically. Copy/export exposes only the exact finally approved text for manual use outside the application.</p>
+<p class="human-review-note">No email is sent automatically. <strong>Open in email app</strong> records only a handoff to the recruiter's configured email application; it does not claim delivery.</p>
+{% endblock %}
 
-{% if action_eligibility.can_proceed %}
+{% block scripts %}
+{% if composer_focus %}<script src="{% static 'js/confirmation-focus.js' %}" defer></script>{% endif %}
+{% if action_eligibility.can_proceed or email_app_eligibility.can_proceed %}
 <script>
     (() => {
-        const form = document.getElementById("outreach-copy-form");
-        const button = document.getElementById("outreach-copy-button");
-        const status = document.getElementById("copy-status");
-        const csrfToken = form.querySelector("input[name='csrfmiddlewaretoken']").value;
+        const composer = document.getElementById("outreach-composer-form");
+        const unsavedStatus = document.getElementById("outreach-unsaved-status");
+        const actionStatus = document.getElementById("outreach-action-status");
+        const externalButtons = document.querySelectorAll("[data-external-action]");
+        const initialValues = composer ? new FormData(composer) : null;
 
-        const fallbackCopy = (text) => {
+        const setDirtyState = () => {
+            if (!composer || !initialValues) return;
+            const current = new FormData(composer);
+            const dirty = ["subject", "body"].some((name) => current.get(name) !== initialValues.get(name));
+            externalButtons.forEach((button) => { button.disabled = dirty; });
+            unsavedStatus.textContent = dirty
+                ? "Save these changes before using the email externally."
+                : "Draft v{{ draft.version }} is the current saved version.";
+        };
+
+        if (composer) composer.addEventListener("input", setDirtyState);
+
+        const postAction = async (form) => {
+            const csrfToken = form.querySelector("input[name='csrfmiddlewaretoken']").value;
+            const response = await fetch(form.action, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "X-CSRFToken": csrfToken,
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || "action_failed");
+            return result;
+        };
+
+        const fallbackCopy = (value) => {
             const textarea = document.createElement("textarea");
-            textarea.value = text;
+            textarea.value = value;
             textarea.setAttribute("readonly", "");
             textarea.style.position = "fixed";
             textarea.style.opacity = "0";
@@ -154,32 +212,43 @@
             if (!copied) throw new Error("copy_failed");
         };
 
-        button.addEventListener("click", async () => {
-            button.disabled = true;
-            status.textContent = "Rechecking and copying approved draft…";
-            try {
-                const response = await fetch(form.action, {
-                    method: "POST",
-                    credentials: "same-origin",
-                    headers: {
-                        "X-CSRFToken": csrfToken,
-                        "X-Requested-With": "XMLHttpRequest"
-                    }
-                });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.error || "record_failed");
-                if (navigator.clipboard && window.isSecureContext) {
-                    await navigator.clipboard.writeText(result.copy_text);
-                } else {
-                    fallbackCopy(result.copy_text);
+        const emailForm = document.getElementById("outreach-email-app-form");
+        const emailButton = document.getElementById("outreach-email-app-button");
+        if (emailForm && emailButton) {
+            emailButton.addEventListener("click", async () => {
+                emailButton.disabled = true;
+                actionStatus.textContent = "Rechecking the saved email and contact basis…";
+                try {
+                    const result = await postAction(emailForm);
+                    actionStatus.textContent = "Email-app handoff recorded. Delivery is not confirmed.";
+                    window.location.href = result.mailto_url;
+                } catch (error) {
+                    actionStatus.textContent = "The email app could not be opened. Nothing was sent.";
+                    emailButton.disabled = false;
                 }
-                status.textContent = "Approved subject and body copied. The manual copy action was recorded.";
-            } catch (error) {
-                status.textContent = "Copy could not be completed. Nothing was sent; refresh to inspect action history.";
-            } finally {
-                button.disabled = false;
-            }
-        });
+            });
+        }
+
+        const copyForm = document.getElementById("outreach-copy-form");
+        const copyButton = document.getElementById("outreach-copy-button");
+        if (copyForm && copyButton) {
+            copyButton.addEventListener("click", async () => {
+                copyButton.disabled = true;
+                actionStatus.textContent = "Rechecking and copying the saved email…";
+                try {
+                    const result = await postAction(copyForm);
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(result.copy_text);
+                    } else {
+                        fallbackCopy(result.copy_text);
+                    }
+                    actionStatus.textContent = "Email copied and the exact-version action recorded.";
+                } catch (error) {
+                    actionStatus.textContent = "Copy could not be completed. Nothing was sent.";
+                    copyButton.disabled = false;
+                }
+            });
+        }
     })();
 </script>
 {% endif %}

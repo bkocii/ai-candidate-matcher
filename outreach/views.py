@@ -1,8 +1,11 @@
+from urllib.parse import quote, urlencode
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from ai_gateway import AIGatewayError
@@ -13,8 +16,9 @@ from outreach.generation import generate_outreach_draft
 from outreach.models import OutreachDraft, OutreachDraftAction
 from outreach.workflow import (
     approve_outreach_draft,
+    assess_contact_permission,
     assess_draft_edit_eligibility,
-    assess_final_approval_eligibility,
+    assess_email_app_eligibility,
     assess_manual_action_eligibility,
     edit_outreach_draft,
     record_outreach_draft_action,
@@ -59,6 +63,25 @@ def outreach_draft_generate(request, organization_slug: str, decision_id: int):
         pk=decision_id,
         shortlist_entry__match_run__requirements__vacancy__deleted_at__isnull=True,
     )
+    candidate = decision.shortlist_entry.candidate
+    contact_eligibility = assess_contact_permission(candidate=candidate)
+    if not candidate.email.strip():
+        messages.error(
+            request,
+            "Add the candidate's email address before preparing an email draft.",
+        )
+        return redirect(
+            "matching:assessment-review-detail",
+            organization_slug=organization.slug,
+            assessment_id=decision.assessment_id,
+        )
+    if not contact_eligibility.can_proceed:
+        messages.error(request, contact_eligibility.reason)
+        return redirect(
+            "matching:assessment-review-detail",
+            organization_slug=organization.slug,
+            assessment_id=decision.assessment_id,
+        )
     try:
         result = generate_outreach_draft(decision=decision, user=request.user)
     except (AIGatewayError, ValidationError) as error:
@@ -110,13 +133,23 @@ def outreach_draft_detail(request, organization_slug: str, draft_id: int):
         draft=draft,
         user=request.user,
     )
-    approval_eligibility = assess_final_approval_eligibility(
-        draft=draft,
-        user=request.user,
-    )
     action_eligibility = assess_manual_action_eligibility(
         draft=draft,
         user=request.user,
+    )
+    email_app_eligibility = assess_email_app_eligibility(
+        draft=draft,
+        user=request.user,
+    )
+    contact_eligibility = assess_contact_permission(
+        candidate=draft.shortlist_entry.candidate
+    )
+    candidate_sources = list(draft.shortlist_entry.candidate.sources.all())
+    lawful_basis_summary = ", ".join(
+        dict.fromkeys(source.recruiter_lawful_basis for source in candidate_sources)
+    )
+    consent_summary = ", ".join(
+        dict.fromkeys(source.recruiter_consent_status for source in candidate_sources)
     )
     response = render(
         request,
@@ -127,13 +160,22 @@ def outreach_draft_detail(request, organization_slug: str, draft_id: int):
             "history": history,
             "candidate": draft.shortlist_entry.candidate,
             "vacancy": draft.shortlist_entry.match_run.requirements.vacancy,
-            "candidate_sources": draft.shortlist_entry.candidate.sources.all(),
+            "candidate_sources": candidate_sources,
             "approval": approval,
-            "approval_form": OutreachDraftApprovalForm(),
+            "edit_form": OutreachDraftEditForm(
+                initial={"subject": draft.subject, "body": draft.body}
+            ),
             "action_history": action_history,
             "edit_eligibility": edit_eligibility,
-            "approval_eligibility": approval_eligibility,
             "action_eligibility": action_eligibility,
+            "email_app_eligibility": email_app_eligibility,
+            "contact_eligibility": contact_eligibility,
+            "lawful_basis_summary": lawful_basis_summary,
+            "consent_summary": consent_summary,
+            "composer_focus": (
+                request.GET.get("prepared") == "1"
+                or request.GET.get("edited") == str(draft.version)
+            ),
         },
     )
     response["Cache-Control"] = "private, no-store"
@@ -174,11 +216,11 @@ def outreach_draft_edit(request, organization_slug: str, draft_id: int):
                 request,
                 f"Outreach draft version {edited.version} was saved for final review.",
             )
-            return redirect(
+            detail_url = reverse(
                 "outreach:outreach-draft-detail",
-                organization_slug=organization.slug,
-                draft_id=edited.pk,
+                args=[organization.slug, edited.pk],
             )
+            return redirect(f"{detail_url}?edited={edited.version}#email-composer")
     response = render(
         request,
         "outreach/outreach_draft_form.html",
@@ -255,6 +297,35 @@ def outreach_draft_copy(request, organization_slug: str, draft_id: int):
             {
                 "recorded": True,
                 "copy_text": f"Subject: {draft.subject}\n\n{draft.body}",
+            }
+        )
+    response["Cache-Control"] = "private, no-store"
+    return response
+
+
+@login_required
+@require_POST
+def outreach_draft_email_app(request, organization_slug: str, draft_id: int):
+    _organization, draft = _organization_and_draft(
+        request,
+        organization_slug,
+        draft_id,
+    )
+    try:
+        record_outreach_draft_action(
+            draft=draft,
+            user=request.user,
+            action_type=OutreachDraftAction.ActionType.EMAIL_APP,
+        )
+    except ValidationError as error:
+        response = JsonResponse({"error": _validation_message(error)}, status=400)
+    else:
+        recipient = quote(draft.shortlist_entry.candidate.email, safe="@._+-")
+        query = urlencode({"subject": draft.subject, "body": draft.body})
+        response = JsonResponse(
+            {
+                "recorded": True,
+                "mailto_url": f"mailto:{recipient}?{query}",
             }
         )
     response["Cache-Control"] = "private, no-store"

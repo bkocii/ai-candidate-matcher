@@ -1298,22 +1298,24 @@ decision history together with the private shortlist/assessment history.
 
 Return to a current latest assessment from section 19. If its latest decision is
 **Revisit later** or **Reject**, first record a new individual **Approve** decision
-with non-blank recruiter notes. The outreach panel must use only the latest
+with non-blank recruiter notes. Use a candidate with a recorded email and at
+least one source that permits contact. The application must use only the latest
 decision; an older approval never authorizes a draft after a later correction.
 
-Select **Generate outreach draft**.
+Select **Save decision** with **Approve** chosen.
 
 Expected result:
 
-- The action is POST-only and creates outreach draft version 1 only from the
-  exact latest approved decision while the assessment, confirmed profile, and
-  shortlist inputs remain current.
-- The resulting page shows a bounded subject and plain-text body, the candidate
-  name, source decision version, generating recruiter, and timestamp.
-- The page clearly labels the result **Generated only — not approved or sent**.
-- Editing is available, but final approval, copy, and export remain unavailable
-  until an explicitly permitted candidate source exists. There is no send,
-  email, ATS, or platform-messaging action.
+- The action records the individual decision and prepares outreach draft version
+  1 only from that exact current approval. The assessment, confirmed profile,
+  shortlist inputs, recorded email, and contact permission are rechecked.
+- The browser focuses one email composer containing the exact candidate email,
+  editable subject/body, and a compact contact status.
+- The status shows **Contact allowed**, the recorded reason for storage, and the
+  applicable consent state without a separate compliance checkbox.
+- **Open in email app** is the primary completion action. Copy and export remain
+  available as secondary manual actions. There is no application send or claim
+  of delivery.
 - The recruiter approval notes, candidate email/phone, raw CV, gaps,
   uncertainties, protected characteristics, prompt, and raw provider response
   were not supplied to or returned from the AI workflow. The application inserts
@@ -1321,29 +1323,33 @@ Expected result:
 - The approved decision and assessment remain unchanged. Generating a draft does
   not make a hiring decision, alter scores/rank, or contact the candidate.
 
-Return to the assessment review page and select **Generate outreach draft**
+Return to the assessment review page and select **Prepare another email draft**
 again. Expected result: version 2 is added while version 1 remains linked and
 unchanged. Both versions show their exact source decision, actor, and timestamp.
 
 ### Edit without overwriting history
 
-Open the latest draft, select **Edit into new version**, change the subject and
-body, and save.
+Open the latest draft, change the subject and body in the composer, and select
+**Save changes**.
 
 Expected result:
 
 - A new numbered recruiter-edited version is created with the prior version as
   its parent, your username, and a timestamp.
 - The generated version remains unchanged and inspectable.
-- The edited version is not finally approved, even if its parent was approved.
+- The edited version is not externally used, even if its parent was.
 - Blank values, overlong values, and unsafe control characters are rejected
   without creating a version.
+- Changing a field disables **Open in email app**, copy, and export until the
+  changes are saved as the new exact version.
 
-### Establish allowed contact and approve the exact version
+### Check contact permission and use the exact version
 
 The synthetic candidate created earlier has **Not confirmed** allowed contact and
-no recorded reason. Confirm that final approval is blocked and the page explains
-both requirements. In Django admin, edit one of that candidate's synthetic
+no recorded reason. Confirm that preparing outreach is blocked, the approval
+decision remains recorded, no unusable draft is created, and the page provides a
+direct source-correction action. In Django admin, edit one of that candidate's
+synthetic
 **Candidate sources** and set the underlying stored values shown below (the
 normal recruiter page displays the plain labels in parentheses):
 
@@ -1352,49 +1358,51 @@ normal recruiter page displays the plain labels in parentheses):
 - Contact permission: `Permitted` (**Allowed contact: Future roles allowed**)
 - Permission notes: `Synthetic manual test permission only.`
 
-Return to the latest outreach draft, add approval notes, check the explicit
-source/consent/allowed-contact attestation, and select **Approve exact draft**.
+Return to the current approval and prepare the email. Review the exact recipient,
+subject, and body, then select **Open in email app**.
 
 Expected result:
 
-- Approval binds only the exact displayed subject and body.
-- The approval records notes, your username, and a timestamp.
-- The draft is labelled approved but still **not sent**.
-- Missing notes or an unchecked attestation creates no approval.
+- The action rechecks the latest draft, decision/evidence currentness, recorded
+  recipient, and contact permission.
+- The action records approval of only the exact displayed recipient, subject,
+  and body together with your username and timestamp.
+- The default email application opens a pre-addressed message containing that
+  exact subject and body.
+- The app records the handoff but still does not claim the message was sent.
 - Application only, Do not contact, or Not confirmed allowed contact blocks
-  approval. A missing reason also blocks approval.
+  external use. A missing reason or missing candidate email also blocks it.
 - When **Consent** is selected as the reason for storing data, Consent must be
-  **Given**. Not recorded, Not required, or Withdrawn blocks approval for that
+  **Given**. Not recorded, Not required, or Withdrawn blocks use for that
   consent-based source.
 
 Open the candidate page before approving and confirm the source table displays
 Source name, Source reference, Reason for storing data, Consent, Allowed contact,
 and Delete or review on without the older legalistic field labels.
 
-### Copy and export only after approval
+### Copy and export as secondary exact-version actions
 
-Select **Copy approved text**, paste into a local scratch editor, and confirm the
-subject and body exactly match the approved version. Select **Export approved
+Select **Copy email text**, paste into a local scratch editor, and confirm the
+subject and body exactly match the displayed version. Select **Export email
 text** and open the downloaded UTF-8 `.txt` file.
 
 Expected result:
 
-- Both actions are explicit POST actions and expose only the exact approved,
-  current draft.
+- Both actions are explicit POST actions, repeat the same safety checks, and
+  approve only the exact current draft used by that action.
 - The download uses a generic, non-identifying filename and a private no-store
   response.
 - The action history records copy/export, exact draft version, your username,
   and timestamp.
-- Nothing is sent and no recipient is selected.
+- Nothing is sent. Copy/export do not claim delivery.
 
-Edit the approved draft into another version. The new version must be
-unapproved, and the older approval must not authorize copying or exporting the
-new text. Approve the new exact version before those controls return.
+Edit the used draft into another version. The older approval must not authorize
+the new text; each next external action approves and records that exact version.
 
 Finally, change the stored contact permission to **Withdrawn** (**Do not
-contact**), refresh the draft page, and confirm copy/export is blocked. A direct
-POST to either action must return no draft text or file. Restore **Future roles
-allowed** if continuing other tests.
+contact**), refresh the draft page, and confirm email-app/copy/export actions are
+blocked. A direct POST must return no mailto URL, draft text, or file. Restore
+**Future roles allowed** if continuing other tests.
 
 Test the authorization and currentness guards:
 
@@ -1409,8 +1417,8 @@ Test the authorization and currentness guards:
    A bounded error appears, no partial draft is created, and existing versions
    remain unchanged.
 5. After generating a draft, record a newer reject/revisit decision or change a
-   matching input. Confirm editing, final approval, copy, and export are blocked
-   while the historical draft remains inspectable.
+   matching input. Confirm editing and all external-use actions are blocked while
+   the historical draft remains inspectable.
 
 In Django admin, open **Outreach drafts**, **Outreach draft approvals**, and
 **Outreach draft actions** under **Outreach**. Confirm all records are read-only.
@@ -1980,8 +1988,9 @@ Expected command result:
 - V01 has 20 current assessments and exactly 3 individual decisions: one
   approve, one reject, and one revisit. The remaining 17 decisions are pending.
 - Exactly one unapproved outreach draft exists for the approved entry.
-- The command explicitly says no provider/network request, final approval,
-  copy, export, or send occurred and that contact remains restricted.
+- The command explicitly says no provider/network request, external-use
+  approval, email-app handoff, copy, export, or send occurred and that contact
+  remains restricted.
 - Output contains no candidate name/contact data, CV/evidence text, assessment
   explanation, decision note, outreach body, prompt, or raw response.
 
@@ -1993,9 +2002,10 @@ Open each route printed by the command and follow `docs/demo.md`. In particular:
    and one each approved, rejected, and revisit.
 3. Open the approved assessment and confirm its exact evidence plus immutable
    individual decision remain inspectable.
-4. Open the outreach draft and confirm **Not finally approved or sent** appears.
-5. Confirm final approval is unavailable because Allowed contact is **Application
-   only**; copy/export is also unavailable and no action event exists.
+4. Open the outreach draft and confirm the email composer remains inspectable.
+5. Confirm **Email use blocked** appears because Allowed contact is **Application
+   only**; email-app/copy/export actions are unavailable and no action event
+   exists.
 
 Run the command again with the same slug. Expected result: it refuses to
 overwrite the organization and does not add candidates, documents, assessments,

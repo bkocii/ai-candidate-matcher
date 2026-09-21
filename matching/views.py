@@ -40,8 +40,10 @@ from organizations.models import Organization
 from outreach.generation import (
     OutreachDraftEligibility,
     assess_outreach_draft_eligibility,
+    generate_outreach_draft,
 )
 from outreach.models import OutreachDraft
+from outreach.workflow import assess_contact_permission
 from vacancies.models import Vacancy, VacancyRequirements
 
 REVIEW_QUEUE_SCOPES = {"pending", "exceptions", "changed", "all"}
@@ -550,6 +552,18 @@ def assessment_review_detail(
         .filter(shortlist_entry=assessment.shortlist_entry)
         .select_related("review_decision", "created_by")
     )
+    contact_eligibility = assess_contact_permission(
+        candidate=assessment.shortlist_entry.candidate
+    )
+    current_outreach_draft = next(
+        (
+            draft
+            for draft in outreach_history
+            if current_decision is not None
+            and draft.review_decision_id == current_decision.pk
+        ),
+        None,
+    )
     return render(
         request,
         "matching/assessment_review_detail.html",
@@ -566,6 +580,8 @@ def assessment_review_detail(
             "decision_saved": decision_saved,
             "outreach_eligibility": outreach_eligibility,
             "outreach_history": outreach_history,
+            "current_outreach_draft": current_outreach_draft,
+            "contact_eligibility": contact_eligibility,
             "vacancy": assessment.requirements.vacancy,
             "entry": assessment.shortlist_entry,
             "run": assessment.shortlist_entry.match_run,
@@ -596,6 +612,7 @@ def assessment_review_decide(
     )
     form = ReviewDecisionForm(request.POST)
     saved_decision = None
+    prepared_draft = None
     if not form.is_valid():
         messages.error(
             request,
@@ -613,16 +630,73 @@ def assessment_review_decide(
             messages.error(request, "; ".join(error.messages))
         else:
             saved_decision = decision
-            messages.success(
-                request,
-                f"Decision version {decision.version} was recorded as "
-                f"{decision.get_decision_display().lower()}.",
-            )
+            if decision.decision == ReviewDecision.Decision.APPROVED:
+                contact_eligibility = assess_contact_permission(
+                    candidate=assessment.shortlist_entry.candidate
+                )
+                if not assessment.shortlist_entry.candidate.email.strip():
+                    messages.success(
+                        request,
+                        f"Decision version {decision.version} was recorded as approve.",
+                    )
+                    messages.warning(
+                        request,
+                        "Email was not prepared because the candidate has no email "
+                        "address. Add it, then prepare the email from this review.",
+                    )
+                elif not contact_eligibility.can_proceed:
+                    messages.success(
+                        request,
+                        f"Decision version {decision.version} was recorded as approve.",
+                    )
+                    messages.warning(
+                        request,
+                        f"Email was not prepared: {contact_eligibility.reason}",
+                    )
+                else:
+                    try:
+                        prepared_draft = generate_outreach_draft(
+                            decision=decision,
+                            user=request.user,
+                        ).draft
+                    except (AIGatewayError, ValidationError) as error:
+                        public_message = (
+                            "; ".join(error.messages)
+                            if isinstance(error, ValidationError)
+                            else str(error)
+                        )
+                        messages.success(
+                            request,
+                            f"Decision version {decision.version} was recorded as "
+                            "approve.",
+                        )
+                        messages.warning(
+                            request,
+                            f"The email draft could not be prepared: {public_message}",
+                        )
+                    else:
+                        messages.success(
+                            request,
+                            f"Candidate approved and email draft version "
+                            f"{prepared_draft.version} prepared for review.",
+                        )
+            else:
+                messages.success(
+                    request,
+                    f"Decision version {decision.version} was recorded as "
+                    f"{decision.get_decision_display().lower()}.",
+                )
     detail_url = reverse(
         "matching:assessment-review-detail",
         args=[organization.slug, assessment.pk],
     )
     if saved_decision is not None:
+        if prepared_draft is not None:
+            draft_url = reverse(
+                "outreach:outreach-draft-detail",
+                args=[organization.slug, prepared_draft.pk],
+            )
+            return redirect(f"{draft_url}?prepared=1#email-composer")
         return redirect(
             f"{detail_url}?decision={saved_decision.version}#decision-saved"
         )

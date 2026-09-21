@@ -1,3 +1,5 @@
+from urllib.parse import parse_qs, urlparse
+
 import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.urls import reverse
@@ -16,6 +18,7 @@ from outreach.models import (
 from outreach.workflow import (
     approve_outreach_draft,
     assess_contact_permission,
+    assess_email_app_eligibility,
     assess_final_approval_eligibility,
     assess_manual_action_eligibility,
     edit_outreach_draft,
@@ -70,6 +73,13 @@ def approval_url(organization, draft):
 def copy_url(organization, draft):
     return reverse(
         "outreach:outreach-draft-copy",
+        args=[organization.slug, draft.pk],
+    )
+
+
+def email_app_url(organization, draft):
+    return reverse(
+        "outreach:outreach-draft-email-app",
         args=[organization.slug, draft.pk],
     )
 
@@ -222,20 +232,8 @@ def test_approval_requires_recruiter_attestation_and_notes():
     assert not OutreachDraftApproval.objects.exists()
 
 
-def test_copy_and_export_actions_require_exact_current_final_approval():
+def test_external_action_automatically_approves_exact_current_draft():
     user, _, _, _, _, _, _, _, _, _, draft = workflow_workspace()
-    with pytest.raises(ValidationError, match="Approve this exact draft"):
-        record_outreach_draft_action(
-            draft=draft,
-            user=user,
-            action_type=OutreachDraftAction.ActionType.COPY,
-        )
-    approve_outreach_draft(
-        draft=draft,
-        user=user,
-        notes="Exact text checked.",
-        contact_permission_confirmed=True,
-    )
 
     copied = record_outreach_draft_action(
         draft=draft,
@@ -247,8 +245,21 @@ def test_copy_and_export_actions_require_exact_current_final_approval():
         user=user,
         action_type=OutreachDraftAction.ActionType.EXPORT,
     )
+    email_handoff = record_outreach_draft_action(
+        draft=draft,
+        user=user,
+        action_type=OutreachDraftAction.ActionType.EMAIL_APP,
+    )
+    approval = OutreachDraftApproval.objects.get(draft=draft)
 
-    assert [copied.action_type, exported.action_type] == ["copy", "export"]
+    assert [copied.action_type, exported.action_type, email_handoff.action_type] == [
+        "copy",
+        "export",
+        "email_app",
+    ]
+    assert approval.approved_by == user
+    assert approval.contact_permission_confirmed is True
+    assert "automatic currentness and contact checks" in approval.notes
     assert copied.actor == user
     assert copied.created_at is not None
     copied.action_type = OutreachDraftAction.ActionType.EXPORT
@@ -281,14 +292,12 @@ def test_new_version_or_changed_source_boundary_blocks_prior_approved_actions():
     new_eligibility = assess_manual_action_eligibility(draft=edited, user=user)
     assert old_eligibility.can_proceed is False
     assert "latest outreach draft" in old_eligibility.reason
-    assert new_eligibility.can_proceed is False
-    assert "Approve this exact draft" in new_eligibility.reason
+    assert new_eligibility.can_proceed is True
 
-    approve_outreach_draft(
+    record_outreach_draft_action(
         draft=edited,
         user=user,
-        notes="New exact text checked.",
-        contact_permission_confirmed=True,
+        action_type=OutreachDraftAction.ActionType.COPY,
     )
     record_review_decision(
         assessment=assessment,
@@ -348,7 +357,26 @@ def test_final_approval_requires_given_consent_when_consent_is_reason():
     assert allowed.can_proceed is True
 
 
-def test_recruiter_edit_approve_copy_and_export_routes(client):
+def test_email_app_requires_recorded_email_without_approving_or_recording_action(
+    client,
+):
+    user, organization, candidate, _, _, _, _, _, _, _, draft = workflow_workspace()
+    candidate.email = ""
+    candidate.save(update_fields=("email", "updated_at"))
+    client.force_login(user)
+
+    eligibility = assess_email_app_eligibility(draft=draft, user=user)
+    response = client.post(email_app_url(organization, draft))
+
+    assert eligibility.can_proceed is False
+    assert "email address" in eligibility.reason
+    assert response.status_code == 400
+    assert "email address" in response.json()["error"]
+    assert not OutreachDraftApproval.objects.exists()
+    assert not OutreachDraftAction.objects.exists()
+
+
+def test_recruiter_edits_then_uses_email_copy_and_export_actions(client):
     user, organization, candidate, _, _, _, _, _, _, _, draft = workflow_workspace()
     client.force_login(user)
 
@@ -364,15 +392,9 @@ def test_recruiter_edit_approve_copy_and_export_routes(client):
         follow=True,
     )
     edited = OutreachDraft.objects.get(version=2)
-    approve_get = client.get(approval_url(organization, edited))
-    approve_post = client.post(
-        approval_url(organization, edited),
-        {
-            "notes": "I checked the exact text and contact permission.",
-            "contact_permission_confirmed": "on",
-        },
-        follow=True,
-    )
+    detail = client.get(detail_url(organization, edited))
+    email_get = client.get(email_app_url(organization, edited))
+    email_post = client.post(email_app_url(organization, edited))
     copy_get = client.get(copy_url(organization, edited))
     copy_post = client.post(copy_url(organization, edited))
     export_get = client.get(export_url(organization, edited))
@@ -382,10 +404,21 @@ def test_recruiter_edit_approve_copy_and_export_routes(client):
     assert "Saving does not overwrite this version" in edit_get.content.decode()
     assert edit_post.status_code == 200
     assert "draft version 2 was saved for final review" in edit_post.content.decode()
-    assert approve_get.status_code == 405
-    assert approve_post.status_code == 200
-    assert "received final approval. Nothing was sent" in approve_post.content.decode()
-    assert "Copy approved draft" in approve_post.content.decode()
+    assert "Email composer" in detail.content.decode()
+    assert "Open in email app" in detail.content.decode()
+    assert "Contact allowed" in detail.content.decode()
+    assert email_get.status_code == 405
+    assert email_post.status_code == 200
+    email_result = email_post.json()
+    assert email_result["recorded"] is True
+    assert email_result["mailto_url"].startswith(f"mailto:{candidate.email}?")
+    assert "subject=Recruiter-edited+role+conversation" in email_result["mailto_url"]
+    parsed_email = urlparse(email_result["mailto_url"])
+    assert parsed_email.path == candidate.email
+    assert parse_qs(parsed_email.query)["body"] == [
+        f"Hello {candidate.full_name},\n\nWould you be open to a conversation?"
+    ]
+    assert email_post["Cache-Control"] == "private, no-store"
     assert copy_get.status_code == 405
     assert copy_post.status_code == 200
     assert copy_post.json() == {
@@ -409,8 +442,8 @@ def test_recruiter_edit_approve_copy_and_export_routes(client):
         OutreachDraftAction.objects.order_by("created_at").values_list(
             "action_type", flat=True
         )
-    ) == ["copy", "export"]
-    assert detail_url(organization, edited) in approve_post.redirect_chain[-1][0]
+    ) == ["email_app", "copy", "export"]
+    assert OutreachDraftApproval.objects.filter(draft=edited).count() == 1
 
 
 def test_copy_endpoint_returns_no_text_after_permission_is_withdrawn(client):
@@ -444,6 +477,7 @@ def test_cross_organization_workflow_routes_and_services_are_hidden(client):
 
     assert client.get(edit_url(organization, draft)).status_code == 404
     assert client.post(approval_url(organization, draft)).status_code == 404
+    assert client.post(email_app_url(organization, draft)).status_code == 404
     assert client.post(copy_url(other, draft)).status_code == 404
     assert client.post(export_url(organization, draft)).status_code == 404
     with pytest.raises(PermissionDenied):

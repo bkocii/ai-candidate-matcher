@@ -33,9 +33,10 @@ The command prints exact local routes and creates:
 - 3 individual human-attributed decisions: approve, revisit, and reject; and
 - 1 inspectable outreach draft tied to the approved assessment.
 
-It creates no final outreach approval, copy/export event, or send action. Every
-synthetic source remains contact-restricted, so the draft page visibly blocks
-final approval even though the candidate decision is approved.
+It creates no outreach approval, email-app handoff, copy/export event, or send
+action. Every synthetic source remains contact-restricted, so the draft page
+visibly blocks external email use even though the candidate decision is
+approved.
 
 ## Five-minute walkthrough
 
@@ -50,9 +51,10 @@ final approval even though the candidate decision is approved.
 4. Open **Approved assessment**. Inspect the linked requirement/evidence details
    and immutable recruiter decision history. The decision remains individual and
    does not change the score or automatically contact anyone.
-5. Open **Unapproved outreach draft**. Show that the exact draft is inspectable,
-   still requires separate final approval, and cannot be approved or copied
-   because Allowed contact is **Application only**. Nothing is sent by the application.
+5. Open **Blocked outreach draft**. Show that the exact recipient, subject, and
+   body are inspectable in one composer, while **Open in email app**, copy, and
+   export remain blocked because Allowed contact is **Application only**.
+   Nothing is sent by the application.
 
 ## Reference screenshots
 
@@ -71,7 +73,7 @@ pages produced by the packaged synthetic fixture and the repository CSS.
 
 ![Synthetic assessment review detail](demo/screenshots/03-assessment-review.png)
 
-### Separate blocked outreach approval
+### Blocked outreach composer
 
 ![Synthetic unapproved outreach draft](demo/screenshots/04-outreach-draft.png)
 
@@ -81,8 +83,8 @@ Run the preparation command with a new organization slug, start Django, sign in,
 and capture the four printed routes above at a 1440 × 1080 browser viewport.
 Keep `?scope=all` on the review queue. Save the resulting PNG files under
 `docs/demo/screenshots/` using the existing names. Verify each image contains
-only `Synthetic Candidate` fixture records and that the outreach image still
-says both **Not finally approved or sent** and **Final approval is unavailable**.
+only `Synthetic Candidate` fixture records and that the outreach image says
+**Email use blocked** and shows no enabled external-use action.
 
 Do not capture real candidate data, a configured provider key, `.env`, terminal
 secrets, private storage paths, or an organization that contains non-fixture

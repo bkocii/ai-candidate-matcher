@@ -279,9 +279,10 @@ class OutreachDraftApproval(models.Model):
 
 
 class OutreachDraftAction(models.Model):
-    """Immutable record of a manual copy or export of an approved draft."""
+    """Immutable record of an exact-draft external-use action."""
 
     class ActionType(models.TextChoices):
+        EMAIL_APP = "email_app", "Open in email app"
         COPY = "copy", "Copy"
         EXPORT = "export", "Export"
 
@@ -304,7 +305,7 @@ class OutreachDraftAction(models.Model):
         ordering = ("-created_at", "-id")
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(action_type__in=["copy", "export"]),
+                condition=models.Q(action_type__in=["email_app", "copy", "export"]),
                 name="outreach_action_valid_type",
             )
         ]
@@ -331,12 +332,12 @@ class OutreachDraftAction(models.Model):
             ).exists()
         ):
             raise ValidationError(
-                {"draft": "Only a finally approved draft can be copied or exported."}
+                {"draft": "Only a finally approved draft can be used externally."}
             )
 
     def save(self, *args, **kwargs) -> None:
         if self._snapshot_changed():
-            raise ValidationError("Outreach copy/export history is immutable.")
+            raise ValidationError("Outreach action history is immutable.")
         self.full_clean()
         super().save(*args, **kwargs)
 

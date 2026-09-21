@@ -38,8 +38,10 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 6. AI creates an evidence-based assessment for each shortlisted candidate.
 7. The recruiter sees matching qualifications, gaps, uncertainties, and source evidence.
 8. The recruiter approves, rejects, or marks a candidate for later review.
-9. For an approved candidate, AI creates an editable outreach draft.
-10. The recruiter copies or exports the final draft and sends it manually.
+9. Recording an approval can prepare an editable outreach email after currentness
+   and contact-permission checks pass.
+10. The recruiter reviews the exact recipient, subject, and body, then explicitly
+    opens it in their email app or uses a secondary copy/export action.
 
 ## MVP capabilities
 
@@ -73,8 +75,9 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Structured AI match assessment with evidence, gaps, and uncertainty.
 - Traffic-light display derived from a numeric score.
 - Human review queue.
-- Editable outreach subject and body.
-- Copy/export only; no automatic sending.
+- One editable outreach composer with the exact recorded recipient, subject,
+  body, and compact contact status.
+- Open-in-email-app, copy, and export handoffs; no automatic or integrated sending.
 - AI token, cost, latency, retry, and failure tracking when available.
 - Audit history for imports, assessments, reviews, and draft approval.
 - Tenant-scoped retention/deletion review, minimized privacy events, and
@@ -114,8 +117,8 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Review defaults to changed evidence and exceptions while keeping every latest
   assessment and its immutable version history individually inspectable.
 - Approve, reject, and revisit are explicit individual recruiter actions with
-  notes, actor, timestamp, and immutable correction history; they never trigger
-  outreach automatically.
+  notes, actor, timestamp, and immutable correction history. Approval may prepare
+  an email draft after safety checks, but it never contacts the candidate.
 - Model prompts exclude protected characteristics and irrelevant personal data.
 - A confirmed candidate profile is reusable across vacancies. High-volume intake
   and assessment should use resumable background batches and exception-focused

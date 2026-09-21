@@ -21,8 +21,8 @@ class OutreachDraftEditForm(forms.Form):
         max_length=5_000,
         widget=forms.Textarea(attrs={"rows": 14}),
         help_text=(
-            "Plain text only. Saving creates a new immutable version that needs "
-            "its own final approval."
+            "Plain text only. Saving creates a new immutable version for review "
+            "before external use."
         ),
     )
 

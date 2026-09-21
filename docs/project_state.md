@@ -46,7 +46,8 @@ Track those findings and their separate implementation/browser-test states in
   original source wording/evidence, and never uses unrestricted substring
   matching.
 - AI provides evidence-based decision support and never makes the final hiring decision.
-- Outreach is editable and copy/export only in the MVP.
+- Outreach uses an editable email composer with audited open-in-email-app,
+  copy, and export actions; automatic or integrated sending is outside the MVP.
 - The app is a separate repository from Python AI Toolkit.
 - The app pins `python-ai-toolkit[django]==1.0.0` initially.
 - Toolkit improvement candidates are recorded and reproduced before any toolkit change.
@@ -1319,11 +1320,12 @@ responsive danger card replaces the generic unstyled form.
 
 ## Not implemented
 
-Outreach generation, immutable recruiter editing, exact final approval, manual
-copy, and plain-text export are implemented. Automatic sending, recipient
-selection, email/ATS/platform integrations, and permission-management UI are not
-implemented; source/privacy assertions are inspectable and correctable in the
-tenant workspace.
+Outreach generation, immutable recruiter editing, exact-version approval,
+recorded-recipient email-app handoff, manual copy, and plain-text export are
+implemented. Automatic sending, connected mailbox/email/ATS/platform
+integrations, and dedicated permission-management UI are not implemented;
+source/privacy assertions are inspectable and correctable in the tenant
+workspace.
 Sending remains outside the MVP.
 Recruiters can intentionally run structured vacancy extraction for an editable
 requirements draft and candidate-profile extraction for a lawfully stored,
@@ -1802,3 +1804,20 @@ complete quality gate passed with `616 passed`, successful Django system,
 deployment, static, migration-drift, Ruff, formatting, and dependency checks.
 No live AI request ran. Browser acceptance of the combined MT-021 batch is
 pending.
+
+The user confirmed the combined MT-021 batch on 2026-09-20. The next combined
+batch implements MT-022-U01/U02/C01/V01 and the approved first stage of
+MT-022-F01. Recording a safe approval now prepares the outreach email and opens
+one composer with the exact recorded recipient, editable subject/body, compact
+contact status, and a primary **Open in email app** action. Missing email or
+blocked contact records the decision but creates no unusable draft and provides
+a correction path. Email-app, copy, and export actions repeat currentness and
+contact checks, approve the exact version used, and append an immutable action
+record. Email-app handoff uses `mailto:` and never claims provider delivery.
+Connected Gmail/Microsoft 365 sending remains proposed. Twelve findings remain
+marked Open; this batch awaits browser confirmation.
+
+Verification: focused decision/outreach/demo/lifecycle coverage `52 passed`; the
+complete quality gate passed with `619 passed`, successful Django system,
+deployment, static, migration-drift, Ruff, formatting, and dependency checks.
+No live AI request ran.

@@ -77,7 +77,8 @@ Hard filters, shortlist construction, AI assessments, evidence, scores, and recr
 
 ### outreach
 
-Editable drafts, approval state, and manual copy/export history.
+Editable email drafts, exact-version approval, and audited email-app/copy/export
+handoff history.
 
 ### operations
 
@@ -906,8 +907,9 @@ versions so their evidence boundary remains inspectable when inputs later change
   review decisions together. Cross-organization queue, detail, and decision URLs
   return `404` without disclosing notes or actor identity.
 - Decisions do not change deterministic eligibility, rank, score, assessment
-  evidence, or traffic-light band. They create no outreach draft and perform no
-  contact action; outreach remains a separately approved workflow.
+  evidence, or traffic-light band. A routine approval may prepare an outreach
+  draft after currentness, email, and contact-permission checks, but it performs
+  no contact action.
 
 ### Approved outreach draft generation
 
@@ -916,12 +918,13 @@ versions so their evidence boundary remains inspectable when inputs later change
   version records the generating human actor, timestamp, schema version, subject,
   and plain-text body. Candidate deletion removes its draft history with the
   candidate-specific shortlist and review history.
-- Generation is a separate POST-only recruiter action. The service repeats
-  tenant authorization and accepts only the exact latest decision when it is an
-  explicit approval tied to the latest assessment while the active candidate,
-  current confirmed profile, and privacy-preserving shortlist inputs remain
-  current. Approval and currentness are locked and rechecked after the provider
-  returns so a concurrent correction discards the output.
+- Generation is an application service reached either by the combined approval
+  action or a recovery POST action. The service repeats tenant authorization and
+  accepts only the exact latest decision when it is an explicit approval tied to
+  the latest assessment while the active candidate, current confirmed profile,
+  privacy-preserving shortlist inputs, recorded email, and contact permission
+  remain current. Approval and currentness are locked and rechecked after the
+  provider returns so a concurrent correction discards the output.
 - The minimized structured request contains the organization name, vacancy title,
   and at most eight evidence-backed positive match facts. It excludes candidate
   name/contact data, raw CV text, recruiter decision notes, assessment summary,
@@ -939,7 +942,7 @@ versions so their evidence boundary remains inspectable when inputs later change
   integration, or sending. Those human-controlled actions remain `OUT-002`, and
   sending remains outside the MVP.
 
-### Outreach editing, final approval, copy, and export
+### Outreach editing and exact-version external actions
 
 - Generated and recruiter-edited outreach content uses one immutable
   `OutreachDraft` version sequence per shortlist entry. Editing is a deliberate
@@ -947,30 +950,34 @@ versions so their evidence boundary remains inspectable when inputs later change
   its creation method, parent version, actor, and timestamp. It never mutates the
   source version or carries final approval forward.
 - `OutreachDraftApproval` is an immutable one-to-one human approval of one exact
-  draft version. It requires bounded notes, an explicit contact-permission
-  attestation, the approving recruiter, and timestamp. Only the latest draft can
-  be approved, and its source recruiter approval, latest assessment, confirmed
-  profile, and shortlist inputs must still be current.
-- Final approval additionally requires at least one candidate-source record with
+  draft version. In the routine composer it is created by the explicit
+  **Open in email app**, copy, or export action after automatic safety checks.
+  It records the approving recruiter and timestamp without a second notes form
+  or compliance checkbox. Only the latest draft can be used, and its source
+  recruiter approval, latest assessment, confirmed profile, and shortlist inputs
+  must still be current.
+- External use additionally requires a recorded candidate email and at least one
+  candidate-source record with
   explicit permitted contact. In recruiter language, only **Future roles
   allowed** permits rediscovery outreach; **Application only**, **Do not
   contact**, and **Not confirmed** block it. Every source must have a recorded
   reason for storing data, and a source using consent as that reason must record
   consent as **Given**. Any withdrawn consent still blocks approval. The same
-  permission/currentness checks run again before every copy or export, so a
+  permission/currentness checks run again before every external action, so a
   later decision correction, new draft, changed evidence, or permission change
   disables manual use while preserving history.
-- `OutreachDraftAction` records each approved-draft copy or plain-text export with
-  the exact draft, action type, human actor, and timestamp. The copy endpoint
-  revalidates and records the action before returning the exact text to the
-  browser clipboard workflow. Export is POST-only, returns a private no-store
-  UTF-8 `.txt` attachment with a non-identifying filename, and records the action
-  before returning content.
-- Copy/export never selects or stores a recipient and never opens or calls an
-  email, ATS, or messaging provider. No send action or outbound integration
-  exists. Candidate deletion removes draft, final-approval, and manual-action
-  history with the candidate-specific shortlist; operator inspection remains
-  read-only in Django admin.
+- `OutreachDraftAction` records each email-app, copy, or plain-text export action
+  with the exact draft, action type, human actor, and timestamp. The email-app
+  endpoint revalidates the exact current candidate email and returns a private
+  no-store `mailto:` URL containing the reviewed subject/body. It records a
+  handoff, not provider delivery. Copy returns the exact text to the browser
+  clipboard workflow. Export returns a private no-store UTF-8 `.txt` attachment
+  with a non-identifying filename.
+- No action calls an email, ATS, or messaging provider, and no send result is
+  claimed. Connected mailbox delivery remains outside approved scope. Candidate
+  deletion removes draft, exact-version approval, and manual-action history with
+  the candidate-specific shortlist; operator inspection remains read-only in
+  Django admin.
 
 ## Matching pipeline
 
