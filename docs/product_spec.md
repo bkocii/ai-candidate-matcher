@@ -29,18 +29,22 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 
 ## MVP user journey
 
-1. An administrator creates recruiter accounts and organization settings.
-2. A recruiter imports candidates through CSV or a reviewed bulk intake of
+1. A platform owner provisions the organization and its first administrator.
+2. The administrator signs in and can immediately add candidates or create a
+   vacancy; no separate recruiter account or settings setup is required.
+3. Teammate accounts, hiring clients, and organization settings remain optional
+   setup actions that can be completed when needed.
+4. A recruiter imports candidates through CSV or a reviewed bulk intake of
    supported CV documents.
-3. The recruiter pastes a vacancy description and confirms the extracted requirements.
-4. Deterministic rules remove candidates who fail explicit hard constraints.
-5. The application ranks the remaining candidates.
-6. AI creates an evidence-based assessment for each shortlisted candidate.
-7. The recruiter sees matching qualifications, gaps, uncertainties, and source evidence.
-8. The recruiter approves, rejects, or marks a candidate for later review.
-9. Recording an approval can prepare an editable outreach email after currentness
+5. The recruiter pastes a vacancy description and confirms the extracted requirements.
+6. Deterministic rules remove candidates who fail explicit hard constraints.
+7. The application ranks the remaining candidates.
+8. AI creates an evidence-based assessment for each shortlisted candidate.
+9. The recruiter sees matching qualifications, gaps, uncertainties, and source evidence.
+10. The recruiter approves, rejects, or marks a candidate for later review.
+11. Recording an approval can prepare an editable outreach email after currentness
    and contact-permission checks pass.
-10. The recruiter reviews the exact recipient, subject, and body, then explicitly
+12. The recruiter reviews the exact recipient, subject, and body, then explicitly
     opens it in their email app or uses a secondary copy/export action.
 
 ## MVP capabilities
@@ -50,6 +54,8 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Explicit platform-owner provisioning of organizations and first administrators
   without implicit candidate-data access.
 - Organization-administrator recruiter management and multi-workspace switching.
+- Organization administrators can also perform ordinary recruiter work; separate
+  recruiter accounts are for teammates who should not manage settings.
 - Optional client companies for agency use.
 - Organization-administrator client-company settings with reversible
   deactivation; recruiters can assign active clients while creating or editing

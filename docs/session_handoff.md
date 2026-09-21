@@ -1342,3 +1342,18 @@ missing migration. Outlook displayed `+` for spaces in the `mailto:` subject and
 body because `urlencode` used form-style encoding. The handoff now uses
 percent-style encoding (`%20`) and regression coverage verifies both the raw URL
 and exact decoded body. Package this as a small hotfix before continuing.
+
+The user confirmed MT-023 and the Outlook encoding hotfix. The combined six-
+finding dashboard/onboarding batch now implements MT-002-V01/V02/V03,
+MT-037-U01/C01, and MT-043-V01, while absorbing MT-002-C01. Both roles see direct
+**Add candidates** and **Create vacancy** actions. The heading badge is the only
+role indicator. Administrators are explicitly told they can perform recruiter
+work; teammate, client, and organization settings are optional, authorized
+actions with compact labels. Focused dashboard coverage passes with `20 passed`.
+
+The user requested a lower-output validation workflow to avoid chat limits. For
+small fixes and UI batches, run only directly relevant tests plus concise static
+checks, give the user `uv run python scripts/check.py`, and wait for their result.
+Reserve the complete suite in this environment for major releases or explicit
+requests. One Open manual-review finding remains: MT-003-V02, the candidate-list
+action bar. After dashboard browser confirmation, implement that final finding.

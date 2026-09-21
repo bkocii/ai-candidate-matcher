@@ -1843,3 +1843,17 @@ The MT-022 email-app handoff received a compatibility follow-up on 2026-09-21.
 Mailto query values now use percent encoding for spaces instead of form-style
 plus encoding, preventing Outlook from displaying literal `+` characters while
 preserving the exact decoded recipient, subject, body, and audit action.
+
+The user confirmed MT-023 and the Outlook compatibility follow-up on
+2026-09-21. The combined dashboard/onboarding batch implements MT-002-V01/V02/
+V03, MT-037-U01/C01, and MT-043-V01, and absorbs MT-002-C01. The organization
+dashboard now leads with **Add candidates** and **Create vacancy** for both
+roles. A single heading badge communicates role; no duplicate metric remains.
+Administrator copy explains that administrators can also recruit, while team,
+client, and organization settings are clearly optional and use compact actions.
+Client metrics link to management only when authorized. One manual-review
+finding remains Open: MT-003-V02, the candidate-list action bar.
+
+Verification for this batch is intentionally focused under the user's revised
+workflow: dashboard coverage passes with `20 passed`; migration-drift, Ruff, and
+formatting checks are run locally, while the user runs the complete quality gate.

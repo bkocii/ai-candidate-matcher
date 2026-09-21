@@ -277,7 +277,9 @@ migration.
 - `accounts.OrganizationMembership` links a user to an organization as either an
   `admin` or `recruiter` and can be deactivated without deleting its history.
 - An organization `admin` role does not grant Django `is_staff` or `is_superuser`
-  status. Django administration access is managed separately.
+  status. It includes ordinary recruiter capabilities within that organization
+  plus organization settings access. Django administration access is managed
+  separately.
 - A user may belong to several organizations. The dashboard presents an explicit
   workspace choice and shared navigation exposes a switch action only when more
   than one active membership exists.
@@ -335,9 +337,14 @@ migration.
   existence.
 - Navigation exposes Django administration only to Django staff. Organization
   administrator membership alone does not grant Django admin access.
-- The dashboard displays only implemented organization data. Candidate navigation
-  and active-candidate counts are available from `DATA-003`; vacancy, matching,
-  and outreach navigation is added with the corresponding roadmap items.
+- The organization dashboard leads with direct **Add candidates** and **Create
+  vacancy** actions for both administrators and recruiters. Its role badge is the
+  single role indicator; count cards link to the corresponding workspace, with
+  client management available only to administrators.
+- Administrator-only team, client, and organization settings are presented as
+  optional setup that never blocks recruitment work. The dashboard does not use
+  a mandatory onboarding wizard or imply that administrators need a duplicate
+  recruiter account.
 
 ## Core data model
 

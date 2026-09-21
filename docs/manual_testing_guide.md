@@ -97,17 +97,26 @@ confirm the current session remains signed in.
    and **Sign out**. It must not show **Django admin** or **Platform**.
 5. Confirm the dashboard initially shows zero active candidates, zero active
    client companies, and zero open vacancies.
-6. Open **Organization settings → Client companies** and select **Add client
+6. Confirm the role appears once beside the organization name and there is no
+   duplicate **Your role** metric card.
+7. Confirm **Add candidates** and **Create vacancy** are the first workspace
+   actions. The administrator copy must explain that administrators can also do
+   recruiter work and do not need to create a separate account for themselves.
+8. Confirm **Team and organization settings** is labelled optional, says it does
+   not block recruitment, and provides single-line **Manage teammates**,
+   **Manage client companies**, and **Manage settings** actions.
+9. Open **Manage client companies** and select **Add client
    company**. Enter `Acme Test Industries` and the optional website
    `https://acme.example.test`.
-7. Confirm the client is active, the vacancy count is zero, and the dashboard's
-   active-client count becomes one.
-8. Select **Sign out** and confirm you return to the login page.
-9. Press browser **Back** and **Forward** after sign-out. The prior protected
+10. Confirm the client is active, the vacancy count is zero, and the dashboard's
+    active-client count becomes one. Its summary card has the same administrator
+    management affordance as the candidate and vacancy cards.
+11. Select **Sign out** and confirm you return to the login page.
+12. Press browser **Back** and **Forward** after sign-out. The prior protected
    page must not reappear from browser history; any protected navigation must
    require authentication again. Repeat with candidate, shortlist/review,
    privacy/audit, and platform pages, including a second open tab.
-10. In browser developer tools, confirm authenticated HTML responses include
+13. In browser developer tools, confirm authenticated HTML responses include
     `Cache-Control: no-store, private, max-age=0`, `Pragma: no-cache`, and
     `Expires: 0`. Confirm public CSS/JavaScript assets retain their normal cache
     behavior.

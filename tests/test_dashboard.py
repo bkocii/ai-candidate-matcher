@@ -133,6 +133,13 @@ def test_dashboard_is_scoped_to_the_requested_organization(client) -> None:
     assert response.context["membership"].role == OrganizationMembership.Role.ADMIN
     assert "Northstar" in response.content.decode()
     assert "Administrator" in response.content.decode()
+    content = response.content.decode()
+    assert "Your role" not in content
+    assert "Secure workspace" not in content
+    assert "Administrators can also perform recruiter work" in content
+    assert "None of these steps blocks recruitment work" in content
+    assert "Manage settings" in content
+    assert "Open organization settings" not in content
     assert (
         reverse(
             "candidates:candidate-list",
@@ -140,6 +147,45 @@ def test_dashboard_is_scoped_to_the_requested_organization(client) -> None:
         )
         in response.content.decode()
     )
+    for route_name in (
+        "organizations:member-list",
+        "organizations:client-company-list",
+        "organizations:organization-settings",
+    ):
+        assert reverse(route_name, args=[organization.slug]) in content
+    assert (
+        reverse("candidates:candidate-intake-create", args=[organization.slug])
+        in content
+    )
+    assert reverse("vacancies:vacancy-create", args=[organization.slug]) in content
+
+
+def test_recruiter_dashboard_starts_with_recruiting_without_admin_setup(client):
+    user = User.objects.create_user(username="working-recruiter")
+    organization = Organization.objects.create(
+        name="Recruiter Workspace", slug="recruiter-workspace"
+    )
+    add_membership(user, organization)
+    client.force_login(user)
+
+    response = client.get(
+        reverse("organizations:organization-dashboard", args=[organization.slug])
+    )
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert 'class="role-badge">Recruiter</span>' in content
+    assert "Your role" not in content
+    assert "Add candidates or create a vacancy" in content
+    assert "You can add candidates, create vacancies" in content
+    assert "Managed by organization administrators" in content
+    assert "Optional setup" not in content
+    assert "Manage settings" not in content
+    assert (
+        reverse("candidates:candidate-intake-create", args=[organization.slug])
+        in content
+    )
+    assert reverse("vacancies:vacancy-create", args=[organization.slug]) in content
 
 
 def test_dashboard_hides_another_organizations_existence(client) -> None:

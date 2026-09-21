@@ -996,6 +996,43 @@ h2 {
     margin-bottom: 0;
 }
 
+.dashboard-start-panel {
+    align-items: flex-start;
+    margin: 0 0 20px;
+    border-color: #b8ddd0;
+    background: #f2faf7;
+}
+
+.dashboard-start-panel > div:first-child,
+.dashboard-admin-panel > div:first-child {
+    flex: 1 1 520px;
+}
+
+.dashboard-start-panel h2,
+.dashboard-admin-panel h2 {
+    margin-bottom: 8px;
+}
+
+.dashboard-start-panel p:last-child,
+.dashboard-admin-panel p:last-child {
+    max-width: 680px;
+    margin-bottom: 0;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.dashboard-primary-actions,
+.dashboard-admin-actions {
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.dashboard-primary-actions a,
+.dashboard-admin-actions a {
+    white-space: nowrap;
+}
+
 .source-workspace {
     display: block;
 }
@@ -4031,6 +4068,12 @@ tbody tr:last-child td {
 
     .workspace-panel > div {
         flex-basis: auto;
+    }
+
+    .dashboard-primary-actions,
+    .dashboard-admin-actions {
+        width: 100%;
+        justify-content: flex-start;
     }
 
     .source-card > header {

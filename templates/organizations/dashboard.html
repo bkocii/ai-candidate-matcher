@@ -12,6 +12,22 @@
     <span class="role-badge">{{ membership.get_role_display }}</span>
 </section>
 
+<section class="workspace-panel dashboard-start-panel" aria-labelledby="start-recruiting-title">
+    <div>
+        <p class="eyebrow">Start recruiting</p>
+        <h2 id="start-recruiting-title">Add candidates or create a vacancy</h2>
+        {% if can_administer %}
+            <p>Administrators can also perform recruiter work. Add teammate accounts only when someone else needs workspace access.</p>
+        {% else %}
+            <p>You can add candidates, create vacancies, and complete recruiter review work in this workspace.</p>
+        {% endif %}
+    </div>
+    <div class="button-row dashboard-primary-actions">
+        <a class="primary-button button-link" href="{% url 'candidates:candidate-intake-create' organization.slug %}">Add candidates</a>
+        <a class="secondary-button button-link" href="{% url 'vacancies:vacancy-create' organization.slug %}">Create vacancy</a>
+    </div>
+</section>
+
 <section class="metric-grid" aria-label="Organization summary">
     <article class="metric-card">
         <span class="metric-label">Active candidates</span>
@@ -21,36 +37,31 @@
     <article class="metric-card">
         <span class="metric-label">Active client companies</span>
         <strong class="metric-value">{{ active_client_count }}</strong>
-        <span class="metric-detail">Agency clients in this organization</span>
+        {% if can_administer %}
+            <a class="metric-link" href="{% url 'organizations:client-company-list' organization.slug %}">Manage client companies</a>
+        {% else %}
+            <span class="metric-detail">Managed by organization administrators</span>
+        {% endif %}
     </article>
     <article class="metric-card">
         <span class="metric-label">Open vacancies</span>
         <strong class="metric-value">{{ open_vacancy_count }}</strong>
         <a class="metric-link" href="{% url 'vacancies:vacancy-list' organization.slug %}">Open vacancy workspace</a>
     </article>
-    <article class="metric-card">
-        <span class="metric-label">Your role</span>
-        <strong class="metric-value metric-value-text">{{ membership.get_role_display }}</strong>
-        <span class="metric-detail">Organization-scoped access</span>
-    </article>
-</section>
-
-<section class="workspace-panel" aria-labelledby="workspace-title">
-    <div>
-        <p class="eyebrow">Workspace status</p>
-        <h2 id="workspace-title">Secure workspace</h2>
-    </div>
-    <p>Candidate intake, private CV extraction, recruiter-confirmed requirements, deterministic matching, evidence-linked review, and separately approved outreach are available.</p>
 </section>
 
 {% if can_administer %}
-<section class="workspace-panel" aria-labelledby="organization-settings-title">
+<section class="workspace-panel dashboard-admin-panel" aria-labelledby="organization-settings-title">
     <div>
-        <p class="eyebrow">Administrator controls</p>
-        <h2 id="organization-settings-title">Organization settings</h2>
+        <p class="eyebrow">Optional setup</p>
+        <h2 id="organization-settings-title">Team and organization settings</h2>
+        <p>Invite teammates, maintain optional hiring clients, or review organization controls when needed. None of these steps blocks recruitment work.</p>
     </div>
-    <p>Manage optional client companies plus retention, exceptions, legal holds, and staged organization deletion.</p>
-    <p><a class="secondary-button button-link" href="{% url 'organizations:organization-settings' organization.slug %}">Open organization settings</a></p>
+    <div class="button-row dashboard-admin-actions">
+        <a class="secondary-button button-link" href="{% url 'organizations:member-list' organization.slug %}">Manage teammates</a>
+        <a class="secondary-button button-link" href="{% url 'organizations:client-company-list' organization.slug %}">Manage client companies</a>
+        <a class="secondary-button button-link" href="{% url 'organizations:organization-settings' organization.slug %}">Manage settings</a>
+    </div>
 </section>
 {% endif %}
 {% endblock %}

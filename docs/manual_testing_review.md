@@ -74,10 +74,18 @@ This file records functional defects and visual improvements found during page-b
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-002-V01 | Visual defect | Medium | The separate **Your role** card duplicates the administrator badge beside the page title and leaves two-thirds of its grid row empty. | Keep the compact role badge and remove the redundant card, allowing the actionable sections to move upward. | Open |
-| MT-002-V02 | Visual defect | Medium | **Open organization settings** wraps across three lines inside a narrow desktop button. | Use a wider action area or shorten the label to **Manage settings** so it stays on one line. | Open |
-| MT-002-V03 | Visual defect | Low | Candidate and vacancy summary cards have actions, while the client-company card has no equivalent administrator action. | Use consistent card affordances; provide **Manage client companies** for administrators or make all actionable cards consistently clickable. | Open |
-| MT-002-C01 | Improvement | Low | The large **Secure workspace** panel contains generic descriptive copy but no status detail or action. | Replace it with meaningful operational status information or reduce/remove the panel to keep the dashboard task-focused. | Proposed |
+| MT-002-V01 | Visual defect | Medium | The separate **Your role** card duplicates the administrator badge beside the page title and leaves two-thirds of its grid row empty. | Keep the compact role badge and remove the redundant card, allowing the actionable sections to move upward. | Implemented — 2026-09-21; browser retest pending |
+| MT-002-V02 | Visual defect | Medium | **Open organization settings** wraps across three lines inside a narrow desktop button. | Use a wider action area or shorten the label to **Manage settings** so it stays on one line. | Implemented — 2026-09-21; browser retest pending |
+| MT-002-V03 | Visual defect | Low | Candidate and vacancy summary cards have actions, while the client-company card has no equivalent administrator action. | Use consistent card affordances; provide **Manage client companies** for administrators or make all actionable cards consistently clickable. | Implemented — 2026-09-21; browser retest pending |
+| MT-002-C01 | Improvement | Low | The large **Secure workspace** panel contains generic descriptive copy but no status detail or action. | Replace it with meaningful operational status information or reduce/remove the panel to keep the dashboard task-focused. | Implemented with dashboard batch — browser retest pending |
+
+Implementation note (2026-09-21): the role remains a single compact heading
+badge and the redundant role metric is removed for administrators and
+recruiters. A task-first panel provides **Add candidates** and **Create vacancy**
+immediately. The client metric exposes **Manage client companies** to
+administrators, the generic workspace panel is removed, and optional team/client/
+settings actions use short non-wrapping labels. Administrator copy explicitly
+states that the same account can perform recruiter work.
 
 ### MT-003 — Empty candidate pool
 
@@ -1100,7 +1108,8 @@ actor and time but does not send or claim delivery. Connected Gmail/Microsoft
 Follow-up (2026-09-21): the email-app handoff now percent-encodes spaces as
 `%20` rather than form-style `+`, so Outlook renders the reviewed subject and
 body as normal text. The exact decoded recipient, subject, and body remain
-covered by the audited action and regression tests.
+covered by the audited action and regression tests. Browser confirmed
+2026-09-21.
 
 ### MT-023 — Assessment review queue
 
@@ -1131,12 +1140,12 @@ covered by the audited action and regression tests.
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-023-U01 | Usability defect | High | The queue defaults to **Decision pending (0)** and displays an empty state even though **Needs focus (1)** contains the only actionable assessment. The recruiter must notice and click another scope before seeing work. | Default to a unified **Needs attention** queue combining pending decisions, evidence gaps/uncertainties, and changed inputs. If kept separate, automatically open the first non-empty priority scope. | Implemented — 2026-09-20; browser retest pending |
-| MT-023-U02 | Usability defect | Medium | A green traffic-light badge appears beside an item explicitly classified as **Needs focus** with one gap and five uncertainties. Green can be read as “no review needed” even though it represents only the AI signal. | Label it **AI assessment: Green · 75** and keep **Needs attention** as the dominant workflow status. Never use the AI traffic light as the card's overall state. | Implemented — 2026-09-20; browser retest pending |
-| MT-023-V01 | Visual defect | Medium | Five large summary cards do not fit one row; **Revisit later** wraps alone onto a second row and leaves substantial empty space. | Use one compact status strip or smaller inline metrics, prioritizing **Needs attention**, **Pending**, **Approved**, and total. Move less-used counts into filters. | Implemented — 2026-09-20; browser retest pending |
-| MT-023-C01 | Usability defect | Low | The decision badge reads **Decision: Approve**, using the action label rather than the saved state. | Display **Decision: Approved**; use **Approve** only on an action control. | Implemented — 2026-09-20; browser retest pending |
-| MT-023-C02 | Usability defect | Medium | The bottom notice says outreach remains a separate, later approved action. That wording reinforces the workflow now approved for simplification and conflicts with **Approve candidate and prepare email → Review and send**. | Update the notice after the workflow redesign: decisions remain human-controlled, and preparing an email does not send it; the reviewed send/handoff action is the explicit final boundary. | Implemented — 2026-09-20; browser retest pending |
-| MT-023-V02 | Improvement | Low | The full recruiter-review recommendation occupies a large highlighted block inside every queue card. This will make multi-candidate queues vertically long. | Show a one- or two-line focus summary with **Show details**; keep gap/verify counts and the primary review action visible. | Implemented with MT-023 batch — browser retest pending |
+| MT-023-U01 | Usability defect | High | The queue defaults to **Decision pending (0)** and displays an empty state even though **Needs focus (1)** contains the only actionable assessment. The recruiter must notice and click another scope before seeing work. | Default to a unified **Needs attention** queue combining pending decisions, evidence gaps/uncertainties, and changed inputs. If kept separate, automatically open the first non-empty priority scope. | Resolved — user confirmed 2026-09-21 |
+| MT-023-U02 | Usability defect | Medium | A green traffic-light badge appears beside an item explicitly classified as **Needs focus** with one gap and five uncertainties. Green can be read as “no review needed” even though it represents only the AI signal. | Label it **AI assessment: Green · 75** and keep **Needs attention** as the dominant workflow status. Never use the AI traffic light as the card's overall state. | Resolved — user confirmed 2026-09-21 |
+| MT-023-V01 | Visual defect | Medium | Five large summary cards do not fit one row; **Revisit later** wraps alone onto a second row and leaves substantial empty space. | Use one compact status strip or smaller inline metrics, prioritizing **Needs attention**, **Pending**, **Approved**, and total. Move less-used counts into filters. | Resolved — user confirmed 2026-09-21 |
+| MT-023-C01 | Usability defect | Low | The decision badge reads **Decision: Approve**, using the action label rather than the saved state. | Display **Decision: Approved**; use **Approve** only on an action control. | Resolved — user confirmed 2026-09-21 |
+| MT-023-C02 | Usability defect | Medium | The bottom notice says outreach remains a separate, later approved action. That wording reinforces the workflow now approved for simplification and conflicts with **Approve candidate and prepare email → Review and send**. | Update the notice after the workflow redesign: decisions remain human-controlled, and preparing an email does not send it; the reviewed send/handoff action is the explicit final boundary. | Resolved — user confirmed 2026-09-21 |
+| MT-023-V02 | Improvement | Low | The full recruiter-review recommendation occupies a large highlighted block inside every queue card. This will make multi-candidate queues vertically long. | Show a one- or two-line focus summary with **Show details**; keep gap/verify counts and the primary review action visible. | Resolved — user confirmed 2026-09-21 |
 
 Implementation note (2026-09-20): **Needs attention** is now the default queue
 and combines pending decisions, changed inputs, and evidence exceptions. A
@@ -1662,11 +1671,11 @@ also corrected to enforce the already-approved administrator-only boundary.
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-037-U01 | Onboarding defect | High | The current product-spec journey starts with “An administrator creates recruiter accounts and organization settings,” which implies that a separate recruiter is required before useful work can begin. In the implemented permission model, the administrator already has organization access and can perform recruitment work. | Rewrite onboarding around the first value action: after accepting access, the administrator can **Add candidates** or **Create a vacancy** immediately. Present teammate invitations and organization settings as optional setup, not prerequisites. | Open |
+| MT-037-U01 | Onboarding defect | High | The current product-spec journey starts with “An administrator creates recruiter accounts and organization settings,” which implies that a separate recruiter is required before useful work can begin. In the implemented permission model, the administrator already has organization access and can perform recruitment work. | Rewrite onboarding around the first value action: after accepting access, the administrator can **Add candidates** or **Create a vacancy** immediately. Present teammate invitations and organization settings as optional setup, not prerequisites. | Implemented — 2026-09-21; browser retest pending |
 | MT-037-U02 | Onboarding defect | High | The platform flow creates or links a first administrator, but the temporary-password model does not represent invitation acceptance. An organization can appear active even when its intended administrator has not securely completed setup. | Use an expiring invitation and a **Pending setup** organization/admin state. Promote the tenant to normal active operation when the first administrator completes password setup; allow the platform owner to resend or replace the invitation. | Proposed |
 | MT-037-U03 | Workflow improvement | Medium | Client-company management exists as a separate settings destination, which can make agencies believe all customers must be configured before vacancies are created. | Keep the settings list for later maintenance, but make on-demand inline creation from a vacancy the primary first-client path. Never show client-company setup as required for direct employers. | Proposed |
 | MT-037-U04 | Product simplification | Medium | A traditional multi-step setup wizard would add clicks for small organizations and force choices they may not yet know. | Use a dismissible dashboard checklist rather than a mandatory wizard. Required provisioning happens once; optional tasks disappear when completed and never block candidate or vacancy creation. | Proposed |
-| MT-037-C01 | Role clarity | Medium | **Administrator** can be misread as a settings-only account, encouraging the customer to create another account for their own recruiting work. | Explain during onboarding: **Administrators can also perform recruiter work and manage organization settings. Recruiter accounts are for teammates who should not manage settings.** | Open |
+| MT-037-C01 | Role clarity | Medium | **Administrator** can be misread as a settings-only account, encouraging the customer to create another account for their own recruiting work. | Explain during onboarding: **Administrators can also perform recruiter work and manage organization settings. Recruiter accounts are for teammates who should not manage settings.** | Implemented — 2026-09-21; browser retest pending |
 
 ### MT-038 — Add client company form
 
@@ -1878,4 +1887,4 @@ also corrected to enforce the already-approved administrator-only boundary.
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
 | MT-043-A01 | Role/navigation decision | Medium | A recruiter correctly loses **Platform** and settings controls but still receives the organization-wide **AI usage** and **Privacy & audit** links. These pages expose aggregate cost/model/failure metadata plus organization-wide retention and actor history that are operationally useful mainly to administrators. | Implement the already proposed MT-025-A01 and MT-026-A01 decision: move full AI usage and privacy/audit into administrator settings, while keeping only task-relevant processing state and candidate-specific privacy information in recruiter workflows. | Implemented — 2026-09-01 |
-| MT-043-V01 | Visual duplication | Low | The **Recruiter** badge beside the title and the separate **Your role: Recruiter** metric card communicate the same state, leaving most of the second metric row empty. | Apply MT-002-V01 consistently for both roles: retain the compact badge and remove the redundant role card. | Open |
+| MT-043-V01 | Visual duplication | Low | The **Recruiter** badge beside the title and the separate **Your role: Recruiter** metric card communicate the same state, leaving most of the second metric row empty. | Apply MT-002-V01 consistently for both roles: retain the compact badge and remove the redundant role card. | Implemented — 2026-09-21; browser retest pending |
