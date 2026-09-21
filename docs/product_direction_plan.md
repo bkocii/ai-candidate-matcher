@@ -20,6 +20,24 @@ The primary target is a small recruitment agency or internal recruitment team
 that receives enough CVs for manual screening to be slow, but does not need a
 large enterprise ATS implementation.
 
+## Minimum-effort recruiter principle
+
+The product must be designed for recruiters who want to spend as little time as
+possible on administration and repetitive screening. AI and background work
+should do the bulk of extraction, comparison, evidence linking, ranking, and
+exception detection. The routine recruiter experience should be:
+
+**Provide vacancy → upload CVs → receive ranked results → review exceptions →
+confirm decisions**
+
+Use sensible defaults, vacancy context, bulk actions, reuse of confirmed facts,
+and automatic progress wherever they are safe. Do not require recruiters to
+re-enter known information, approve every clean intermediate AI action, or move
+through several screens to obtain a shortlist. Reliability remains the
+constraint: evidence grounding, tenant isolation, explicit candidate reuse,
+contact permission, currentness checks, and the final human decision must not be
+removed merely to save a click.
+
 ## Intended client experience
 
 The default delivery model is a hosted web application operated by the platform
@@ -38,6 +56,64 @@ owner:
 Shared multi-tenant SaaS is the normal long-term model. A separately hosted
 instance may later be offered to clients with stricter procurement or isolation
 requirements. Self-hosting is not the default first-client path.
+
+## Platform access and client terms
+
+- Platform ownership is an operator capability, not tenant membership.
+- A platform owner creates the organization and its first administrator, but a
+  platform-owner account must not receive normal membership in a real client
+  organization.
+- Platform owners use a separate internal/demo organization and non-platform
+  test account for ordinary product testing.
+- Django superuser and infrastructure access remain exceptional technical
+  capabilities for recovery, security, or client-requested support; they are
+  not routine recruitment-data access.
+- A later support-access workflow should be client-approved, purpose-recorded,
+  time-limited, visible, revocable, and audited.
+- Before real onboarding, the client must accept a service agreement and data-
+  processing agreement covering authorized technical access, confidentiality,
+  subprocessors including hosting and AI providers, incident handling,
+  retention/deletion, export, and termination. Final legal text requires review
+  by qualified counsel for the operating jurisdiction.
+
+The application already separates platform pages from tenant content, but the
+existing administrator-membership workflow can still link a platform-owner
+account. `ACCESS-001` will close that narrow gap before any real client is
+onboarded.
+
+## Candidate retention direction
+
+The existing retention policy, staged candidate deletion, legal holds,
+exceptions, audit events, and dry-run lifecycle tools remain the foundation.
+The client-readiness refinement must add a low-effort candidate-level default
+suited to a reusable talent pool:
+
+- Active recruitment prevents scheduled candidate expiry.
+- An inactive reusable candidate defaults to review/deletion **24 months after
+  the last meaningful activity**; an organization may choose a shorter 12-month
+  period. Indefinite retention is not a normal option.
+- Meaningful activity must represent a deliberate, lawful new purpose, such as
+  an authorized new application/consideration, renewed candidate permission, or
+  documented candidate contact. Viewing a profile, background processing, or an
+  automatic AI run must not silently restart the clock.
+- Organization administrators receive a warning 30 days before expiry. An
+  extension requires a recorded valid reason or renewed permission rather than
+  a convenience-only click.
+- A valid deletion request is handled independently of the ordinary schedule,
+  subject to documented legal-hold or legal-retention requirements.
+- On customer termination, provide a 30-day export window, then delete live
+  tenant data. Deployment documentation must define backup expiry and restoration
+  handling so deleted data is not silently reintroduced; the target maximum
+  backup rotation period is 30 days unless a reviewed legal requirement says
+  otherwise.
+- Initial irreversible processing should prefer complete deletion of personal
+  candidate content over partial anonymization that could leave identity in CVs,
+  evidence excerpts, notes, assessments, or outreach. A content-free deletion
+  audit record may remain.
+
+The exact event calculation, migration, dependency preview, and deletion scope
+must be agreed during `RET-001`; this direction does not authorize automatic
+purge code by itself.
 
 ## Data ownership and separation
 
@@ -144,6 +220,9 @@ changes begin.
 
 - `DIR-001` Record the focused product direction and close the completed manual-
   review pass. **Complete — 2026-09-21.**
+- `DIR-002` Record the minimum-effort AI experience, operator-access boundary,
+  client agreement requirement, and long-gap candidate-retention direction.
+  **Complete — 2026-09-21; documentation only.**
 - The user runs the complete local quality command against this baseline.
 
 ### Phase B — Vacancy-centric candidate workflow
@@ -168,11 +247,20 @@ changes begin.
 
 ### Phase D — Client readiness
 
+- `ACCESS-001` Prevent platform-owner accounts from receiving normal membership
+  in real client organizations; retain separate internal/demo use through a
+  non-platform test account and exceptional documented technical access.
+- `RET-001` Extend the existing candidate retention workflow with a configurable
+  24-month inactive-talent-pool default, 12-month shorter option, meaningful-
+  activity calculation, 30-day warning, and reviewed deletion/offboarding rules.
 - `AI-007` Add optional organization-level BYOK with platform configuration as
   the backward-compatible fallback.
 - `PRIV-001` Re-audit tenant isolation, private CV authorization, candidate
   deletion/retention, provenance, AI-provider disclosure, and audit coverage for
   the new relationships.
+- `LEGAL-001` Prepare service/data-processing agreement inputs, subprocessor and
+  operator-access disclosures, and a client onboarding acceptance record for
+  qualified legal review.
 - `DEPLOY-001` Document hosted-SaaS onboarding plus the optional dedicated-
   instance path for stricter clients.
 

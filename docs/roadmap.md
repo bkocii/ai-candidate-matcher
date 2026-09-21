@@ -167,6 +167,9 @@ Status: In progress.
 - `DEMO-001` Create a reproducible demo and screenshots. **Complete — 2026-08-20.**
 - `DIR-001` Record the focused product direction after the completed manual-
   review pass. **Complete — 2026-09-21.**
+- `DIR-002` Record the minimum-effort AI experience, restricted platform-owner
+  membership boundary, client agreement requirement, and long-gap candidate-
+  retention direction. **Complete — 2026-09-21; documentation only.**
 - `DEMO-002` Prepare a client-facing README and Upwork Project Catalog
   positioning. **Deferred until the revised core workflow reaches an approved
   positioning checkpoint.**
@@ -201,10 +204,18 @@ authorize its implementation.
 
 ### Client readiness
 
+- `ACCESS-001` Prevent platform-owner accounts from receiving normal membership
+  in real client organizations while preserving separate internal/demo use
+  through a non-platform test account and documented exceptional support.
+- `RET-001` Refine the existing candidate lifecycle around a configurable
+  24-month inactive-candidate default, optional shorter 12-month policy,
+  meaningful activity, expiry warning, deletion requests, and offboarding.
 - `AI-007` Add optional organization-level BYOK with platform configuration as
   the backward-compatible fallback.
 - `PRIV-001` Re-audit privacy, tenant isolation, provenance, deletion, and AI-
   provider disclosure for the revised workflow.
+- `LEGAL-001` Prepare client service/data-processing agreement inputs and an
+  onboarding acceptance record for qualified legal review.
 - `DEPLOY-001` Document hosted-SaaS onboarding and an optional dedicated-
   instance path.
 

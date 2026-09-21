@@ -18,6 +18,14 @@ activity is detailed scope review for `FLOW-001`, the first vacancy-centric
 workflow task. `DEMO-002` is deferred until the revised workflow reaches an
 approved positioning checkpoint; see `docs/product_direction_plan.md`.
 
+The approved experience principle is AI-first and low-interaction: recruiters
+provide a vacancy and CVs, the application performs repetitive extraction,
+matching, evidence linking, ranking, and exception detection in bulk, and the
+recruiter mainly reviews exceptions and makes final decisions. Client-readiness
+work will also close the platform-owner membership gap and refine the
+existing staged retention workflow for candidates who may be reconsidered only
+after many months.
+
 The managed-SaaS workflow separates platform ownership from Django technical
 administration and tenant membership. Platform owners provision organizations
 and first administrators, manage administrator memberships, and use staged

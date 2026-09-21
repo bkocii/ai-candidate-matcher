@@ -14,6 +14,13 @@ The product is an AI shortlist engine and recruiter review workspace, not a full
 ATS. `docs/product_direction_plan.md` records the approved post-manual-review
 direction and staged implementation sequence.
 
+The intended experience is AI-first and low-interaction. The recruiter provides
+the vacancy and CVs; the application performs repetitive extraction, matching,
+evidence linking, ranking, and exception detection in bulk; the recruiter
+reviews exceptions and makes final decisions. A required field, click, approval,
+or repeated review needs a concrete reliability, privacy, or human-decision
+reason.
+
 ## Target users
 
 ### Primary
@@ -63,6 +70,9 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Managed multi-organization hosting with strictly isolated tenant workspaces.
 - Explicit platform-owner provisioning of organizations and first administrators
   without implicit candidate-data access.
+- Platform-owner accounts are blocked from membership in real client
+  organizations; internal/demo use through a non-platform test account and
+  exceptional documented technical access remain separate concerns.
 - Organization-administrator recruiter management and multi-workspace switching.
 - Organization administrators can also perform ordinary recruiter work; separate
   recruiter accounts are for teammates who should not manage settings.
@@ -107,6 +117,13 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Organization-admin retention policies with dependency-aware previews, legal
   holds/exceptions, safe cleanup of abandoned operational bundles, and staged
   organization suspension, recovery, and content-free tombstoning.
+- A candidate-level inactive-talent-pool default of 24 months from meaningful
+  activity, with a shorter 12-month organization option, 30-day expiry warning,
+  deletion-request handling, and no silent clock reset from profile views or AI
+  background work. This is approved direction pending `RET-001` implementation.
+- Client onboarding terms covering processing roles, operator/support access,
+  subprocessors, retention, deletion, export, and termination, subject to
+  qualified legal review.
 - Django admin for operational management.
 - Documented PostgreSQL/Gunicorn/Nginx deployment, separately supervised durable
   worker and retention timer, content-free health endpoints, production runtime

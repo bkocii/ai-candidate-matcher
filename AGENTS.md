@@ -27,6 +27,12 @@ Before changing code, read:
 - Do not scrape LinkedIn or arbitrary websites. External sources require documented permission and a dedicated approved connector.
 - Do not use protected or sensitive personal characteristics in matching.
 - Do not automatically reject candidates or send outreach. A recruiter must make the decision and approve the exact draft.
+- Optimize routine recruiter work for minimum interaction: AI and background
+  processing should perform repetitive extraction, comparison, ranking, and
+  exception detection in bulk; recruiters should supply inputs, inspect
+  exceptions, and make the final decision. Do not add a required click, field,
+  approval, or repeated review unless it protects a concrete correctness,
+  privacy, or human-decision boundary.
 - Keep deterministic eligibility rules separate from AI assessments.
 - Any suspected toolkit issue must follow `docs/toolkit_feedback.md` before the toolkit repository is changed.
 

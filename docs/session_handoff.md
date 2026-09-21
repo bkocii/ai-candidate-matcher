@@ -31,6 +31,13 @@ local quality check remains user-run under the agreed low-output workflow.
 `docs/product_direction_plan.md` is the canonical record of the new direction
 and staged tasks. The next activity is detailed scope review for `FLOW-001`; do
 not implement it until its behavior and acceptance criteria are approved.
+`DIR-002` subsequently records the approved AI-first minimum-effort recruiter
+principle and client-readiness refinements. Before a real client is onboarded,
+the platform-owner membership gap must be closed, service/data-processing
+terms must be legally reviewed, and the existing retention workflow must be
+aligned with a 24-month inactive-candidate default suitable for candidates who
+may not be reconsidered for months. This is documentation direction only;
+`FLOW-001` remains next.
 Use `docs/manual_testing_review.md` for individual implementation/browser-test
 states; do not interpret an implemented change as browser-tested or silently
 approve proposed scope.
@@ -1395,3 +1402,14 @@ deliberate candidate-pool reuse, a central ranked shortlist, exception-focused
 review, simplified safeguarded outreach, optional organization BYOK with
 platform fallback, privacy hardening, and hosted-SaaS onboarding. This checkpoint
 changes documentation only. Discuss `FLOW-001` in detail before any code change.
+
+`DIR-002` extends that canonical plan without changing the implementation order.
+The UI should assume recruiters want minimal administration: AI/background work
+handles repetitive extraction, comparison, ranking, evidence linking, and
+exception detection; recruiters provide inputs, inspect exceptions, and make
+final decisions. The planned client-readiness tasks are `ACCESS-001` (block
+platform-owner accounts from membership in real client tenants), `RET-001` (build
+on existing staged retention with a 24-month meaningful-activity default,
+optional 12 months, and 30-day warning), and `LEGAL-001` (prepare onboarding and
+data-processing agreement inputs for qualified legal review). No application
+code changed in this documentation checkpoint.

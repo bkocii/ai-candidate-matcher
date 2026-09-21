@@ -56,6 +56,13 @@ is the default target, with a dedicated hosted instance reserved as a later
 option for clients with stricter requirements. See
 `docs/product_direction_plan.md`.
 
+The product experience is intentionally AI-first and low-interaction. Bulk and
+background services should perform repetitive extraction, evidence linking,
+matching, ranking, and exception detection. Server-side boundaries must still
+enforce tenant isolation, grounded evidence, deliberate cross-vacancy reuse,
+contact permission, currentness, and human final decisions even when the UI
+combines or removes routine steps.
+
 ## Application modules
 
 ### accounts
@@ -259,6 +266,11 @@ organization name, username, email, password, or recruitment content.
 - Candidate/source/document dates retain the existing staged individual review
   and candidate dependency purge. CR-002 does not silently convert those dates
   into automatic candidate decisions.
+- `RET-001` will build on that staged workflow rather than replace it: inactive
+  reusable candidates default to 24 months from a defined meaningful activity,
+  organizations may choose 12 months, administrators receive 30 days' warning,
+  and passive reads or AI/background jobs do not reset the clock. Exact event
+  calculation and migration remain subject to task-level approval.
 - Organization deletion first sets the organization inactive and records its
   recovery deadline. A still-active organization administrator membership can
   recover it before that deadline through a dedicated route. After the deadline,
@@ -348,6 +360,12 @@ migration.
   organization list rather than a tenant dashboard. Platform pages use only
   organization/membership metadata and never pass a tenant context into shared
   candidate navigation.
+- Before real client onboarding, `ACCESS-001` must reject creation or activation
+  of an organization membership whose subject account is a platform owner.
+  Platform owners should use a separate internal/demo organization and non-
+  platform test account for routine testing. Django superuser/infrastructure
+  access remains an exceptional documented support boundary, not tenant
+  membership.
 - Users without an active membership receive a safe access message that does
   not disclose organization names.
 - Organization dashboard URLs resolve through `Organization.objects.visible_to()`;

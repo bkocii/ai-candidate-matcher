@@ -35,6 +35,12 @@ implementation is approved until its behavior and acceptance criteria are
 confirmed. Track each finding's separate
 implementation/browser-test state in `docs/manual_testing_review.md`.
 
+`DIR-002` is also complete as a documentation decision. It records an AI-first,
+minimum-effort recruiter experience plus the approved client-readiness
+refinements for platform-owner access, client agreements, and long-gap candidate
+retention. No application code changed, and `FLOW-001` remains the next design
+discussion.
+
 ## Decisions made
 
 - The first product is recruiter-side candidate search, not job search for candidates.
@@ -49,6 +55,20 @@ implementation/browser-test state in `docs/manual_testing_review.md`.
 - Platform owners provision organizations and first administrators. Organization
   administrators manage recruiters, and shared accounts can switch active
   workspaces without one membership change affecting another.
+- Before real client onboarding, platform-owner accounts must be prevented from
+  receiving normal membership in a client organization. Routine testing uses a
+  separate internal/demo organization and non-platform account; exceptional
+  technical access is documented rather than treated as tenant membership.
+- Recruiter effort should be minimized: AI/background work performs repetitive
+  extraction, matching, evidence linking, ranking, and exception detection in
+  bulk, while recruiters review exceptions and retain final decisions.
+- Existing staged retention remains the base. `RET-001` will add a 24-month
+  inactive-candidate default from meaningful activity, optional shorter
+  12-month policy, 30-day warning, and deletion/offboarding rules without resets
+  from passive views or AI jobs.
+- Real client onboarding requires service and data-processing terms covering
+  operator access, subprocessors, retention/deletion, export, and termination,
+  with final legal review outside the application implementation.
 - Agency deployments can associate vacancies with optional client companies.
 - Routine intake should be vacancy-centric while candidates and confirmed
   profiles remain reusable organization-owned records. Cross-vacancy or cross-
