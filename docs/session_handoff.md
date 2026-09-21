@@ -1336,3 +1336,9 @@ Immediate next action: deliver the changed-files-only MT-023 package and ask for
 one desktop browser recording of the default queue, summary strip, an approved
 item that still needs attention, and **Show review details**. After confirmation,
 continue with the combined six-finding dashboard/onboarding duplication batch.
+
+MT-022 received one browser follow-up after the user applied the previously
+missing migration. Outlook displayed `+` for spaces in the `mailto:` subject and
+body because `urlencode` used form-style encoding. The handoff now uses
+percent-style encoding (`%20`) and regression coverage verifies both the raw URL
+and exact decoded body. Package this as a small hotfix before continuing.

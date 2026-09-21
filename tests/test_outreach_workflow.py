@@ -412,7 +412,10 @@ def test_recruiter_edits_then_uses_email_copy_and_export_actions(client):
     email_result = email_post.json()
     assert email_result["recorded"] is True
     assert email_result["mailto_url"].startswith(f"mailto:{candidate.email}?")
-    assert "subject=Recruiter-edited+role+conversation" in email_result["mailto_url"]
+    assert (
+        "subject=Recruiter-edited%20role%20conversation" in email_result["mailto_url"]
+    )
+    assert "+" not in email_result["mailto_url"]
     parsed_email = urlparse(email_result["mailto_url"])
     assert parsed_email.path == candidate.email
     assert parse_qs(parsed_email.query)["body"] == [

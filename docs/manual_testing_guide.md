@@ -1379,6 +1379,8 @@ Expected result:
   and body together with your username and timestamp.
 - The default email application opens a pre-addressed message containing that
   exact subject and body.
+- Spaces and line breaks render normally in desktop clients such as Outlook;
+  the composed message must not display URL-encoding `+` characters.
 - The app records the handoff but still does not claim the message was sent.
 - Application only, Do not contact, or Not confirmed allowed contact blocks
   external use. A missing reason or missing candidate email also blocks it.

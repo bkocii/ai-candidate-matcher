@@ -1838,3 +1838,8 @@ Verification: focused review/decision/demo coverage `20 passed`; the complete
 quality gate passed with `620 passed`, successful Django system, deployment,
 static, migration-drift, Ruff, formatting, and dependency checks. No live AI
 request ran.
+
+The MT-022 email-app handoff received a compatibility follow-up on 2026-09-21.
+Mailto query values now use percent encoding for spaces instead of form-style
+plus encoding, preventing Outlook from displaying literal `+` characters while
+preserving the exact decoded recipient, subject, body, and audit action.

@@ -321,7 +321,10 @@ def outreach_draft_email_app(request, organization_slug: str, draft_id: int):
         response = JsonResponse({"error": _validation_message(error)}, status=400)
     else:
         recipient = quote(draft.shortlist_entry.candidate.email, safe="@._+-")
-        query = urlencode({"subject": draft.subject, "body": draft.body})
+        query = urlencode(
+            {"subject": draft.subject, "body": draft.body},
+            quote_via=quote,
+        )
         response = JsonResponse(
             {
                 "recorded": True,

@@ -1097,6 +1097,11 @@ record approval of the exact draft version. The email-app handoff records its
 actor and time but does not send or claim delivery. Connected Gmail/Microsoft
 365 delivery remains proposed product scope.
 
+Follow-up (2026-09-21): the email-app handoff now percent-encodes spaces as
+`%20` rather than form-style `+`, so Outlook renders the reviewed subject and
+body as normal text. The exact decoded recipient, subject, and body remain
+covered by the audited action and regression tests.
+
 ### MT-023 — Assessment review queue
 
 - **Date:** 2026-08-29
