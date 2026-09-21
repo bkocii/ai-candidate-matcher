@@ -13,7 +13,10 @@ python-ai-toolkit[django]==1.0.0
 ## Current status
 
 Sprint 0 through Sprint 6, `EVAL-001` through `EVAL-003`, and `DEMO-001` are
-complete. Evaluation and showcase work continues with `DEMO-002`.
+complete. The manual-review correction pass is closed. The approved next
+activity is detailed scope review for `FLOW-001`, the first vacancy-centric
+workflow task. `DEMO-002` is deferred until the revised workflow reaches an
+approved positioning checkpoint; see `docs/product_direction_plan.md`.
 
 The managed-SaaS workflow separates platform ownership from Django technical
 administration and tenant membership. Platform owners provision organizations
@@ -170,8 +173,10 @@ attribute language is rejected before persistence. Neither evaluation changes
 scores, assessments, decisions, or outreach. `DEMO-001` adds a provider-free
 synthetic setup command, a safety-bound walkthrough, and real reference
 screenshots of the shortlist, review, assessment, and blocked outreach workflow.
-The next approved task is `DEMO-002 — Prepare a client-facing README and Upwork
-Project Catalog positioning`.
+The next activity is detailed design review for `FLOW-001 — Bind routine CV
+intake to a vacancy while preserving reusable organization candidates and
+original application/batch provenance`. Implementation begins only after its
+exact behavior and acceptance criteria are approved.
 
 ## Reproducible demo
 

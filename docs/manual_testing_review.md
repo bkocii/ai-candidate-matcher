@@ -92,8 +92,10 @@ states that the same account can perform recruiter work.
 - **Date:** 2026-08-28
 - **Route:** `/organizations/second-agency-test/candidates/`
 - **Viewport:** Desktop, 1920 × 1080
-- **Visual status:** Implementation complete; browser retest pending
-- **Functional status:** In progress
+- **Visual status:** MT-003-V02 confirmed; other recorded items retain their
+  individual states
+- **Functional status:** Focused automated checks pass; complete local quality
+  gate remains user-run
 
 #### Completed functional checks
 
@@ -114,7 +116,7 @@ states that the same account can perform recruiter work.
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
 | MT-003-V01 | Visual defect | High | The desktop header is crowded and multiple navigation labels wrap onto two lines, including **AI usage**, **Privacy & audit**, **Change password**, and **Sign out**. | Introduce a compact account menu for password/sign-out actions and group lower-frequency administrator links so primary navigation remains single-line and scannable. | Implemented — browser retest pending |
-| MT-003-V02 | Visual defect | Medium | Five page-level actions compete for attention and several button labels wrap, making the intake choices harder to scan. | Keep **Create candidates from CVs** as the primary action and group secondary or operational actions in a compact menu or clearly separated secondary area. | Implemented — 2026-09-21; browser retest pending |
+| MT-003-V02 | Visual defect | Medium | Five page-level actions compete for attention and several button labels wrap, making the intake choices harder to scan. | Keep **Create candidates from CVs** as the primary action and group secondary or operational actions in a compact menu or clearly separated secondary area. | Resolved — user confirmed 2026-09-21 |
 | MT-003-U01 | Improvement | Medium | The empty-state card explains how to begin but contains no action of its own. | Add the primary **Create candidates from CVs** button inside the empty state while retaining the page-level action. | Proposed |
 | MT-003-U02 | Improvement | Low | **Queue pending profile extraction** is technical wording and is shown even when the organization has no candidates. | Use recruiter-facing wording, show a pending count, and hide or disable the action when there is nothing eligible to queue. | Proposed |
 | MT-003-V03 | Improvement | Low | The generic **C** empty-state icon adds little product meaning. | Replace it with a restrained candidate/profile icon when the shared visual system is polished. | Proposed |
@@ -122,7 +124,8 @@ states that the same account can perform recruiter work.
 Implementation note (2026-09-21): **Create candidates from CVs** is the sole
 primary page action. Quick add, CSV import, intake history, and pending profile
 extraction remain available in one compact **More actions** disclosure, with a
-mobile layout that expands in normal document flow.
+mobile layout that expands in normal document flow. The user confirmed the final
+action-bar presentation on 2026-09-21, closing the approved manual-review pass.
 
 ### MT-004 — Create candidates from CVs: shared details
 

@@ -16,16 +16,24 @@ The organization supplies or authorizes the candidate pool. The app does not scr
 
 Sprint 0 through Sprint 6, the user-approved corrective `INTAKE-001` task, and
 `EVAL-001` through `EVAL-003` plus `DEMO-001` are complete. Sprint 7 is in
-progress; `DEMO-002` is the next approved roadmap task.
+progress. `DIR-001` records the approved focused product direction;
+`DEMO-002` is deferred until the revised core workflow reaches an approved
+positioning checkpoint.
 
 The user has chosen to complete approved functionality corrections before the
 final styling/positioning pass. `DEF-001`, `CR-004`, `CR-005`, and `CR-002` are
 now complete, as is `CR-003` in-app client-company management. `CR-001` managed
 multi-organization provisioning and membership administration is also complete.
-`DEMO-002` remains the next release-roadmap item, but the user reconfirmed on
-2026-09-08 that recorded manual-review corrections must be handled first. Use
-`docs/manual_testing_review.md` for the remaining findings; do not interpret an
-implemented change as browser-tested or silently approve proposed scope.
+As of 2026-09-21, every finding approved for the manual-review correction pass
+has been implemented and no finding remains marked Open. The user confirmed the
+final MT-003-V02 candidate action-bar batch, closing that pass. The complete
+local quality check remains user-run under the agreed low-output workflow.
+`docs/product_direction_plan.md` is the canonical record of the new direction
+and staged tasks. The next activity is detailed scope review for `FLOW-001`; do
+not implement it until its behavior and acceptance criteria are approved.
+Use `docs/manual_testing_review.md` for individual implementation/browser-test
+states; do not interpret an implemented change as browser-tested or silently
+approve proposed scope.
 
 Manual-testing correction `MT-041-S01` is implemented: every response that
 began with an authenticated user and returns HTML is private/no-store with
@@ -550,16 +558,23 @@ version with actor and timestamp, and exceptions stay individual. Final
 approve/reject/revisit decisions remain individual recruiter actions with notes,
 actor, and timestamp, and outreach remains separate.
 
-The next release-roadmap item is:
+The next activity is detailed scope review for:
 
-`DEMO-002 — Prepare a client-facing README and Upwork Project Catalog positioning.`
+`FLOW-001 — Bind routine CV intake to a vacancy while preserving reusable
+organization candidates and original application/batch provenance.`
 
-The pre-release functionality pass through `CR-001` is complete.
+The product-direction sequence is recorded in
+`docs/product_direction_plan.md`. Discuss and approve each task's exact behavior
+and acceptance criteria before implementation. `DEMO-002` remains deferred
+until the revised workflow reaches an approved positioning checkpoint.
 
 ## Required instructions
 
 1. Read `AGENTS.md` completely.
-2. Read `docs/project_state.md`, `docs/roadmap.md`, `docs/product_spec.md`, `docs/architecture.md`, `docs/toolkit_integration.md`, and `docs/toolkit_feedback.md` before changing anything.
+2. Read `docs/project_state.md`, `docs/roadmap.md`,
+   `docs/product_direction_plan.md`, `docs/product_spec.md`,
+   `docs/architecture.md`, `docs/toolkit_integration.md`, and
+   `docs/toolkit_feedback.md` before changing anything.
 3. Inspect the repository; do not assume files or APIs exist.
 4. Implement only the next approved roadmap task.
 5. Do not redesign, skip ahead, or expand scope without a concrete reason and user approval.
@@ -1358,15 +1373,25 @@ Reserve the complete suite in this environment for major releases or explicit
 requests.
 
 The user confirmed the dashboard/onboarding batch. MT-003-V02, the final Open
-manual-review finding, is now implemented: **Create candidates from CVs** is the
-only primary Candidates-page action, while quick add, CSV import, intake history,
-and pending extraction are grouped under **More actions**. Focused candidate
-tests and browser confirmation are the remaining acceptance steps. The tracker
-has zero Open findings; proposals remain outside the approved manual-review fix
-scope. After confirmation, the manual-review pass is complete and DEMO-002 may
-resume only with the user's agreement.
+manual-review finding, was implemented and then confirmed by the user on
+2026-09-21: **Create candidates from CVs** is the only primary Candidates-page
+action, while quick add, CSV import, intake history, and pending extraction are
+grouped under **More actions**. The tracker has zero Open findings; proposals
+remain outside the approved manual-review fix scope. The approved manual-review
+pass is complete.
 
 Verification for the final action-bar batch passes with `43 passed` across
 candidate intake, unified intake, and background jobs. Migration drift and
 focused Ruff lint/format checks pass. The user will run the complete quality
 gate locally with `uv run python scripts/check.py`.
+
+After closing the manual-review pass, the user approved recording a narrower
+product direction before further implementation. `DIR-001` adds
+`docs/product_direction_plan.md` and synchronizes the roadmap, specification,
+architecture, state, and handoff. Candidate Matcher is positioned as an AI
+shortlist engine and recruiter review workspace rather than a full ATS. The
+planned sequence covers vacancy-centric intake, reusable organization candidates,
+deliberate candidate-pool reuse, a central ranked shortlist, exception-focused
+review, simplified safeguarded outreach, optional organization BYOK with
+platform fallback, privacy hardening, and hosted-SaaS onboarding. This checkpoint
+changes documentation only. Discuss `FLOW-001` in detail before any code change.

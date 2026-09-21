@@ -49,6 +49,13 @@ are documented in `docs/deployment.md` and `deploy/`. These controls complete
 Sprint 6 but do not satisfy the later evaluation or privacy/security release
 gates by themselves.
 
+The approved delivery direction remains a platform-operated hosted web
+application. Clients receive an organization workspace on the platform domain;
+they do not need to operate a server or own a domain. Shared multi-tenant hosting
+is the default target, with a dedicated hosted instance reserved as a later
+option for clients with stricter requirements. See
+`docs/product_direction_plan.md`.
+
 ## Application modules
 
 ### accounts
@@ -67,9 +74,20 @@ administrator-only normal-workspace management surface.
 Candidate records, reviewed bulk-intake staging, uploaded documents,
 consent/lawful-source metadata, structured profiles, and retention state.
 
+Candidate identity and confirmed profile data remain organization-owned and
+reusable. The revised vacancy-centric workflow must represent consideration for
+a vacancy separately from the reusable candidate and preserve the original
+vacancy, optional hiring client, intake batch, source, and later reuse history.
+The detailed `FLOW-001` design must inspect and reuse existing intake, shortlist,
+and assessment relationships where appropriate instead of assuming a new model.
+
 ### vacancies
 
 Vacancy descriptions, extracted requirements, recruiter corrections, and lifecycle status.
+
+Routine CV intake should begin from a vacancy. Vacancy views should default to
+candidates deliberately associated with that vacancy and expose the wider
+organization pool only through a separate reuse action.
 
 ### matching
 

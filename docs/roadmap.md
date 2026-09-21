@@ -165,7 +165,48 @@ Status: In progress.
 - `EVAL-003` Review explanations for evidence, unsupported claims, and protected-attribute leakage.
   **Complete — 2026-08-18.**
 - `DEMO-001` Create a reproducible demo and screenshots. **Complete — 2026-08-20.**
-- `DEMO-002` Prepare a client-facing README and Upwork Project Catalog positioning.
+- `DIR-001` Record the focused product direction after the completed manual-
+  review pass. **Complete — 2026-09-21.**
+- `DEMO-002` Prepare a client-facing README and Upwork Project Catalog
+  positioning. **Deferred until the revised core workflow reaches an approved
+  positioning checkpoint.**
+
+## Approved product-direction sequence
+
+Status: Direction approved; each implementation task requires detailed scope
+and acceptance-criteria approval before code changes begin.
+
+The canonical plan is `docs/product_direction_plan.md`. The next activity is
+the detailed design review for `FLOW-001`; planning approval alone does not
+authorize its implementation.
+
+### Vacancy-centric candidate workflow
+
+- `FLOW-001` Bind routine CV intake to a vacancy while preserving reusable
+  organization candidates and original application/batch provenance.
+- `FLOW-002` Default vacancy views to their associated candidates and separate
+  access to the wider organization candidate pool.
+- `FLOW-003` Add deliberate cross-vacancy reuse through **Add from candidate
+  pool**, with provenance and permission checks.
+
+### Shortlist and recruiter experience
+
+- `MATCH-005` Add supported role/seniority discovery and measured semantic-
+  matching improvements.
+- `MATCH-006` Make the ranked evidence-backed shortlist the central vacancy
+  result.
+- `REV-003` Extend exception-focused review across the core workflow.
+- `OUT-003` Simplify outreach presentation while retaining currentness,
+  permission, exact-draft, and explicit human-action safeguards.
+
+### Client readiness
+
+- `AI-007` Add optional organization-level BYOK with platform configuration as
+  the backward-compatible fallback.
+- `PRIV-001` Re-audit privacy, tenant isolation, provenance, deletion, and AI-
+  provider disclosure for the revised workflow.
+- `DEPLOY-001` Document hosted-SaaS onboarding and an optional dedicated-
+  instance path.
 
 ## Release gate
 

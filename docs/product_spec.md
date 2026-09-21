@@ -6,7 +6,13 @@ AI Candidate Matcher helps a small recruitment agency or employer rediscover sui
 
 The core promise is:
 
-> Turn a vacancy and an existing candidate database into an explainable recruiter-reviewed shortlist and editable outreach drafts.
+> Give the application a vacancy and a set of lawfully held CVs. Receive an
+> explainable ranked shortlist, then review the exceptions and make the final
+> human decision.
+
+The product is an AI shortlist engine and recruiter review workspace, not a full
+ATS. `docs/product_direction_plan.md` records the approved post-manual-review
+direction and staged implementation sequence.
 
 ## Target users
 
@@ -34,17 +40,21 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
    vacancy; no separate recruiter account or settings setup is required.
 3. Teammate accounts, hiring clients, and organization settings remain optional
    setup actions that can be completed when needed.
-4. A recruiter imports candidates through CSV or a reviewed bulk intake of
-   supported CV documents.
-5. The recruiter pastes a vacancy description and confirms the extracted requirements.
+4. A recruiter creates and confirms a vacancy for an optional hiring client.
+5. From that vacancy, the recruiter uploads the CVs received for it. The intake
+   preserves the original vacancy, batch, and source while confirmed candidates
+   remain reusable within the organization.
 6. Deterministic rules remove candidates who fail explicit hard constraints.
-7. The application ranks the remaining candidates.
-8. AI creates an evidence-based assessment for each shortlisted candidate.
-9. The recruiter sees matching qualifications, gaps, uncertainties, and source evidence.
-10. The recruiter approves, rejects, or marks a candidate for later review.
-11. Recording an approval can prepare an editable outreach email after currentness
+7. The application ranks the remaining candidates for that vacancy.
+8. AI creates evidence-based assessments and highlights exceptions.
+9. The recruiter sees the ranked shortlist, matching qualifications, gaps,
+   uncertainties, and source evidence.
+10. The recruiter may deliberately add an existing organization candidate to
+    the vacancy; the system never silently reuses candidates across hiring clients.
+11. The recruiter approves, rejects, or marks a candidate for later review.
+12. Recording an approval can prepare an editable outreach email after currentness
    and contact-permission checks pass.
-12. The recruiter reviews the exact recipient, subject, and body, then explicitly
+13. The recruiter reviews the exact recipient, subject, and body, then explicitly
     opens it in their email app or uses a secondary copy/export action.
 
 ## MVP capabilities
@@ -60,6 +70,11 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Organization-administrator client-company settings with reversible
   deactivation; recruiters can assign active clients while creating or editing
   vacancies, and existing inactive-client relationships remain historical.
+- Vacancy-centric CV intake with original application and batch provenance.
+- Reusable organization-level candidate profiles with explicit candidate-to-
+  vacancy consideration history.
+- A vacancy view centered on its associated candidates, with a separate
+  recruiter-controlled path for adding an existing candidate from the wider pool.
 - Primary CV-first candidate creation for one or several documents, reviewed
   local identity proposals, shared provenance, exact CSV-to-CV mapping, and
   explicit selected-row creation.
@@ -79,6 +94,7 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Hard filters for explicit requirements.
 - Candidate-to-vacancy shortlist.
 - Structured AI match assessment with evidence, gaps, and uncertainty.
+- A concise ranked shortlist as the central vacancy result.
 - Traffic-light display derived from a numeric score.
 - Human review queue.
 - One editable outreach composer with the exact recorded recipient, subject,
@@ -107,6 +123,7 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Full ATS replacement.
 - Multi-tenant SaaS billing and subscriptions.
 - Public signup, self-service organization creation, or automatic email invitations.
+- Silent or automatic candidate reuse across vacancies or hiring clients.
 - Mobile application or Windows executable.
 - Automated legal compliance certification.
 
@@ -171,6 +188,9 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
   not tenants, candidate owners, memberships, or login accounts. Direct
   employers need none. Only active same-organization clients can be newly
   assigned to a vacancy; deactivation does not erase an existing relationship.
+- Candidates belong to the organization rather than a hiring client or one
+  permanent role. Reuse for another vacancy requires an explicit recruiter
+  action and preserves the original vacancy, client, batch, and source context.
 - Platform ownership, Django staff status, and Django superuser status do not
   grant organization content access. Every tenant workspace still requires an
   explicit active membership.

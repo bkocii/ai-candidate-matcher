@@ -17,20 +17,29 @@ Sprint 7 — Evaluation and showcase release — is in progress after the comple
 explanation review, and `DEMO-001` reproducible showcase.
 
 Status: the user-approved corrective `INTAKE-001` task, `EVAL-001`, and
-`EVAL-002`, `EVAL-003`, and `DEMO-001` are complete after `PROD-005`; `DEMO-002`
-remains the next release-roadmap task. The user approved a pre-release
+`EVAL-002`, `EVAL-003`, and `DEMO-001` are complete after `PROD-005`. The user
+approved a pre-release
 functionality pass before styling/positioning; `DEF-001` is complete and the
 CV-first `CR-004` workflow, plain-language `CR-005` privacy/source pass, and
 dependency-aware `CR-002` lifecycle controls and in-app `CR-003` client-company
 management are complete. `CR-001` managed multi-organization provisioning and
-membership administration is also complete. `DEMO-002` remains the next release
-item, but is paused while the user-approved manual-review corrections continue.
-Track those findings and their separate implementation/browser-test states in
-`docs/manual_testing_review.md`.
+membership administration is also complete. All approved manual-review
+corrections are implemented and no finding remains marked Open. The user
+confirmed the final MT-003-V02 candidate action-bar batch on 2026-09-21; the
+manual-review correction pass is closed, with the complete local quality gate
+remaining user-run under the agreed low-output workflow. `DIR-001` now records
+the focused product direction in `docs/product_direction_plan.md`. `DEMO-002` is
+deferred until the revised core workflow reaches an approved positioning
+checkpoint. The next activity is detailed design review for `FLOW-001`; no
+implementation is approved until its behavior and acceptance criteria are
+confirmed. Track each finding's separate
+implementation/browser-test state in `docs/manual_testing_review.md`.
 
 ## Decisions made
 
 - The first product is recruiter-side candidate search, not job search for candidates.
+- The product is an AI shortlist engine and recruiter review workspace, not a
+  full ATS.
 - The MVP searches candidates supplied or controlled by the organization.
 - The product does not scrape LinkedIn or arbitrary websites.
 - The managed deployment supports several strictly isolated organizations and
@@ -41,6 +50,13 @@ Track those findings and their separate implementation/browser-test states in
   administrators manage recruiters, and shared accounts can switch active
   workspaces without one membership change affecting another.
 - Agency deployments can associate vacancies with optional client companies.
+- Routine intake should be vacancy-centric while candidates and confirmed
+  profiles remain reusable organization-owned records. Cross-vacancy or cross-
+  client reuse is always an explicit recruiter action with preserved provenance.
+- The default client delivery is a platform-operated hosted web application;
+  clients do not need their own domain or server.
+- Organization-level BYOK is planned as an optional override of the existing
+  platform AI configuration, not as a per-recruiter key or billing system.
 - Deterministic filtering precedes AI assessment.
 - Deterministic skill matching uses a small controlled alias policy, preserves
   original source wording/evidence, and never uses unrestricted substring
@@ -1366,9 +1382,15 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-`DEMO-002 — Prepare a client-facing README and Upwork Project Catalog
-positioning` is the next release-roadmap task after the completed pre-release
-functionality pass through `CR-001`.
+Discuss and approve the detailed scope of `FLOW-001 — Bind routine CV intake to
+a vacancy while preserving reusable organization candidates and original
+application/batch provenance`.
+
+`docs/product_direction_plan.md` is the canonical record for the newly approved
+direction and phased task sequence. `DEMO-002` is deferred until the revised core
+workflow reaches an approved positioning checkpoint. Do not implement
+`FLOW-001` merely from the summary; inspect the current model and agree its exact
+behavior, migration, privacy rules, tests, and acceptance criteria first.
 
 The MT-029 platform organization list now surfaces active tenants without an
 administrator, distinguishes active from total memberships, and supports
@@ -1870,3 +1892,12 @@ Verification follows the user's focused workflow: candidate intake, unified
 intake, and background-job coverage passes with `43 passed`; migration drift,
 focused Ruff linting, and focused formatting checks also pass. The user will run
 the complete quality gate locally.
+
+The user confirmed MT-003-V02 on 2026-09-21, closing the approved manual-review
+correction pass. `DIR-001` records the agreed product direction: Candidate
+Matcher is an AI shortlist engine and recruiter review workspace, with vacancy-
+centric intake, reusable organization candidates, deliberate cross-vacancy
+reuse, a central ranked shortlist, optional organization BYOK with platform
+fallback, and hosted-SaaS delivery. The staged plan is in
+`docs/product_direction_plan.md`. No product-direction implementation was made
+in this documentation-only checkpoint.

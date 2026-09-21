@@ -6,10 +6,11 @@ Before changing code, read:
 
 1. `docs/project_state.md`
 2. `docs/roadmap.md`
-3. `docs/product_spec.md`
-4. `docs/architecture.md`
-5. `docs/toolkit_integration.md`
-6. `docs/toolkit_feedback.md`
+3. `docs/product_direction_plan.md`
+4. `docs/product_spec.md`
+5. `docs/architecture.md`
+6. `docs/toolkit_integration.md`
+7. `docs/toolkit_feedback.md`
 
 ## Working rules
 
