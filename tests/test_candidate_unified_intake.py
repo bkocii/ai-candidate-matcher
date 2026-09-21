@@ -610,5 +610,12 @@ def test_candidate_list_promotes_cv_first_intake(client) -> None:
     )
 
     assert response.status_code == 200
-    assert b"Create candidates from CVs" in response.content
-    assert b"Quick add" in response.content
+    content = response.content.decode()
+    assert content.count('class="primary-button button-link"') == 1
+    assert "Create candidates from CVs" in content
+    assert '<details class="candidate-more-actions">' in content
+    assert "<summary>More actions</summary>" in content
+    assert "Quick add" in content
+    assert "Import CSV" in content
+    assert "Intake history" in content
+    assert "Queue pending profile extraction" in content

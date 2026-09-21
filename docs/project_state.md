@@ -1857,3 +1857,16 @@ finding remains Open: MT-003-V02, the candidate-list action bar.
 Verification for this batch is intentionally focused under the user's revised
 workflow: dashboard coverage passes with `20 passed`; migration-drift, Ruff, and
 formatting checks are run locally, while the user runs the complete quality gate.
+
+The user confirmed the dashboard/onboarding batch on 2026-09-21. The final Open
+manual-review finding, MT-003-V02, is now implemented. The Candidates page keeps
+**Create candidates from CVs** as its sole primary action and groups quick add,
+CSV import, intake history, and pending profile extraction beneath a compact
+**More actions** disclosure. All recorded manual-review findings are now either
+resolved, implemented pending browser confirmation, or explicitly proposed;
+none remain Open.
+
+Verification follows the user's focused workflow: candidate intake, unified
+intake, and background-job coverage passes with `43 passed`; migration drift,
+focused Ruff linting, and focused formatting checks also pass. The user will run
+the complete quality gate locally.

@@ -160,7 +160,13 @@ Expected security behavior:
 
 ## 4. Test manual candidate entry
 
-Open **Candidates** and select **Quick add**. Enter:
+Open **Candidates**. Confirm **Create candidates from CVs** is the sole primary
+page action. Open **More actions** and confirm it contains **Quick add**, **Import
+CSV**, **Intake history**, and **Queue pending profile extraction** without
+overlapping the candidate list. On a narrow viewport, confirm the menu expands
+in normal page flow.
+
+Select **Quick add** from **More actions**. Enter:
 
 - Full name: `Arben Testi`
 - Email: `arben.testi@example.test`

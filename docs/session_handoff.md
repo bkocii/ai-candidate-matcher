@@ -1355,5 +1355,18 @@ The user requested a lower-output validation workflow to avoid chat limits. For
 small fixes and UI batches, run only directly relevant tests plus concise static
 checks, give the user `uv run python scripts/check.py`, and wait for their result.
 Reserve the complete suite in this environment for major releases or explicit
-requests. One Open manual-review finding remains: MT-003-V02, the candidate-list
-action bar. After dashboard browser confirmation, implement that final finding.
+requests.
+
+The user confirmed the dashboard/onboarding batch. MT-003-V02, the final Open
+manual-review finding, is now implemented: **Create candidates from CVs** is the
+only primary Candidates-page action, while quick add, CSV import, intake history,
+and pending extraction are grouped under **More actions**. Focused candidate
+tests and browser confirmation are the remaining acceptance steps. The tracker
+has zero Open findings; proposals remain outside the approved manual-review fix
+scope. After confirmation, the manual-review pass is complete and DEMO-002 may
+resume only with the user's agreement.
+
+Verification for the final action-bar batch passes with `43 passed` across
+candidate intake, unified intake, and background jobs. Migration drift and
+focused Ruff lint/format checks pass. The user will run the complete quality
+gate locally with `uv run python scripts/check.py`.

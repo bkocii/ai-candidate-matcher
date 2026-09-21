@@ -545,6 +545,83 @@ h2 {
     gap: 12px;
 }
 
+.candidate-page-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.candidate-more-actions {
+    position: relative;
+}
+
+.candidate-more-actions > summary {
+    padding: 11px 17px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: white;
+    color: var(--primary);
+    cursor: pointer;
+    font-weight: 750;
+    list-style: none;
+    white-space: nowrap;
+}
+
+.candidate-more-actions > summary::-webkit-details-marker {
+    display: none;
+}
+
+.candidate-more-actions > summary::after {
+    margin-left: 8px;
+    content: "\25BE";
+}
+
+.candidate-more-actions[open] > summary {
+    border-color: var(--primary);
+}
+
+.candidate-more-actions-menu {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 8px);
+    right: 0;
+    display: grid;
+    min-width: 280px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: white;
+    box-shadow: var(--shadow);
+}
+
+.candidate-more-actions-menu form {
+    margin: 0;
+}
+
+.candidate-more-actions-menu a,
+.candidate-more-actions-menu button {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 650;
+    line-height: 1.35;
+    text-align: left;
+    text-decoration: none;
+}
+
+.candidate-more-actions-menu a:hover,
+.candidate-more-actions-menu a:focus-visible,
+.candidate-more-actions-menu button:hover,
+.candidate-more-actions-menu button:focus-visible {
+    background: var(--surface-soft);
+    color: var(--primary-dark);
+}
+
 .report-filters {
     display: flex;
     align-items: end;
@@ -4095,6 +4172,23 @@ tbody tr:last-child td {
     .button-row {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .candidate-page-actions {
+        width: 100%;
+    }
+
+    .candidate-more-actions,
+    .candidate-more-actions > summary {
+        width: 100%;
+    }
+
+    .candidate-more-actions-menu {
+        position: static;
+        width: 100%;
+        min-width: 0;
+        margin-top: 8px;
+        box-shadow: none;
     }
 }
 .platform-summary {

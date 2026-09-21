@@ -74,10 +74,10 @@ This file records functional defects and visual improvements found during page-b
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-002-V01 | Visual defect | Medium | The separate **Your role** card duplicates the administrator badge beside the page title and leaves two-thirds of its grid row empty. | Keep the compact role badge and remove the redundant card, allowing the actionable sections to move upward. | Implemented — 2026-09-21; browser retest pending |
-| MT-002-V02 | Visual defect | Medium | **Open organization settings** wraps across three lines inside a narrow desktop button. | Use a wider action area or shorten the label to **Manage settings** so it stays on one line. | Implemented — 2026-09-21; browser retest pending |
-| MT-002-V03 | Visual defect | Low | Candidate and vacancy summary cards have actions, while the client-company card has no equivalent administrator action. | Use consistent card affordances; provide **Manage client companies** for administrators or make all actionable cards consistently clickable. | Implemented — 2026-09-21; browser retest pending |
-| MT-002-C01 | Improvement | Low | The large **Secure workspace** panel contains generic descriptive copy but no status detail or action. | Replace it with meaningful operational status information or reduce/remove the panel to keep the dashboard task-focused. | Implemented with dashboard batch — browser retest pending |
+| MT-002-V01 | Visual defect | Medium | The separate **Your role** card duplicates the administrator badge beside the page title and leaves two-thirds of its grid row empty. | Keep the compact role badge and remove the redundant card, allowing the actionable sections to move upward. | Resolved — user confirmed 2026-09-21 |
+| MT-002-V02 | Visual defect | Medium | **Open organization settings** wraps across three lines inside a narrow desktop button. | Use a wider action area or shorten the label to **Manage settings** so it stays on one line. | Resolved — user confirmed 2026-09-21 |
+| MT-002-V03 | Visual defect | Low | Candidate and vacancy summary cards have actions, while the client-company card has no equivalent administrator action. | Use consistent card affordances; provide **Manage client companies** for administrators or make all actionable cards consistently clickable. | Resolved — user confirmed 2026-09-21 |
+| MT-002-C01 | Improvement | Low | The large **Secure workspace** panel contains generic descriptive copy but no status detail or action. | Replace it with meaningful operational status information or reduce/remove the panel to keep the dashboard task-focused. | Resolved — user confirmed 2026-09-21 |
 
 Implementation note (2026-09-21): the role remains a single compact heading
 badge and the redundant role metric is removed for administrators and
@@ -92,7 +92,7 @@ states that the same account can perform recruiter work.
 - **Date:** 2026-08-28
 - **Route:** `/organizations/second-agency-test/candidates/`
 - **Viewport:** Desktop, 1920 × 1080
-- **Visual status:** Improvements required
+- **Visual status:** Implementation complete; browser retest pending
 - **Functional status:** In progress
 
 #### Completed functional checks
@@ -114,10 +114,15 @@ states that the same account can perform recruiter work.
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
 | MT-003-V01 | Visual defect | High | The desktop header is crowded and multiple navigation labels wrap onto two lines, including **AI usage**, **Privacy & audit**, **Change password**, and **Sign out**. | Introduce a compact account menu for password/sign-out actions and group lower-frequency administrator links so primary navigation remains single-line and scannable. | Implemented — browser retest pending |
-| MT-003-V02 | Visual defect | Medium | Five page-level actions compete for attention and several button labels wrap, making the intake choices harder to scan. | Keep **Create candidates from CVs** as the primary action and group secondary or operational actions in a compact menu or clearly separated secondary area. | Open |
+| MT-003-V02 | Visual defect | Medium | Five page-level actions compete for attention and several button labels wrap, making the intake choices harder to scan. | Keep **Create candidates from CVs** as the primary action and group secondary or operational actions in a compact menu or clearly separated secondary area. | Implemented — 2026-09-21; browser retest pending |
 | MT-003-U01 | Improvement | Medium | The empty-state card explains how to begin but contains no action of its own. | Add the primary **Create candidates from CVs** button inside the empty state while retaining the page-level action. | Proposed |
 | MT-003-U02 | Improvement | Low | **Queue pending profile extraction** is technical wording and is shown even when the organization has no candidates. | Use recruiter-facing wording, show a pending count, and hide or disable the action when there is nothing eligible to queue. | Proposed |
 | MT-003-V03 | Improvement | Low | The generic **C** empty-state icon adds little product meaning. | Replace it with a restrained candidate/profile icon when the shared visual system is polished. | Proposed |
+
+Implementation note (2026-09-21): **Create candidates from CVs** is the sole
+primary page action. Quick add, CSV import, intake history, and pending profile
+extraction remain available in one compact **More actions** disclosure, with a
+mobile layout that expands in normal document flow.
 
 ### MT-004 — Create candidates from CVs: shared details
 
@@ -1671,11 +1676,11 @@ also corrected to enforce the already-approved administrator-only boundary.
 
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
-| MT-037-U01 | Onboarding defect | High | The current product-spec journey starts with “An administrator creates recruiter accounts and organization settings,” which implies that a separate recruiter is required before useful work can begin. In the implemented permission model, the administrator already has organization access and can perform recruitment work. | Rewrite onboarding around the first value action: after accepting access, the administrator can **Add candidates** or **Create a vacancy** immediately. Present teammate invitations and organization settings as optional setup, not prerequisites. | Implemented — 2026-09-21; browser retest pending |
+| MT-037-U01 | Onboarding defect | High | The current product-spec journey starts with “An administrator creates recruiter accounts and organization settings,” which implies that a separate recruiter is required before useful work can begin. In the implemented permission model, the administrator already has organization access and can perform recruitment work. | Rewrite onboarding around the first value action: after accepting access, the administrator can **Add candidates** or **Create a vacancy** immediately. Present teammate invitations and organization settings as optional setup, not prerequisites. | Resolved — user confirmed 2026-09-21 |
 | MT-037-U02 | Onboarding defect | High | The platform flow creates or links a first administrator, but the temporary-password model does not represent invitation acceptance. An organization can appear active even when its intended administrator has not securely completed setup. | Use an expiring invitation and a **Pending setup** organization/admin state. Promote the tenant to normal active operation when the first administrator completes password setup; allow the platform owner to resend or replace the invitation. | Proposed |
 | MT-037-U03 | Workflow improvement | Medium | Client-company management exists as a separate settings destination, which can make agencies believe all customers must be configured before vacancies are created. | Keep the settings list for later maintenance, but make on-demand inline creation from a vacancy the primary first-client path. Never show client-company setup as required for direct employers. | Proposed |
 | MT-037-U04 | Product simplification | Medium | A traditional multi-step setup wizard would add clicks for small organizations and force choices they may not yet know. | Use a dismissible dashboard checklist rather than a mandatory wizard. Required provisioning happens once; optional tasks disappear when completed and never block candidate or vacancy creation. | Proposed |
-| MT-037-C01 | Role clarity | Medium | **Administrator** can be misread as a settings-only account, encouraging the customer to create another account for their own recruiting work. | Explain during onboarding: **Administrators can also perform recruiter work and manage organization settings. Recruiter accounts are for teammates who should not manage settings.** | Implemented — 2026-09-21; browser retest pending |
+| MT-037-C01 | Role clarity | Medium | **Administrator** can be misread as a settings-only account, encouraging the customer to create another account for their own recruiting work. | Explain during onboarding: **Administrators can also perform recruiter work and manage organization settings. Recruiter accounts are for teammates who should not manage settings.** | Resolved — user confirmed 2026-09-21 |
 
 ### MT-038 — Add client company form
 
@@ -1887,4 +1892,4 @@ also corrected to enforce the already-approved administrator-only boundary.
 | ID | Type | Priority | Finding | Recommendation | Status |
 | --- | --- | --- | --- | --- | --- |
 | MT-043-A01 | Role/navigation decision | Medium | A recruiter correctly loses **Platform** and settings controls but still receives the organization-wide **AI usage** and **Privacy & audit** links. These pages expose aggregate cost/model/failure metadata plus organization-wide retention and actor history that are operationally useful mainly to administrators. | Implement the already proposed MT-025-A01 and MT-026-A01 decision: move full AI usage and privacy/audit into administrator settings, while keeping only task-relevant processing state and candidate-specific privacy information in recruiter workflows. | Implemented — 2026-09-01 |
-| MT-043-V01 | Visual duplication | Low | The **Recruiter** badge beside the title and the separate **Your role: Recruiter** metric card communicate the same state, leaving most of the second metric row empty. | Apply MT-002-V01 consistently for both roles: retain the compact badge and remove the redundant role card. | Implemented — 2026-09-21; browser retest pending |
+| MT-043-V01 | Visual duplication | Low | The **Recruiter** badge beside the title and the separate **Your role: Recruiter** metric card communicate the same state, leaving most of the second metric row empty. | Apply MT-002-V01 consistently for both roles: retain the compact badge and remove the redundant role card. | Resolved — user confirmed 2026-09-21 |
