@@ -597,16 +597,17 @@ Track those findings and their separate implementation/browser-test states in
 - Added a POST-only decision form to the evidence detail screen. Corrections
   append a new decision version while preserving earlier choice, notes,
   assessment, actor, and time.
-- Updated the review queue to default to pending individual decisions while
-  retaining exception, changed-input, and all scopes. It shows current decision
-  counts and status badges and never carries a decision from an older assessment
-  onto a newer version.
+- Updated the review queue to default to a unified **Needs attention** scope that
+  combines pending individual decisions, evidence exceptions, and changed
+  inputs while retaining pending, changed-input, and all scopes. It shows
+  compact current-state counts and never carries a decision from an older
+  assessment onto a newer version.
 - Added read-only Django admin inspection, tenant-isolation and immutability
   safeguards, candidate-deletion cleanup, focused automated coverage, and a full
   manual browser test workflow.
-- Decisions do not change deterministic or AI results and create no outreach
-  draft, approval, copy/export, send, or contact action. Those remain `OUT-001`
-  and `OUT-002`.
+- Decisions do not change deterministic or AI results. A safe approval may now
+  prepare an outreach draft through the separately guarded `OUT-001`/`OUT-002`
+  workflow, but it never sends or contacts the candidate automatically.
 
 ### `OUT-001 — Approved-only outreach draft generation`
 
@@ -1814,10 +1815,26 @@ blocked contact records the decision but creates no unusable draft and provides
 a correction path. Email-app, copy, and export actions repeat currentness and
 contact checks, approve the exact version used, and append an immutable action
 record. Email-app handoff uses `mailto:` and never claims provider delivery.
-Connected Gmail/Microsoft 365 sending remains proposed. Twelve findings remain
-marked Open; this batch awaits browser confirmation.
+Connected Gmail/Microsoft 365 sending remains proposed. Twelve findings remained
+marked Open before browser confirmation.
 
 Verification: focused decision/outreach/demo/lifecycle coverage `52 passed`; the
 complete quality gate passed with `619 passed`, successful Django system,
 deployment, static, migration-drift, Ruff, formatting, and dependency checks.
 No live AI request ran.
+
+The user confirmed the combined MT-022 batch on 2026-09-20. The next combined
+batch implements all five Open MT-023 findings and absorbs compatible MT-023-V02.
+The review queue now defaults to a unified **Needs attention** scope combining
+pending decisions, changed inputs, and evidence exceptions. A compact four-value
+strip prioritizes attention, pending, approved, and total counts. Each queue card
+makes attention the dominant workflow state, labels the AI traffic light as a
+separate assessment signal, uses saved-state decision wording, and collapses the
+full review recommendation. The final safety notice now matches the simplified
+email workflow. Seven findings remain marked Open; this batch awaits browser
+confirmation.
+
+Verification: focused review/decision/demo coverage `20 passed`; the complete
+quality gate passed with `620 passed`, successful Django system, deployment,
+static, migration-drift, Ruff, formatting, and dependency checks. No live AI
+request ran.

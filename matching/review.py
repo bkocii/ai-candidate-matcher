@@ -60,17 +60,23 @@ class AssessmentReviewItem:
         )
 
     @property
+    def needs_attention(self) -> bool:
+        return self.decision_pending or self.needs_focus
+
+    @property
     def priority(self) -> tuple[int, int, int, int, float]:
         if self.inputs_changed:
             category = 0
-        elif self.gap_count:
+        elif self.decision_pending:
             category = 1
-        elif self.uncertainty_count:
+        elif self.gap_count:
             category = 2
-        elif self.profile_ambiguity_count or self.deterministic_review_needed:
+        elif self.uncertainty_count:
             category = 3
-        else:
+        elif self.profile_ambiguity_count or self.deterministic_review_needed:
             category = 4
+        else:
+            category = 5
         return (
             category,
             -self.gap_count,
@@ -84,6 +90,7 @@ class AssessmentReviewItem:
 class AssessmentReviewQueue:
     items: tuple[AssessmentReviewItem, ...]
     total_count: int
+    attention_count: int
     focus_count: int
     changed_count: int
     routine_count: int
@@ -176,6 +183,7 @@ def build_assessment_review_queue(
         )
 
     items.sort(key=lambda item: item.priority)
+    attention_count = sum(item.needs_attention for item in items)
     focus_count = sum(item.needs_focus for item in items)
     changed_count = sum(item.inputs_changed for item in items)
     pending_count = sum(item.decision_pending for item in items)
@@ -197,6 +205,7 @@ def build_assessment_review_queue(
     return AssessmentReviewQueue(
         items=tuple(items),
         total_count=len(items),
+        attention_count=attention_count,
         focus_count=focus_count,
         changed_count=changed_count,
         routine_count=len(items) - focus_count,

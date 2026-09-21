@@ -46,7 +46,7 @@ approved.
    weighting, exact candidate evidence, and the separate AI assessment score.
 3. Open **Review queue** with `?scope=all`. Show 20 latest assessments, 17
    pending decisions, and one each approved, rejected, and revisit. Switch to
-   **Needs focus** to demonstrate exception-oriented review without hiding
+   **Needs attention** to demonstrate exception-oriented review without hiding
    routine entries.
 4. Open **Approved assessment**. Inspect the linked requirement/evidence details
    and immutable recruiter decision history. The decision remains individual and

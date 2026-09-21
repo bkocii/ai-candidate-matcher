@@ -46,7 +46,7 @@ from outreach.models import OutreachDraft
 from outreach.workflow import assess_contact_permission
 from vacancies.models import Vacancy, VacancyRequirements
 
-REVIEW_QUEUE_SCOPES = {"pending", "exceptions", "changed", "all"}
+REVIEW_QUEUE_SCOPES = {"attention", "pending", "exceptions", "changed", "all"}
 
 
 def _rule_editor_objects(
@@ -456,10 +456,12 @@ def assessment_review_queue(request, organization_slug: str):
         organization=organization,
         user=request.user,
     )
-    scope = request.GET.get("scope", "pending")
+    scope = request.GET.get("scope", "attention")
     if scope not in REVIEW_QUEUE_SCOPES:
-        scope = "pending"
-    if scope == "pending":
+        scope = "attention"
+    if scope == "attention":
+        selected_items = [item for item in queue.items if item.needs_attention]
+    elif scope == "pending":
         selected_items = [item for item in queue.items if item.decision_pending]
     elif scope == "changed":
         selected_items = [item for item in queue.items if item.inputs_changed]

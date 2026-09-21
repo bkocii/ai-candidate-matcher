@@ -152,7 +152,8 @@ def test_recruiter_records_individual_decision_and_queue_updates(client):
         },
         follow=True,
     )
-    pending_queue = client.get(queue_url(organization))
+    attention_queue = client.get(queue_url(organization))
+    pending_queue = client.get(queue_url(organization, scope="pending"))
     all_queue = client.get(queue_url(organization, scope="all"))
     content = post_response.content.decode()
     before_content = detail_before.content.decode()
@@ -180,8 +181,10 @@ def test_recruiter_records_individual_decision_and_queue_updates(client):
     assert 'class="review-secondary-detail"' in content
     assert "The recruiter inspected the supplied evidence" in content
     assert user.username in content
+    assert "Needs attention" in attention_queue.content.decode()
+    assert detail_url(organization, assessment) in attention_queue.content.decode()
     assert "No assessments in this view" in pending_queue.content.decode()
-    assert "Decision: Approve" in all_queue.content.decode()
+    assert "Decision: Approved" in all_queue.content.decode()
     decision = ReviewDecision.objects.get()
     assert decision.created_by == user
     assert decision.assessment == assessment

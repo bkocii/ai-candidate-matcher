@@ -7,24 +7,24 @@
     <div>
         <p class="eyebrow">Recruiter review</p>
         <h1 id="review-queue-title">Assessment review queue</h1>
-        <p class="lede">Latest assessment per shortlisted candidate, with pending individual decisions, changed inputs, and evidence exceptions kept visible.</p>
+        <p class="lede">Start with every latest assessment that needs a decision, has changed inputs, or contains evidence to verify.</p>
     </div>
 </section>
 
-<section class="filter-summary" aria-label="Review queue summary">
-    <article><span>Latest assessments</span><strong>{{ queue.total_count }}</strong></article>
+<section class="review-status-strip" aria-label="Review queue summary">
+    <article class="review-status-attention"><span>Needs attention</span><strong>{{ queue.attention_count }}</strong></article>
     <article><span>Decision pending</span><strong>{{ queue.pending_count }}</strong></article>
     <article><span>Approved</span><strong>{{ queue.approved_count }}</strong></article>
-    <article><span>Rejected</span><strong>{{ queue.rejected_count }}</strong></article>
-    <article><span>Revisit later</span><strong>{{ queue.revisit_count }}</strong></article>
+    <article><span>Latest assessments</span><strong>{{ queue.total_count }}</strong></article>
 </section>
 
 <nav class="review-scope-nav" aria-label="Review queue scope">
+    <a href="?scope=attention"{% if scope == "attention" %} aria-current="page"{% endif %}>Needs attention ({{ queue.attention_count }})</a>
     <a href="?scope=pending"{% if scope == "pending" %} aria-current="page"{% endif %}>Decision pending ({{ queue.pending_count }})</a>
-    <a href="?scope=exceptions"{% if scope == "exceptions" %} aria-current="page"{% endif %}>Needs focus ({{ queue.focus_count }})</a>
     <a href="?scope=changed"{% if scope == "changed" %} aria-current="page"{% endif %}>Changed inputs ({{ queue.changed_count }})</a>
     <a href="?scope=all"{% if scope == "all" %} aria-current="page"{% endif %}>All ({{ queue.total_count }})</a>
 </nav>
+<p class="review-secondary-counts">Rejected: {{ queue.rejected_count }} · Revisit later: {{ queue.revisit_count }}</p>
 
 {% if page.object_list %}
     <div class="review-queue">
@@ -37,13 +37,14 @@
                             <h2>{{ entry.candidate.full_name }}</h2>
                             <p class="section-note">Assessment v{{ assessment.version }} · profile v{{ assessment.candidate_profile.version }} · {{ assessment.created_at|date:"Y-m-d H:i" }}</p>
                         </div>
-                        <div class="review-score">
-                            <span class="assessment-light assessment-light-{{ assessment.traffic_light }}">{{ assessment.get_traffic_light_display }}</span>
-                            <strong>{{ assessment.score }}/100</strong>
+                        <div class="review-ai-signal">
+                            <span>AI assessment</span>
+                            <strong>{{ assessment.get_traffic_light_display }} · {{ assessment.score }}/100</strong>
                         </div>
                     </header>
 
                     <div class="review-badges" aria-label="Review focus">
+                        {% if item.needs_attention %}<span class="review-badge review-badge-attention">Needs attention</span>{% endif %}
                         {% if item.inputs_changed %}<span class="review-badge review-badge-changed">Inputs changed</span>{% endif %}
                         {% if item.gap_count %}<span class="review-badge">{{ item.gap_count }} gap{{ item.gap_count|pluralize }}</span>{% endif %}
                         {% if item.uncertainty_count %}<span class="review-badge">{{ item.uncertainty_count }} uncertaint{{ item.uncertainty_count|pluralize:"y,ies" }}</span>{% endif %}
@@ -51,15 +52,18 @@
                         {% if item.deterministic_review_needed %}<span class="review-badge">Unknown hard-filter fact</span>{% endif %}
                         {% if not item.needs_focus %}<span class="review-badge review-badge-routine">No recorded exception</span>{% endif %}
                         {% if item.current_decision %}
-                            <span class="review-badge decision-badge decision-badge-{{ item.current_decision.decision }}">Decision: {{ item.current_decision.get_decision_display }}</span>
+                            <span class="review-badge decision-badge decision-badge-{{ item.current_decision.decision }}">Decision: {% if item.current_decision.decision == "approved" %}Approved{% elif item.current_decision.decision == "rejected" %}Rejected{% else %}Revisit later{% endif %}</span>
                         {% else %}
                             <span class="review-badge decision-badge decision-badge-pending">Decision pending</span>
                             {% if item.latest_decision %}<span class="review-badge">Earlier assessment has a decision</span>{% endif %}
                         {% endif %}
                     </div>
 
-                    <p>{{ assessment.summary }}</p>
-                    <p class="human-review-note"><strong>Review focus:</strong> {{ assessment.review_recommendation }}</p>
+                    <p class="review-card-summary">{{ assessment.summary }}</p>
+                    <details class="review-focus-details">
+                        <summary>Show review details</summary>
+                        <p><strong>Review focus:</strong> {{ assessment.review_recommendation }}</p>
+                    </details>
                     <a class="primary-button" href="{% url 'matching:assessment-review-detail' organization.slug assessment.pk %}">{% if item.decision_pending %}Inspect and decide{% else %}Inspect decision{% endif %}</a>
                 </article>
             {% endwith %}
@@ -86,5 +90,5 @@
     </section>
 {% endif %}
 
-<p class="human-review-note">Every candidate decision is an individual recruiter action tied to the exact assessment reviewed. Outreach remains a separate, later approved action.</p>
+<p class="human-review-note">Every candidate decision remains an individual recruiter action tied to the exact assessment reviewed. Preparing an email does not send it; opening, copying, or exporting the reviewed email is the explicit external-use approval.</p>
 {% endblock %}

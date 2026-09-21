@@ -1210,15 +1210,23 @@ open **Reviews** in the organization navigation.
 
 Expected queue behavior:
 
-- **Decision pending** is selected initially and shows the latest assessment per
-  shortlist entry that still needs an individual human decision, not every
-  historical version.
+- **Needs attention** is selected initially and combines latest assessments with
+  a pending decision, changed inputs, gaps, uncertainties, profile ambiguities,
+  or an unknown hard-filter fact. It never shows every historical version.
 - Changed shortlist/profile inputs appear before current items. Gaps,
   uncertainties, confirmed-profile ambiguities, and unknown hard-filter facts
   are visible as compact counts.
-- **Needs focus** isolates evidence exceptions, **Changed inputs** isolates
-  assessments whose evidence boundary is no longer current, and **All** also
-  displays routine or already-decided latest assessments.
+- **Decision pending** isolates assessments without a current individual
+  decision, **Changed inputs** isolates assessments whose evidence boundary is
+  no longer current, and **All** also displays routine latest assessments.
+- The compact summary strip shows **Needs attention**, **Decision pending**,
+  **Approved**, and total latest assessments without wrapping a fifth large
+  metric onto another row.
+- Each card uses **Needs attention** as its dominant workflow state. The separate
+  signal reads **AI assessment: Green/Amber/Red · score/100**, so the traffic
+  light is never presented as the card's overall review state.
+- The assessment summary stays compact and the full recommendation is available
+  through **Show review details**.
 - Candidate contact details, raw CV text, prompts, provider responses, and
   protected characteristics do not appear.
 
@@ -1264,9 +1272,11 @@ Expected result:
 - The decision references the exact assessment version shown on the page.
 - The assessment, AI score, deterministic score, evidence, rank, and shortlist
   membership remain unchanged.
-- The candidate leaves the default **Decision pending** queue and appears under
-  **All** with **Decision: Approve**.
-- No outreach draft is created, approved, copied, exported, or sent.
+- The candidate leaves **Decision pending**. If gaps or uncertainties remain, it
+  stays in the default **Needs attention** queue and displays **Decision:
+  Approved**; routine decided assessments remain under **All**.
+- With recorded email and permitted contact, the approval may prepare the email
+  composer. It does not send the email.
 
 Record another decision from the same current assessment, choosing **Revisit
 later** with new notes through **Change decision**. Expected result: decision

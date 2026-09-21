@@ -67,6 +67,7 @@ def test_review_queue_has_safe_empty_state_and_navigation(client):
 
     assert response.status_code == 200
     assert "Assessment review queue" in content
+    assert 'href="?scope=attention" aria-current="page"' in content
     assert "No assessments are ready for review" in content
     assert "Confirmed candidate profiles can be reused across vacancies" in content
     assert queue_url(organization) in content
@@ -82,11 +83,16 @@ def test_queue_consolidates_versions_and_prioritizes_evidence_exceptions(client)
     content = response.content.decode()
 
     assert response.status_code == 200
+    assert "Needs attention</span><strong>1" in content
     assert "Latest assessments</span><strong>1" in content
     assert "Assessment v2" in content
     assert "Assessment v1" not in content
     assert "1 gap" in content
     assert "uncertaint" in content
+    assert "AI assessment" in content
+    assert "Green · 82/100" in content
+    assert "Show review details" in content
+    assert "Preparing an email does not send it" in content
     assert detail_url(organization, latest) in content
     assert detail_url(organization, first) not in content
     assert candidate.email not in content
@@ -113,6 +119,29 @@ def test_routine_assessment_is_compact_but_remains_inspectable(client):
     assert "No assessments in this view" in focused.content.decode()
     assert "No recorded exception" in all_items.content.decode()
     assert detail_url(organization, assessment) in all_items.content.decode()
+
+
+def test_default_attention_scope_includes_routine_pending_assessment(client):
+    user, organization, _, _, profile, _, _, entry = make_workspace()
+    CandidateProfile.objects.filter(pk=profile.pk).update(ambiguities=[])
+    profile.refresh_from_db()
+    from matching.ai_assessment import build_assessment_context
+
+    context = build_assessment_context(entry=entry, profile=profile)
+    assessment = assess_shortlist_entry(
+        entry=entry,
+        user=user,
+        gateway=RecordingGateway(routine_output(context)),
+    ).assessment
+    client.force_login(user)
+
+    response = client.get(queue_url(organization))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Needs attention</span><strong>1" in content
+    assert "Decision pending" in content
+    assert detail_url(organization, assessment) in content
 
 
 def test_changed_inputs_are_visible_and_assessment_detail_keeps_history(client):

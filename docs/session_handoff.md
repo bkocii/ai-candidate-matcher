@@ -1316,3 +1316,23 @@ for one desktop browser test covering safe approval-to-composer, inline edit,
 **Open in email app**, and the blocked/missing-email correction state. After
 browser confirmation, continue with the combined MT-023 review-queue batch.
 Do not implement connected mailbox sending without explicit scope approval.
+
+The user confirmed the combined MT-022 outreach batch. The combined MT-023
+batch now implements U01/U02/V01/C01/C02 and absorbs compatible V02. The review
+queue defaults to **Needs attention**, defined as the union of pending decisions,
+changed inputs, gaps, uncertainties, profile ambiguities, and deterministic
+unknown-fact review flags. The compact summary strip shows attention, pending,
+approved, and total. Cards show **Needs attention** as the workflow state and
+label the separate signal as **AI assessment: Green/Amber/Red · score/100**.
+Saved decision labels are Approved/Rejected/Revisit later, full review guidance
+is collapsed, and the bottom notice matches the two-stage email workflow.
+
+Verification: focused review/decision/demo coverage passes with `20 passed`; the
+complete quality gate passes with `620 passed`, successful Django system,
+deployment, static, migration-drift, Ruff, formatting, and dependency checks.
+No live AI request ran. Seven findings remain Open.
+
+Immediate next action: deliver the changed-files-only MT-023 package and ask for
+one desktop browser recording of the default queue, summary strip, an approved
+item that still needs attention, and **Show review details**. After confirmation,
+continue with the combined six-finding dashboard/onboarding duplication batch.

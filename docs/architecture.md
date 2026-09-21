@@ -868,11 +868,12 @@ versions so their evidence boundary remains inspectable when inputs later change
 - The queue repeats tenant authorization, excludes soft-deleted vacancies from
   the normal workspace, and resolves assessments only through organization-
   scoped querysets. Cross-organization queue and detail URLs return `404`.
-- Changed shortlist inputs or a superseded confirmed profile are shown first,
-  followed by evidence-backed gaps, uncertainties, confirmed-profile
-  ambiguities, and deterministic unknown-fact review flags. Routine assessments
-  remain available through the explicit **All** scope instead of being deleted
-  or silently treated as approved.
+- The default **Needs attention** scope is the union of pending decisions,
+  changed shortlist/profile inputs, evidence-backed gaps, uncertainties,
+  confirmed-profile ambiguities, and deterministic unknown-fact review flags.
+  Changed inputs are ordered first, followed by pending decisions and evidence
+  exceptions. Routine decided assessments remain available through **All**
+  instead of being deleted or silently treated as approved.
 - Queue currentness is calculated from the existing privacy-preserving shortlist
   signatures and current confirmed profile relationship. No raw CV text,
   candidate contact details, prompt, raw provider response, or protected
@@ -881,6 +882,10 @@ versions so their evidence boundary remains inspectable when inputs later change
   deterministic score, all vacancy and candidate evidence resolved by the
   application, profile ambiguities, changed-input warnings, recruiter review
   focus, and links to every assessment version for the same shortlist entry.
+- Queue cards likewise label the AI traffic light as an **AI assessment** signal
+  rather than an overall workflow status. The dominant card state is **Needs
+  attention**, saved decisions use state labels, and the full review
+  recommendation is collapsed to keep multi-candidate queues compact.
 - `REV-001` records no approve, reject, revisit, or outreach action. Individual
   decisions are introduced separately by `REV-002`; `PROD-003` feeds this same
   review surface with background whole-shortlist assessment results.
