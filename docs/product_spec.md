@@ -55,7 +55,9 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
    and explicitly confirms/opens the vacancy. Manual draft creation and retry
    remain available when AI is unavailable.
 6. The recruiter continues directly to upload the CVs received for that vacancy.
-   The intake preserves the original vacancy, batch, and source while confirmed
+   CVs are the only required recruiter input: the intake derives a plain source
+   label, current-vacancy contact scope, and policy retention dates while
+   preserving the original vacancy, batch, and file provenance. Confirmed
    candidates remain reusable within the organization.
 7. Deterministic rules remove candidates who fail explicit hard constraints.
 8. The application ranks the remaining candidates for that vacancy.
@@ -97,9 +99,12 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Lightweight manual quick-add with an optional CV in the same action.
 - Explicit batch confirmation of only clean evidence-validated profile drafts,
   with included/excluded review and individual profile approval history.
-- Plain-language candidate source/privacy controls with safe not-recorded
-  defaults, shared bulk values, inspectable provenance, and explicit outreach
-  permission enforcement.
+- Vacancy intake without a visible shared-details form: source/provenance is
+  recorded automatically, application contact is limited to the current
+  vacancy, lawful basis and retention inherit organization-approved policy, and
+  exceptions remain inspectable and editable later.
+- Generic talent-pool imports retain plain-language source/privacy controls with
+  safe not-recorded defaults and explicit outreach-permission enforcement.
 - Audited recruiter correction of candidate/source records and immutable
   evidence-validated profile correction versions. Conflicting trusted candidate
   and CV-profile locations block individual and batch confirmation until resolved.

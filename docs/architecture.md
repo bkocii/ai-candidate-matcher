@@ -85,8 +85,20 @@ Candidate identity and confirmed profile data remain organization-owned and
 reusable. The revised vacancy-centric workflow must represent consideration for
 a vacancy separately from the reusable candidate and preserve the original
 vacancy, optional hiring client, intake batch, source, and later reuse history.
-The detailed `FLOW-001` design must inspect and reuse existing intake, shortlist,
-and assessment relationships where appropriate instead of assuming a new model.
+`FLOW-001` is approved to use the smallest safe extension of existing intake,
+shortlist, and assessment relationships that can carry this vacancy-specific
+context. An unambiguous existing candidate may be reused, but fuzzy or
+conflicting identity matches must not be silently merged.
+
+Routine vacancy intake removes the visible shared source/privacy form. The
+server records vacancy, optional client, batch, file provenance, a generated
+**CV received for [vacancy]** source label, and **This vacancy only** contact
+scope. That scope permits application-related contact for the linked vacancy but
+does not assert consent or future-role permission. The lawful basis comes from
+an organization-approved administrator/onboarding policy, never AI inference;
+a missing policy remains an explicit privacy-review state. Candidate/source/CV
+review dates inherit the organization retention policy, while record-level
+exceptions remain editable through the existing privacy controls.
 
 ### vacancies
 

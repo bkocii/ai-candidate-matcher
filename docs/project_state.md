@@ -30,16 +30,26 @@ manual-review correction pass is closed, with the complete local quality gate
 remaining user-run under the agreed low-output workflow. `DIR-001` now records
 the focused product direction in `docs/product_direction_plan.md`. `DEMO-002` is
 deferred until the revised core workflow reaches an approved positioning
-checkpoint. The next activity is detailed design review for `FLOW-001`; no
-implementation is approved until its behavior and acceptance criteria are
-confirmed. Track each finding's separate
+checkpoint. `FLOW-001` behavior and acceptance criteria are approved; its
+implementation is the next activity. Track each finding's separate
 implementation/browser-test state in `docs/manual_testing_review.md`.
 
 `DIR-002` is also complete as a documentation decision. It records an AI-first,
 minimum-effort recruiter experience plus the approved client-readiness
 refinements for platform-owner access, client agreements, and long-gap candidate
-retention. No application code changed, and `FLOW-001` remains the next design
-discussion.
+retention.
+
+`FLOW-001` behavior and acceptance criteria were finalized on 2026-09-22. The
+routine vacancy path will require only CV upload, remove the visible shared-
+details step, record vacancy/batch/file provenance automatically, and use **This
+vacancy only** contact scope. Receiving a CV for a vacancy permits contact about
+that application but never records consent or future-role permission. Lawful
+basis comes from an organization-approved policy rather than AI or repeated
+recruiter entry; retention dates inherit organization policy; exceptions remain
+editable later. Reusable organization candidates remain separate from their
+vacancy-specific consideration/history, and ambiguous identity matches are not
+silently merged. No application code changed in this approval checkpoint;
+`FLOW-001` implementation is next.
 
 The user also approved `VAC-001` direction on 2026-09-22. Vacancy creation will
 accept either pasted text or one validated PDF/DOCX/TXT vacancy document, run AI
@@ -83,6 +93,9 @@ No application code changed in this documentation checkpoint.
 - Routine intake should be vacancy-centric while candidates and confirmed
   profiles remain reusable organization-owned records. Cross-vacancy or cross-
   client reuse is always an explicit recruiter action with preserved provenance.
+- Routine vacancy intake requires only CVs. Source, vacancy context, current-
+  application contact scope, and policy retention are recorded automatically;
+  consent and future-role permission are never inferred from receiving a CV.
 - The default client delivery is a platform-operated hosted web application;
   clients do not need their own domain or server.
 - Organization-level BYOK is planned as an optional override of the existing
@@ -1412,15 +1425,14 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-Discuss and approve the detailed scope of `FLOW-001 — Bind routine CV intake to
-a vacancy while preserving reusable organization candidates and original
-application/batch provenance`.
+Implement `FLOW-001 — Bind routine CV intake to a vacancy while preserving
+reusable organization candidates and original application/batch provenance`.
 
 `docs/product_direction_plan.md` is the canonical record for the newly approved
 direction and phased task sequence. `DEMO-002` is deferred until the revised core
-workflow reaches an approved positioning checkpoint. Do not implement
-`FLOW-001` merely from the summary; inspect the current model and agree its exact
-behavior, migration, privacy rules, tests, and acceptance criteria first.
+workflow reaches an approved positioning checkpoint. Inspect the current models
+and services before editing, then implement the approved acceptance behavior
+with focused migration, privacy, tenant, reuse, route, form, and browser tests.
 
 The MT-029 platform organization list now surfaces active tenants without an
 administrator, distinguishes active from total memberships, and supports

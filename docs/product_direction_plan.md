@@ -149,6 +149,45 @@ CVs uploaded from a vacancy must automatically retain that vacancy and intake
 batch as their original application context. Confirmed profiles remain reusable
 organization-level records.
 
+### `FLOW-001` approved intake behavior — 2026-09-22
+
+- Routine intake starts from one vacancy and presents CV upload as the only
+  required recruiter input. The current visible **Shared details** step is
+  removed from this path.
+- The application records the vacancy, optional hiring client, intake batch,
+  uploaded file, and a plain automatic source label such as **CV received for
+  [vacancy]**. Provenance is system-recorded, not inferred by AI.
+- A CV received for a vacancy is treated as contactable for that application.
+  Store the contact scope as **This vacancy only** and allow vacancy-related
+  contact without asking the recruiter to record consent on every upload.
+  Never translate receipt of a CV into consent or permission for unrelated
+  future roles.
+- The organization's approved recruitment-processing basis is configured once
+  by an administrator/onboarding policy and applied behind the scenes. AI must
+  not choose a lawful basis. If the organization has no approved basis, the
+  record is visibly marked for privacy review rather than silently asserting
+  one.
+- Candidate, source, and document review dates inherit the organization
+  retention policy. Per-upload dates, consent, contact permission, and privacy
+  notes are not shown in routine intake; authorized users can inspect or amend
+  exceptions later on the candidate/source record.
+- Candidates and confirmed profiles remain organization-owned. The vacancy link
+  is a separate consideration/application record with its own provenance,
+  assessment, decision, contact scope, and history.
+- An unambiguous existing organization candidate may be reused without
+  duplicating the profile, but the upload still creates a new vacancy context
+  and assessment. Conflicting or fuzzy identity matches require recruiter
+  confirmation; the system never silently merges people.
+- Cross-vacancy reuse remains explicit. **This vacancy only** permits contact
+  about the current application, not rediscovery outreach for another role.
+- Tenant isolation, private-file validation, evidence review, audit history,
+  deletion safeguards, and human hiring decisions remain unchanged. Intake
+  never auto-rejects, auto-shortlists, or contacts a candidate.
+
+Generic talent-pool imports may retain advanced source/privacy controls because
+they do not have a vacancy that supplies application purpose and contact scope.
+These controls are secondary, not part of the routine vacancy workflow.
+
 ## Candidate discovery and reuse
 
 Candidates must not be permanently assigned to one role. Search and suggestions
@@ -280,16 +319,12 @@ changes begin.
 
 ## Next activity
 
-Discuss `FLOW-001` in detail. Before implementation, confirm:
-
-- the exact candidate-to-vacancy behavior;
-- duplicate handling when the same person appears in more than one intake;
-- the minimum provenance fields;
-- how existing candidates and historical shortlists are migrated or preserved;
-- authorization, privacy, and deletion behavior;
-- focused tests and manual browser checks.
-
-No `FLOW-001` code is approved merely by this planning document.
+Implement `FLOW-001` against the approved behavior above. Before editing, inspect
+the current intake, candidate, vacancy, shortlist, assessment, outreach, privacy,
+and retention services and choose the smallest safe schema extension. Preserve
+historical generic intakes and shortlists, keep generic talent-pool import as a
+secondary path, and add focused tenant, provenance, duplicate/reuse, contact-
+scope, retention-policy, route, form, and browser coverage.
 
 `VAC-001` is approved in direction but follows `FLOW-001` because its final
 **Confirm and upload CVs** action requires the vacancy-scoped intake destination.

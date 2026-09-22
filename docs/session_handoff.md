@@ -29,15 +29,14 @@ has been implemented and no finding remains marked Open. The user confirmed the
 final MT-003-V02 candidate action-bar batch, closing that pass. The complete
 local quality check remains user-run under the agreed low-output workflow.
 `docs/product_direction_plan.md` is the canonical record of the new direction
-and staged tasks. The next activity is detailed scope review for `FLOW-001`; do
-not implement it until its behavior and acceptance criteria are approved.
+and staged tasks. `FLOW-001` behavior and acceptance criteria were approved on
+2026-09-22; implementation is now the next activity.
 `DIR-002` subsequently records the approved AI-first minimum-effort recruiter
 principle and client-readiness refinements. Before a real client is onboarded,
 the platform-owner membership gap must be closed, service/data-processing
 terms must be legally reviewed, and the existing retention workflow must be
 aligned with a 24-month inactive-candidate default suitable for candidates who
-may not be reconsidered for months. This is documentation direction only;
-`FLOW-001` remains next.
+may not be reconsidered for months. This is documentation direction only.
 The user approved `VAC-001` direction on 2026-09-22: one routine vacancy path
 will accept pasted text or a validated PDF/DOCX/TXT vacancy document, run AI
 extraction from the primary creation action, show a compact requirements review,
@@ -572,15 +571,26 @@ version with actor and timestamp, and exceptions stay individual. Final
 approve/reject/revisit decisions remain individual recruiter actions with notes,
 actor, and timestamp, and outreach remains separate.
 
-The next activity is detailed scope review for:
+The next activity is implementation of:
 
 `FLOW-001 — Bind routine CV intake to a vacancy while preserving reusable
 organization candidates and original application/batch provenance.`
 
+Approved acceptance behavior removes the current visible **Shared details**
+step from routine vacancy intake. CV upload is the only required recruiter
+input. The server derives vacancy/batch/file provenance, a plain source label,
+organization-policy retention, and **This vacancy only** contact scope. That
+scope permits contact about the application but does not record consent or
+future-role permission. The lawful basis is supplied by an organization-
+approved administrator/onboarding policy, never AI; missing policy remains
+visible for privacy review. Candidate identity/profile stays organization-owned,
+vacancy consideration/history stays separate, unambiguous reuse avoids profile
+duplication, and conflicting identity matches are never silently merged.
+
 The product-direction sequence is recorded in
-`docs/product_direction_plan.md`. Discuss and approve each task's exact behavior
-and acceptance criteria before implementation. `DEMO-002` remains deferred
-until the revised workflow reaches an approved positioning checkpoint.
+`docs/product_direction_plan.md`. `FLOW-001` is approved; continue to review
+later tasks before their implementation. `DEMO-002` remains deferred until the
+revised workflow reaches an approved positioning checkpoint.
 
 ## Required instructions
 
@@ -1408,7 +1418,8 @@ planned sequence covers vacancy-centric intake, reusable organization candidates
 deliberate candidate-pool reuse, a central ranked shortlist, exception-focused
 review, simplified safeguarded outreach, optional organization BYOK with
 platform fallback, privacy hardening, and hosted-SaaS onboarding. This checkpoint
-changes documentation only. Discuss `FLOW-001` in detail before any code change.
+changes documentation only. `FLOW-001` was subsequently finalized for
+implementation on 2026-09-22.
 
 `DIR-002` extends that canonical plan without changing the implementation order.
 The UI should assume recruiters want minimal administration: AI/background work
