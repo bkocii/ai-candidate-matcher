@@ -187,6 +187,10 @@ authorize its implementation.
 
 - `FLOW-001` Bind routine CV intake to a vacancy while preserving reusable
   organization candidates and original application/batch provenance.
+- `VAC-001` Replace the multi-screen routine vacancy setup with an AI-first flow
+  accepting pasted text or one validated PDF/DOCX/TXT vacancy document, compact
+  recruiter review, explicit confirm/open, and direct handoff to vacancy CV
+  intake. Keep manual fallback and immutable requirement history.
 - `FLOW-002` Default vacancy views to their associated candidates and separate
   access to the wider organization candidate pool.
 - `FLOW-003` Add deliberate cross-vacancy reuse through **Add from candidate

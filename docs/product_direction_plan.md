@@ -229,6 +229,11 @@ changes begin.
 
 - `FLOW-001` Bind normal CV intake to a vacancy and preserve original
   application/batch provenance while keeping one reusable organization candidate.
+- `VAC-001` Simplify vacancy creation into one AI-first path: choose an optional
+  hiring client, enter a title, provide the description by paste or validated
+  PDF/DOCX/TXT upload, create and analyze, review a compact requirements draft,
+  then confirm/open and continue directly to vacancy-scoped CV upload. Preserve
+  manual draft fallback, immutable source/history, and explicit confirmation.
 - `FLOW-002` Make vacancy views default to candidates associated with that
   vacancy and provide a separate organization-pool entry point.
 - `FLOW-003` Add deliberate **Add from candidate pool** and cross-vacancy reuse
@@ -285,3 +290,35 @@ Discuss `FLOW-001` in detail. Before implementation, confirm:
 - focused tests and manual browser checks.
 
 No `FLOW-001` code is approved merely by this planning document.
+
+`VAC-001` is approved in direction but follows `FLOW-001` because its final
+**Confirm and upload CVs** action requires the vacancy-scoped intake destination.
+Before implementation, confirm the compact review layout and exact upload
+validation/error behavior against the existing vacancy and document services.
+
+### `VAC-001` approved behavior
+
+- The create page contains optional hiring client, required title, pasted job
+  description, and one vacancy-document upload control.
+- Exactly one description source is required: pasted text or one PDF, DOCX, or
+  UTF-8 TXT file. Supplying neither or both returns a clear form error.
+- Upload validation is bounded and content-aware. Reuse/generalize the hardened
+  PDF/DOCX safety and extraction logic; add bounded UTF-8 text handling. Reject
+  oversized, encrypted, unsafe, corrupt, empty, scanned/no-text, mismatched, or
+  unsupported input with recruiter-safe messages.
+- Preserve extracted source text and safe upload provenance. The raw vacancy file
+  does not need to be retained in the first version.
+- The primary action is **Create and analyze vacancy**. It creates the draft and
+  runs AI requirement extraction without a separate recruiter action.
+- AI failure preserves a usable manual draft and offers safe retry/manual editing;
+  it must not discard the vacancy or create duplicate drafts.
+- The review page leads with AI ambiguities and essential matching requirements.
+  Less common fields and custom eligibility-rule controls remain available under
+  a clearly labelled advanced section.
+- The routine final action is **Confirm and upload CVs**. It confirms the exact
+  reviewed requirements, opens a draft vacancy atomically, and redirects to the
+  `FLOW-001` vacancy intake page. It does not evaluate candidates automatically.
+- **Save draft without AI** and manual correction remain secondary fallbacks.
+- Existing tenant authorization, immutable confirmed versions, correction
+  drafts, deterministic eligibility boundaries, safe AI usage events, and
+  provider-free tests remain intact.

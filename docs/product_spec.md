@@ -47,21 +47,27 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
    vacancy; no separate recruiter account or settings setup is required.
 3. Teammate accounts, hiring clients, and organization settings remain optional
    setup actions that can be completed when needed.
-4. A recruiter creates and confirms a vacancy for an optional hiring client.
-5. From that vacancy, the recruiter uploads the CVs received for it. The intake
-   preserves the original vacancy, batch, and source while confirmed candidates
-   remain reusable within the organization.
-6. Deterministic rules remove candidates who fail explicit hard constraints.
-7. The application ranks the remaining candidates for that vacancy.
-8. AI creates evidence-based assessments and highlights exceptions.
-9. The recruiter sees the ranked shortlist, matching qualifications, gaps,
+4. A recruiter selects an optional hiring client, enters a vacancy title, and
+   either pastes the job description or uploads one validated PDF, DOCX, or TXT
+   vacancy document. The application creates the draft and runs AI requirement
+   extraction through one primary action.
+5. The recruiter reviews a compact requirements summary, corrects exceptions,
+   and explicitly confirms/opens the vacancy. Manual draft creation and retry
+   remain available when AI is unavailable.
+6. The recruiter continues directly to upload the CVs received for that vacancy.
+   The intake preserves the original vacancy, batch, and source while confirmed
+   candidates remain reusable within the organization.
+7. Deterministic rules remove candidates who fail explicit hard constraints.
+8. The application ranks the remaining candidates for that vacancy.
+9. AI creates evidence-based assessments and highlights exceptions.
+10. The recruiter sees the ranked shortlist, matching qualifications, gaps,
    uncertainties, and source evidence.
-10. The recruiter may deliberately add an existing organization candidate to
+11. The recruiter may deliberately add an existing organization candidate to
     the vacancy; the system never silently reuses candidates across hiring clients.
-11. The recruiter approves, rejects, or marks a candidate for later review.
-12. Recording an approval can prepare an editable outreach email after currentness
-   and contact-permission checks pass.
-13. The recruiter reviews the exact recipient, subject, and body, then explicitly
+12. The recruiter approves, rejects, or marks a candidate for later review.
+13. Recording an approval can prepare an editable outreach email after currentness
+    and contact-permission checks pass.
+14. The recruiter reviews the exact recipient, subject, and body, then explicitly
     opens it in their email app or uses a secondary copy/export action.
 
 ## MVP capabilities
@@ -99,7 +105,10 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
   and CV-profile locations block individual and batch confirmation until resolved.
 - Hardened PDF and DOCX CV upload, safe text extraction, and authorized private
   attachment delivery.
-- Vacancy creation from pasted text.
+- Vacancy creation from pasted text or one validated PDF/DOCX/TXT document.
+- One primary create-and-analyze action with compact AI-filled requirement review,
+  manual/retry fallback, explicit confirmation/opening, and direct continuation
+  to vacancy-scoped CV intake.
 - Recruiter confirmation of extracted vacancy requirements.
 - Hard filters for explicit requirements.
 - Candidate-to-vacancy shortlist.

@@ -41,6 +41,16 @@ refinements for platform-owner access, client agreements, and long-gap candidate
 retention. No application code changed, and `FLOW-001` remains the next design
 discussion.
 
+The user also approved `VAC-001` direction on 2026-09-22. Vacancy creation will
+accept either pasted text or one validated PDF/DOCX/TXT vacancy document, run AI
+requirement extraction through the primary creation action, present a compact
+review, and continue from explicit confirm/open to vacancy CV upload. Inspection
+confirmed that creation, AI extraction, immutable versions, and atomic
+confirm/open already exist separately. `VAC-001` therefore composes and
+simplifies existing behavior plus a new vacancy-document input boundary. It is
+sequenced after `FLOW-001` because that task supplies its final upload target.
+No application code changed in this documentation checkpoint.
+
 ## Decisions made
 
 - The first product is recruiter-side candidate search, not job search for candidates.

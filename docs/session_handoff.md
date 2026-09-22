@@ -38,6 +38,13 @@ terms must be legally reviewed, and the existing retention workflow must be
 aligned with a 24-month inactive-candidate default suitable for candidates who
 may not be reconsidered for months. This is documentation direction only;
 `FLOW-001` remains next.
+The user approved `VAC-001` direction on 2026-09-22: one routine vacancy path
+will accept pasted text or a validated PDF/DOCX/TXT vacancy document, run AI
+extraction from the primary creation action, show a compact requirements review,
+and continue from explicit confirm/open to vacancy-scoped CV upload. Current
+code already provides the component creation, AI extraction, immutable draft
+history, and atomic confirm/open services. `VAC-001` follows `FLOW-001` so its
+final handoff has a real destination; no code was changed for this approval.
 Use `docs/manual_testing_review.md` for individual implementation/browser-test
 states; do not interpret an implemented change as browser-tested or silently
 approve proposed scope.

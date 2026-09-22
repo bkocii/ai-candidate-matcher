@@ -96,6 +96,18 @@ Routine CV intake should begin from a vacancy. Vacancy views should default to
 candidates deliberately associated with that vacancy and expose the wider
 organization pool only through a separate reuse action.
 
+`VAC-001` will compose existing vacancy creation, AI extraction, draft editing,
+and confirm/open services behind one routine path after `FLOW-001` provides the
+destination. Input is exactly one source: pasted text or one bounded PDF, DOCX,
+or UTF-8 TXT upload. Reuse/generalize the hardened document validation and text
+extraction boundary rather than routing vacancy files through candidate models.
+Persist the extracted text as the immutable requirements source plus safe upload
+provenance such as original filename, content type, and hash; retaining the raw
+vacancy upload is not required for the first implementation. AI failure must
+leave a usable manual draft and expose a safe retry rather than discard input.
+The routine final action confirms the exact reviewed requirements, opens the
+draft vacancy atomically, and redirects to vacancy-scoped CV intake.
+
 ### matching
 
 Hard filters, shortlist construction, AI assessments, evidence, scores, and recruiter decisions.
