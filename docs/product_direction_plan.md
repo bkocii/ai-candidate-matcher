@@ -273,6 +273,7 @@ changes begin.
   PDF/DOCX/TXT upload, create and analyze, review a compact requirements draft,
   then confirm/open and continue directly to vacancy-scoped CV upload. Preserve
   manual draft fallback, immutable source/history, and explicit confirmation.
+  **Complete — 2026-09-23.**
 - `FLOW-002` Make vacancy views default to candidates associated with that
   vacancy and provide a separate organization-pool entry point.
 - `FLOW-003` Add deliberate **Add from candidate pool** and cross-vacancy reuse
@@ -319,17 +320,29 @@ changes begin.
 
 ## Next activity
 
-Implement `FLOW-001` against the approved behavior above. Before editing, inspect
-the current intake, candidate, vacancy, shortlist, assessment, outreach, privacy,
-and retention services and choose the smallest safe schema extension. Preserve
-historical generic intakes and shortlists, keep generic talent-pool import as a
-secondary path, and add focused tenant, provenance, duplicate/reuse, contact-
-scope, retention-policy, route, form, and browser coverage.
+`FLOW-001` was implemented on 2026-09-22. Routine vacancy intake now requires
+only CV upload, records a separate vacancy application and **This vacancy only**
+contact scope, inherits the organization-approved processing basis, reuses exact
+unambiguous candidates/documents safely, and leaves generic talent-pool intake
+as the secondary advanced path. Automatic candidate review dates remain blank
+until `RET-001` supplies the approved meaningful-activity calculation rather
+than borrowing unrelated operational-cleanup durations.
 
-`VAC-001` is approved in direction but follows `FLOW-001` because its final
+`VAC-001` was implemented on 2026-09-23. The create page now accepts exactly one
+pasted or validated PDF/DOCX/UTF-8 TXT source, preserves extracted text plus
+safe filename/type/hash provenance without retaining the raw vacancy file, and
+runs AI extraction through **Create and analyze vacancy**. AI failure retains
+one manual draft. Compact review leads with ambiguities and matching essentials;
+**Confirm and upload CVs** atomically confirms/opens and continues to the
+vacancy-scoped intake delivered by `FLOW-001`.
+
+Implement `FLOW-002` next: make vacancy views default to candidates associated
+with that vacancy and keep the wider organization pool behind a separate entry.
+
+`VAC-001` followed `FLOW-001` because its final
 **Confirm and upload CVs** action requires the vacancy-scoped intake destination.
-Before implementation, confirm the compact review layout and exact upload
-validation/error behavior against the existing vacancy and document services.
+The compact review and exact upload validation behavior now reuse the existing
+hardened document services.
 
 ### `VAC-001` approved behavior
 

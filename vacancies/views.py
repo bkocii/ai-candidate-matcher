@@ -27,6 +27,7 @@ from vacancies.forms import (
     eligibility_values_from_form,
     requirements_values_from_form,
     vacancy_edit_values_from_form,
+    vacancy_source_provenance_from_form,
     vacancy_values_from_form,
 )
 from vacancies.models import Vacancy, VacancyRequirements
@@ -110,6 +111,7 @@ def vacancy_create(request, organization_slug: str):
     selected_client = _requested_active_client(request, organization)
     form = VacancyCreateForm(
         request.POST or None,
+        request.FILES or None,
         organization=organization,
         initial={"client_company": selected_client} if selected_client else None,
     )
@@ -118,14 +120,50 @@ def vacancy_create(request, organization_slug: str):
             organization=organization,
             user=request.user,
             vacancy_values=vacancy_values_from_form(form),
+            source_provenance=vacancy_source_provenance_from_form(form),
         )
         requirements = vacancy.requirement_versions.get(version=1)
+        if request.POST.get("intent") == "save_without_ai":
+            messages.success(
+                request,
+                "Vacancy draft saved. Add the matching requirements when ready.",
+            )
+            return redirect(
+                "vacancies:requirements-edit",
+                organization_slug=organization.slug,
+                vacancy_id=vacancy.pk,
+                requirements_id=requirements.pk,
+            )
+        try:
+            result = extract_vacancy_requirements(
+                requirements=requirements,
+                user=request.user,
+            )
+        except (AIGatewayError, ValidationError) as error:
+            public_message = (
+                "; ".join(error.messages)
+                if isinstance(error, ValidationError)
+                else str(error)
+            )
+            messages.error(
+                request,
+                "The vacancy draft was saved, but AI analysis could not finish. "
+                f"{public_message} You can retry or complete it manually.",
+            )
+            return redirect(
+                "vacancies:requirements-edit",
+                organization_slug=organization.slug,
+                vacancy_id=vacancy.pk,
+                requirements_id=requirements.pk,
+            )
+        requirements = result.requirements
         messages.success(
             request,
-            "Vacancy created. Review and complete requirements version 1.",
+            "Vacancy analyzed. Check the essentials and anything AI could not "
+            "determine.",
         )
         return redirect(
-            "vacancies:requirements-edit",
+            "vacancies:requirements-review",
             organization_slug=organization.slug,
             vacancy_id=vacancy.pk,
             requirements_id=requirements.pk,
@@ -139,10 +177,10 @@ def vacancy_create(request, organization_slug: str):
             "form": form,
             "heading": "Add vacancy",
             "lede": (
-                "Paste the original job description. The app will preserve it as "
-                "the source for the first recruiter-edited requirements version."
+                "Paste a vacancy or upload its file. AI prepares the matching "
+                "details for a quick review."
             ),
-            "submit_label": "Create and review requirements",
+            "submit_label": "Create and analyze vacancy",
             "cancel_url": reverse("vacancies:vacancy-list", args=[organization.slug]),
             "can_add_client_company": can_administer_organization(
                 request.user, organization
@@ -520,7 +558,9 @@ def requirements_confirm(
     organization = _visible_organization(request, organization_slug)
     vacancy = _visible_vacancy(organization, vacancy_id)
     requirements = _visible_requirements(organization, vacancy, requirements_id)
-    open_vacancy = request.POST.get("intent") == "confirm_and_open"
+    intent = request.POST.get("intent")
+    open_vacancy = intent in {"confirm_and_open", "confirm_and_upload"}
+    upload_candidates = intent == "confirm_and_upload"
     try:
         if open_vacancy:
             requirements, vacancy = confirm_requirements_and_open_vacancy(
@@ -545,6 +585,12 @@ def requirements_confirm(
         messages.success(
             request,
             f"Confirmed requirements version {requirements.version}{action}.",
+        )
+    if upload_candidates:
+        return redirect(
+            "candidates:vacancy-candidate-intake-create",
+            organization_slug=organization.slug,
+            vacancy_id=vacancy.pk,
         )
     detail_url = reverse(
         "vacancies:vacancy-detail",

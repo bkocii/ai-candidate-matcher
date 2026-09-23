@@ -185,6 +185,9 @@ class VacancyRequirements(models.Model):
         default=CreationMethod.MANUAL,
     )
     source_description = models.TextField()
+    source_original_filename = models.CharField(max_length=255, blank=True)
+    source_content_type = models.CharField(max_length=150, blank=True)
+    source_sha256 = models.CharField(max_length=64, blank=True)
     summary = models.TextField(blank=True)
     must_have_skills = models.JSONField(
         default=list,
@@ -341,6 +344,9 @@ class VacancyRequirements(models.Model):
             "status",
             "creation_method",
             "source_description",
+            "source_original_filename",
+            "source_content_type",
+            "source_sha256",
             "summary",
             "must_have_skills",
             "nice_to_have_skills",

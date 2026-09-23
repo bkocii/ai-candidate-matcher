@@ -118,6 +118,7 @@ def update_retention_policy(
         changed = False
         for field_name, value in values.items():
             if field_name not in {
+                "vacancy_candidate_lawful_basis",
                 "temporary_intake_days",
                 "completed_job_days",
                 "uncommitted_workflow_days",

@@ -1,6 +1,11 @@
 from django import forms
 from django.db.models import Q
 
+from candidates.documents import (
+    CandidateDocumentUploadError,
+    ValidatedTextDocumentUpload,
+    validate_text_document_upload,
+)
 from matching.models import HardConstraintRule, normalize_taxonomy_value
 from matching.skill_taxonomy import canonical_skill_key, canonicalize_skill
 from organizations.models import ClientCompany, Organization
@@ -53,14 +58,24 @@ class VacancyCreateForm(forms.Form):
         help_text=("Only active hiring clients in this organization are shown."),
     )
     description = forms.CharField(
-        label="Job description",
+        required=False,
+        label="Paste vacancy description",
         widget=forms.Textarea(attrs={"rows": 14}),
-        help_text="Paste the complete vacancy or job description.",
+        help_text="Paste the vacancy here, or upload one file below—not both.",
+    )
+    vacancy_document = forms.FileField(
+        required=False,
+        label="Or upload vacancy",
+        help_text="PDF, DOCX, or UTF-8 TXT; maximum 10 MB.",
+        widget=forms.ClearableFileInput(
+            attrs={"accept": ".pdf,.docx,.txt,application/pdf,text/plain"}
+        ),
     )
 
     def __init__(self, *args, organization: Organization, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.organization = organization
+        self.validated_document: ValidatedTextDocumentUpload | None = None
         self.fields["client_company"].queryset = (
             ClientCompany.objects.for_organization(organization)
             .filter(is_active=True)
@@ -70,8 +85,33 @@ class VacancyCreateForm(forms.Form):
     def clean_title(self) -> str:
         return self.cleaned_data["title"].strip()
 
-    def clean_description(self) -> str:
-        return self.cleaned_data["description"].strip()
+    def clean(self):
+        cleaned_data = super().clean()
+        description = (cleaned_data.get("description") or "").strip()
+        vacancy_document = cleaned_data.get("vacancy_document")
+        if bool(description) == bool(vacancy_document):
+            raise forms.ValidationError(
+                "Paste a vacancy description or upload one vacancy file, not both."
+            )
+        if vacancy_document:
+            try:
+                self.validated_document = validate_text_document_upload(
+                    uploaded_file=vacancy_document,
+                    max_extracted_characters=30_000,
+                    allow_txt=True,
+                )
+            except CandidateDocumentUploadError as error:
+                self.add_error("vacancy_document", error.public_message)
+            else:
+                cleaned_data["description"] = self.validated_document.extracted.text
+        else:
+            if len(description) > 30_000:
+                self.add_error(
+                    "description",
+                    "The vacancy description must be 30,000 characters or fewer.",
+                )
+            cleaned_data["description"] = description
+        return cleaned_data
 
 
 class ClientCompanyChoiceField(forms.ModelChoiceField):
@@ -435,6 +475,17 @@ def vacancy_values_from_form(form: VacancyCreateForm) -> dict:
         "title": form.cleaned_data["title"],
         "client_company": form.cleaned_data["client_company"],
         "description": form.cleaned_data["description"],
+    }
+
+
+def vacancy_source_provenance_from_form(form: VacancyCreateForm) -> dict:
+    validated = form.validated_document
+    if validated is None:
+        return {}
+    return {
+        "source_original_filename": validated.original_filename,
+        "source_content_type": validated.extracted.content_type,
+        "source_sha256": validated.sha256,
     }
 
 

@@ -1896,3 +1896,34 @@ also corrected to enforce the already-approved administrator-only boundary.
 | --- | --- | --- | --- | --- | --- |
 | MT-043-A01 | Role/navigation decision | Medium | A recruiter correctly loses **Platform** and settings controls but still receives the organization-wide **AI usage** and **Privacy & audit** links. These pages expose aggregate cost/model/failure metadata plus organization-wide retention and actor history that are operationally useful mainly to administrators. | Implement the already proposed MT-025-A01 and MT-026-A01 decision: move full AI usage and privacy/audit into administrator settings, while keeping only task-relevant processing state and candidate-specific privacy information in recruiter workflows. | Implemented — 2026-09-01 |
 | MT-043-V01 | Visual duplication | Low | The **Recruiter** badge beside the title and the separate **Your role: Recruiter** metric card communicate the same state, leaving most of the second metric row empty. | Apply MT-002-V01 consistently for both roles: retain the compact badge and remove the redundant role card. | Resolved — user confirmed 2026-09-21 |
+
+### MT-044 — Vacancy-first candidate intake (`FLOW-001`)
+
+- **Date:** 2026-09-22
+- **Routes:** Vacancy detail → vacancy-scoped candidate intake → intake review
+- **Visual status:** Implemented; browser review pending
+- **Functional status:** Focused automated coverage passes
+
+#### Implemented behavior
+
+- Open vacancies lead with **Add candidate CVs** and a three-step upload,
+  identity-check, and AI-profile-review sequence.
+- Routine intake asks only for CVs. Source, vacancy, batch, policy basis, and
+  **This vacancy only** contact scope are recorded behind the scenes.
+- A missing organization processing basis stays visible and blocks outreach
+  without blocking safe intake.
+- New candidates receive a separate vacancy application. Exact documents and
+  unambiguous active identities reuse the existing candidate; conflicting or
+  inactive matches remain review exceptions.
+- Generic candidate-pool intake retains its advanced shared privacy controls.
+- Candidate review dates remain blank pending the approved `RET-001`
+  meaningful-activity calculation.
+
+#### Pending browser checks
+
+- Confirm hierarchy, wrapping, and upload affordance on desktop and narrow
+  viewports.
+- Confirm existing-candidate wording is clear and does not imply an automatic
+  cross-vacancy submission.
+- Confirm the privacy-default warning is prominent without making routine
+  upload feel blocked.

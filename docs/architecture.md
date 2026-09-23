@@ -85,10 +85,11 @@ Candidate identity and confirmed profile data remain organization-owned and
 reusable. The revised vacancy-centric workflow must represent consideration for
 a vacancy separately from the reusable candidate and preserve the original
 vacancy, optional hiring client, intake batch, source, and later reuse history.
-`FLOW-001` is approved to use the smallest safe extension of existing intake,
-shortlist, and assessment relationships that can carry this vacancy-specific
-context. An unambiguous existing candidate may be reused, but fuzzy or
-conflicting identity matches must not be silently merged.
+`FLOW-001` adds `CandidateVacancyConsideration` as the vacancy-specific
+application record and an optional vacancy link on `CandidateIntakeBatch`.
+Candidate identity and profiles remain organization-owned. An exact document or
+unambiguous active identity may be reused, but fuzzy, conflicting, or inactive
+matches are not silently merged.
 
 Routine vacancy intake removes the visible shared source/privacy form. The
 server records vacancy, optional client, batch, file provenance, a generated
@@ -97,8 +98,10 @@ scope. That scope permits application-related contact for the linked vacancy but
 does not assert consent or future-role permission. The lawful basis comes from
 an organization-approved administrator/onboarding policy, never AI inference;
 a missing policy remains an explicit privacy-review state. Candidate/source/CV
-review dates inherit the organization retention policy, while record-level
-exceptions remain editable through the existing privacy controls.
+review dates will inherit the approved candidate-retention calculation in
+`RET-001`; they remain blank rather than borrowing unrelated operational cleanup
+durations. Record-level exceptions remain editable through existing privacy
+controls.
 
 ### vacancies
 
@@ -108,17 +111,16 @@ Routine CV intake should begin from a vacancy. Vacancy views should default to
 candidates deliberately associated with that vacancy and expose the wider
 organization pool only through a separate reuse action.
 
-`VAC-001` will compose existing vacancy creation, AI extraction, draft editing,
-and confirm/open services behind one routine path after `FLOW-001` provides the
-destination. Input is exactly one source: pasted text or one bounded PDF, DOCX,
-or UTF-8 TXT upload. Reuse/generalize the hardened document validation and text
-extraction boundary rather than routing vacancy files through candidate models.
-Persist the extracted text as the immutable requirements source plus safe upload
-provenance such as original filename, content type, and hash; retaining the raw
-vacancy upload is not required for the first implementation. AI failure must
-leave a usable manual draft and expose a safe retry rather than discard input.
-The routine final action confirms the exact reviewed requirements, opens the
-draft vacancy atomically, and redirects to vacancy-scoped CV intake.
+`VAC-001` composes vacancy creation, AI extraction, draft editing, and
+confirm/open services behind one routine path. Input is exactly one source:
+pasted text or one bounded PDF, DOCX, or UTF-8 TXT upload. It generalizes the
+hardened document validation and text-extraction boundary rather than routing
+vacancy files through candidate models. The extracted text is the immutable
+requirements source; uploaded sources additionally retain safe original
+filename, normalized content type, and SHA-256 provenance without retaining the
+raw file. AI failure leaves one usable manual draft and exposes retry/manual
+editing. The routine final action confirms the exact reviewed requirements,
+opens the draft vacancy atomically, and redirects to vacancy-scoped CV intake.
 
 ### matching
 

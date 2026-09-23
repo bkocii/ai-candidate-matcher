@@ -21,6 +21,7 @@ from candidates.models import (
     CandidateIntakeBatch,
     CandidateIntakeItem,
     CandidateSource,
+    CandidateVacancyConsideration,
 )
 from candidates.services import CandidateDuplicateFinder, create_candidate_with_source
 from organizations.models import Organization
@@ -81,6 +82,41 @@ class CandidateIdentityProposal:
 class CandidateIntakeCreationResult:
     candidate: Candidate
     document: CandidateDocument
+    reused_candidate: bool = False
+
+
+def _create_vacancy_source_and_consideration(
+    *,
+    batch: CandidateIntakeBatch,
+    candidate: Candidate,
+    user: User,
+    document: CandidateDocument,
+    source_reference: str = "",
+) -> CandidateVacancyConsideration | None:
+    if batch.vacancy_id is None:
+        return None
+    source = CandidateSource(
+        candidate=candidate,
+        source_type=CandidateSource.SourceType.DOCUMENT_UPLOAD,
+        source_name=batch.source_name,
+        source_reference=source_reference.strip(),
+        lawful_basis=batch.lawful_basis,
+        consent_status=batch.consent_status,
+        contact_permission=batch.contact_permission,
+        permission_notes=batch.permission_notes,
+        retention_until=batch.source_retention_until,
+        recorded_by=user,
+    )
+    source.full_clean()
+    source.save()
+    return CandidateVacancyConsideration.objects.create(
+        candidate=candidate,
+        vacancy=batch.vacancy,
+        source=source,
+        intake_batch=batch,
+        document=document,
+        created_by=user,
+    )
 
 
 def _unique(values: list[str], *, normalize=str.casefold) -> list[str]:
@@ -272,8 +308,10 @@ def upload_candidate_intake_cv(
     try:
         with transaction.atomic():
             Organization.objects.select_for_update().get(pk=batch.organization_id)
-            locked_batch = CandidateIntakeBatch.objects.select_for_update().get(
-                pk=batch.pk
+            locked_batch = (
+                CandidateIntakeBatch.objects.select_for_update()
+                .select_related("vacancy")
+                .get(pk=batch.pk)
             )
             if locked_batch.status != CandidateIntakeBatch.Status.OPEN:
                 raise ValidationError("This intake batch is no longer open.")
@@ -289,11 +327,34 @@ def upload_candidate_intake_cv(
                 .first()
             )
             if duplicate_document is not None:
-                raise CandidateDocumentDuplicateError(
-                    "duplicate_document",
-                    "This exact document is already stored for "
-                    f"{duplicate_document.candidate.full_name}.",
+                if locked_batch.vacancy_id is None:
+                    raise CandidateDocumentDuplicateError(
+                        "duplicate_document",
+                        "This exact document is already stored for "
+                        f"{duplicate_document.candidate.full_name}.",
+                    )
+                if duplicate_document.candidate.status != Candidate.Status.ACTIVE:
+                    raise CandidateDocumentDuplicateError(
+                        "duplicate_inactive_candidate",
+                        "This exact document belongs to a candidate who is not "
+                        "active. Review that candidate before adding an application.",
+                    )
+                item.batch = locked_batch
+                item.status = CandidateIntakeItem.Status.CREATED
+                item.candidate = duplicate_document.candidate
+                item.processed_by = user
+                item.processed_at = timezone.now()
+                _clear_private_intake_payload(item)
+                item.full_clean()
+                item.save()
+                _create_vacancy_source_and_consideration(
+                    batch=locked_batch,
+                    candidate=duplicate_document.candidate,
+                    user=user,
+                    document=duplicate_document,
                 )
+                _complete_batch_if_ready(locked_batch)
+                return item
             if (
                 CandidateIntakeItem.objects.for_organization(locked_batch.organization)
                 .filter(
@@ -364,8 +425,10 @@ def create_candidate_from_intake_item(
                 .select_related("batch__organization")
                 .get(pk=item.pk)
             )
-            batch = CandidateIntakeBatch.objects.select_for_update().get(
-                pk=locked_item.batch_id
+            batch = (
+                CandidateIntakeBatch.objects.select_for_update()
+                .select_related("vacancy")
+                .get(pk=locked_item.batch_id)
             )
             if batch.status != CandidateIntakeBatch.Status.OPEN:
                 raise ValidationError("This intake batch is no longer open.")
@@ -381,7 +444,18 @@ def create_candidate_from_intake_item(
                 phone=candidate_values.get("phone", ""),
                 source_reference=source_reference,
             )
-            if duplicate is not None:
+            conflicting_duplicate = bool(
+                duplicate
+                and duplicate.reasons
+                and duplicate.reasons[0].startswith("conflicting identifiers")
+            )
+            can_reuse_candidate = bool(
+                duplicate
+                and batch.vacancy_id is not None
+                and not conflicting_duplicate
+                and duplicate.candidate.status == Candidate.Status.ACTIVE
+            )
+            if duplicate is not None and not can_reuse_candidate:
                 raise CandidateIntakeDuplicateError(
                     candidate=duplicate.candidate,
                     reasons=duplicate.reasons,
@@ -416,24 +490,27 @@ def create_candidate_from_intake_item(
                     "created."
                 )
 
-            candidate = create_candidate_with_source(
-                organization=batch.organization,
-                user=user,
-                candidate_values={
-                    **candidate_values,
-                    "retention_until": batch.candidate_retention_until,
-                },
-                source_values={
-                    "source_type": CandidateSource.SourceType.DOCUMENT_UPLOAD,
-                    "source_name": batch.source_name,
-                    "source_reference": source_reference.strip(),
-                    "lawful_basis": batch.lawful_basis,
-                    "consent_status": batch.consent_status,
-                    "contact_permission": batch.contact_permission,
-                    "permission_notes": batch.permission_notes,
-                    "retention_until": batch.source_retention_until,
-                },
-            )
+            if can_reuse_candidate:
+                candidate = duplicate.candidate
+            else:
+                candidate = create_candidate_with_source(
+                    organization=batch.organization,
+                    user=user,
+                    candidate_values={
+                        **candidate_values,
+                        "retention_until": batch.candidate_retention_until,
+                    },
+                    source_values={
+                        "source_type": CandidateSource.SourceType.DOCUMENT_UPLOAD,
+                        "source_name": batch.source_name,
+                        "source_reference": source_reference.strip(),
+                        "lawful_basis": batch.lawful_basis,
+                        "consent_status": batch.consent_status,
+                        "contact_permission": batch.contact_permission,
+                        "permission_notes": batch.permission_notes,
+                        "retention_until": batch.source_retention_until,
+                    },
+                )
             staged_upload.seek(0)
             created_document = upload_candidate_cv(
                 candidate=candidate,
@@ -441,6 +518,25 @@ def create_candidate_from_intake_item(
                 uploaded_file=staged_upload,
                 retention_until=batch.document_retention_until,
             )
+            if batch.vacancy_id is not None:
+                if can_reuse_candidate:
+                    _create_vacancy_source_and_consideration(
+                        batch=batch,
+                        candidate=candidate,
+                        user=user,
+                        document=created_document,
+                        source_reference=source_reference,
+                    )
+                else:
+                    source = candidate.sources.get()
+                    CandidateVacancyConsideration.objects.create(
+                        candidate=candidate,
+                        vacancy=batch.vacancy,
+                        source=source,
+                        intake_batch=batch,
+                        document=created_document,
+                        created_by=user,
+                    )
 
             locked_item.status = CandidateIntakeItem.Status.CREATED
             locked_item.candidate = candidate
@@ -461,6 +557,7 @@ def create_candidate_from_intake_item(
     return CandidateIntakeCreationResult(
         candidate=created_document.candidate,
         document=created_document,
+        reused_candidate=can_reuse_candidate,
     )
 
 

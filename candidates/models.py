@@ -330,6 +330,13 @@ class CandidateIntakeBatch(models.Model):
         on_delete=models.CASCADE,
         related_name="candidate_intake_batches",
     )
+    vacancy = models.ForeignKey(
+        "vacancies.Vacancy",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="candidate_intake_batches",
+    )
     source_name = models.CharField(max_length=200)
     lawful_basis = models.CharField(
         max_length=30,
@@ -431,6 +438,17 @@ class CandidateIntakeBatch(models.Model):
     def __str__(self) -> str:
         return f"Candidate intake {self.pk or 'new'} — {self.source_name}"
 
+    def clean(self) -> None:
+        super().clean()
+        if (
+            self.organization_id
+            and self.vacancy_id
+            and self.vacancy.organization_id != self.organization_id
+        ):
+            raise ValidationError(
+                {"vacancy": "Vacancy and intake batch must share an organization."}
+            )
+
     @property
     def recruiter_lawful_basis(self) -> str:
         return lawful_basis_display(self.lawful_basis)
@@ -442,6 +460,112 @@ class CandidateIntakeBatch(models.Model):
     @property
     def recruiter_contact_permission(self) -> str:
         return contact_permission_display(self.contact_permission)
+
+
+class CandidateVacancyConsideration(models.Model):
+    """One explicit application/consideration event for a reusable candidate."""
+
+    class ContactScope(models.TextChoices):
+        CURRENT_VACANCY = "current_vacancy", "This vacancy only"
+
+    candidate = models.ForeignKey(
+        Candidate,
+        on_delete=models.CASCADE,
+        related_name="vacancy_considerations",
+    )
+    vacancy = models.ForeignKey(
+        "vacancies.Vacancy",
+        on_delete=models.CASCADE,
+        related_name="candidate_considerations",
+    )
+    source = models.OneToOneField(
+        CandidateSource,
+        on_delete=models.CASCADE,
+        related_name="vacancy_consideration",
+    )
+    intake_batch = models.ForeignKey(
+        CandidateIntakeBatch,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="candidate_considerations",
+    )
+    document = models.ForeignKey(
+        "CandidateDocument",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="vacancy_considerations",
+    )
+    contact_scope = models.CharField(
+        max_length=30,
+        choices=ContactScope.choices,
+        default=ContactScope.CURRENT_VACANCY,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_candidate_vacancy_considerations",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = CandidateRelatedQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-created_at", "-id")
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(contact_scope="current_vacancy"),
+                name="candidate_vacancy_contact_scope_valid",
+            ),
+            models.UniqueConstraint(
+                fields=("candidate", "vacancy", "intake_batch"),
+                condition=models.Q(intake_batch__isnull=False),
+                name="unique_candidate_vacancy_intake_consideration",
+            ),
+        ]
+
+    @property
+    def organization(self) -> Organization:
+        return self.candidate.organization
+
+    def clean(self) -> None:
+        super().clean()
+        if self.candidate_id and self.vacancy_id:
+            if self.candidate.organization_id != self.vacancy.organization_id:
+                raise ValidationError(
+                    {"vacancy": "Candidate and vacancy must share an organization."}
+                )
+        if self.source_id and self.candidate_id:
+            if self.source.candidate_id != self.candidate_id:
+                raise ValidationError(
+                    {"source": "Use a source belonging to this candidate."}
+                )
+        if self.document_id and self.candidate_id:
+            if self.document.candidate_id != self.candidate_id:
+                raise ValidationError(
+                    {"document": "Use a document belonging to this candidate."}
+                )
+        if self.intake_batch_id:
+            if self.candidate_id and (
+                self.intake_batch.organization_id != self.candidate.organization_id
+            ):
+                raise ValidationError(
+                    {"intake_batch": "Use an intake from this organization."}
+                )
+            if self.vacancy_id and self.intake_batch.vacancy_id != self.vacancy_id:
+                raise ValidationError(
+                    {"intake_batch": "Use an intake for this vacancy."}
+                )
+
+    def save(self, *args, **kwargs) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.candidate} — {self.vacancy}"
 
 
 def candidate_intake_upload_to(instance: "CandidateIntakeItem", filename: str) -> str:

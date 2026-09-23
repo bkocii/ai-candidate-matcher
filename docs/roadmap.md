@@ -179,9 +179,9 @@ Status: In progress.
 Status: Direction approved; each implementation task requires detailed scope
 and acceptance-criteria approval before code changes begin.
 
-The canonical plan is `docs/product_direction_plan.md`. `FLOW-001` behavior and
-acceptance criteria were approved on 2026-09-22; implementation is the next
-activity.
+The canonical plan is `docs/product_direction_plan.md`. `FLOW-001` behavior,
+acceptance criteria, and implementation were completed on 2026-09-22. `VAC-001`
+was completed on 2026-09-23; `FLOW-002` is the next approved activity.
 
 ### Vacancy-centric candidate workflow
 
@@ -189,11 +189,12 @@ activity.
   organization candidates and original application/batch provenance. Remove
   the visible shared-details step from routine vacancy intake, derive
   application-only contact/source/retention context safely, and keep future-role
-  permission separate. **Acceptance criteria approved — 2026-09-22; implementation next.**
+  permission separate. **Complete — 2026-09-22.**
 - `VAC-001` Replace the multi-screen routine vacancy setup with an AI-first flow
   accepting pasted text or one validated PDF/DOCX/TXT vacancy document, compact
   recruiter review, explicit confirm/open, and direct handoff to vacancy CV
-  intake. Keep manual fallback and immutable requirement history.
+  intake. Keep manual fallback and immutable requirement history. **Complete —
+  2026-09-23.**
 - `FLOW-002` Default vacancy views to their associated candidates and separate
   access to the wider organization candidate pool.
 - `FLOW-003` Add deliberate cross-vacancy reuse through **Add from candidate

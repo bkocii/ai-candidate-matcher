@@ -10,6 +10,7 @@ from django.template.defaultfilters import pluralize
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from audit.lifecycle import get_retention_policy
 from candidates.bulk_intake import (
     CandidateIntakeDuplicateError,
     create_candidate_from_intake_item,
@@ -39,6 +40,8 @@ from candidates.services import CandidateDuplicateFinder
 from operations.models import BackgroundJob
 from operations.services import queue_candidate_profile_documents
 from organizations.models import Organization
+from organizations.permissions import can_administer_organization
+from vacancies.models import Vacancy
 
 REVIEW_FLAG_LABELS = {
     "name_missing": "Name needs entry",
@@ -104,9 +107,16 @@ def _organization(request, slug: str) -> Organization:
 def _batch(organization: Organization, batch_id: int) -> CandidateIntakeBatch:
     return get_object_or_404(
         CandidateIntakeBatch.objects.for_organization(organization).select_related(
-            "created_by"
+            "created_by", "vacancy", "vacancy__client_company"
         ),
         pk=batch_id,
+    )
+
+
+def _vacancy(organization: Organization, vacancy_id: int) -> Vacancy:
+    return get_object_or_404(
+        Vacancy.objects.for_organization(organization).filter(deleted_at__isnull=True),
+        pk=vacancy_id,
     )
 
 
@@ -131,7 +141,10 @@ def _upload_intake_files(*, request, batch, files) -> tuple[int, int]:
         else:
             created += 1
     if created:
-        messages.success(request, f"Added {created} CV(s) to the review queue.")
+        if batch.vacancy_id:
+            messages.success(request, f"Added {created} CV(s) to this vacancy.")
+        else:
+            messages.success(request, f"Added {created} CV(s) to the review queue.")
     if failures:
         messages.error(
             request,
@@ -233,6 +246,7 @@ def _render_batch(
             "skipped_count": skipped_count,
             "queued_job": queued_job,
             "profile_review": profile_review,
+            "can_administer": can_administer_organization(request.user, organization),
         },
     )
 
@@ -242,7 +256,7 @@ def candidate_intake_list(request, organization_slug: str):
     organization = _organization(request, organization_slug)
     batches = (
         CandidateIntakeBatch.objects.for_organization(organization)
-        .select_related("created_by")
+        .select_related("created_by", "vacancy")
         .annotate(
             item_count=Count("items"),
             pending_count=Count(
@@ -288,6 +302,65 @@ def candidate_intake_create(request, organization_slug: str):
         request,
         "candidates/candidate_intake_form.html",
         {"organization": organization, "form": form, "upload_form": upload_form},
+    )
+
+
+@login_required
+def vacancy_candidate_intake_create(request, organization_slug: str, vacancy_id: int):
+    organization = _organization(request, organization_slug)
+    vacancy = _vacancy(organization, vacancy_id)
+    if vacancy.status != Vacancy.Status.OPEN or vacancy.current_requirements is None:
+        messages.error(
+            request,
+            "Confirm the requirements and open this vacancy before adding CVs.",
+        )
+        return redirect(
+            "vacancies:vacancy-detail",
+            organization_slug=organization.slug,
+            vacancy_id=vacancy.pk,
+        )
+
+    policy = get_retention_policy(organization)
+    upload_form = CandidateIntakeUploadForm(request.POST or None, request.FILES or None)
+    if request.method == "POST" and upload_form.is_valid():
+        batch = create_candidate_intake_batch(
+            organization=organization,
+            user=request.user,
+            values={
+                "vacancy": vacancy,
+                "source_name": f"CV received for {vacancy.title}"[:200],
+                "lawful_basis": policy.vacancy_candidate_lawful_basis,
+                "consent_status": "unknown",
+                "contact_permission": "restricted",
+                "permission_notes": "",
+                "candidate_retention_until": None,
+                "source_retention_until": None,
+                "document_retention_until": None,
+            },
+        )
+        _upload_intake_files(
+            request=request,
+            batch=batch,
+            files=upload_form.cleaned_data["cv_files"],
+        )
+        return redirect(
+            "candidates:candidate-intake-detail",
+            organization.slug,
+            batch.pk,
+        )
+
+    return render(
+        request,
+        "candidates/candidate_vacancy_intake_form.html",
+        {
+            "organization": organization,
+            "vacancy": vacancy,
+            "upload_form": upload_form,
+            "lawful_basis_configured": (
+                policy.vacancy_candidate_lawful_basis != "not_recorded"
+            ),
+            "can_administer": can_administer_organization(request.user, organization),
+        },
     )
 
 

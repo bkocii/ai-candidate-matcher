@@ -54,6 +54,7 @@ def create_vacancy_with_requirements(
     organization: Organization,
     user: User,
     vacancy_values: dict,
+    source_provenance: dict | None = None,
 ) -> Vacancy:
     """Create a vacancy and its first manual requirements draft atomically."""
     require_organization_access(user, organization)
@@ -89,6 +90,7 @@ def create_vacancy_with_requirements(
         source_description=vacancy.description,
         creation_method=VacancyRequirements.CreationMethod.MANUAL,
         created_by=user,
+        **(source_provenance or {}),
     )
     return vacancy
 
@@ -337,6 +339,9 @@ def create_next_requirements_draft(
         source_description=base.source_description if base else vacancy.description,
         creation_method=VacancyRequirements.CreationMethod.MANUAL,
         created_by=user,
+        source_original_filename=(base.source_original_filename if base else ""),
+        source_content_type=(base.source_content_type if base else ""),
+        source_sha256=(base.source_sha256 if base else ""),
         **values,
     )
     from matching.services import copy_hard_constraint_rules, sync_requirement_skills

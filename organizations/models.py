@@ -112,6 +112,14 @@ class ClientCompany(models.Model):
 class OrganizationRetentionPolicy(models.Model):
     """Tenant-owned lifecycle limits with conservative operational defaults."""
 
+    class CandidateLawfulBasis(models.TextChoices):
+        NOT_RECORDED = "not_recorded", "Not configured"
+        CONSENT = "consent", "Consent"
+        CONTRACT = "contract", "Application or contract steps"
+        LEGITIMATE_INTERESTS = "legitimate_interests", "Legitimate interests"
+        LEGAL_OBLIGATION = "legal_obligation", "Legal obligation"
+        OTHER = "other", "Other organization-approved reason"
+
     DEFAULT_TEMPORARY_INTAKE_DAYS = 7
     DEFAULT_COMPLETED_JOB_DAYS = 90
     DEFAULT_UNCOMMITTED_WORKFLOW_DAYS = 180
@@ -132,6 +140,11 @@ class OrganizationRetentionPolicy(models.Model):
         default=DEFAULT_UNCOMMITTED_WORKFLOW_DAYS
     )
     metadata_days = models.PositiveIntegerField(default=DEFAULT_METADATA_DAYS)
+    vacancy_candidate_lawful_basis = models.CharField(
+        max_length=30,
+        choices=CandidateLawfulBasis.choices,
+        default=CandidateLawfulBasis.NOT_RECORDED,
+    )
     organization_recovery_days = models.PositiveIntegerField(
         default=DEFAULT_ORGANIZATION_RECOVERY_DAYS
     )
@@ -151,6 +164,19 @@ class OrganizationRetentionPolicy(models.Model):
             models.CheckConstraint(
                 condition=models.Q(policy_version__gte=1),
                 name="retention_policy_version_positive",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    vacancy_candidate_lawful_basis__in=[
+                        "not_recorded",
+                        "consent",
+                        "contract",
+                        "legitimate_interests",
+                        "legal_obligation",
+                        "other",
+                    ]
+                ),
+                name="retention_policy_candidate_basis_valid",
             ),
             models.CheckConstraint(
                 condition=(

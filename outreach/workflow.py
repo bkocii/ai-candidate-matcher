@@ -5,7 +5,7 @@ from django.db import transaction
 from django.db.models import Max
 
 from accounts.models import User
-from candidates.models import Candidate, CandidateSource
+from candidates.models import Candidate, CandidateSource, CandidateVacancyConsideration
 from matching.models import ShortlistEntry
 from organizations.permissions import require_organization_object_access
 from outreach.generation import assess_outreach_draft_eligibility
@@ -54,6 +54,7 @@ def _assess_current_draft_boundary(
 def assess_contact_permission(
     *,
     candidate: Candidate,
+    vacancy=None,
 ) -> OutreachWorkflowEligibility:
     sources = list(candidate.sources.all())
     if not sources:
@@ -78,6 +79,39 @@ def assess_contact_permission(
             False,
             "Allowed contact is Do not contact. Outreach is blocked.",
         )
+    if vacancy is not None:
+        application_sources = [
+            consideration.source
+            for consideration in CandidateVacancyConsideration.objects.filter(
+                candidate=candidate,
+                vacancy=vacancy,
+                contact_scope=(
+                    CandidateVacancyConsideration.ContactScope.CURRENT_VACANCY
+                ),
+            ).select_related("source")
+        ]
+        if application_sources:
+            eligible_sources = [
+                source
+                for source in application_sources
+                if source.lawful_basis != CandidateSource.LawfulBasis.NOT_RECORDED
+                and not (
+                    source.lawful_basis == CandidateSource.LawfulBasis.CONSENT
+                    and source.consent_status != CandidateSource.ConsentStatus.GRANTED
+                )
+                and source.contact_permission
+                in {
+                    CandidateSource.ContactPermission.RESTRICTED,
+                    CandidateSource.ContactPermission.PERMITTED,
+                }
+            ]
+            if eligible_sources:
+                return OutreachWorkflowEligibility(True)
+            return OutreachWorkflowEligibility(
+                False,
+                "Record the organization's approved reason for storing this "
+                "application before preparing outreach.",
+            )
     if any(
         source.contact_permission == CandidateSource.ContactPermission.RESTRICTED
         for source in sources
@@ -139,7 +173,10 @@ def assess_final_approval_eligibility(
             False,
             "This exact draft version already has final approval.",
         )
-    return assess_contact_permission(candidate=draft.shortlist_entry.candidate)
+    return assess_contact_permission(
+        candidate=draft.shortlist_entry.candidate,
+        vacancy=draft.shortlist_entry.match_run.requirements.vacancy,
+    )
 
 
 def assess_manual_action_eligibility(
@@ -150,7 +187,10 @@ def assess_manual_action_eligibility(
     current = _assess_current_draft_boundary(draft=draft, user=user)
     if not current.can_proceed:
         return current
-    return assess_contact_permission(candidate=draft.shortlist_entry.candidate)
+    return assess_contact_permission(
+        candidate=draft.shortlist_entry.candidate,
+        vacancy=draft.shortlist_entry.match_run.requirements.vacancy,
+    )
 
 
 def assess_email_app_eligibility(

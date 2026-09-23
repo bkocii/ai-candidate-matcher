@@ -7,6 +7,7 @@ from candidates.models import (
     CandidateIntakeItem,
     CandidateProfile,
     CandidateSource,
+    CandidateVacancyConsideration,
 )
 
 
@@ -67,6 +68,38 @@ class CandidateSourceAdmin(admin.ModelAdmin):
         "source_reference",
     )
     autocomplete_fields = ("candidate", "recorded_by")
+
+
+@admin.register(CandidateVacancyConsideration)
+class CandidateVacancyConsiderationAdmin(admin.ModelAdmin):
+    list_display = (
+        "candidate",
+        "vacancy",
+        "contact_scope",
+        "created_by",
+        "created_at",
+    )
+    list_filter = ("contact_scope", "vacancy__organization")
+    search_fields = ("candidate__full_name", "vacancy__title")
+    readonly_fields = (
+        "candidate",
+        "vacancy",
+        "source",
+        "intake_batch",
+        "document",
+        "contact_scope",
+        "created_by",
+        "created_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(CandidateDocument)

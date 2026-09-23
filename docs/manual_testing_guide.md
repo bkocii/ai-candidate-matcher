@@ -2,7 +2,7 @@
 
 This guide verifies the application from the Django foundation through
 `PROD-005`, `INTAKE-001`, `EVAL-001` through `EVAL-003`, `DEMO-001`,
-`DEF-001`, and `CR-001` through `CR-005`. Use only the
+`DEF-001`, `FLOW-001`, `VAC-001`, and `CR-001` through `CR-005`. Use only the
 synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
@@ -254,6 +254,45 @@ to be the same as `+383 44 123 456`; country-aware normalization requires a
 future organization-country setting.
 
 ## 6. Test reviewed bulk CV candidate intake
+
+### Routine vacancy path
+
+Create and open a vacancy with confirmed requirements. On the vacancy page,
+select **Add candidate CVs**.
+
+Expected result:
+
+- CV upload is the only required input. No **Shared details**, consent,
+  permission-notes, or per-upload retention form is shown.
+- The page states **This vacancy only** and explains that receiving a CV does
+  not record permission for future roles.
+- If **Organization settings → Candidate privacy and retention** has no default
+  reason for storing vacancy applicants, a visible privacy-review warning is
+  shown. Upload remains available, but outreach stays blocked.
+
+Set the default reason to **Legitimate interests** for this synthetic test, then
+upload `synthetic-drita-shembull-cv.docx` and continue through identity review.
+
+Expected result:
+
+- The batch records the vacancy and source **CV received for [vacancy]** without
+  recruiter entry or AI inference.
+- Selecting a new person creates one reusable organization candidate plus one
+  separate vacancy application with contact scope **This vacancy only**.
+- Uploading a different CV with an email or phone that unambiguously belongs to
+  an active existing candidate adds that candidate to the vacancy without
+  duplicating the candidate. Conflicting identifiers remain blocked for review.
+- Uploading the exact already-stored CV reuses its candidate/document and does
+  not store duplicate private bytes.
+- The candidate detail page lists each vacancy application separately.
+- Application-related outreach is permitted only when the linked application
+  source has an approved reason. The same source does not grant future-role
+  rediscovery permission.
+- Candidate/source/CV review dates remain blank until `RET-001` provides the
+  approved meaningful-activity candidate-retention calculation; the intake does
+  not invent dates from operational cleanup settings.
+
+### Secondary generic candidate-pool intake
 
 Open **Candidates** and confirm **Create candidates from CVs** is the primary
 creation action. Select these three files together in the initial **Upload CVs**
@@ -566,7 +605,8 @@ not demonstrated in that recording.
 
 MT-015 browser retest: on **Add vacancy**, confirm the heading and introduction
 align with the centered form panel's outer edges. Check **Hiring client
-(optional)**, **No hiring client (direct employer)**, and **Job description**.
+(optional)**, **No hiring client (direct employer)**, **Paste vacancy
+description**, and **Or upload vacancy**.
 Resize to a narrow window and ensure the text and panel stay aligned without
 horizontal overflow. Check **Edit vacancy** too: it shares the alignment and
 hiring-client wording, while the original description remains uneditable there.
@@ -577,14 +617,24 @@ Open **Vacancies** and select **Add vacancy**. Use:
 
 - Title: `Senior Django Developer`
 - Hiring client (optional): `Acme Test Industries`
-- Job description: paste `manual_testing/fixtures/vacancy-description.txt`
+- Paste vacancy description: paste
+  `manual_testing/fixtures/vacancy-description.txt`
 
 Expected result:
 
-- The vacancy is created as `Draft`.
-- Requirements version 1 is created as an editable manual draft.
-- You are redirected directly to the requirements editor.
-- The original pasted description is available in the collapsed source panel.
+- **Create and analyze vacancy** creates one `Draft` vacancy and requirements
+  version 1, runs AI extraction, and opens **Check the matching essentials**.
+- AI ambiguities appear first. Essential matching details are immediately
+  visible; less common fields, eligibility rules, and original input are under
+  **Advanced details and original vacancy**.
+- **Save draft without AI** instead opens the manual editor without an AI call.
+
+Repeat with a disposable vacancy by uploading the same fixture as UTF-8 TXT
+instead of pasting. Confirm the review states the source filename and that the
+raw vacancy file is not offered for download. Also verify PDF and DOCX fixtures.
+Supplying neither source or both sources must show a clear form error. Invalid,
+empty, oversized, encrypted, unsafe, scanned/textless, mismatched, non-UTF-8, or
+unsupported files must be rejected without creating a vacancy.
 
 Select **Edit vacancy**, change the display title, save, and then restore the
 original title. Expected result: the title changes, but the original vacancy
@@ -627,9 +677,8 @@ Expected result:
 
 ## 9. Test confirmation and immutable corrections
 
-From the requirements editor, select **Save and review**. On the review page,
-inspect the complete draft and eligibility rules, then select **Confirm and open
-vacancy**.
+From the compact review (or after **Save and review** in the editor), inspect the
+essentials and advanced details, then select **Confirm and upload CVs**.
 
 Expected result:
 
@@ -637,13 +686,13 @@ Expected result:
 - It becomes the current confirmed requirements.
 - It is read-only; the app does not offer in-place editing.
 - The vacancy becomes `Open` in the same atomic action.
-- The vacancy page focuses a concise success summary near the top and offers
-  **Evaluate candidates** as the next action.
+- The browser opens the vacancy-scoped CV intake from `FLOW-001`; it does not
+  evaluate or contact candidates.
 
-Repeat with a disposable draft vacancy and select **Confirm only**. Expected
-result: the version is confirmed, the vacancy remains `Draft`, and the focused
-success summary offers **Open vacancy**. A failed open transition must roll back
-confirmation rather than leaving half of the combined action saved.
+Repeat with a disposable draft vacancy and select **Confirm and open only**.
+Expected result: the version is confirmed and the vacancy becomes `Open`, but
+the browser stays in the vacancy workspace. A failed open transition must roll
+back confirmation rather than leaving half of the combined action saved.
 
 Select **Create correction draft**.
 
@@ -676,9 +725,9 @@ structured requirement. The version remains a draft.
 
 ## 11. Test vacancy lifecycle and dashboard count
 
-New vacancies remain `Draft`; using **Confirm only** does not make the
-dashboard's **Open vacancies** count increase. The routine **Confirm and open
-vacancy** action performs both explicit transitions together.
+New vacancies remain `Draft` until confirmation. The routine **Confirm and
+upload CVs** and secondary **Confirm and open only** actions perform confirmation
+and opening together.
 
 1. Before confirming requirements, confirm that **Change to Open** is unavailable
    and the page explains that a confirmed version is required.
@@ -1036,17 +1085,18 @@ deterministic features still work without an API key.
 
 1. Configure a valid `OPENAI_API_KEY` and supported `OPENAI_MODEL` in `.env`, then
    restart the development server.
-2. Create a vacancy from `manual_testing/fixtures/vacancy-description.txt` or open
-   an existing editable requirements draft.
-3. Before clicking the AI action, note any structured values already in the
-   draft. **Extract with AI** replaces these draft fields after a successful
-   response.
-4. Select **Extract with AI** once and wait for the request to finish.
+2. Select **Add vacancy**, paste
+   `manual_testing/fixtures/vacancy-description.txt`, and choose **Create and
+   analyze vacancy**. The create action runs the first extraction automatically.
+3. To retest an existing manual or failed draft, note its structured values.
+   **Extract with AI** replaces those draft fields after a successful response.
+4. Wait for the request to finish.
 
 Expected result:
 
-- The app returns to the same editable version and reports that AI suggestions
-  were saved to the draft.
+- Initial creation opens the compact review and reports that the vacancy was
+  analyzed. A retry from the editor returns to that editable version and reports
+  that AI suggestions were saved.
 - The version remains **Draft** and its method becomes **AI assisted**.
 - Skills, experience, location, work mode, languages, education, certifications,
   employment type, notes-only Other requirements, and ambiguities are
@@ -1061,14 +1111,17 @@ Expected result:
   deliberately in the Eligibility rules section.
 - You can edit every suggestion before using the separate confirmation action.
 
-To test bounded failure behavior, remove the API key, restart the server, and run
-**Extract with AI** on a draft containing a recognizable manual summary.
+To test bounded failure behavior, remove the API key, restart the server, and
+select **Create and analyze vacancy** with a new synthetic vacancy.
 
 Expected result:
 
 - A safe configuration message appears without provider details, prompts, or raw
   output.
-- The manual summary and all other draft values remain unchanged.
+- The vacancy and exactly one manual requirements draft remain; retry and manual
+  editing are available.
+- Retrying **Extract with AI** on a draft containing a recognizable manual
+  summary preserves that summary and all other values when the retry fails.
 - Confirmed versions do not expose the extraction action, and the extraction URL
   rejects a confirmed version.
 

@@ -6,13 +6,13 @@
 {% block content %}
 <section class="page-heading action-heading">
     <div>
-        <p class="eyebrow">Bulk CV intake</p>
+        <p class="eyebrow">{% if batch.vacancy %}Vacancy candidates{% else %}Bulk CV intake{% endif %}</p>
         <h1>Intake #{{ batch.pk }}</h1>
-        <p class="lede">{{ batch.source_name }} · {{ batch.get_status_display }}</p>
+        <p class="lede">{% if batch.vacancy %}{{ batch.vacancy.title }} · {% endif %}{{ batch.get_status_display }}</p>
     </div>
     <div class="button-row">
         {% if created_count %}<a class="primary-button button-link" href="{% url 'candidates:candidate-intake-confirm-profiles' organization.slug batch.pk %}">Review profile confirmation</a>{% endif %}
-        <a class="secondary-button" href="{% url 'candidates:candidate-intake-list' organization.slug %}">All intake batches</a>
+        {% if batch.vacancy %}<a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug batch.vacancy.pk %}">Back to vacancy</a>{% else %}<a class="secondary-button" href="{% url 'candidates:candidate-intake-list' organization.slug %}">All intake batches</a>{% endif %}
         <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Candidates</a>
     </div>
 </section>
@@ -34,6 +34,18 @@
 {% endif %}
 
 <section class="workspace-panel intake-provenance" aria-labelledby="intake-source-title">
+    {% if batch.vacancy %}
+    <div>
+        <p class="eyebrow">Application details</p>
+        <h2 id="intake-source-title">{{ batch.vacancy.title }}</h2>
+        <p>Source: CV received for this vacancy · Contact: This vacancy only</p>
+    </div>
+    <div>
+        <p><strong>Reason for storing data:</strong> {{ batch.recruiter_lawful_basis }}</p>
+        {% if batch.lawful_basis == "not_recorded" %}<p class="field-errors">Outreach waits until an administrator records the organization's approved reason.{% if can_administer %} <a href="{% url 'organizations:retention-dashboard' organization.slug %}">Set privacy default</a>.{% endif %}</p>{% endif %}
+        <p class="help-text">Retention dates will use the organization policy when automated applicant retention is added.</p>
+    </div>
+    {% else %}
     <div>
         <p class="eyebrow">Shared provenance</p>
         <h2 id="intake-source-title">{{ batch.source_name }}</h2>
@@ -44,6 +56,7 @@
         <p><strong>Delete or review source on:</strong> {{ batch.source_retention_until|default:"Not set" }}</p>
         <p><strong>Delete or review CV on:</strong> {{ batch.document_retention_until|default:"Not set" }}</p>
     </div>
+    {% endif %}
 </section>
 
 {% if mapping_result %}
@@ -87,7 +100,7 @@
                         <h3 title="{{ row.item.original_filename }}">{{ row.item.original_filename }}</h3>
                     </div>
                     {% if row.duplicate %}
-                        <span class="status-pill intake-state-duplicate">Possible duplicate</span>
+                        <span class="status-pill intake-state-duplicate">{% if batch.vacancy and "conflicting identifiers" not in row.duplicate.reasons.0 %}Existing candidate{% else %}Possible duplicate{% endif %}</span>
                     {% elif row.flag_labels %}
                         <span class="status-pill intake-state-review">Needs review</span>
                     {% else %}
@@ -101,7 +114,7 @@
                 </ul>
                 {% endif %}
                 {% if row.duplicate %}
-                <p class="intake-duplicate-warning">Possible duplicate: <a href="{% url 'candidates:candidate-detail' organization.slug row.duplicate.candidate.pk %}">{{ row.duplicate.candidate.full_name }}</a> ({{ row.duplicate.reasons|join:", " }}).</p>
+                <p class="intake-duplicate-warning">{% if batch.vacancy and "conflicting identifiers" not in row.duplicate.reasons.0 %}This CV matches existing candidate{% else %}Possible duplicate{% endif %}: <a href="{% url 'candidates:candidate-detail' organization.slug row.duplicate.candidate.pk %}">{{ row.duplicate.candidate.full_name }}</a> ({{ row.duplicate.reasons|join:", " }}).{% if batch.vacancy and "conflicting identifiers" not in row.duplicate.reasons.0 %} Selecting it adds a new application without creating another candidate.{% endif %}</p>
                 {% endif %}
                 {% if row.form.non_field_errors %}<div class="field-errors">{{ row.form.non_field_errors }}</div>{% endif %}
 
@@ -115,7 +128,7 @@
                 <footer>
                     <label class="checkbox-row intake-create-choice" for="{{ row.form.selected.id_for_label }}">
                         <input type="checkbox" name="{{ row.form.selected.html_name }}" id="{{ row.form.selected.id_for_label }}"{% if row.form.selected.value %} checked{% endif %} data-intake-select{% if not row.duplicate and not row.flag_labels %} data-ready="true"{% endif %}>
-                        Create this candidate
+                        {% if batch.vacancy %}Add to this vacancy{% else %}Create this candidate{% endif %}
                     </label>
                     <button class="secondary-button" type="submit" form="skip-item-{{ row.item.pk }}">Discard CV</button>
                 </footer>
@@ -127,7 +140,7 @@
             Create AI profile drafts in the background
         </label>
         <p class="help-text">The worker creates evidence-based drafts only. Every profile still requires human evidence review and confirmation; every match decision remains individual.</p>
-        <button class="primary-button" type="submit" data-create-selected disabled>Create selected candidates (0)</button>
+        <button class="primary-button" type="submit" data-create-selected data-action-label="{% if batch.vacancy %}Add selected candidates{% else %}Create selected candidates{% endif %}" disabled>{% if batch.vacancy %}Add selected candidates{% else %}Create selected candidates{% endif %} (0)</button>
     </form>
     {% for row in review_rows %}
     <form id="skip-item-{{ row.item.pk }}" method="post" action="{% url 'candidates:candidate-intake-skip' organization.slug batch.pk row.item.pk %}">
@@ -172,12 +185,12 @@
 
 {% if created_items %}
 <section class="report-section" aria-labelledby="created-candidates-title">
-    <h2 id="created-candidates-title">Created candidates</h2>
+    <h2 id="created-candidates-title">{% if batch.vacancy %}Candidates added{% else %}Created candidates{% endif %}</h2>
     <ul class="record-list">
         {% for item in created_items %}
         <li>
             {% if item.candidate %}<a href="{% url 'candidates:candidate-detail' organization.slug item.candidate.pk %}">{{ item.candidate.full_name }}</a>{% else %}Candidate record later removed{% endif %}
-            <span>Created {{ item.processed_at }}{% if item.processed_by %} by {{ item.processed_by }}{% endif %}</span>
+            <span>{% if batch.vacancy %}Added{% else %}Created{% endif %} {{ item.processed_at }}{% if item.processed_by %} by {{ item.processed_by }}{% endif %}</span>
         </li>
         {% endfor %}
     </ul>

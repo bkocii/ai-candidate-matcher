@@ -16,12 +16,15 @@
     <div class="button-row">
         <a class="secondary-button" href="{% url 'vacancies:vacancy-list' organization.slug %}">All vacancies</a>
         <a class="secondary-button" href="{% url 'vacancies:vacancy-edit' organization.slug vacancy.pk %}">Edit vacancy</a>
-        {% if draft %}
+        {% if vacancy.status == "open" and current_requirements %}
+            <a class="primary-button button-link" href="{% url 'candidates:vacancy-candidate-intake-create' organization.slug vacancy.pk %}">Add candidate CVs</a>
+            {% if latest_match_run %}
+                <a class="secondary-button button-link" href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_match_run.pk %}">Open latest shortlist{% if latest_match_run_staleness.is_stale %} (stale){% endif %}</a>
+            {% else %}
+                <a class="secondary-button button-link" href="{% url 'matching:candidate-filter-report' organization.slug vacancy.pk %}">Evaluate candidates</a>
+            {% endif %}
+        {% elif draft %}
             <a class="primary-button button-link" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk draft.pk %}">Edit draft v{{ draft.version }}</a>
-        {% elif latest_match_run %}
-            <a class="primary-button button-link" href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_match_run.pk %}">Open latest shortlist{% if latest_match_run_staleness.is_stale %} (stale){% endif %}</a>
-        {% elif current_requirements %}
-            <a class="primary-button button-link" href="{% url 'matching:candidate-filter-report' organization.slug vacancy.pk %}">Evaluate candidates</a>
         {% endif %}
     </div>
 </section>
@@ -32,7 +35,7 @@
         <p class="eyebrow">Requirements confirmed</p>
         <h2 id="requirements-confirmed-title">Version {{ current_requirements.version }} is now the matching input</h2>
         {% if confirmation_opened %}
-            <p>The vacancy is open and ready for candidate evaluation.</p>
+            <p>The vacancy is open. Add the CVs received for this role; the app will prepare details and AI profile drafts for review.</p>
         {% elif vacancy.status == "draft" %}
             <p>The confirmed version is saved. Open the vacancy when you are ready to evaluate candidates.</p>
         {% else %}
@@ -47,7 +50,7 @@
                 <button class="primary-button" type="submit">Open vacancy</button>
             </form>
         {% elif vacancy.status == "open" %}
-            <a class="primary-button button-link" href="{% url 'matching:candidate-filter-report' organization.slug vacancy.pk %}">Evaluate candidates</a>
+            <a class="primary-button button-link" href="{% url 'candidates:vacancy-candidate-intake-create' organization.slug vacancy.pk %}">Add candidate CVs</a>
         {% endif %}
     </div>
 </section>

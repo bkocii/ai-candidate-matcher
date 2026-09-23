@@ -29,8 +29,8 @@ has been implemented and no finding remains marked Open. The user confirmed the
 final MT-003-V02 candidate action-bar batch, closing that pass. The complete
 local quality check remains user-run under the agreed low-output workflow.
 `docs/product_direction_plan.md` is the canonical record of the new direction
-and staged tasks. `FLOW-001` behavior and acceptance criteria were approved on
-2026-09-22; implementation is now the next activity.
+and staged tasks. `FLOW-001` behavior, acceptance criteria, and implementation
+were completed on 2026-09-22; `VAC-001` is now the next activity.
 `DIR-002` subsequently records the approved AI-first minimum-effort recruiter
 principle and client-readiness refinements. Before a real client is onboarded,
 the platform-owner membership gap must be closed, service/data-processing
@@ -42,8 +42,8 @@ will accept pasted text or a validated PDF/DOCX/TXT vacancy document, run AI
 extraction from the primary creation action, show a compact requirements review,
 and continue from explicit confirm/open to vacancy-scoped CV upload. Current
 code already provides the component creation, AI extraction, immutable draft
-history, and atomic confirm/open services. `VAC-001` follows `FLOW-001` so its
-final handoff has a real destination; no code was changed for this approval.
+history, and atomic confirm/open services. `VAC-001` follows the completed
+`FLOW-001` route, so its final handoff now has a real destination.
 Use `docs/manual_testing_review.md` for individual implementation/browser-test
 states; do not interpret an implemented change as browser-tested or silently
 approve proposed scope.
@@ -571,24 +571,21 @@ version with actor and timestamp, and exceptions stay individual. Final
 approve/reject/revisit decisions remain individual recruiter actions with notes,
 actor, and timestamp, and outreach remains separate.
 
-The next activity is implementation of:
+`FLOW-001` was implemented on 2026-09-22. Routine intake now starts from an open
+vacancy and requires only CV upload. It records automatic provenance, a separate
+`CandidateVacancyConsideration`, and **This vacancy only** contact scope;
+vacancy-related outreach accepts that scope only when the linked source has an
+organization-approved processing basis. Generic pool intake remains available.
+Exact documents and unambiguous active identities are reused without duplicating
+the candidate, while conflicts remain blocked. Automatic candidate review dates
+remain blank until `RET-001` defines meaningful-activity retention.
 
-`FLOW-001 — Bind routine CV intake to a vacancy while preserving reusable
-organization candidates and original application/batch provenance.`
-
-Approved acceptance behavior removes the current visible **Shared details**
-step from routine vacancy intake. CV upload is the only required recruiter
-input. The server derives vacancy/batch/file provenance, a plain source label,
-organization-policy retention, and **This vacancy only** contact scope. That
-scope permits contact about the application but does not record consent or
-future-role permission. The lawful basis is supplied by an organization-
-approved administrator/onboarding policy, never AI; missing policy remains
-visible for privacy review. Candidate identity/profile stays organization-owned,
-vacancy consideration/history stays separate, unambiguous reuse avoids profile
-duplication, and conflicting identity matches are never silently merged.
+The next activity is `VAC-001`: compose pasted text or one validated vacancy
+document, AI extraction, compact review, confirm/open, and the completed
+vacancy-scoped CV upload destination.
 
 The product-direction sequence is recorded in
-`docs/product_direction_plan.md`. `FLOW-001` is approved; continue to review
+`docs/product_direction_plan.md`. `FLOW-001` is complete; continue to review
 later tasks before their implementation. `DEMO-002` remains deferred until the
 revised workflow reaches an approved positioning checkpoint.
 

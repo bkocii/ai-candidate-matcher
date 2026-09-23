@@ -28,7 +28,7 @@
 {% endif %}
 
 <section class="workspace-panel retention-panel" aria-labelledby="policy-title">
-    <header><p class="eyebrow">Policy v{{ policy.policy_version }}</p><h2 id="policy-title">Retention limits</h2><p class="section-note">Choose how long expired operational records remain before they can appear in the deletion preview.</p></header>
+    <header><p class="eyebrow">Policy v{{ policy.policy_version }}</p><h2 id="policy-title">Candidate privacy and retention defaults</h2><p class="section-note">Set the recruitment basis once, then choose how long expired operational records remain before they can appear in the deletion preview.</p></header>
     <form class="stacked-form" method="post">
         {% csrf_token %}<input type="hidden" name="action" value="update_policy">
         {{ policy_form.non_field_errors }}

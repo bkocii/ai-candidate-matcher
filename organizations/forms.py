@@ -251,6 +251,7 @@ class OrganizationRetentionPolicyForm(forms.ModelForm):
     class Meta:
         model = OrganizationRetentionPolicy
         fields = (
+            "vacancy_candidate_lawful_basis",
             "temporary_intake_days",
             "completed_job_days",
             "uncommitted_workflow_days",
@@ -259,6 +260,9 @@ class OrganizationRetentionPolicyForm(forms.ModelForm):
             "legal_hold",
         )
         labels = {
+            "vacancy_candidate_lawful_basis": (
+                "Default reason for storing vacancy applicants"
+            ),
             "temporary_intake_days": "Abandoned intake after (days)",
             "completed_job_days": "Completed job history after (days)",
             "uncommitted_workflow_days": (
@@ -269,9 +273,14 @@ class OrganizationRetentionPolicyForm(forms.ModelForm):
             "legal_hold": "Pause all scheduled deletion (legal hold)",
         }
         help_texts = {
+            "vacancy_candidate_lawful_basis": (
+                "Set this once for routine vacancy CV uploads. It is applied to "
+                "new application records and never selected by AI. Confirm the "
+                "appropriate choice with your privacy or legal adviser."
+            ),
             "legal_hold": (
                 "Blocks automatic cleanup and organization purge until removed."
-            )
+            ),
         }
 
 

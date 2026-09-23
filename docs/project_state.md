@@ -30,8 +30,8 @@ manual-review correction pass is closed, with the complete local quality gate
 remaining user-run under the agreed low-output workflow. `DIR-001` now records
 the focused product direction in `docs/product_direction_plan.md`. `DEMO-002` is
 deferred until the revised core workflow reaches an approved positioning
-checkpoint. `FLOW-001` behavior and acceptance criteria are approved; its
-implementation is the next activity. Track each finding's separate
+checkpoint. `FLOW-001` and `VAC-001` behavior, acceptance criteria, and
+implementation are complete; `FLOW-002` is the next activity. Track each finding's separate
 implementation/browser-test state in `docs/manual_testing_review.md`.
 
 `DIR-002` is also complete as a documentation decision. It records an AI-first,
@@ -39,27 +39,30 @@ minimum-effort recruiter experience plus the approved client-readiness
 refinements for platform-owner access, client agreements, and long-gap candidate
 retention.
 
-`FLOW-001` behavior and acceptance criteria were finalized on 2026-09-22. The
-routine vacancy path will require only CV upload, remove the visible shared-
-details step, record vacancy/batch/file provenance automatically, and use **This
+`FLOW-001` was completed on 2026-09-22. The routine vacancy path requires only
+CV upload, removes the visible shared-details step, records vacancy/batch/file
+provenance automatically, and uses **This
 vacancy only** contact scope. Receiving a CV for a vacancy permits contact about
 that application but never records consent or future-role permission. Lawful
 basis comes from an organization-approved policy rather than AI or repeated
-recruiter entry; retention dates inherit organization policy; exceptions remain
-editable later. Reusable organization candidates remain separate from their
+recruiter entry; review dates remain blank until `RET-001` defines the approved
+meaningful-activity calculation, and exceptions remain editable later. Reusable
+organization candidates remain separate from their
 vacancy-specific consideration/history, and ambiguous identity matches are not
-silently merged. No application code changed in this approval checkpoint;
-`FLOW-001` implementation is next.
+silently merged. Exact documents and unambiguous active identities can be
+reused without duplicating the candidate; generic pool intake retains advanced
+privacy controls. Candidate review dates remain blank until `RET-001` supplies
+the approved meaningful-activity calculation.
 
-The user also approved `VAC-001` direction on 2026-09-22. Vacancy creation will
-accept either pasted text or one validated PDF/DOCX/TXT vacancy document, run AI
-requirement extraction through the primary creation action, present a compact
-review, and continue from explicit confirm/open to vacancy CV upload. Inspection
-confirmed that creation, AI extraction, immutable versions, and atomic
-confirm/open already exist separately. `VAC-001` therefore composes and
-simplifies existing behavior plus a new vacancy-document input boundary. It is
-sequenced after `FLOW-001` because that task supplies its final upload target.
-No application code changed in this documentation checkpoint.
+`VAC-001` was completed on 2026-09-23. Vacancy creation accepts exactly one
+pasted source or validated PDF/DOCX/UTF-8 TXT upload. Hardened bounded document
+validation extracts text, stores safe filename/content-type/SHA-256 provenance,
+and retains no raw vacancy file. **Create and analyze vacancy** creates one draft
+and runs existing AI extraction; failure preserves that manual draft for retry.
+Compact review leads with AI ambiguities and matching essentials, keeps less
+common details and original input under Advanced, and uses **Confirm and upload
+CVs** to confirm/open atomically before redirecting to vacancy-scoped intake.
+Provider-free focused vacancy/document verification passes with 94 tests.
 
 ## Decisions made
 
@@ -1425,14 +1428,14 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-Implement `FLOW-001 — Bind routine CV intake to a vacancy while preserving
-reusable organization candidates and original application/batch provenance`.
+Implement `VAC-001 — Simplify vacancy creation with pasted text or one validated
+vacancy document, compact AI-assisted review, explicit confirm/open, and direct
+handoff to vacancy CV intake`.
 
 `docs/product_direction_plan.md` is the canonical record for the newly approved
 direction and phased task sequence. `DEMO-002` is deferred until the revised core
-workflow reaches an approved positioning checkpoint. Inspect the current models
-and services before editing, then implement the approved acceptance behavior
-with focused migration, privacy, tenant, reuse, route, form, and browser tests.
+workflow reaches an approved positioning checkpoint. Reuse the completed
+`FLOW-001` vacancy-scoped upload route as the final destination.
 
 The MT-029 platform organization list now surfaces active tenants without an
 administrator, distinguishes active from total memberships, and supports

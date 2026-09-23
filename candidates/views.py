@@ -45,6 +45,7 @@ from candidates.models import (
     CandidateIntakeItem,
     CandidateProfile,
     CandidateSource,
+    CandidateVacancyConsideration,
 )
 from candidates.profile_review import candidate_profile_conflicts
 from candidates.services import (
@@ -107,6 +108,11 @@ def candidate_detail(request, organization_slug: str, candidate_id: int):
         .order_by("id")
         .distinct()
     )
+    vacancy_considerations = (
+        CandidateVacancyConsideration.objects.for_organization(organization)
+        .filter(candidate=candidate)
+        .select_related("vacancy", "vacancy__client_company", "source", "document")
+    )
     return render(
         request,
         "candidates/candidate_detail.html",
@@ -116,6 +122,7 @@ def candidate_detail(request, organization_slug: str, candidate_id: int):
             "documents": documents,
             "sources": sources,
             "intake_batches": intake_batches,
+            "vacancy_considerations": vacancy_considerations,
             "can_administer": can_administer_organization(request.user, organization),
         },
     )

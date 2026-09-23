@@ -34,6 +34,7 @@ DOCX_CONTENT_TYPE = (
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
 GENERIC_UPLOAD_CONTENT_TYPES = {"", "application/octet-stream"}
+TXT_CONTENT_TYPES = {"text/plain"}
 
 
 class CandidateDocumentUploadError(ValueError):
@@ -67,6 +68,14 @@ class ExtractedCV:
 
 @dataclass(frozen=True)
 class ValidatedCVUpload:
+    raw: bytes
+    original_filename: str
+    extracted: ExtractedCV
+    sha256: str
+
+
+@dataclass(frozen=True)
+class ValidatedTextDocumentUpload:
     raw: bytes
     original_filename: str
     extracted: ExtractedCV
@@ -426,7 +435,7 @@ def _extract_docx_text(raw: bytes, *, max_characters: int) -> str:
     return _normalize_extracted_text("\n".join(parts), max_characters)
 
 
-def extract_cv_text(
+def extract_text_document(
     *,
     raw: bytes,
     filename: str,
@@ -436,6 +445,7 @@ def extract_cv_text(
     max_docx_expanded_bytes: int = DEFAULT_MAX_DOCX_EXPANDED_BYTES,
     max_docx_entry_bytes: int = DEFAULT_MAX_DOCX_ENTRY_BYTES,
     max_extracted_characters: int = DEFAULT_MAX_EXTRACTED_CHARACTERS,
+    allow_txt: bool = False,
 ) -> ExtractedCV:
     original_filename = _safe_original_filename(filename)
     extension = PurePosixPath(original_filename).suffix.lower()
@@ -481,9 +491,79 @@ def extract_cv_text(
             extension=extension,
         )
 
+    if extension == ".txt" and allow_txt:
+        allowed_types = GENERIC_UPLOAD_CONTENT_TYPES | TXT_CONTENT_TYPES
+        if content_type not in allowed_types:
+            raise CandidateDocumentUploadError(
+                "content_type_mismatch",
+                "The declared file type does not match a TXT document.",
+            )
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise CandidateDocumentUploadError(
+                "invalid_txt_encoding",
+                "TXT vacancy files must use UTF-8 encoding.",
+            ) from error
+        return ExtractedCV(
+            text=_normalize_extracted_text(text, max_extracted_characters),
+            content_type="text/plain",
+            extension=extension,
+        )
+
     raise CandidateDocumentUploadError(
         "unsupported_extension",
-        "Only PDF and DOCX CV files are supported.",
+        "Only PDF, DOCX, and UTF-8 TXT documents are supported."
+        if allow_txt
+        else "Only PDF and DOCX CV files are supported.",
+    )
+
+
+def extract_cv_text(
+    *,
+    raw: bytes,
+    filename: str,
+    declared_content_type: str = "",
+    max_pdf_pages: int = DEFAULT_MAX_PDF_PAGES,
+    max_docx_entries: int = DEFAULT_MAX_DOCX_ENTRIES,
+    max_docx_expanded_bytes: int = DEFAULT_MAX_DOCX_EXPANDED_BYTES,
+    max_docx_entry_bytes: int = DEFAULT_MAX_DOCX_ENTRY_BYTES,
+    max_extracted_characters: int = DEFAULT_MAX_EXTRACTED_CHARACTERS,
+) -> ExtractedCV:
+    return extract_text_document(
+        raw=raw,
+        filename=filename,
+        declared_content_type=declared_content_type,
+        max_pdf_pages=max_pdf_pages,
+        max_docx_entries=max_docx_entries,
+        max_docx_expanded_bytes=max_docx_expanded_bytes,
+        max_docx_entry_bytes=max_docx_entry_bytes,
+        max_extracted_characters=max_extracted_characters,
+    )
+
+
+def validate_text_document_upload(
+    *,
+    uploaded_file,
+    max_bytes: int = DEFAULT_MAX_DOCUMENT_BYTES,
+    max_extracted_characters: int = DEFAULT_MAX_EXTRACTED_CHARACTERS,
+    allow_txt: bool = False,
+) -> ValidatedTextDocumentUpload:
+    """Validate and extract one bounded text document without persistence."""
+    original_filename = _safe_original_filename(getattr(uploaded_file, "name", ""))
+    raw = _read_bounded(uploaded_file, max_bytes)
+    extracted = extract_text_document(
+        raw=raw,
+        filename=original_filename,
+        declared_content_type=getattr(uploaded_file, "content_type", ""),
+        max_extracted_characters=max_extracted_characters,
+        allow_txt=allow_txt,
+    )
+    return ValidatedTextDocumentUpload(
+        raw=raw,
+        original_filename=original_filename,
+        extracted=extracted,
+        sha256=hashlib.sha256(raw).hexdigest(),
     )
 
 
@@ -493,18 +573,15 @@ def validate_candidate_cv_upload(
     max_bytes: int = DEFAULT_MAX_DOCUMENT_BYTES,
 ) -> ValidatedCVUpload:
     """Read and validate one upload without persisting private bytes."""
-    original_filename = _safe_original_filename(getattr(uploaded_file, "name", ""))
-    raw = _read_bounded(uploaded_file, max_bytes)
-    extracted = extract_cv_text(
-        raw=raw,
-        filename=original_filename,
-        declared_content_type=getattr(uploaded_file, "content_type", ""),
+    validated = validate_text_document_upload(
+        uploaded_file=uploaded_file,
+        max_bytes=max_bytes,
     )
     return ValidatedCVUpload(
-        raw=raw,
-        original_filename=original_filename,
-        extracted=extracted,
-        sha256=hashlib.sha256(raw).hexdigest(),
+        raw=validated.raw,
+        original_filename=validated.original_filename,
+        extracted=validated.extracted,
+        sha256=validated.sha256,
     )
 
 

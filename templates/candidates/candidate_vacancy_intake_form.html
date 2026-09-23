@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Add candidates | {{ vacancy.title }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading" aria-labelledby="vacancy-intake-title">
+    <div>
+        <p class="eyebrow">{{ vacancy.title }}</p>
+        <h1 id="vacancy-intake-title">Add candidate CVs</h1>
+        <p class="lede">Upload one or more CVs. The app prepares the candidate details and AI profile drafts for your review.</p>
+    </div>
+    <a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Back to vacancy</a>
+</section>
+
+<section class="intake-status-strip" aria-label="Candidate intake steps">
+    <article><span>Step 1</span><strong>Upload CVs</strong></article>
+    <article><span>Step 2</span><strong>Check details</strong></article>
+    <article><span>Step 3</span><strong>Review AI profiles</strong></article>
+</section>
+
+{% if not lawful_basis_configured %}
+<section class="review-callout" aria-labelledby="privacy-default-title">
+    <div>
+        <p class="eyebrow">Privacy setup needed</p>
+        <h2 id="privacy-default-title">Reason for storing applicants is not configured</h2>
+        <p>You can upload now, but outreach stays blocked until an administrator records the organization's approved reason.</p>
+    </div>
+    {% if can_administer %}<a class="secondary-button button-link" href="{% url 'organizations:retention-dashboard' organization.slug %}">Set privacy default</a>{% endif %}
+</section>
+{% endif %}
+
+<section class="form-panel" aria-labelledby="upload-cvs-title">
+    <h2 id="upload-cvs-title">Choose CVs</h2>
+    <p>PDF or DOCX, up to 10 MB each. Contact scope: <strong>This vacancy only</strong>. This does not record consent for future roles.</p>
+    <form class="stacked-form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="field">
+            {{ upload_form.cv_files.label_tag }}
+            {{ upload_form.cv_files }}
+            {% if upload_form.cv_files.help_text %}<small class="help-text">{{ upload_form.cv_files.help_text }}</small>{% endif %}
+            {% if upload_form.cv_files.errors %}<div class="field-errors">{{ upload_form.cv_files.errors }}</div>{% endif %}
+        </div>
+        {% if upload_form.non_field_errors %}<div class="field-errors">{{ upload_form.non_field_errors }}</div>{% endif %}
+        <button class="primary-button" type="submit">Upload and continue</button>
+    </form>
+</section>
+{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/file-upload.js' %}" defer></script>{% endblock %}

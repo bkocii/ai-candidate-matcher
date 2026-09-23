@@ -7,7 +7,8 @@ document.querySelectorAll("[data-intake-review-form]").forEach((form) => {
     const updateSelection = () => {
         const selected = choices.filter((choice) => choice.checked).length;
         count.textContent = `${selected} selected`;
-        submit.textContent = `Create selected candidates (${selected})`;
+        const actionLabel = submit.dataset.actionLabel || "Create selected candidates";
+        submit.textContent = `${actionLabel} (${selected})`;
         submit.disabled = selected === 0;
     };
 

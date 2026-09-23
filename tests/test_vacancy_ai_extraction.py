@@ -428,3 +428,58 @@ def test_cross_organization_extraction_route_returns_404(client) -> None:
 
     assert organization != other
     assert response.status_code == 404
+
+
+@override_settings(
+    AI_GATEWAY_FACTORY="tests.test_vacancy_ai_extraction.SuccessfulGateway"
+)
+def test_create_and_analyze_runs_ai_and_opens_compact_review(client) -> None:
+    user, organization, _, _ = make_workspace()
+    client.force_login(user)
+
+    response = client.post(
+        reverse("vacancies:vacancy-create", args=[organization.slug]),
+        {
+            "title": "Platform Engineer",
+            "description": "Python and Django are required. PostgreSQL is preferred.",
+            "intent": "create_and_analyze",
+        },
+        follow=True,
+    )
+
+    vacancy = Vacancy.objects.get(title="Platform Engineer")
+    requirements = vacancy.requirement_versions.get()
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert (
+        requirements.creation_method == VacancyRequirements.CreationMethod.AI_ASSISTED
+    )
+    assert "Check the matching essentials" in content
+    assert "Confirm and upload CVs" in content
+    assert "Advanced details and original vacancy" in content
+
+
+@override_settings(AI_GATEWAY_FACTORY="tests.test_vacancy_ai_extraction.FailingGateway")
+def test_create_ai_failure_keeps_one_manual_draft_for_retry(client) -> None:
+    user, organization, _, _ = make_workspace()
+    client.force_login(user)
+
+    response = client.post(
+        reverse("vacancies:vacancy-create", args=[organization.slug]),
+        {
+            "title": "Platform Engineer",
+            "description": "Python is required.",
+            "intent": "create_and_analyze",
+        },
+        follow=True,
+    )
+
+    vacancy = Vacancy.objects.get(title="Platform Engineer")
+    requirements = vacancy.requirement_versions.get()
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert vacancy.requirement_versions.count() == 1
+    assert requirements.creation_method == VacancyRequirements.CreationMethod.MANUAL
+    assert "draft was saved" in content
+    assert "retry or complete it manually" in content
+    assert "Extract with AI" in content

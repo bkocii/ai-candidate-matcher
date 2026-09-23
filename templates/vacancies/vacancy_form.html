@@ -9,11 +9,12 @@
     <p class="lede">{{ lede }}</p>
 </section>
 
-<form class="form-panel stacked-form" method="post">
+<form class="form-panel stacked-form" method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {% include "vacancies/_form_fields.html" %}
     <div class="button-row">
-        <button class="primary-button" type="submit">{{ submit_label }}</button>
+        <button class="primary-button" type="submit" name="intent" value="create_and_analyze">{{ submit_label }}</button>
+        <button class="secondary-button" type="submit" name="intent" value="save_without_ai">Save draft without AI</button>
         <a class="secondary-button" href="{{ cancel_url }}">Cancel</a>
     </div>
 </form>

@@ -64,7 +64,10 @@ def outreach_draft_generate(request, organization_slug: str, decision_id: int):
         shortlist_entry__match_run__requirements__vacancy__deleted_at__isnull=True,
     )
     candidate = decision.shortlist_entry.candidate
-    contact_eligibility = assess_contact_permission(candidate=candidate)
+    contact_eligibility = assess_contact_permission(
+        candidate=candidate,
+        vacancy=decision.shortlist_entry.match_run.requirements.vacancy,
+    )
     if not candidate.email.strip():
         messages.error(
             request,
@@ -142,7 +145,8 @@ def outreach_draft_detail(request, organization_slug: str, draft_id: int):
         user=request.user,
     )
     contact_eligibility = assess_contact_permission(
-        candidate=draft.shortlist_entry.candidate
+        candidate=draft.shortlist_entry.candidate,
+        vacancy=draft.shortlist_entry.match_run.requirements.vacancy,
     )
     candidate_sources = list(draft.shortlist_entry.candidate.sources.all())
     lawful_basis_summary = ", ".join(

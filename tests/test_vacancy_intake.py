@@ -2,6 +2,7 @@ from decimal import Decimal
 
 import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
 
@@ -196,7 +197,8 @@ def test_create_form_lists_only_active_clients_in_organization() -> None:
         form.fields["client_company"].empty_label
         == "No hiring client (direct employer)"
     )
-    assert form.fields["description"].label == "Job description"
+    assert form.fields["description"].label == "Paste vacancy description"
+    assert form.fields["vacancy_document"].label == "Or upload vacancy"
 
 
 def test_recruiter_creates_vacancy_and_initial_draft_atomically(client) -> None:
@@ -241,7 +243,8 @@ def test_direct_employer_creation_accepts_no_client(client) -> None:
     page = client.get(reverse("vacancies:vacancy-create", args=[organization.slug]))
     assert page.status_code == 200
     assert b"Hiring client (optional):</label>" in page.content
-    assert b"Job description:</label>" in page.content
+    assert b"Paste vacancy description:</label>" in page.content
+    assert b"Or upload vacancy:</label>" in page.content
     assert b'<option value="" selected>No hiring client (direct employer)</option>' in (
         page.content
     )
@@ -420,14 +423,13 @@ def test_save_and_review_persists_edits_and_previews_complete_draft(client) -> N
         "No eligibility rules have been added",
     ):
         assert expected in content
-    assert "Draft to be confirmed" in content
-    assert "Edit draft" in content
-    assert "Confirm only" in content
-    assert "Confirm and open vacancy" in content
-    assert content.index("Draft to be confirmed") < content.index(
-        "Explicit confirmation"
-    )
-    assert f'href="{edit_url}">Edit draft</a>' in content
+    assert "Check the matching essentials" in content
+    assert "AI could not determine" in content
+    assert "Edit details" in content
+    assert "Confirm and upload CVs" in content
+    assert "Confirm and open only" in content
+    assert content.index("Essential requirements") < content.index("Ready to continue")
+    assert f'href="{edit_url}">Edit details</a>' in content
     assert "Current confirmed requirements" not in content
 
     detail = client.get(
@@ -435,6 +437,73 @@ def test_save_and_review_persists_edits_and_previews_complete_draft(client) -> N
     ).content.decode()
     assert f'href="{review_url}">Review version 1</a>' in detail
     assert "Confirm version 1</button>" not in detail
+
+
+def test_create_form_requires_exactly_one_vacancy_source() -> None:
+    _, organization = make_workspace()
+    neither = VacancyCreateForm(
+        {"title": "Engineer", "description": ""},
+        organization=organization,
+    )
+    both = VacancyCreateForm(
+        {"title": "Engineer", "description": "Pasted vacancy"},
+        {"vacancy_document": SimpleUploadedFile("role.txt", b"Uploaded vacancy")},
+        organization=organization,
+    )
+
+    assert not neither.is_valid()
+    assert not both.is_valid()
+    assert "not both" in str(neither.non_field_errors())
+    assert "not both" in str(both.non_field_errors())
+
+
+def test_utf8_txt_vacancy_upload_is_extracted_without_retaining_file(client) -> None:
+    user, organization = make_workspace()
+    client.force_login(user)
+    uploaded = SimpleUploadedFile(
+        "backend-role.txt",
+        b"Python is required. Remote work.",
+        content_type="text/plain",
+    )
+
+    response = client.post(
+        reverse("vacancies:vacancy-create", args=[organization.slug]),
+        {
+            "title": "Backend Engineer",
+            "description": "",
+            "intent": "save_without_ai",
+            "vacancy_document": uploaded,
+        },
+    )
+
+    vacancy = Vacancy.objects.get()
+    requirements = vacancy.requirement_versions.get()
+    assert response.status_code == 302
+    assert vacancy.description == "Python is required. Remote work."
+    assert requirements.source_original_filename == "backend-role.txt"
+    assert requirements.source_content_type == "text/plain"
+    assert len(requirements.source_sha256) == 64
+    assert not hasattr(requirements, "file")
+
+
+def test_non_utf8_txt_vacancy_is_rejected_safely(client) -> None:
+    user, organization = make_workspace()
+    client.force_login(user)
+
+    response = client.post(
+        reverse("vacancies:vacancy-create", args=[organization.slug]),
+        {
+            "title": "Backend Engineer",
+            "description": "",
+            "vacancy_document": SimpleUploadedFile(
+                "role.txt", b"\xff\xfe", content_type="text/plain"
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    assert "must use UTF-8 encoding" in response.content.decode()
+    assert not Vacancy.objects.exists()
 
 
 def test_add_eligibility_rule_saves_new_requirement_skill_in_one_action(
@@ -802,10 +871,40 @@ def test_recruiter_confirms_and_opens_vacancy_with_focused_next_action(client) -
     assert vacancy.status == Vacancy.Status.OPEN
     assert "Confirmed requirements version 1 and opened the vacancy" in content
     assert "Version 1 is now the matching input" in content
-    assert "The vacancy is open and ready for candidate evaluation" in content
+    assert "The vacancy is open. Add the CVs received for this role" in content
+    assert "Add candidate CVs" in content
     assert "Evaluate candidates" in content
     assert "data-confirmation-focus" in content
     assert "confirmation-focus.js" in content
+
+
+def test_confirm_and_upload_opens_vacancy_and_starts_scoped_intake(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    update_requirements_draft(
+        requirements=requirements,
+        user=user,
+        values=requirements_values(),
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse(
+            "vacancies:requirements-confirm",
+            args=[organization.slug, vacancy.pk, requirements.pk],
+        ),
+        {"intent": "confirm_and_upload"},
+    )
+
+    vacancy.refresh_from_db()
+    requirements.refresh_from_db()
+    assert response.status_code == 302
+    assert response.url == reverse(
+        "candidates:vacancy-candidate-intake-create",
+        args=[organization.slug, vacancy.pk],
+    )
+    assert vacancy.status == Vacancy.Status.OPEN
+    assert requirements.status == VacancyRequirements.Status.CONFIRMED
 
 
 def test_confirm_only_keeps_draft_vacancy_and_offers_open_action(client) -> None:

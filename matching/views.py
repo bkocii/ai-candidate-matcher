@@ -555,7 +555,8 @@ def assessment_review_detail(
         .select_related("review_decision", "created_by")
     )
     contact_eligibility = assess_contact_permission(
-        candidate=assessment.shortlist_entry.candidate
+        candidate=assessment.shortlist_entry.candidate,
+        vacancy=assessment.requirements.vacancy,
     )
     current_outreach_draft = next(
         (
@@ -634,7 +635,8 @@ def assessment_review_decide(
             saved_decision = decision
             if decision.decision == ReviewDecision.Decision.APPROVED:
                 contact_eligibility = assess_contact_permission(
-                    candidate=assessment.shortlist_entry.candidate
+                    candidate=assessment.shortlist_entry.candidate,
+                    vacancy=assessment.requirements.vacancy,
                 )
                 if not assessment.shortlist_entry.candidate.email.strip():
                     messages.success(

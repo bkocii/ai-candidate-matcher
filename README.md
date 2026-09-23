@@ -13,9 +13,9 @@ python-ai-toolkit[django]==1.0.0
 ## Current status
 
 Sprint 0 through Sprint 6, `EVAL-001` through `EVAL-003`, and `DEMO-001` are
-complete. The manual-review correction pass is closed. The approved next
-activity is detailed scope review for `FLOW-001`, the first vacancy-centric
-workflow task. `DEMO-002` is deferred until the revised workflow reaches an
+complete. The manual-review correction pass is closed. `FLOW-001`, the first
+vacancy-centric workflow task, is complete. The approved next activity is
+`VAC-001`, the simplified AI-first vacancy creation path. `DEMO-002` is deferred until the revised workflow reaches an
 approved positioning checkpoint; see `docs/product_direction_plan.md`.
 
 The approved experience principle is AI-first and low-interaction: recruiters
@@ -181,10 +181,10 @@ attribute language is rejected before persistence. Neither evaluation changes
 scores, assessments, decisions, or outreach. `DEMO-001` adds a provider-free
 synthetic setup command, a safety-bound walkthrough, and real reference
 screenshots of the shortlist, review, assessment, and blocked outreach workflow.
-The next activity is detailed design review for `FLOW-001 — Bind routine CV
-intake to a vacancy while preserving reusable organization candidates and
-original application/batch provenance`. Implementation begins only after its
-exact behavior and acceptance criteria are approved.
+`FLOW-001` now binds routine CV intake to an open vacancy while preserving
+reusable organization candidates and separate application/batch provenance.
+The next activity is `VAC-001`, which will hand confirmed vacancies directly to
+that upload route.
 
 ## Reproducible demo
 
