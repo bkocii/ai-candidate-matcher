@@ -7,7 +7,7 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_POST
 
 from ai_gateway import AIGatewayError
 from matching.forms import HardConstraintRuleForm, hard_constraint_values_from_form
@@ -24,8 +24,11 @@ from vacancies.forms import (
     VacancyCreateForm,
     VacancyEditForm,
     VacancyRequirementsForm,
+    VacancyRequirementsReviewForm,
     eligibility_values_from_form,
     requirements_values_from_form,
+    review_eligibility_values_from_form,
+    review_requirements_values_from_form,
     vacancy_edit_values_from_form,
     vacancy_source_provenance_from_form,
     vacancy_values_from_form,
@@ -478,7 +481,6 @@ def requirements_edit(
 
 
 @login_required
-@require_GET
 def requirements_review(
     request,
     organization_slug: str,
@@ -495,6 +497,70 @@ def requirements_review(
             organization_slug=organization.slug,
             vacancy_id=vacancy.pk,
         )
+    form = VacancyRequirementsReviewForm(
+        request.POST or None,
+        requirements=requirements,
+    )
+    if request.method == "POST" and form.is_valid():
+        intent = request.POST.get("intent", "")
+        try:
+            with transaction.atomic():
+                update_requirements_draft(
+                    requirements=requirements,
+                    user=request.user,
+                    values=review_requirements_values_from_form(
+                        requirements=requirements,
+                        form=form,
+                    ),
+                    validate_rules=False,
+                )
+                requirements.refresh_from_db()
+                sync_structured_eligibility_rules(
+                    requirements=requirements,
+                    user=request.user,
+                    selections=review_eligibility_values_from_form(
+                        requirements=requirements,
+                        form=form,
+                    ),
+                )
+                if intent in {"confirm_and_upload", "confirm_and_open"}:
+                    requirements, vacancy = confirm_requirements_and_open_vacancy(
+                        requirements=requirements,
+                        user=request.user,
+                    )
+        except ValidationError as error:
+            form.add_error(None, "; ".join(error.messages))
+        else:
+            if intent == "confirm_and_upload":
+                messages.success(
+                    request,
+                    f"Confirmed requirements version {requirements.version} and "
+                    "opened the vacancy.",
+                )
+                return redirect(
+                    "candidates:vacancy-candidate-intake-create",
+                    organization_slug=organization.slug,
+                    vacancy_id=vacancy.pk,
+                )
+            if intent == "confirm_and_open":
+                messages.success(
+                    request,
+                    f"Confirmed requirements version {requirements.version} and "
+                    "opened the vacancy.",
+                )
+                detail_url = reverse(
+                    "vacancies:vacancy-detail",
+                    args=[organization.slug, vacancy.pk],
+                )
+                query = urlencode({"confirmed": requirements.version, "opened": "1"})
+                return redirect(f"{detail_url}?{query}#requirements-confirmed")
+            messages.success(request, "Matching essentials and eligibility saved.")
+            return redirect(
+                "vacancies:requirements-review",
+                organization_slug=organization.slug,
+                vacancy_id=vacancy.pk,
+                requirements_id=requirements.pk,
+            )
     return render(
         request,
         "vacancies/requirements_review.html",
@@ -502,6 +568,7 @@ def requirements_review(
             "organization": organization,
             "vacancy": vacancy,
             "requirements": requirements,
+            "form": form,
             "hard_constraint_rules": requirements.hard_constraint_rules.select_related(
                 "skill"
             ),

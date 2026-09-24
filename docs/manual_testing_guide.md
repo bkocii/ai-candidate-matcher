@@ -625,9 +625,20 @@ Expected result:
 - **Create and analyze vacancy** creates one `Draft` vacancy and requirements
   version 1, runs AI extraction, and opens **Check the matching essentials**.
 - AI ambiguities appear first. Essential matching details are immediately
-  visible; less common fields, eligibility rules, and original input are under
-  **Advanced details and original vacancy**.
+  editable on the same page. Each must-have skill and the supported structured
+  constraints can be explicitly selected as **Required for eligibility**.
+- Select Python plus any genuinely excluding constraints, then choose
+  **Confirm and upload CVs**. The edits, rules, confirmation, vacancy opening,
+  and redirect to scoped CV intake happen in that one submit.
+- Less common fields, saved custom rules, and original input remain under
+  **Advanced details and original vacancy**. **Open advanced editor** remains
+  available for uncommon corrections without blocking the routine path.
 - **Save draft without AI** instead opens the manual editor without an AI call.
+
+Skill precision check: if AI returns **Professional Python development
+experience**, confirm the saved must-have skill is the atomic **Python** skill.
+After confirming it as required for eligibility, a candidate with confirmed
+**Python** must pass that rule. Near matches remain separate.
 
 Repeat with a disposable vacancy by uploading the same fixture as UTF-8 TXT
 instead of pasting. Confirm the review states the source filename and that the

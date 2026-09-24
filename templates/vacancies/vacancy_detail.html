@@ -16,11 +16,13 @@
     <div class="button-row">
         <a class="secondary-button" href="{% url 'vacancies:vacancy-list' organization.slug %}">All vacancies</a>
         <a class="secondary-button" href="{% url 'vacancies:vacancy-edit' organization.slug vacancy.pk %}">Edit vacancy</a>
-        {% if vacancy.status == "open" and current_requirements %}
-            <a class="primary-button button-link" href="{% url 'candidates:vacancy-candidate-intake-create' organization.slug vacancy.pk %}">Add candidate CVs</a>
+        {% if current_requirements %}
+            {% if vacancy.status == "open" %}
+                <a class="primary-button button-link" href="{% url 'candidates:vacancy-candidate-intake-create' organization.slug vacancy.pk %}">Add candidate CVs</a>
+            {% endif %}
             {% if latest_match_run %}
                 <a class="secondary-button button-link" href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_match_run.pk %}">Open latest shortlist{% if latest_match_run_staleness.is_stale %} (stale){% endif %}</a>
-            {% else %}
+            {% elif vacancy.status == "open" %}
                 <a class="secondary-button button-link" href="{% url 'matching:candidate-filter-report' organization.slug vacancy.pk %}">Evaluate candidates</a>
             {% endif %}
         {% elif draft %}

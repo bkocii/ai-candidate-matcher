@@ -64,6 +64,15 @@ common details and original input under Advanced, and uses **Confirm and upload
 CVs** to confirm/open atomically before redirecting to vacancy-scoped intake.
 Provider-free focused vacancy/document verification passes with 94 tests.
 
+The first `VAC-001` browser review exposed two follow-up corrections, completed
+on 2026-09-23. The compact review now edits matching essentials and selects
+structured eligibility rules directly; one **Confirm and upload CVs** submit
+saves them, confirms/opens, and continues to intake. The full editor remains an
+advanced fallback. AI-extracted **Professional Python development experience**
+is deterministically normalized to atomic **Python**. Matching policy v5 applies
+that exact controlled alias to existing records, so confirmed candidate
+**Python** evidence passes without fuzzy matching.
+
 ## Decisions made
 
 - The first product is recruiter-side candidate search, not job search for candidates.
@@ -1428,14 +1437,14 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-Implement `VAC-001 — Simplify vacancy creation with pasted text or one validated
-vacancy document, compact AI-assisted review, explicit confirm/open, and direct
-handoff to vacancy CV intake`.
+Implement `FLOW-002 — Default vacancy views to candidates associated with that
+vacancy and keep the wider organization pool behind a separate entry point`.
 
 `docs/product_direction_plan.md` is the canonical record for the newly approved
 direction and phased task sequence. `DEMO-002` is deferred until the revised core
 workflow reaches an approved positioning checkpoint. Reuse the completed
-`FLOW-001` vacancy-scoped upload route as the final destination.
+`FLOW-001` vacancy-consideration relationship and preserve the completed
+`VAC-001` direct intake handoff.
 
 The MT-029 platform organization list now surfaces active tenants without an
 administrator, distinguishes active from total memberships, and supports

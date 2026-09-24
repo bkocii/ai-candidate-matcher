@@ -20,7 +20,10 @@ from matching.services import (
 )
 from organizations.models import Organization
 from vacancies.models import Vacancy, VacancyRequirements
-from vacancies.services import confirm_requirements_draft
+from vacancies.services import (
+    confirm_requirements_and_open_vacancy,
+    confirm_requirements_draft,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -644,7 +647,9 @@ def test_filter_page_without_confirmed_requirements_is_safe(client) -> None:
     assert "No confirmed requirements" in response.content.decode()
 
 
-def test_vacancy_detail_links_to_filter_only_after_confirmation(client) -> None:
+def test_vacancy_detail_links_to_filter_only_after_confirmation_and_opening(
+    client,
+) -> None:
     user, organization = make_workspace()
     vacancy, requirements = make_requirements(organization=organization, user=user)
     client.force_login(user)
@@ -654,14 +659,14 @@ def test_vacancy_detail_links_to_filter_only_after_confirmation(client) -> None:
     )
 
     draft_response = client.get(detail_url)
-    confirm_requirements_draft(requirements=requirements, user=user)
+    confirm_requirements_and_open_vacancy(requirements=requirements, user=user)
     confirmed_response = client.get(detail_url)
 
     assert "Evaluate candidates" not in draft_response.content.decode()
     confirmed_content = confirmed_response.content.decode()
     assert "Evaluate candidates" in confirmed_content
     assert "Hiring client:" in confirmed_content
-    assert 'class="status-pill status-draft"' in confirmed_content
+    assert 'class="status-pill status-open"' in confirmed_content
     requirements_position = confirmed_content.index("Current confirmed requirements")
     correction_position = confirmed_content.index("Create correction draft")
     assert requirements_position < correction_position

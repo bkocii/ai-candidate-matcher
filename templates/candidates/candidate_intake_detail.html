@@ -140,7 +140,7 @@
             Create AI profile drafts in the background
         </label>
         <p class="help-text">The worker creates evidence-based drafts only. Every profile still requires human evidence review and confirmation; every match decision remains individual.</p>
-        <button class="primary-button" type="submit" data-create-selected data-action-label="{% if batch.vacancy %}Add selected candidates{% else %}Create selected candidates{% endif %}" disabled>{% if batch.vacancy %}Add selected candidates{% else %}Create selected candidates{% endif %} (0)</button>
+        <button class="primary-button" type="submit" data-create-selected disabled data-action-label="{% if batch.vacancy %}Add selected candidates{% else %}Create selected candidates{% endif %}">{% if batch.vacancy %}Add selected candidates{% else %}Create selected candidates{% endif %} (0)</button>
     </form>
     {% for row in review_rows %}
     <form id="skip-item-{{ row.item.pk }}" method="post" action="{% url 'candidates:candidate-intake-skip' organization.slug batch.pk row.item.pk %}">

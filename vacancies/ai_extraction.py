@@ -35,6 +35,7 @@ from audit.services import (
     complete_ai_usage_success,
     start_ai_usage_event,
 )
+from matching.skill_taxonomy import canonicalize_skill
 from organizations.permissions import require_organization_object_access
 from vacancies.models import VacancyRequirements
 from vacancies.services import REQUIREMENTS_COPY_FIELDS, update_requirements_draft
@@ -189,6 +190,9 @@ Represent missing scalar facts with an empty string, null, or the controlled
 value \"unknown\" as appropriate. Represent missing list facts with an empty list.
 
 Classification rules:
+- Skill lists contain atomic skill names only, such as "Python" or "Django".
+  Remove generic wrappers such as "professional", "development experience", or
+  "proficiency in" when the underlying explicitly named skill is unchanged.
 - Put a skill in must_have_skills only when the source clearly makes it mandatory.
 - A responsibility or task is not a must-have skill by itself. Only promote it
   when the source separately marks it as required, mandatory, essential, or lists
@@ -268,14 +272,18 @@ def _requirements_values_for_source(
 ) -> dict:
     values = extraction.as_requirements_values()
     supported_skills: list[str] = []
+    supported_skill_keys: set[str] = set()
     ambiguities = list(values["ambiguities"])
     ambiguity_keys = {item.casefold() for item in ambiguities}
     for skill in extraction.must_have_skills:
+        canonical = canonicalize_skill(skill)
         if _source_explicitly_requires_skill(
-            skill=skill,
+            skill=canonical.display_name,
             source_description=source_description,
         ):
-            supported_skills.append(skill)
+            if canonical.key not in supported_skill_keys:
+                supported_skills.append(canonical.display_name)
+                supported_skill_keys.add(canonical.key)
             continue
         ambiguity = (
             f'AI suggested "{skill}" as must-have, but the source does not clearly '
@@ -285,6 +293,17 @@ def _requirements_values_for_source(
             ambiguities.append(ambiguity)
             ambiguity_keys.add(ambiguity.casefold())
     values["must_have_skills"] = supported_skills
+    normalized_nice_to_have: list[str] = []
+    normalized_nice_keys: set[str] = set()
+    for skill in extraction.nice_to_have_skills:
+        canonical = canonicalize_skill(skill)
+        if (
+            canonical.key not in supported_skill_keys
+            and canonical.key not in normalized_nice_keys
+        ):
+            normalized_nice_to_have.append(canonical.display_name)
+            normalized_nice_keys.add(canonical.key)
+    values["nice_to_have_skills"] = normalized_nice_to_have
     values["ambiguities"] = ambiguities
     return values
 

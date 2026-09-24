@@ -216,6 +216,7 @@ def test_recruiter_creates_vacancy_and_initial_draft_atomically(client) -> None:
             "title": "  Senior Python Engineer  ",
             "client_company": client_company.pk,
             "description": "  Build reliable Python services.  ",
+            "intent": "save_without_ai",
         },
     )
 
@@ -411,9 +412,9 @@ def test_save_and_review_persists_edits_and_previews_complete_draft(client) -> N
     for expected in (
         "Build secure Django applications.",
         "Senior backend role",
-        "Python, Django",
+        "Python",
+        "Django",
         "PostgreSQL",
-        "4.0 years",
         "Prishtina or remote",
         "Hybrid",
         "English",
@@ -425,11 +426,11 @@ def test_save_and_review_persists_edits_and_previews_complete_draft(client) -> N
         assert expected in content
     assert "Check the matching essentials" in content
     assert "AI could not determine" in content
-    assert "Edit details" in content
+    assert "Open advanced editor" in content
     assert "Confirm and upload CVs" in content
     assert "Confirm and open only" in content
     assert content.index("Essential requirements") < content.index("Ready to continue")
-    assert f'href="{edit_url}">Edit details</a>' in content
+    assert f'href="{edit_url}">Open advanced editor</a>' in content
     assert "Current confirmed requirements" not in content
 
     detail = client.get(
@@ -437,6 +438,64 @@ def test_save_and_review_persists_edits_and_previews_complete_draft(client) -> N
     ).content.decode()
     assert f'href="{review_url}">Review version 1</a>' in detail
     assert "Confirm version 1</button>" not in detail
+
+
+def test_compact_review_saves_eligibility_and_continues_to_cv_upload(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    update_requirements_draft(
+        requirements=requirements,
+        user=user,
+        values=requirements_values(
+            must_have_skills=["Python", "Django"],
+            language_requirements=["English"],
+            hard_constraints=["Kosovo work eligibility"],
+        ),
+    )
+    client.force_login(user)
+    review_url = reverse(
+        "vacancies:requirements-review",
+        args=[organization.slug, vacancy.pk, requirements.pk],
+    )
+
+    response = client.post(
+        review_url,
+        {
+            "summary": "Reviewed backend role",
+            "must_have_skills": "Python\nDjango",
+            "nice_to_have_skills": "PostgreSQL",
+            "minimum_years_experience": "4.0",
+            "location_requirement": "Prishtina",
+            "work_mode": VacancyRequirements.WorkMode.HYBRID,
+            "employment_type": VacancyRequirements.EmploymentType.FULL_TIME,
+            "eligibility_required_skills": ["Python"],
+            "eligibility_minimum_experience": "on",
+            "eligibility_work_mode": "on",
+            "intent": "confirm_and_upload",
+        },
+    )
+
+    requirements.refresh_from_db()
+    vacancy.refresh_from_db()
+    rules = list(
+        requirements.hard_constraint_rules.select_related("skill").order_by("position")
+    )
+    assert response.status_code == 302
+    assert response.url == reverse(
+        "candidates:vacancy-candidate-intake-create",
+        args=[organization.slug, vacancy.pk],
+    )
+    assert requirements.summary == "Reviewed backend role"
+    assert requirements.language_requirements == ["English"]
+    assert requirements.hard_constraints == ["Kosovo work eligibility"]
+    assert requirements.status == VacancyRequirements.Status.CONFIRMED
+    assert vacancy.status == Vacancy.Status.OPEN
+    assert [rule.rule_type for rule in rules] == [
+        "required_skill",
+        "minimum_experience",
+        "work_mode",
+    ]
+    assert rules[0].skill.name == "Python"
 
 
 def test_create_form_requires_exactly_one_vacancy_source() -> None:

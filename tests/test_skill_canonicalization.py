@@ -69,6 +69,7 @@ def make_requirements(
         (" PYTHON   DEVELOPMENT ", "python", "Python"),
         ("Python-development", "python", "Python"),
         ("Python developer", "python", "Python"),
+        ("Professional Python development experience", "python", "Python"),
         ("Django development", "django", "Django"),
         ("pytest", "automated testing", "Automated testing"),
         ("automated test suites", "automated testing", "Automated testing"),
@@ -126,7 +127,7 @@ def test_new_candidate_and_requirement_aliases_share_one_skill_identity() -> Non
     requirements = make_requirements(
         organization=organization,
         user=user,
-        must_have=["Python development"],
+        must_have=["Professional Python development experience"],
     )
     requirement_skill = sync_requirement_skills(
         requirements=requirements,
@@ -135,7 +136,9 @@ def test_new_candidate_and_requirement_aliases_share_one_skill_identity() -> Non
 
     assert candidate_skill.skill == requirement_skill.skill
     assert requirement_skill.skill.name == "Python"
-    assert requirement_skill.source_label == "Python development"
+    assert (
+        requirement_skill.source_label == "Professional Python development experience"
+    )
 
 
 def test_existing_saved_aliases_match_for_hard_filter_and_shortlist() -> None:
@@ -160,18 +163,18 @@ def test_existing_saved_aliases_match_for_hard_filter_and_shortlist() -> None:
     requirements = make_requirements(
         organization=organization,
         user=user,
-        must_have=["Python development"],
+        must_have=["Professional Python development experience"],
     )
     legacy_requirement_skill = Skill.objects.create(
         organization=organization,
-        name="Python development",
+        name="Professional Python development experience",
         created_by=user,
     )
     RequirementSkill.objects.create(
         requirements=requirements,
         skill=legacy_requirement_skill,
         importance=RequirementSkill.Importance.MUST_HAVE,
-        source_label="Python development",
+        source_label="Professional Python development experience",
         position=1,
     )
     HardConstraintRule.objects.create(
@@ -203,10 +206,13 @@ def test_existing_saved_aliases_match_for_hard_filter_and_shortlist() -> None:
     assert filter_result.rule_results[0].candidate_value == "Python"
     assert entry.score == Decimal("100.00")
     assert entry.matched_must_have == 1
-    assert entry.score_breakdown[0]["skill_label"] == "Python development"
+    assert (
+        entry.score_breakdown[0]["skill_label"]
+        == "Professional Python development experience"
+    )
     assert entry.score_breakdown[0]["candidate_label"] == "Python"
     assert run.algorithm_version == ALGORITHM_VERSION
-    assert ALGORITHM_VERSION == "deterministic_skill_relevance.v4"
+    assert ALGORITHM_VERSION == "deterministic_skill_relevance.v5"
 
 
 def test_existing_pytest_skill_matches_automated_testing_with_source_evidence() -> None:
@@ -245,7 +251,7 @@ def test_existing_pytest_skill_matches_automated_testing_with_source_evidence() 
         entry.score_breakdown[0]["evidence"]
         == "Built automated test suites with pytest."
     )
-    assert run.algorithm_version == "deterministic_skill_relevance.v4"
+    assert run.algorithm_version == "deterministic_skill_relevance.v5"
 
 
 @pytest.mark.parametrize("unsafe_label", ["manual testing", "test management"])

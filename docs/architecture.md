@@ -742,7 +742,8 @@ versions so their evidence boundary remains inspectable when inputs later change
   uses Unicode NFKC, collapsed whitespace, and case folding while preserving
   punctuation. An application-owned, versioned matching policy adds only a
   small controlled alias set for unambiguous role/activity wording such as
-  `Python development` to `Python`. Unknown terms remain distinct, and
+  `Python development` and `Professional Python development experience` to
+  `Python`. Unknown terms remain distinct, and
   unrestricted substring matching is forbidden, so `Java` and `JavaScript`
   cannot match.
 - `RequirementSkill` links a skill to one vacancy-requirements version as either

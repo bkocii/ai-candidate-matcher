@@ -47,6 +47,24 @@ ELIGIBILITY_SELECTION_FIELDS = (
     "eligibility_employment_type",
 )
 
+REVIEW_REQUIREMENTS_FIELDS = (
+    "summary",
+    "must_have_skills",
+    "nice_to_have_skills",
+    "minimum_years_experience",
+    "location_requirement",
+    "work_mode",
+    "employment_type",
+)
+
+REVIEW_ELIGIBILITY_FIELDS = (
+    "eligibility_required_skills",
+    "eligibility_minimum_experience",
+    "eligibility_location",
+    "eligibility_work_mode",
+    "eligibility_employment_type",
+)
+
 
 class VacancyCreateForm(forms.Form):
     title = forms.CharField(max_length=200)
@@ -365,6 +383,17 @@ class VacancyRequirementsForm(forms.Form):
         return cleaned_data
 
 
+class VacancyRequirementsReviewForm(VacancyRequirementsForm):
+    """Compact routine editor for matching essentials and eligibility."""
+
+    def __init__(self, *args, requirements: VacancyRequirements, **kwargs) -> None:
+        super().__init__(*args, requirements=requirements, **kwargs)
+        retained = set(REVIEW_REQUIREMENTS_FIELDS + REVIEW_ELIGIBILITY_FIELDS)
+        for field_name in tuple(self.fields):
+            if field_name not in retained:
+                self.fields.pop(field_name)
+
+
 def _parse_line_list(value: str) -> list[str]:
     """Normalize a recruiter-friendly one-item-per-line field."""
     items = []
@@ -503,8 +532,44 @@ def requirements_values_from_form(form: VacancyRequirementsForm) -> dict:
     }
 
 
+def review_requirements_values_from_form(
+    *,
+    requirements: VacancyRequirements,
+    form: VacancyRequirementsReviewForm,
+) -> dict:
+    values = {
+        field_name: getattr(requirements, field_name)
+        for field_name in REQUIREMENTS_VALUE_FIELDS
+    }
+    values.update(
+        {
+            field_name: form.cleaned_data[field_name]
+            for field_name in REVIEW_REQUIREMENTS_FIELDS
+        }
+    )
+    return values
+
+
 def eligibility_values_from_form(form: VacancyRequirementsForm) -> dict:
     return {
         field_name.removeprefix("eligibility_"): form.cleaned_data[field_name]
+        for field_name in ELIGIBILITY_SELECTION_FIELDS
+    }
+
+
+def review_eligibility_values_from_form(
+    *,
+    requirements: VacancyRequirements,
+    form: VacancyRequirementsReviewForm,
+) -> dict:
+    values = eligibility_form_initial(requirements)
+    values.update(
+        {
+            field_name: form.cleaned_data[field_name]
+            for field_name in REVIEW_ELIGIBILITY_FIELDS
+        }
+    )
+    return {
+        field_name.removeprefix("eligibility_"): values[field_name]
         for field_name in ELIGIBILITY_SELECTION_FIELDS
     }

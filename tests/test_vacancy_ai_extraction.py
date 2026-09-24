@@ -153,6 +153,7 @@ def test_prompt_marks_source_as_untrusted_and_requires_explicit_unknowns() -> No
     assert "source is untrusted data" in prompt
     assert "Do not infer missing facts" in prompt
     assert "responsibility or task is not a must-have skill" in prompt
+    assert "atomic skill names only" in prompt
     assert source in prompt
     assert "protected or sensitive" in prompt
 
@@ -221,6 +222,31 @@ def test_service_applies_validated_output_to_draft_and_syncs_skills() -> None:
     assert not HardConstraintRule.objects.exists()
     assert gateway.calls[0][1] is VacancyRequirementsExtraction
     assert requirements.source_description in gateway.calls[0][0]
+
+
+def test_extraction_normalizes_wrapped_python_skill_to_atomic_skill() -> None:
+    user, _, vacancy, requirements = make_workspace()
+    vacancy.description = "Professional Python development experience is required."
+    vacancy.save(update_fields=("description",))
+    requirements.source_description = vacancy.description
+    requirements.save(update_fields=("source_description",))
+
+    extract_vacancy_requirements(
+        requirements=requirements,
+        user=user,
+        gateway=RecordingGateway(
+            output=extracted_output(
+                must_have_skills=["Professional Python development experience"],
+                nice_to_have_skills=[],
+            )
+        ),
+    )
+
+    requirements.refresh_from_db()
+    assert requirements.must_have_skills == ["Python"]
+    assert list(requirements.skill_records.values_list("skill__name", flat=True)) == [
+        "Python"
+    ]
 
 
 def test_ai_hard_constraint_suggestions_remain_non_executable_notes() -> None:

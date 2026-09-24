@@ -17,6 +17,7 @@ class CanonicalSkill:
 # plus an algorithm-version bump.
 _CONTROLLED_SKILL_ALIASES: dict[str, tuple[str, ...]] = {
     "Python": (
+        "Professional Python development experience",
         "Python developer",
         "Python development",
         "Python development experience",

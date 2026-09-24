@@ -336,6 +336,13 @@ one manual draft. Compact review leads with ambiguities and matching essentials;
 **Confirm and upload CVs** atomically confirms/opens and continues to the
 vacancy-scoped intake delivered by `FLOW-001`.
 
+The 2026-09-23 browser refinement makes those essentials editable and places
+explicit structured eligibility selections on the compact review itself. The
+same confirmation submit saves the reviewed values and rules before opening and
+continuing. Exact controlled normalization also reduces **Professional Python
+development experience** to atomic **Python**; it does not introduce fuzzy
+skill matching.
+
 Implement `FLOW-002` next: make vacancy views default to candidates associated
 with that vacancy and keep the wider organization pool behind a separate entry.
 
