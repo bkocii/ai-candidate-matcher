@@ -275,7 +275,8 @@ changes begin.
   manual draft fallback, immutable source/history, and explicit confirmation.
   **Complete — 2026-09-23.**
 - `FLOW-002` Make vacancy views default to candidates associated with that
-  vacancy and provide a separate organization-pool entry point.
+  vacancy and provide a separate organization-pool entry point. **Complete —
+  2026-09-24.**
 - `FLOW-003` Add deliberate **Add from candidate pool** and cross-vacancy reuse
   with permission and provenance checks.
 
@@ -343,8 +344,17 @@ continuing. Exact controlled normalization also reduces **Professional Python
 development experience** to atomic **Python**; it does not introduce fuzzy
 skill matching.
 
-Implement `FLOW-002` next: make vacancy views default to candidates associated
-with that vacancy and keep the wider organization pool behind a separate entry.
+`FLOW-002` was implemented on 2026-09-24. Vacancy detail, vacancy candidates,
+deterministic filtering, and shortlist generation now use only active candidates
+explicitly associated through `CandidateVacancyConsideration`. The wider
+organization candidate pool remains separately accessible and is never silently
+included. Historical shortlists remain discoverable; the input-signature version
+was advanced so results generated from the earlier organization-wide population
+are visibly stale.
+
+Review and approve the detailed `FLOW-003` scope next: deliberate **Add from
+candidate pool** reuse with permission and provenance checks. No cross-vacancy
+reuse mutation was added by `FLOW-002`.
 
 `VAC-001` followed `FLOW-001` because its final
 **Confirm and upload CVs** action requires the vacancy-scoped intake destination.

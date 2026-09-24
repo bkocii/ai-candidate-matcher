@@ -16,11 +16,14 @@ from matching.models import (
     RequirementSkill,
     Skill,
 )
-from matching.scoring import generate_shortlist
+from matching.scoring import generate_shortlist as generate_shortlist_service
 from matching.scoring_policy import ALGORITHM_VERSION
 from matching.services import assign_candidate_skill, sync_requirement_skills
 from matching.skill_taxonomy import canonicalize_skill
 from organizations.models import Organization
+from tests.vacancy_candidate_helpers import (
+    associate_organization_candidates_with_vacancy,
+)
 from vacancies.models import Vacancy, VacancyRequirements
 from vacancies.services import confirm_requirements_draft
 
@@ -60,6 +63,14 @@ def make_requirements(
         must_have_skills=must_have,
         created_by=user,
     )
+
+
+def generate_shortlist(*, requirements: VacancyRequirements, user: User):
+    associate_organization_candidates_with_vacancy(
+        vacancy=requirements.vacancy,
+        user=user,
+    )
+    return generate_shortlist_service(requirements=requirements, user=user)
 
 
 @pytest.mark.parametrize(

@@ -64,6 +64,7 @@ from organizations.permissions import (
     can_administer_organization,
     require_organization_admin,
 )
+from vacancies.models import Vacancy
 
 
 def _visible_organization(request, organization_slug: str) -> Organization:
@@ -85,7 +86,25 @@ def candidate_list(request, organization_slug: str):
     return render(
         request,
         "candidates/candidate_list.html",
-        {"organization": organization, "page": page},
+        {"organization": organization, "page": page, "vacancy": None},
+    )
+
+
+@login_required
+def vacancy_candidate_list(request, organization_slug: str, vacancy_id: int):
+    organization = _visible_organization(request, organization_slug)
+    vacancy = get_object_or_404(
+        Vacancy.objects.for_organization(organization).active(),
+        pk=vacancy_id,
+    )
+    candidates = (
+        Candidate.objects.for_vacancy(vacancy).not_deleted().order_by("full_name", "id")
+    )
+    page = Paginator(candidates, 25).get_page(request.GET.get("page"))
+    return render(
+        request,
+        "candidates/candidate_list.html",
+        {"organization": organization, "page": page, "vacancy": vacancy},
     )
 
 

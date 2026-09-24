@@ -1,28 +1,34 @@
 {% extends "base.html" %}
 
-{% block title %}Candidates | {{ organization.name }}{% endblock %}
+{% block title %}{% if vacancy %}Candidates for {{ vacancy.title }}{% else %}Candidate pool{% endif %} | {{ organization.name }}{% endblock %}
 
 {% block content %}
 <section class="page-heading action-heading" aria-labelledby="candidate-list-title">
     <div>
-        <p class="eyebrow">Candidate pool</p>
-        <h1 id="candidate-list-title">Candidates</h1>
-        <p class="lede">Organization-controlled candidate records and their current intake status.</p>
+        <p class="eyebrow">{% if vacancy %}Vacancy candidates{% else %}Organization candidate pool{% endif %}</p>
+        <h1 id="candidate-list-title">{% if vacancy %}Candidates for {{ vacancy.title }}{% else %}Candidate pool{% endif %}</h1>
+        <p class="lede">{% if vacancy %}Only candidates explicitly associated with this vacancy are shown and evaluated here.{% else %}Reusable organization candidates. Open a vacancy to work with candidates for that role.{% endif %}</p>
     </div>
     <div class="button-row candidate-page-actions">
-        <a class="primary-button button-link" href="{% url 'candidates:candidate-intake-create' organization.slug %}">Create candidates from CVs</a>
-        <details class="candidate-more-actions">
-            <summary>More actions</summary>
-            <div class="candidate-more-actions-menu">
-                <a href="{% url 'candidates:candidate-create' organization.slug %}">Quick add</a>
-                <a href="{% url 'candidates:candidate-import' organization.slug %}">Import CSV</a>
-                <a href="{% url 'candidates:candidate-intake-list' organization.slug %}">Intake history</a>
-                <form method="post" action="{% url 'operations:candidate-profile-batch-queue' organization.slug %}">
-                    {% csrf_token %}
-                    <button type="submit">Queue pending profile extraction</button>
-                </form>
-            </div>
-        </details>
+        {% if vacancy %}
+            <a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Back to vacancy</a>
+            <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Organization candidate pool</a>
+            {% if vacancy.status == "open" and vacancy.current_requirements %}<a class="primary-button button-link" href="{% url 'candidates:vacancy-candidate-intake-create' organization.slug vacancy.pk %}">Add candidate CVs</a>{% endif %}
+        {% else %}
+            <a class="primary-button button-link" href="{% url 'candidates:candidate-intake-create' organization.slug %}">Create candidates from CVs</a>
+            <details class="candidate-more-actions">
+                <summary>More actions</summary>
+                <div class="candidate-more-actions-menu">
+                    <a href="{% url 'candidates:candidate-create' organization.slug %}">Quick add</a>
+                    <a href="{% url 'candidates:candidate-import' organization.slug %}">Import CSV</a>
+                    <a href="{% url 'candidates:candidate-intake-list' organization.slug %}">Intake history</a>
+                    <form method="post" action="{% url 'operations:candidate-profile-batch-queue' organization.slug %}">
+                        {% csrf_token %}
+                        <button type="submit">Queue pending profile extraction</button>
+                    </form>
+                </div>
+            </details>
+        {% endif %}
     </div>
 </section>
 
@@ -64,8 +70,8 @@
 {% else %}
     <section class="empty-state inline-empty">
         <div class="empty-icon" aria-hidden="true">C</div>
-        <h2>No candidates yet</h2>
-        <p>Create candidates from CVs, quick-add one record, or import a validated CSV file.</p>
+        <h2>{% if vacancy %}No candidates for this vacancy yet{% else %}No candidates yet{% endif %}</h2>
+        <p>{% if vacancy %}Upload the CVs received for this vacancy. Existing organization candidates are not added automatically.{% else %}Create candidates from CVs, quick-add one record, or import a validated CSV file.{% endif %}</p>
     </section>
 {% endif %}
 {% endblock %}

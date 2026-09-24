@@ -11,7 +11,7 @@ from matching.scoring_policy import ALGORITHM_VERSION
 from organizations.permissions import require_organization_object_access
 from vacancies.models import VacancyRequirements
 
-INPUT_SNAPSHOT_VERSION = "deterministic_match_inputs.v1"
+INPUT_SNAPSHOT_VERSION = "deterministic_match_inputs.v2"
 
 
 def _decimal_value(value: Decimal | None) -> str | None:
@@ -132,7 +132,7 @@ def _current_requirements(requirements_id: int) -> VacancyRequirements:
 
 def _current_candidates(run: MatchRun):
     return (
-        Candidate.objects.for_organization(run.organization)
+        Candidate.objects.for_vacancy(run.vacancy)
         .filter(status=Candidate.Status.ACTIVE)
         .prefetch_related("skill_records", "profile_versions")
         .order_by("id")
@@ -195,7 +195,7 @@ def assess_match_run_staleness(*, run: MatchRun, user: User) -> MatchRunStalenes
             reason_pairs.append(
                 (
                     "candidate_inputs_changed",
-                    "The active candidate pool or candidate matching evidence changed.",
+                    "The vacancy candidate set or candidate matching evidence changed.",
                 )
             )
 

@@ -30,8 +30,8 @@ manual-review correction pass is closed, with the complete local quality gate
 remaining user-run under the agreed low-output workflow. `DIR-001` now records
 the focused product direction in `docs/product_direction_plan.md`. `DEMO-002` is
 deferred until the revised core workflow reaches an approved positioning
-checkpoint. `FLOW-001` and `VAC-001` behavior, acceptance criteria, and
-implementation are complete; `FLOW-002` is the next activity. Track each finding's separate
+checkpoint. `FLOW-001`, `VAC-001`, and `FLOW-002` behavior, acceptance criteria,
+and implementation are complete; `FLOW-003` is next for scope review. Track each finding's separate
 implementation/browser-test state in `docs/manual_testing_review.md`.
 
 `DIR-002` is also complete as a documentation decision. It records an AI-first,
@@ -72,6 +72,14 @@ advanced fallback. AI-extracted **Professional Python development experience**
 is deterministically normalized to atomic **Python**. Matching policy v5 applies
 that exact controlled alias to existing records, so confirmed candidate
 **Python** evidence passes without fuzzy matching.
+
+`FLOW-002` was completed on 2026-09-24. Vacancy detail, vacancy candidate views,
+deterministic eligibility evaluation, and shortlist generation now use only
+active candidates explicitly associated with the vacancy. The reusable
+organization candidate pool remains separately accessible and is not silently
+included. Historical shortlists remain discoverable, while input-signature v2
+marks earlier organization-wide results stale. Deliberate pool-to-vacancy reuse
+remains `FLOW-003`. Focused verification passes with 173 tests.
 
 ## Decisions made
 
@@ -1437,14 +1445,14 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-Implement `FLOW-002 — Default vacancy views to candidates associated with that
-vacancy and keep the wider organization pool behind a separate entry point`.
+Review and approve the detailed scope for `FLOW-003 — Add deliberate candidates
+from the organization pool to a vacancy with permission and provenance checks`.
 
 `docs/product_direction_plan.md` is the canonical record for the newly approved
 direction and phased task sequence. `DEMO-002` is deferred until the revised core
-workflow reaches an approved positioning checkpoint. Reuse the completed
-`FLOW-001` vacancy-consideration relationship and preserve the completed
-`VAC-001` direct intake handoff.
+workflow reaches an approved positioning checkpoint. Reuse the completed vacancy
+scoping from `FLOW-001` and `FLOW-002`; do not silently associate pool candidates
+or weaken the completed `VAC-001` direct intake handoff.
 
 The MT-029 platform organization list now surfaces active tenants without an
 administrator, distinguishes active from total memberships, and supports

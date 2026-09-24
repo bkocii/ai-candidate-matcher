@@ -423,7 +423,7 @@ def filter_candidates(
     requirements: VacancyRequirements,
     user: User,
 ) -> CandidateFilterReport:
-    """Evaluate all active candidates in the authorized organization."""
+    """Evaluate active candidates explicitly associated with the vacancy."""
     require_organization_object_access(user, requirements)
     requirements = VacancyRequirements.objects.select_related("vacancy").get(
         pk=requirements.pk
@@ -434,7 +434,7 @@ def filter_candidates(
         raise ValidationError("Deleted vacancies cannot be evaluated.")
 
     candidates = (
-        Candidate.objects.for_organization(requirements.organization)
+        Candidate.objects.for_vacancy(requirements.vacancy)
         .filter(status=Candidate.Status.ACTIVE)
         .prefetch_related("skill_records__skill", "profile_versions")
         .order_by("full_name", "id")

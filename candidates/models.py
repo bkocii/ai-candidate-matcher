@@ -25,6 +25,13 @@ class CandidateQuerySet(OrganizationScopedQuerySet):
         """Candidates still available in the ordinary recruiter workspace."""
         return self.exclude(status=Candidate.Status.DELETED)
 
+    def for_vacancy(self, vacancy):
+        """Candidates explicitly associated with one organization vacancy."""
+        return self.filter(
+            organization=vacancy.organization,
+            vacancy_considerations__vacancy=vacancy,
+        ).distinct()
+
 
 class CandidateRelatedQuerySet(models.QuerySet):
     """Organization scoping for records owned through a candidate."""

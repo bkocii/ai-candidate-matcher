@@ -17,7 +17,12 @@ from candidates.ai_extraction import (
     confirm_candidate_profile,
 )
 from candidates.documents import DOCX_CONTENT_TYPE, upload_candidate_cv
-from candidates.models import Candidate, CandidateProfile, CandidateSource
+from candidates.models import (
+    Candidate,
+    CandidateProfile,
+    CandidateSource,
+    CandidateVacancyConsideration,
+)
 from candidates.services import create_candidate_with_source
 from evaluation.dataset import (
     CandidateSpec,
@@ -261,6 +266,23 @@ def _install_dataset(
             user=user,
             spec=spec,
         )
+        for candidate_code, candidate in candidates.items():
+            source = CandidateSource.objects.create(
+                candidate=candidate,
+                source_type=CandidateSource.SourceType.OTHER,
+                source_name=f"Synthetic application for {vacancy.title}",
+                source_reference=(f"EVAL-APPLICATION-{spec.code}-{candidate_code}"),
+                lawful_basis=CandidateSource.LawfulBasis.NOT_RECORDED,
+                consent_status=CandidateSource.ConsentStatus.NOT_REQUIRED,
+                contact_permission=CandidateSource.ContactPermission.RESTRICTED,
+                recorded_by=user,
+            )
+            CandidateVacancyConsideration.objects.create(
+                candidate=candidate,
+                vacancy=vacancy,
+                source=source,
+                created_by=user,
+            )
         requirements = vacancy.current_requirements
         run = generate_shortlist(requirements=requirements, user=user)
         _assert_expected_ranking(

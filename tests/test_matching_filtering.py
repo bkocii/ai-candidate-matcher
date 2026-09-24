@@ -19,6 +19,10 @@ from matching.services import (
     sync_requirement_skills,
 )
 from organizations.models import Organization
+from tests.vacancy_candidate_helpers import (
+    associate_candidate_with_vacancy,
+    associate_organization_candidates_with_vacancy,
+)
 from vacancies.models import Vacancy, VacancyRequirements
 from vacancies.services import (
     confirm_requirements_and_open_vacancy,
@@ -419,7 +423,7 @@ def test_no_explicit_rules_passes_filter_stage_without_inventing_rules() -> None
 
 def test_filter_report_evaluates_only_active_candidates_and_summarizes() -> None:
     user, organization = make_workspace()
-    _, requirements = make_requirements(organization=organization, user=user)
+    vacancy, requirements = make_requirements(organization=organization, user=user)
     add_location_rule(requirements=requirements, user=user)
     confirm_requirements_draft(requirements=requirements, user=user)
     Candidate.objects.create(
@@ -441,6 +445,12 @@ def test_filter_report_evaluates_only_active_candidates_and_summarizes() -> None
         full_name="Inactive",
         location="Prishtina",
         status=Candidate.Status.INACTIVE,
+    )
+    associate_organization_candidates_with_vacancy(vacancy=vacancy, user=user)
+    Candidate.objects.create(
+        organization=organization,
+        full_name="Pool Only",
+        location="Prishtina",
     )
 
     report = filter_candidates(requirements=requirements, user=user)
@@ -570,6 +580,11 @@ def test_filter_page_shows_version_summary_results_and_evidence(client) -> None:
         label="Python",
         evidence="Inspectable synthetic evidence.",
     )
+    associate_candidate_with_vacancy(
+        candidate=candidate,
+        vacancy=vacancy,
+        user=user,
+    )
     client.force_login(user)
 
     response = client.get(
@@ -596,9 +611,14 @@ def test_filter_page_explains_no_rule_result_before_compact_summary(client) -> N
     user, organization = make_workspace()
     vacancy, requirements = make_requirements(organization=organization, user=user)
     confirm_requirements_draft(requirements=requirements, user=user)
-    Candidate.objects.create(
+    candidate = Candidate.objects.create(
         organization=organization,
         full_name="No Rule Candidate",
+    )
+    associate_candidate_with_vacancy(
+        candidate=candidate,
+        vacancy=vacancy,
+        user=user,
     )
     client.force_login(user)
 

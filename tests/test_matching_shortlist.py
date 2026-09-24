@@ -9,13 +9,23 @@ from accounts.models import OrganizationMembership, User
 from candidates.models import Candidate
 from candidates.services import delete_candidate, request_candidate_deletion
 from matching.models import MatchRun, ShortlistEntry
-from matching.scoring import ALGORITHM_VERSION, SHORTLIST_LIMIT, generate_shortlist
+from matching.scoring import (
+    ALGORITHM_VERSION,
+    SHORTLIST_LIMIT,
+)
+from matching.scoring import (
+    generate_shortlist as generate_shortlist_service,
+)
 from matching.services import (
     assign_candidate_skill,
     create_hard_constraint_rule,
     sync_requirement_skills,
 )
 from organizations.models import Organization
+from tests.vacancy_candidate_helpers import (
+    associate_candidate_with_vacancy,
+    associate_organization_candidates_with_vacancy,
+)
 from vacancies.models import Vacancy, VacancyRequirements
 from vacancies.services import confirm_requirements_draft
 
@@ -64,6 +74,14 @@ def make_requirements(
 
 def confirm(requirements: VacancyRequirements, user: User) -> VacancyRequirements:
     return confirm_requirements_draft(requirements=requirements, user=user)
+
+
+def generate_shortlist(*, requirements: VacancyRequirements, user: User) -> MatchRun:
+    associate_organization_candidates_with_vacancy(
+        vacancy=requirements.vacancy,
+        user=user,
+    )
+    return generate_shortlist_service(requirements=requirements, user=user)
 
 
 def test_relevance_score_uses_visible_two_to_one_per_skill_weights() -> None:
@@ -362,6 +380,34 @@ def test_run_records_version_algorithm_actor_and_multiple_generations() -> None:
     assert first.created_by == user
 
 
+def test_shortlist_uses_only_candidates_associated_with_the_vacancy() -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_requirements(
+        organization=organization,
+        user=user,
+        must_have=["Python"],
+    )
+    confirm(requirements, user)
+    associated = Candidate.objects.create(
+        organization=organization,
+        full_name="Vacancy Candidate",
+    )
+    Candidate.objects.create(
+        organization=organization,
+        full_name="Pool Candidate",
+    )
+    associate_candidate_with_vacancy(
+        candidate=associated,
+        vacancy=vacancy,
+        user=user,
+    )
+
+    run = generate_shortlist_service(requirements=requirements, user=user)
+
+    assert run.evaluated_count == 1
+    assert list(run.entries.values_list("candidate_id", flat=True)) == [associated.pk]
+
+
 def test_candidate_deletion_removes_persisted_score_evidence_but_keeps_run() -> None:
     user, organization = make_workspace()
     _, requirements = make_requirements(
@@ -499,6 +545,11 @@ def test_generate_route_is_post_only_and_redirects_to_report(client) -> None:
         user=user,
         label="Python",
         evidence="Inspectable evidence only.",
+    )
+    associate_candidate_with_vacancy(
+        candidate=candidate,
+        vacancy=vacancy,
+        user=user,
     )
     url = reverse(
         "matching:shortlist-generate",

@@ -17,6 +17,7 @@ from candidates.models import (
 )
 from organizations.models import Organization, OrganizationRetentionPolicy
 from outreach.workflow import assess_contact_permission
+from tests.vacancy_candidate_helpers import associate_candidate_with_vacancy
 from vacancies.models import Vacancy, VacancyRequirements
 from vacancies.services import confirm_requirements_and_open_vacancy
 
@@ -85,6 +86,46 @@ def test_vacancy_page_leads_to_minimal_cv_upload_and_flags_missing_privacy_defau
     assert "Consent" not in content
     assert "This vacancy only" in content
     assert "Reason for storing applicants is not configured" in content
+
+
+def test_vacancy_candidate_views_are_scoped_and_pool_remains_separate(client):
+    user, organization, vacancy = workspace_with_open_vacancy()
+    associated = Candidate.objects.create(
+        organization=organization,
+        full_name="Vacancy Candidate",
+        created_by=user,
+    )
+    Candidate.objects.create(
+        organization=organization,
+        full_name="Pool Candidate",
+        created_by=user,
+    )
+    associate_candidate_with_vacancy(
+        candidate=associated,
+        vacancy=vacancy,
+        user=user,
+    )
+    client.force_login(user)
+
+    vacancy_list = client.get(
+        reverse(
+            "candidates:vacancy-candidate-list",
+            args=[organization.slug, vacancy.pk],
+        )
+    )
+    vacancy_detail = client.get(
+        reverse("vacancies:vacancy-detail", args=[organization.slug, vacancy.pk])
+    )
+    pool = client.get(reverse("candidates:candidate-list", args=[organization.slug]))
+
+    assert vacancy_list.status_code == 200
+    assert "Vacancy Candidate" in vacancy_list.content.decode()
+    assert "Pool Candidate" not in vacancy_list.content.decode()
+    assert "Vacancy Candidate" in vacancy_detail.content.decode()
+    assert "Pool Candidate" not in vacancy_detail.content.decode()
+    assert "Organization candidate pool" in vacancy_list.content.decode()
+    assert "Vacancy Candidate" in pool.content.decode()
+    assert "Pool Candidate" in pool.content.decode()
 
 
 def test_vacancy_upload_inherits_policy_and_creates_scoped_application(

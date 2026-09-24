@@ -17,9 +17,6 @@
         <a class="secondary-button" href="{% url 'vacancies:vacancy-list' organization.slug %}">All vacancies</a>
         <a class="secondary-button" href="{% url 'vacancies:vacancy-edit' organization.slug vacancy.pk %}">Edit vacancy</a>
         {% if current_requirements %}
-            {% if vacancy.status == "open" %}
-                <a class="primary-button button-link" href="{% url 'candidates:vacancy-candidate-intake-create' organization.slug vacancy.pk %}">Add candidate CVs</a>
-            {% endif %}
             {% if latest_match_run %}
                 <a class="secondary-button button-link" href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_match_run.pk %}">Open latest shortlist{% if latest_match_run_staleness.is_stale %} (stale){% endif %}</a>
             {% elif vacancy.status == "open" %}
@@ -29,6 +26,44 @@
             <a class="primary-button button-link" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk draft.pk %}">Edit draft v{{ draft.version }}</a>
         {% endif %}
     </div>
+</section>
+
+<section class="report-section" aria-labelledby="vacancy-candidates-title">
+    <div class="rule-editor-heading">
+        <div>
+            <p class="eyebrow">Vacancy candidates</p>
+            <h2 id="vacancy-candidates-title">Candidates for this vacancy · {{ vacancy_candidate_count }}</h2>
+            <p class="section-note">Only candidates explicitly associated with this vacancy enter its eligibility check and new shortlists.</p>
+        </div>
+        <div class="button-row">
+            <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Organization candidate pool</a>
+            {% if vacancy_candidate_count %}<a class="secondary-button" href="{% url 'candidates:vacancy-candidate-list' organization.slug vacancy.pk %}">View vacancy candidates</a>{% endif %}
+            {% if vacancy.status == "open" and current_requirements %}<a class="primary-button button-link" href="{% url 'candidates:vacancy-candidate-intake-create' organization.slug vacancy.pk %}">Add candidate CVs</a>{% endif %}
+        </div>
+    </div>
+    {% if vacancy_candidates %}
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th scope="col">Name</th><th scope="col">Location</th><th scope="col">Status</th></tr></thead>
+                <tbody>
+                    {% for candidate in vacancy_candidates %}
+                        <tr>
+                            <th scope="row"><a href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">{{ candidate.full_name }}</a></th>
+                            <td>{{ candidate.location|default:"—" }}</td>
+                            <td><span class="status-pill status-{{ candidate.status }}">{{ candidate.get_status_display }}</span></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if vacancy_candidate_count > 5 %}<p class="section-note">Showing 5 of {{ vacancy_candidate_count }} candidates.</p>{% endif %}
+    {% else %}
+        <div class="empty-state inline-empty">
+            <div class="empty-icon" aria-hidden="true">0</div>
+            <h3>No candidates for this vacancy yet</h3>
+            <p>Upload the CVs received for this role. Organization-pool candidates remain separate until deliberately added.</p>
+        </div>
+    {% endif %}
 </section>
 
 {% if requirements_confirmed %}

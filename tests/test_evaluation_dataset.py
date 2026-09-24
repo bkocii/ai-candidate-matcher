@@ -8,7 +8,12 @@ from django.test import override_settings
 
 from accounts.models import OrganizationMembership, User
 from audit.models import AIUsageEvent
-from candidates.models import Candidate, CandidateDocument, CandidateProfile
+from candidates.models import (
+    Candidate,
+    CandidateDocument,
+    CandidateProfile,
+    CandidateVacancyConsideration,
+)
 from evaluation.dataset import canonical_dataset_json, load_evaluation_dataset
 from matching.models import MatchAssessment, MatchRun, ReviewDecision
 from organizations.models import Organization
@@ -19,7 +24,9 @@ pytestmark = pytest.mark.django_db
 
 
 def candidate_code(candidate: Candidate) -> str:
-    reference = candidate.sources.get().source_reference
+    reference = candidate.sources.get(
+        source_reference__startswith="EVAL-001-"
+    ).source_reference
     return reference.removeprefix("EVAL-001-")
 
 
@@ -76,6 +83,10 @@ def test_command_installs_grounded_profiles_and_verified_shortlists(tmp_path) ->
     assert Vacancy.objects.for_organization(organization).count() == 3
     assert CandidateDocument.objects.for_organization(organization).count() == 20
     assert CandidateProfile.objects.for_organization(organization).count() == 20
+    assert (
+        CandidateVacancyConsideration.objects.for_organization(organization).count()
+        == 60
+    )
     assert MatchRun.objects.for_organization(organization).count() == 3
     assert OrganizationMembership.objects.filter(
         user=user,
@@ -86,11 +97,15 @@ def test_command_installs_grounded_profiles_and_verified_shortlists(tmp_path) ->
     for candidate in candidates.prefetch_related(
         "sources", "documents", "profile_versions"
     ):
-        source = candidate.sources.get()
+        source = candidate.sources.get(source_reference__startswith="EVAL-001-")
         document = candidate.documents.get()
         profile = candidate.profile_versions.get()
         assert source.contact_permission == source.ContactPermission.RESTRICTED
         assert source.consent_status == source.ConsentStatus.NOT_REQUIRED
+        assert all(
+            item.contact_permission == item.ContactPermission.RESTRICTED
+            for item in candidate.sources.all()
+        )
         assert not candidate.email
         assert not candidate.phone
         assert profile.status == CandidateProfile.Status.CONFIRMED

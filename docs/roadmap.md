@@ -181,7 +181,8 @@ and acceptance-criteria approval before code changes begin.
 
 The canonical plan is `docs/product_direction_plan.md`. `FLOW-001` behavior,
 acceptance criteria, and implementation were completed on 2026-09-22. `VAC-001`
-was completed on 2026-09-23; `FLOW-002` is the next approved activity.
+was completed on 2026-09-23, and `FLOW-002` was completed on 2026-09-24.
+`FLOW-003` is the next activity for scope review.
 
 ### Vacancy-centric candidate workflow
 
@@ -196,7 +197,7 @@ was completed on 2026-09-23; `FLOW-002` is the next approved activity.
   intake. Keep manual fallback and immutable requirement history. **Complete —
   2026-09-23.**
 - `FLOW-002` Default vacancy views to their associated candidates and separate
-  access to the wider organization candidate pool.
+  access to the wider organization candidate pool. **Complete — 2026-09-24.**
 - `FLOW-003` Add deliberate cross-vacancy reuse through **Add from candidate
   pool**, with provenance and permission checks.
 

@@ -59,17 +59,19 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
    label, current-vacancy contact scope, and policy retention dates while
    preserving the original vacancy, batch, and file provenance. Confirmed
    candidates remain reusable within the organization.
-7. Deterministic rules remove candidates who fail explicit hard constraints.
-8. The application ranks the remaining candidates for that vacancy.
-9. AI creates evidence-based assessments and highlights exceptions.
-10. The recruiter sees the ranked shortlist, matching qualifications, gaps,
+7. Vacancy pages and matching include only candidates explicitly associated with
+   that vacancy; the wider organization pool remains a separate destination.
+8. Deterministic rules remove associated candidates who fail explicit hard constraints.
+9. The application ranks the remaining candidates for that vacancy.
+10. AI creates evidence-based assessments and highlights exceptions.
+11. The recruiter sees the ranked shortlist, matching qualifications, gaps,
    uncertainties, and source evidence.
-11. The recruiter may deliberately add an existing organization candidate to
+12. The recruiter may deliberately add an existing organization candidate to
     the vacancy; the system never silently reuses candidates across hiring clients.
-12. The recruiter approves, rejects, or marks a candidate for later review.
-13. Recording an approval can prepare an editable outreach email after currentness
+13. The recruiter approves, rejects, or marks a candidate for later review.
+14. Recording an approval can prepare an editable outreach email after currentness
     and contact-permission checks pass.
-14. The recruiter reviews the exact recipient, subject, and body, then explicitly
+15. The recruiter reviews the exact recipient, subject, and body, then explicitly
     opens it in their email app or uses a secondary copy/export action.
 
 ## MVP capabilities
@@ -92,7 +94,8 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Reusable organization-level candidate profiles with explicit candidate-to-
   vacancy consideration history.
 - A vacancy view centered on its associated candidates, with a separate
-  recruiter-controlled path for adding an existing candidate from the wider pool.
+  organization candidate-pool destination. Deliberate pool-to-vacancy addition
+  remains a separate recruiter-controlled action.
 - Primary CV-first candidate creation for one or several documents, reviewed
   local identity proposals, shared provenance, exact CSV-to-CV mapping, and
   explicit selected-row creation.
@@ -117,6 +120,8 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Recruiter confirmation of extracted vacancy requirements.
 - Hard filters for explicit requirements.
 - Candidate-to-vacancy shortlist.
+- Deterministic filtering and shortlist generation over active candidates
+  explicitly associated with the selected vacancy only.
 - Structured AI match assessment with evidence, gaps, and uncertainty.
 - A concise ranked shortlist as the central vacancy result.
 - Traffic-light display derived from a numeric score.

@@ -2,7 +2,7 @@
 
 This guide verifies the application from the Django foundation through
 `PROD-005`, `INTAKE-001`, `EVAL-001` through `EVAL-003`, `DEMO-001`,
-`DEF-001`, `FLOW-001`, `VAC-001`, and `CR-001` through `CR-005`. Use only the
+`DEF-001`, `FLOW-001`, `FLOW-002`, `VAC-001`, and `CR-001` through `CR-005`. Use only the
 synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
@@ -726,6 +726,24 @@ Expected result:
 Also create a second vacancy with no client company. Expected result: it is
 accepted as a direct-employer vacancy.
 
+### Verify vacancy-scoped candidates (`FLOW-002`)
+
+1. Add one CV through the first vacancy's **Add candidate CVs** action and finish
+   its normal candidate/profile review.
+2. Create another candidate through the separate organization **Candidate pool**
+   path without associating that candidate with the vacancy.
+3. Open the vacancy detail and **Candidates for this vacancy** pages. Confirm only
+   the first candidate appears and the organization-pool link remains available.
+4. Run **Evaluate candidates** and generate a shortlist. Confirm the pool-only
+   candidate is absent from both results.
+5. Confirm older shortlist links remain visible. Adding another pool-only
+   candidate must not make the shortlist stale; changing matching evidence for an
+   associated candidate must make it stale.
+
+Expected result: vacancy work is limited to explicit vacancy associations. The
+wider reusable organization pool remains separate, and no existing pool
+candidate is silently reused.
+
 ## 10. Test blank confirmation protection
 
 Create another vacancy, do not enter any structured requirements, return to its
@@ -1020,15 +1038,16 @@ Keep the shortlist from the previous section open in one browser tab.
 
 ### Candidate matching-input change
 
-In Django admin, change one active synthetic candidate's `location`, recorded
-skill, experience years, or skill evidence. Alternatively, add another active
-synthetic candidate to the same organization or confirm a new candidate-profile
-draft containing a matching fact. Refresh the saved shortlist.
+In Django admin, change one active candidate associated with the vacancy's
+`location`, recorded skill, experience years, or skill evidence. Alternatively,
+associate another active candidate with the vacancy or confirm a profile draft
+containing a matching fact for an associated candidate. Refresh the saved
+shortlist.
 
 Expected result:
 
 - A prominent **This shortlist is stale** warning appears.
-- The warning says that the active candidate pool or candidate matching evidence
+- The warning says that the vacancy candidate set or candidate matching evidence
   changed.
 - The saved ranks, scores, and evidence snapshot remain unchanged; no automatic
   recomputation occurs.

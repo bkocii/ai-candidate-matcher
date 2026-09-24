@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from ai_gateway import AIGatewayError
+from candidates.models import Candidate
 from matching.forms import HardConstraintRuleForm, hard_constraint_values_from_form
 from matching.models import MatchRun
 from matching.services import (
@@ -274,6 +275,10 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
         and request.GET.get("opened") == "1"
         and vacancy.status == Vacancy.Status.OPEN
     )
+    vacancy_candidates = (
+        Candidate.objects.for_vacancy(vacancy).not_deleted().order_by("full_name", "id")
+    )
+    vacancy_candidate_count = vacancy_candidates.count()
     return render(
         request,
         "vacancies/vacancy_detail.html",
@@ -289,6 +294,8 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
             "status_transitions": available_vacancy_status_transitions(vacancy),
             "requirements_confirmed": requirements_confirmed,
             "confirmation_opened": confirmation_opened,
+            "vacancy_candidates": vacancy_candidates[:5],
+            "vacancy_candidate_count": vacancy_candidate_count,
             "can_administer": can_administer_organization(request.user, organization),
         },
     )

@@ -32,6 +32,7 @@ from tests.test_match_ai_assessment import (
 from tests.test_match_ai_assessment import (
     make_workspace as make_match_workspace,
 )
+from tests.vacancy_candidate_helpers import associate_candidate_with_vacancy
 
 pytestmark = pytest.mark.django_db
 
@@ -132,7 +133,7 @@ def test_profile_batch_reuses_profiled_source_and_queues_new_corrected_cv_only()
     assert task.target_id != old_profile.source_document_id
 
 
-def _add_skill_only_candidate(*, user, organization):
+def _add_skill_only_candidate(*, user, organization, vacancy):
     candidate = Candidate.objects.create(
         organization=organization,
         full_name="Second Synthetic Candidate",
@@ -146,6 +147,11 @@ def _add_skill_only_candidate(*, user, organization):
         evidence="Python: five years",
         years_experience=5,
     )
+    associate_candidate_with_vacancy(
+        candidate=candidate,
+        vacancy=vacancy,
+        user=user,
+    )
     return candidate
 
 
@@ -154,6 +160,7 @@ def test_shortlist_batch_isolates_failures_and_explicit_retry_resumes_work():
     _add_skill_only_candidate(
         user=user,
         organization=organization,
+        vacancy=original_run.vacancy,
     )
     run = generate_shortlist(requirements=original_run.requirements, user=user)
     queued = queue_shortlist_assessment_batch(run=run, user=user)

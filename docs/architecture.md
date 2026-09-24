@@ -91,6 +91,13 @@ Candidate identity and profiles remain organization-owned. An exact document or
 unambiguous active identity may be reused, but fuzzy, conflicting, or inactive
 matches are not silently merged.
 
+`FLOW-002` makes `CandidateVacancyConsideration` the population boundary for a
+vacancy. Vacancy detail and candidate-list pages, deterministic evaluation, and
+shortlist generation share that explicit association rule. The organization
+candidate pool remains separately accessible and does not enter matching until
+an association exists. Creating that association from an existing pool record is
+reserved for `FLOW-003`.
+
 Routine vacancy intake removes the visible shared source/privacy form. The
 server records vacancy, optional client, batch, file provenance, a generated
 **CV received for [vacancy]** source label, and **This vacancy only** contact
@@ -789,7 +796,8 @@ versions so their evidence boundary remains inspectable when inputs later change
   confirmed snapshot. Confirmed rules are visible on the vacancy detail page but
   have no mutation actions.
 - Deterministic evaluation uses only the current confirmed requirements version
-  and active candidates owned by the same authorized organization. Draft,
+  and active candidates explicitly associated with the vacancy in the same
+  authorized organization. Draft,
   deleted-vacancy, inactive-candidate, and cross-organization inputs are rejected.
 - Every typed rule produces an inspectable result containing its recruiter source
   wording, expected value, observed candidate fact, available evidence,
@@ -835,12 +843,12 @@ versions so their evidence boundary remains inspectable when inputs later change
   than overwriting a previous run. Explicit failures never enter the shortlist,
   regardless of their possible skill score.
 - Every generated run stores a versioned SHA-256 signature of its immutable
-  requirements inputs and another signature of the active candidate pool facts
+  requirements inputs and another signature of the active vacancy candidate-set facts
   used by filtering, scoring, and evidence display. The signatures retain no raw
   candidate payload and cannot be used as replacement profile data.
 - Staleness is evaluated against current authorized inputs when a run is viewed.
   A newer confirmed requirements version, a matching-definition change, an active
-  candidate addition/removal, or a change to candidate location, skill,
+  associated-candidate addition/removal, or a change to candidate location, skill,
   experience, evidence, or evidence-document reference marks the historical run
   stale. Contact, source, retention, and other facts unused by deterministic
   matching do not create false invalidation.
@@ -1057,7 +1065,7 @@ versions so their evidence boundary remains inspectable when inputs later change
 ## Matching pipeline
 
 1. Normalize and validate vacancy requirements.
-2. Apply organization-visible candidates only.
+2. Apply active candidates explicitly associated with the vacancy.
 3. Apply explicit hard filters.
 4. Build a deterministic relevance score and bounded shortlist.
 5. Send only necessary job and candidate evidence for structured AI assessment.

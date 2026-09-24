@@ -15,6 +15,7 @@ from matching.staleness import (
     assess_match_run_staleness,
 )
 from organizations.models import Organization
+from tests.vacancy_candidate_helpers import associate_candidate_with_vacancy
 from vacancies.models import Vacancy, VacancyRequirements
 from vacancies.services import confirm_requirements_draft
 
@@ -75,6 +76,11 @@ def make_run() -> tuple[User, Organization, Vacancy, Candidate, MatchRun]:
         evidence="Synthetic Python evidence.",
         years_experience=Decimal("4.0"),
     )
+    associate_candidate_with_vacancy(
+        candidate=candidate,
+        vacancy=vacancy,
+        user=user,
+    )
     return (
         user,
         organization,
@@ -121,12 +127,30 @@ def test_candidate_skill_evidence_change_marks_run_stale() -> None:
     assert staleness.reason_codes == ("candidate_inputs_changed",)
 
 
-def test_new_active_candidate_marks_run_stale() -> None:
+def test_new_unassociated_pool_candidate_does_not_mark_run_stale() -> None:
     user, organization, _, _, run = make_run()
     Candidate.objects.create(
         organization=organization,
         full_name="Newly Eligible Candidate",
         created_by=user,
+    )
+
+    staleness = assess_match_run_staleness(run=run, user=user)
+
+    assert staleness.is_stale is False
+
+
+def test_new_vacancy_candidate_marks_run_stale() -> None:
+    user, organization, vacancy, _, run = make_run()
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="New Vacancy Candidate",
+        created_by=user,
+    )
+    associate_candidate_with_vacancy(
+        candidate=candidate,
+        vacancy=vacancy,
+        user=user,
     )
 
     staleness = assess_match_run_staleness(run=run, user=user)

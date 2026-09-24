@@ -30,6 +30,7 @@ from matching.scoring import generate_shortlist
 from matching.services import assign_candidate_skill, sync_requirement_skills
 from matching.staleness import assess_match_run_staleness
 from organizations.models import Organization
+from tests.vacancy_candidate_helpers import associate_candidate_with_vacancy
 from vacancies.models import Vacancy, VacancyRequirements
 from vacancies.services import confirm_requirements_draft
 
@@ -173,6 +174,11 @@ def make_workspace(*, username: str = "recruiter"):
         label="Django",
         evidence="Built Django and PostgreSQL services",
         source_document=document,
+    )
+    associate_candidate_with_vacancy(
+        candidate=candidate,
+        vacancy=vacancy,
+        user=user,
     )
     run = generate_shortlist(requirements=requirements, user=user)
     entry = run.entries.get(candidate=candidate)
