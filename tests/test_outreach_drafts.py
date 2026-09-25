@@ -293,13 +293,19 @@ def test_recruiter_generates_and_reviews_email_without_automatic_send(client):
     AI_GATEWAY_FACTORY="tests.test_outreach_drafts.ConfiguredOutreachGateway"
 )
 def test_routine_generation_route_blocks_unusable_email_draft(client):
-    user, organization, _, _, _, _, _, _, assessment, decision = approved_workspace()
+    user, organization, candidate, _, _, _, _, _, assessment, decision = (
+        approved_workspace()
+    )
+    source = candidate.vacancy_considerations.get().source
+    source.lawful_basis = CandidateSource.LawfulBasis.NOT_RECORDED
+    source.contact_permission = CandidateSource.ContactPermission.UNKNOWN
+    source.save(update_fields=("lawful_basis", "contact_permission", "updated_at"))
     client.force_login(user)
 
     response = client.post(generate_url(organization, decision), follow=True)
 
     assert response.status_code == 200
-    assert "Record the candidate source" in response.content.decode()
+    assert "approved reason" in response.content.decode()
     assert review_url(organization, assessment) in response.redirect_chain[-1][0]
     assert not OutreachDraft.objects.exists()
 

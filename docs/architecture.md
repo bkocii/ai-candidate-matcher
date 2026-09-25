@@ -95,8 +95,17 @@ matches are not silently merged.
 vacancy. Vacancy detail and candidate-list pages, deterministic evaluation, and
 shortlist generation share that explicit association rule. The organization
 candidate pool remains separately accessible and does not enter matching until
-an association exists. Creating that association from an existing pool record is
-reserved for `FLOW-003`.
+an association exists.
+
+`FLOW-003` adds that explicit reuse action. `CandidateVacancyConsideration.origin`
+distinguishes an uploaded vacancy application from a deliberate candidate-pool
+addition. Its source is a foreign key so the same original permitted source can
+support more than one explicit vacancy consideration without copying privacy
+records. Pool addition is transactional and rechecks organization ownership,
+open-vacancy state, active candidate state, duplicates, lawful basis, consent
+when it is the selected basis, and **Future roles allowed**. Actor and timestamp
+remain on the consideration. It creates no candidate, source, document,
+shortlist, assessment, decision, or outreach record automatically.
 
 Routine vacancy intake removes the visible shared source/privacy form. The
 server records vacancy, optional client, batch, file provenance, a generated

@@ -30,8 +30,9 @@ manual-review correction pass is closed, with the complete local quality gate
 remaining user-run under the agreed low-output workflow. `DIR-001` now records
 the focused product direction in `docs/product_direction_plan.md`. `DEMO-002` is
 deferred until the revised core workflow reaches an approved positioning
-checkpoint. `FLOW-001`, `VAC-001`, and `FLOW-002` behavior, acceptance criteria,
-and implementation are complete; `FLOW-003` is next for scope review. Track each finding's separate
+checkpoint. `FLOW-001`, `VAC-001`, `FLOW-002`, and `FLOW-003` behavior,
+acceptance criteria, and implementation are complete; `MATCH-005` is next for
+scope review. Track each finding's separate
 implementation/browser-test state in `docs/manual_testing_review.md`.
 
 `DIR-002` is also complete as a documentation decision. It records an AI-first,
@@ -79,7 +80,18 @@ active candidates explicitly associated with the vacancy. The reusable
 organization candidate pool remains separately accessible and is not silently
 included. Historical shortlists remain discoverable, while input-signature v2
 marks earlier organization-wide results stale. Deliberate pool-to-vacancy reuse
-remains `FLOW-003`. Focused verification passes with 173 tests.
+was reserved for `FLOW-003`. Focused verification passes with 173 tests.
+
+`FLOW-003` was completed on 2026-09-25. Open vacancies provide a separate
+searchable **Add from candidate pool** page with bulk selection. The server
+rechecks tenant ownership, active status, duplicate vacancy association, a
+recorded processing reason, consent where required, and **Future roles allowed**
+before adding anything. A pool-reuse consideration records the vacancy, original
+permitted source, recruiter, timestamp, and **This vacancy only** scope without
+duplicating candidate or source data. Previous shortlist history remains visible
+and becomes stale after an accepted addition; regeneration remains explicit.
+Focused candidate, vacancy, matching, review, privacy, and outreach verification
+passes with 135 tests.
 
 ## Decisions made
 
@@ -1445,14 +1457,15 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-Review and approve the detailed scope for `FLOW-003 — Add deliberate candidates
-from the organization pool to a vacancy with permission and provenance checks`.
+Review and approve the detailed scope for `MATCH-005 — Add supported role and
+seniority discovery plus measured semantic matching improvements`.
 
 `docs/product_direction_plan.md` is the canonical record for the newly approved
 direction and phased task sequence. `DEMO-002` is deferred until the revised core
-workflow reaches an approved positioning checkpoint. Reuse the completed vacancy
-scoping from `FLOW-001` and `FLOW-002`; do not silently associate pool candidates
-or weaken the completed `VAC-001` direct intake handoff.
+workflow reaches an approved positioning checkpoint. Preserve the completed
+vacancy scoping and explicit reuse boundaries from `FLOW-001` through
+`FLOW-003`; do not weaken deterministic eligibility, evidence grounding, or
+recruiter review.
 
 The MT-029 platform organization list now surfaces active tenants without an
 administrator, distinguishes active from total memberships, and supports

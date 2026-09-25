@@ -107,11 +107,38 @@ def assess_contact_permission(
             ]
             if eligible_sources:
                 return OutreachWorkflowEligibility(True)
-            return OutreachWorkflowEligibility(
-                False,
-                "Record the organization's approved reason for storing this "
-                "application before preparing outreach.",
-            )
+            if any(
+                source.lawful_basis == CandidateSource.LawfulBasis.CONSENT
+                and source.consent_status != CandidateSource.ConsentStatus.GRANTED
+                for source in application_sources
+            ):
+                return OutreachWorkflowEligibility(
+                    False,
+                    "Consent is the selected reason for storing this application, "
+                    "but Consent is not recorded as Given.",
+                )
+            if any(
+                source.lawful_basis == CandidateSource.LawfulBasis.NOT_RECORDED
+                for source in application_sources
+            ):
+                return OutreachWorkflowEligibility(
+                    False,
+                    "Record the organization's approved reason for storing this "
+                    "application before preparing outreach.",
+                )
+            if not any(
+                source.contact_permission
+                in {
+                    CandidateSource.ContactPermission.RESTRICTED,
+                    CandidateSource.ContactPermission.PERMITTED,
+                }
+                for source in application_sources
+            ):
+                return OutreachWorkflowEligibility(
+                    False,
+                    "Allowed contact is not confirmed for this application.",
+                )
+            return OutreachWorkflowEligibility(False, "Application contact is blocked.")
     if any(
         source.contact_permission == CandidateSource.ContactPermission.RESTRICTED
         for source in sources

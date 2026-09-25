@@ -15,6 +15,7 @@ from candidates.models import (
     CandidateSource,
     CandidateVacancyConsideration,
 )
+from candidates.reuse import add_candidates_from_pool
 from organizations.models import Organization, OrganizationRetentionPolicy
 from outreach.workflow import assess_contact_permission
 from tests.vacancy_candidate_helpers import associate_candidate_with_vacancy
@@ -126,6 +127,204 @@ def test_vacancy_candidate_views_are_scoped_and_pool_remains_separate(client):
     assert "Organization candidate pool" in vacancy_list.content.decode()
     assert "Vacancy Candidate" in pool.content.decode()
     assert "Pool Candidate" in pool.content.decode()
+
+
+def test_add_from_pool_shows_permission_status_and_records_deliberate_reuse(client):
+    user, organization, vacancy = workspace_with_open_vacancy()
+    reusable = Candidate.objects.create(
+        organization=organization,
+        full_name="Reusable Candidate",
+        location="Prishtina",
+        created_by=user,
+    )
+    reusable_source = CandidateSource.objects.create(
+        candidate=reusable,
+        source_type=CandidateSource.SourceType.REFERRAL,
+        source_name="Synthetic referral",
+        lawful_basis=CandidateSource.LawfulBasis.LEGITIMATE_INTERESTS,
+        consent_status=CandidateSource.ConsentStatus.NOT_REQUIRED,
+        contact_permission=CandidateSource.ContactPermission.PERMITTED,
+        recorded_by=user,
+    )
+    restricted = Candidate.objects.create(
+        organization=organization,
+        full_name="Application Only Candidate",
+        created_by=user,
+    )
+    CandidateSource.objects.create(
+        candidate=restricted,
+        source_type=CandidateSource.SourceType.DOCUMENT_UPLOAD,
+        source_name="Earlier application",
+        lawful_basis=CandidateSource.LawfulBasis.LEGITIMATE_INTERESTS,
+        consent_status=CandidateSource.ConsentStatus.NOT_REQUIRED,
+        contact_permission=CandidateSource.ContactPermission.RESTRICTED,
+        recorded_by=user,
+    )
+    inactive = Candidate.objects.create(
+        organization=organization,
+        full_name="Inactive Candidate",
+        status=Candidate.Status.INACTIVE,
+        created_by=user,
+    )
+    CandidateSource.objects.create(
+        candidate=inactive,
+        source_type=CandidateSource.SourceType.REFERRAL,
+        source_name="Old referral",
+        lawful_basis=CandidateSource.LawfulBasis.LEGITIMATE_INTERESTS,
+        consent_status=CandidateSource.ConsentStatus.NOT_REQUIRED,
+        contact_permission=CandidateSource.ContactPermission.PERMITTED,
+        recorded_by=user,
+    )
+    already_added = Candidate.objects.create(
+        organization=organization,
+        full_name="Already Added Candidate",
+        created_by=user,
+    )
+    associate_candidate_with_vacancy(
+        candidate=already_added,
+        vacancy=vacancy,
+        user=user,
+    )
+    client.force_login(user)
+    url = reverse(
+        "candidates:vacancy-candidate-pool-add",
+        args=[organization.slug, vacancy.pk],
+    )
+
+    page = client.get(url)
+    content = page.content.decode()
+
+    assert page.status_code == 200
+    assert "Reusable Candidate" in content
+    assert "Ready to add" in content
+    assert "Application Only Candidate" in content
+    assert "Application only" in content
+    assert "Inactive Candidate" in content
+    assert "Candidate is not active" in content
+    assert "Already Added Candidate" not in content
+
+    source_count = CandidateSource.objects.count()
+    response = client.post(url, {"candidate_ids": [reusable.pk]})
+
+    consideration = CandidateVacancyConsideration.objects.get(
+        candidate=reusable,
+        vacancy=vacancy,
+    )
+    assert response.status_code == 302
+    assert response.url == reverse(
+        "vacancies:vacancy-detail",
+        args=[organization.slug, vacancy.pk],
+    )
+    assert consideration.origin == CandidateVacancyConsideration.Origin.CANDIDATE_POOL
+    assert consideration.source == reusable_source
+    assert consideration.created_by == user
+    assert CandidateSource.objects.count() == source_count
+
+    candidate_detail = client.get(
+        reverse(
+            "candidates:candidate-detail",
+            args=[organization.slug, reusable.pk],
+        )
+    )
+    assert "Added from candidate pool" in candidate_detail.content.decode()
+
+
+def test_add_from_pool_rechecks_permission_and_tenant_boundaries(client):
+    user, organization, vacancy = workspace_with_open_vacancy()
+    restricted = Candidate.objects.create(
+        organization=organization,
+        full_name="Restricted Candidate",
+        created_by=user,
+    )
+    CandidateSource.objects.create(
+        candidate=restricted,
+        source_type=CandidateSource.SourceType.DOCUMENT_UPLOAD,
+        source_name="Application only",
+        lawful_basis=CandidateSource.LawfulBasis.LEGITIMATE_INTERESTS,
+        consent_status=CandidateSource.ConsentStatus.NOT_REQUIRED,
+        contact_permission=CandidateSource.ContactPermission.RESTRICTED,
+        recorded_by=user,
+    )
+    other_organization = Organization.objects.create(
+        name="Other Organization",
+        slug="other-organization",
+    )
+    other_candidate = Candidate.objects.create(
+        organization=other_organization,
+        full_name="Other Tenant Candidate",
+    )
+    client.force_login(user)
+    url = reverse(
+        "candidates:vacancy-candidate-pool-add",
+        args=[organization.slug, vacancy.pk],
+    )
+
+    restricted_response = client.post(
+        url,
+        {"candidate_ids": [restricted.pk]},
+        follow=True,
+    )
+    tenant_response = client.post(
+        url,
+        {"candidate_ids": [other_candidate.pk]},
+        follow=True,
+    )
+
+    assert "Application only" in restricted_response.content.decode()
+    assert "One or more selected candidates are unavailable" in (
+        tenant_response.content.decode()
+    )
+    assert not CandidateVacancyConsideration.objects.filter(
+        candidate__in=[restricted, other_candidate],
+        vacancy=vacancy,
+    ).exists()
+
+
+def test_one_permitted_source_can_support_deliberate_reuse_for_two_vacancies():
+    user, organization, first_vacancy = workspace_with_open_vacancy()
+    second_vacancy = Vacancy.objects.create(
+        organization=organization,
+        title="Platform Engineer",
+        description="Build platform services.",
+        created_by=user,
+    )
+    requirements = VacancyRequirements.objects.create(
+        vacancy=second_vacancy,
+        source_description=second_vacancy.description,
+        summary="Platform role",
+        created_by=user,
+    )
+    confirm_requirements_and_open_vacancy(requirements=requirements, user=user)
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Reusable Across Roles",
+        created_by=user,
+    )
+    source = CandidateSource.objects.create(
+        candidate=candidate,
+        source_type=CandidateSource.SourceType.REFERRAL,
+        source_name="Synthetic referral",
+        lawful_basis=CandidateSource.LawfulBasis.LEGITIMATE_INTERESTS,
+        consent_status=CandidateSource.ConsentStatus.NOT_REQUIRED,
+        contact_permission=CandidateSource.ContactPermission.PERMITTED,
+        recorded_by=user,
+    )
+
+    first = add_candidates_from_pool(
+        vacancy=first_vacancy,
+        user=user,
+        candidate_ids=[candidate.pk],
+    )
+    second = add_candidates_from_pool(
+        vacancy=second_vacancy,
+        user=user,
+        candidate_ids=[candidate.pk],
+    )
+
+    assert first[0].source == source
+    assert second[0].source == source
+    assert candidate.vacancy_considerations.count() == 2
+    assert candidate.sources.count() == 1
 
 
 def test_vacancy_upload_inherits_policy_and_creates_scoped_application(

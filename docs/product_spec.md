@@ -95,7 +95,9 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
   vacancy consideration history.
 - A vacancy view centered on its associated candidates, with a separate
   organization candidate-pool destination. Deliberate pool-to-vacancy addition
-  remains a separate recruiter-controlled action.
+  is a separate recruiter-controlled action that rechecks active status,
+  tenant ownership, recorded processing reason, consent where required, and
+  **Future roles allowed** permission.
 - Primary CV-first candidate creation for one or several documents, reviewed
   local identity proposals, shared provenance, exact CSV-to-CV mapping, and
   explicit selected-row creation.

@@ -13,6 +13,7 @@
         {% if vacancy %}
             <a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Back to vacancy</a>
             <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Organization candidate pool</a>
+            {% if vacancy.status == "open" and vacancy.current_requirements %}<a class="secondary-button" href="{% url 'candidates:vacancy-candidate-pool-add' organization.slug vacancy.pk %}">Add from candidate pool</a>{% endif %}
             {% if vacancy.status == "open" and vacancy.current_requirements %}<a class="primary-button button-link" href="{% url 'candidates:vacancy-candidate-intake-create' organization.slug vacancy.pk %}">Add candidate CVs</a>{% endif %}
         {% else %}
             <a class="primary-button button-link" href="{% url 'candidates:candidate-intake-create' organization.slug %}">Create candidates from CVs</a>

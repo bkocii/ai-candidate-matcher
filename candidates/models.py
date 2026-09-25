@@ -475,6 +475,10 @@ class CandidateVacancyConsideration(models.Model):
     class ContactScope(models.TextChoices):
         CURRENT_VACANCY = "current_vacancy", "This vacancy only"
 
+    class Origin(models.TextChoices):
+        APPLICATION = "application", "Vacancy application"
+        CANDIDATE_POOL = "candidate_pool", "Added from candidate pool"
+
     candidate = models.ForeignKey(
         Candidate,
         on_delete=models.CASCADE,
@@ -485,10 +489,10 @@ class CandidateVacancyConsideration(models.Model):
         on_delete=models.CASCADE,
         related_name="candidate_considerations",
     )
-    source = models.OneToOneField(
+    source = models.ForeignKey(
         CandidateSource,
         on_delete=models.CASCADE,
-        related_name="vacancy_consideration",
+        related_name="vacancy_considerations",
     )
     intake_batch = models.ForeignKey(
         CandidateIntakeBatch,
@@ -509,6 +513,11 @@ class CandidateVacancyConsideration(models.Model):
         choices=ContactScope.choices,
         default=ContactScope.CURRENT_VACANCY,
     )
+    origin = models.CharField(
+        max_length=30,
+        choices=Origin.choices,
+        default=Origin.APPLICATION,
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -527,10 +536,19 @@ class CandidateVacancyConsideration(models.Model):
                 condition=models.Q(contact_scope="current_vacancy"),
                 name="candidate_vacancy_contact_scope_valid",
             ),
+            models.CheckConstraint(
+                condition=models.Q(origin__in=["application", "candidate_pool"]),
+                name="candidate_vacancy_origin_valid",
+            ),
             models.UniqueConstraint(
                 fields=("candidate", "vacancy", "intake_batch"),
                 condition=models.Q(intake_batch__isnull=False),
                 name="unique_candidate_vacancy_intake_consideration",
+            ),
+            models.UniqueConstraint(
+                fields=("candidate", "vacancy"),
+                condition=models.Q(origin="candidate_pool"),
+                name="unique_candidate_vacancy_pool_reuse",
             ),
         ]
 

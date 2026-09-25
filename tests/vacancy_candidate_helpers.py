@@ -18,7 +18,7 @@ def associate_candidate_with_vacancy(
         candidate=candidate,
         source_type=CandidateSource.SourceType.OTHER,
         source_name=f"Test application for {vacancy.title}",
-        lawful_basis=CandidateSource.LawfulBasis.NOT_RECORDED,
+        lawful_basis=CandidateSource.LawfulBasis.LEGITIMATE_INTERESTS,
         consent_status=CandidateSource.ConsentStatus.NOT_REQUIRED,
         contact_permission=CandidateSource.ContactPermission.RESTRICTED,
         recorded_by=user,

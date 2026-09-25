@@ -5,7 +5,8 @@ from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 
 from accounts.models import OrganizationMembership, User
-from candidates.models import Candidate
+from candidates.models import Candidate, CandidateSource
+from candidates.reuse import add_candidates_from_pool
 from candidates.services import delete_candidate, request_candidate_deletion
 from matching.models import MatchRun
 from matching.scoring import ALGORITHM_VERSION, SHORTLIST_LIMIT, generate_shortlist
@@ -153,6 +154,35 @@ def test_new_vacancy_candidate_marks_run_stale() -> None:
         user=user,
     )
 
+    staleness = assess_match_run_staleness(run=run, user=user)
+
+    assert staleness.reason_codes == ("candidate_inputs_changed",)
+
+
+def test_adding_candidate_from_pool_marks_run_stale() -> None:
+    user, organization, vacancy, _, run = make_run()
+    vacancy.status = Vacancy.Status.OPEN
+    vacancy.save(update_fields=("status", "updated_at"))
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Reusable Pool Candidate",
+        created_by=user,
+    )
+    CandidateSource.objects.create(
+        candidate=candidate,
+        source_type=CandidateSource.SourceType.REFERRAL,
+        source_name="Synthetic referral",
+        lawful_basis=CandidateSource.LawfulBasis.LEGITIMATE_INTERESTS,
+        consent_status=CandidateSource.ConsentStatus.NOT_REQUIRED,
+        contact_permission=CandidateSource.ContactPermission.PERMITTED,
+        recorded_by=user,
+    )
+
+    add_candidates_from_pool(
+        vacancy=vacancy,
+        user=user,
+        candidate_ids=[candidate.pk],
+    )
     staleness = assess_match_run_staleness(run=run, user=user)
 
     assert staleness.reason_codes == ("candidate_inputs_changed",)

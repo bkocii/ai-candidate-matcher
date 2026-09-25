@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Add from candidate pool | {{ vacancy.title }}{% endblock %}
+
+{% block content %}
+<section class="page-heading action-heading" aria-labelledby="candidate-pool-add-title">
+    <div>
+        <p class="eyebrow">Candidate pool</p>
+        <h1 id="candidate-pool-add-title">Add candidates to {{ vacancy.title }}</h1>
+        <p class="lede">Select existing candidates who can be contacted about future roles. Nothing is added automatically.</p>
+    </div>
+    <div class="button-row">
+        <a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Back to vacancy</a>
+        <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Organization candidate pool</a>
+    </div>
+</section>
+
+<section class="report-section" aria-labelledby="available-candidates-title">
+    <div class="rule-editor-heading">
+        <div>
+            <h2 id="available-candidates-title">Available candidates</h2>
+            <p class="section-note">Application-only, unconfirmed, inactive, or withdrawn records cannot be reused for another vacancy.</p>
+        </div>
+        <form method="get" class="compact-filter-form">
+            <label for="candidate-pool-search">Search</label>
+            <input id="candidate-pool-search" name="q" value="{{ query }}" placeholder="Name, email, or location">
+            <button class="secondary-button" type="submit">Search</button>
+        </form>
+    </div>
+
+    {% if rows %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th scope="col">Add</th><th scope="col">Candidate</th><th scope="col">Location</th><th scope="col">Reuse status</th></tr></thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                <td>
+                                    {% if row.eligibility.can_add %}
+                                        <input type="checkbox" name="candidate_ids" value="{{ row.candidate.pk }}" aria-label="Add {{ row.candidate.full_name }}">
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <th scope="row"><a href="{% url 'candidates:candidate-detail' organization.slug row.candidate.pk %}">{{ row.candidate.full_name }}</a></th>
+                                <td>{{ row.candidate.location|default:"—" }}</td>
+                                <td>
+                                    {% if row.eligibility.can_add %}
+                                        <span class="status-pill status-active">Ready to add</span>
+                                    {% else %}
+                                        {{ row.eligibility.reason }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="button-row form-actions">
+                <button class="primary-button" type="submit"{% if not eligible_count %} disabled{% endif %}>Add selected candidates</button>
+            </div>
+        </form>
+
+        {% if page.paginator.num_pages > 1 %}
+            <nav class="pagination" aria-label="Candidate pool pages">
+                {% if page.has_previous %}<a href="?q={{ query|urlencode }}&amp;page={{ page.previous_page_number }}">Previous</a>{% endif %}
+                <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+                {% if page.has_next %}<a href="?q={{ query|urlencode }}&amp;page={{ page.next_page_number }}">Next</a>{% endif %}
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="empty-state inline-empty">
+            <div class="empty-icon" aria-hidden="true">0</div>
+            <h2>No pool candidates available</h2>
+            <p>All current candidates are already associated with this vacancy, or no candidate matches the search.</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

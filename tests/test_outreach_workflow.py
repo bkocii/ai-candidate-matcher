@@ -48,6 +48,15 @@ def workflow_workspace(*, username="recruiter", permitted=True):
     user, _, candidate, _, _, _, _, _, _, decision = values
     if permitted:
         add_permitted_source(candidate=candidate, user=user)
+    else:
+        application_source = candidate.vacancy_considerations.get().source
+        application_source.lawful_basis = CandidateSource.LawfulBasis.NOT_RECORDED
+        application_source.contact_permission = (
+            CandidateSource.ContactPermission.UNKNOWN
+        )
+        application_source.save(
+            update_fields=("lawful_basis", "contact_permission", "updated_at")
+        )
     draft = generate_outreach_draft(
         decision=decision,
         user=user,
@@ -159,24 +168,22 @@ def test_final_approval_is_exact_actor_attributed_and_immutable():
 
 
 @pytest.mark.parametrize(
-    ("contact_permission", "consent_status", "expected"),
+    ("lawful_basis", "contact_permission", "consent_status", "expected"),
     [
         (
+            CandidateSource.LawfulBasis.NOT_RECORDED,
             CandidateSource.ContactPermission.UNKNOWN,
             CandidateSource.ConsentStatus.NOT_REQUIRED,
-            "Reason for storing data",
+            "approved reason",
         ),
         (
-            CandidateSource.ContactPermission.RESTRICTED,
-            CandidateSource.ConsentStatus.NOT_REQUIRED,
-            "Application only",
-        ),
-        (
+            CandidateSource.LawfulBasis.LEGITIMATE_INTERESTS,
             CandidateSource.ContactPermission.WITHDRAWN,
             CandidateSource.ConsentStatus.NOT_REQUIRED,
             "Do not contact",
         ),
         (
+            CandidateSource.LawfulBasis.CONSENT,
             CandidateSource.ContactPermission.PERMITTED,
             CandidateSource.ConsentStatus.WITHDRAWN,
             "Consent is Withdrawn",
@@ -184,19 +191,23 @@ def test_final_approval_is_exact_actor_attributed_and_immutable():
     ],
 )
 def test_final_approval_requires_safe_recorded_contact_permission(
+    lawful_basis,
     contact_permission,
     consent_status,
     expected,
 ):
     user, _, candidate, _, _, _, _, _, _, _, draft = workflow_workspace(permitted=False)
-    CandidateSource.objects.create(
-        candidate=candidate,
-        source_type=CandidateSource.SourceType.MANUAL_ENTRY,
-        source_name="Synthetic blocked source",
-        lawful_basis=CandidateSource.LawfulBasis.NOT_RECORDED,
-        consent_status=consent_status,
-        contact_permission=contact_permission,
-        recorded_by=user,
+    source = candidate.vacancy_considerations.get().source
+    source.lawful_basis = lawful_basis
+    source.consent_status = consent_status
+    source.contact_permission = contact_permission
+    source.save(
+        update_fields=(
+            "lawful_basis",
+            "consent_status",
+            "contact_permission",
+            "updated_at",
+        )
     )
 
     eligibility = assess_final_approval_eligibility(draft=draft, user=user)
@@ -319,32 +330,31 @@ def test_new_version_or_changed_source_boundary_blocks_prior_approved_actions():
 
 def test_final_approval_blocks_missing_reason_even_when_future_contact_is_allowed():
     user, _, candidate, _, _, _, _, _, _, _, draft = workflow_workspace(permitted=False)
-    CandidateSource.objects.create(
-        candidate=candidate,
-        source_type=CandidateSource.SourceType.MANUAL_ENTRY,
-        source_name="Synthetic source without reason",
-        lawful_basis=CandidateSource.LawfulBasis.NOT_RECORDED,
-        consent_status=CandidateSource.ConsentStatus.UNKNOWN,
-        contact_permission=CandidateSource.ContactPermission.PERMITTED,
-        recorded_by=user,
+    source = candidate.vacancy_considerations.get().source
+    source.contact_permission = CandidateSource.ContactPermission.PERMITTED
+    source.save(
+        update_fields=("contact_permission", "updated_at"),
     )
 
     eligibility = assess_final_approval_eligibility(draft=draft, user=user)
 
     assert eligibility.can_proceed is False
-    assert "Reason for storing data" in eligibility.reason
+    assert "approved reason" in eligibility.reason
 
 
 def test_final_approval_requires_given_consent_when_consent_is_reason():
     user, _, candidate, _, _, _, _, _, _, _, draft = workflow_workspace(permitted=False)
-    source = CandidateSource.objects.create(
-        candidate=candidate,
-        source_type=CandidateSource.SourceType.MANUAL_ENTRY,
-        source_name="Synthetic consent source",
-        lawful_basis=CandidateSource.LawfulBasis.CONSENT,
-        consent_status=CandidateSource.ConsentStatus.UNKNOWN,
-        contact_permission=CandidateSource.ContactPermission.PERMITTED,
-        recorded_by=user,
+    source = candidate.vacancy_considerations.get().source
+    source.lawful_basis = CandidateSource.LawfulBasis.CONSENT
+    source.consent_status = CandidateSource.ConsentStatus.UNKNOWN
+    source.contact_permission = CandidateSource.ContactPermission.PERMITTED
+    source.save(
+        update_fields=(
+            "lawful_basis",
+            "consent_status",
+            "contact_permission",
+            "updated_at",
+        )
     )
 
     blocked = assess_final_approval_eligibility(draft=draft, user=user)

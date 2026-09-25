@@ -32,6 +32,12 @@ urlpatterns = [
     ),
     path(
         "organizations/<slug:organization_slug>/vacancies/<int:vacancy_id>/"
+        "candidates/add-from-pool/",
+        views.vacancy_candidate_pool_add,
+        name="vacancy-candidate-pool-add",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/vacancies/<int:vacancy_id>/"
         "candidates/intake/new/",
         intake_views.vacancy_candidate_intake_create,
         name="vacancy-candidate-intake-create",

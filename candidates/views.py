@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -48,6 +49,7 @@ from candidates.models import (
     CandidateVacancyConsideration,
 )
 from candidates.profile_review import candidate_profile_conflicts
+from candidates.reuse import add_candidates_from_pool, assess_candidate_pool_reuse
 from candidates.services import (
     CSV_HEADERS,
     CandidateDeletionError,
@@ -105,6 +107,82 @@ def vacancy_candidate_list(request, organization_slug: str, vacancy_id: int):
         request,
         "candidates/candidate_list.html",
         {"organization": organization, "page": page, "vacancy": vacancy},
+    )
+
+
+@login_required
+def vacancy_candidate_pool_add(request, organization_slug: str, vacancy_id: int):
+    organization = _visible_organization(request, organization_slug)
+    vacancy = get_object_or_404(
+        Vacancy.objects.for_organization(organization).active(),
+        pk=vacancy_id,
+    )
+    if request.method == "POST":
+        try:
+            candidate_ids = [
+                int(value) for value in request.POST.getlist("candidate_ids")
+            ]
+            created = add_candidates_from_pool(
+                vacancy=vacancy,
+                user=request.user,
+                candidate_ids=candidate_ids,
+            )
+        except (TypeError, ValueError, ValidationError) as error:
+            error_messages = getattr(error, "messages", None) or [str(error)]
+            messages.error(request, "; ".join(error_messages))
+            return redirect(
+                "candidates:vacancy-candidate-pool-add",
+                organization_slug=organization.slug,
+                vacancy_id=vacancy.pk,
+            )
+        messages.success(
+            request,
+            f"Added {len(created)} candidate{'s' if len(created) != 1 else ''} "
+            "from the organization pool.",
+        )
+        return redirect(
+            "vacancies:vacancy-detail",
+            organization_slug=organization.slug,
+            vacancy_id=vacancy.pk,
+        )
+
+    candidates = (
+        Candidate.objects.for_organization(organization)
+        .not_deleted()
+        .exclude(vacancy_considerations__vacancy=vacancy)
+        .prefetch_related("sources")
+        .order_by("full_name", "id")
+        .distinct()
+    )
+    query = request.GET.get("q", "").strip()
+    if query:
+        candidates = candidates.filter(
+            Q(full_name__icontains=query)
+            | Q(email__icontains=query)
+            | Q(location__icontains=query)
+        )
+    page = Paginator(candidates, 25).get_page(request.GET.get("page"))
+    rows = [
+        {
+            "candidate": candidate,
+            "eligibility": assess_candidate_pool_reuse(
+                candidate=candidate,
+                vacancy=vacancy,
+            ),
+        }
+        for candidate in page.object_list
+    ]
+    return render(
+        request,
+        "candidates/candidate_pool_add.html",
+        {
+            "organization": organization,
+            "vacancy": vacancy,
+            "page": page,
+            "rows": rows,
+            "query": query,
+            "eligible_count": sum(row["eligibility"].can_add for row in rows),
+        },
     )
 
 

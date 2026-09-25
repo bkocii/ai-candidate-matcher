@@ -278,7 +278,7 @@ changes begin.
   vacancy and provide a separate organization-pool entry point. **Complete —
   2026-09-24.**
 - `FLOW-003` Add deliberate **Add from candidate pool** and cross-vacancy reuse
-  with permission and provenance checks.
+  with permission and provenance checks. **Complete — 2026-09-25.**
 
 ### Phase C — Shortlist and recruiter experience
 
@@ -352,9 +352,19 @@ included. Historical shortlists remain discoverable; the input-signature version
 was advanced so results generated from the earlier organization-wide population
 are visibly stale.
 
-Review and approve the detailed `FLOW-003` scope next: deliberate **Add from
-candidate pool** reuse with permission and provenance checks. No cross-vacancy
-reuse mutation was added by `FLOW-002`.
+`FLOW-003` was implemented on 2026-09-25. An open vacancy now provides **Add
+from candidate pool**, with search and bulk selection on one compact page.
+Candidates already associated with the vacancy are excluded. Inactive candidates
+and records without valid **Future roles allowed** permission remain visible but
+cannot be selected, with the blocking reason shown. Every accepted selection
+creates an explicit candidate-pool consideration with actor, time, vacancy, and
+the original permitted source; it does not duplicate candidate/source records or
+regenerate a shortlist automatically. The changed candidate set makes earlier
+shortlists visibly stale.
+
+Review and approve the detailed `MATCH-005` scope next. Semantic improvements
+must remain measured, evidence-backed, and separate from deterministic hard
+constraints.
 
 `VAC-001` followed `FLOW-001` because its final
 **Confirm and upload CVs** action requires the vacancy-scoped intake destination.

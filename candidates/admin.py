@@ -75,11 +75,12 @@ class CandidateVacancyConsiderationAdmin(admin.ModelAdmin):
     list_display = (
         "candidate",
         "vacancy",
+        "origin",
         "contact_scope",
         "created_by",
         "created_at",
     )
-    list_filter = ("contact_scope", "vacancy__organization")
+    list_filter = ("origin", "contact_scope", "vacancy__organization")
     search_fields = ("candidate__full_name", "vacancy__title")
     readonly_fields = (
         "candidate",
@@ -87,6 +88,7 @@ class CandidateVacancyConsiderationAdmin(admin.ModelAdmin):
         "source",
         "intake_batch",
         "document",
+        "origin",
         "contact_scope",
         "created_by",
         "created_at",

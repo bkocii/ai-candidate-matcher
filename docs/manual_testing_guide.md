@@ -744,6 +744,28 @@ Expected result: vacancy work is limited to explicit vacancy associations. The
 wider reusable organization pool remains separate, and no existing pool
 candidate is silently reused.
 
+### Verify deliberate candidate-pool reuse (`FLOW-003`)
+
+1. In the organization candidate pool, prepare one active synthetic candidate
+   with a recorded processing reason, consent **Not required**, and allowed
+   contact **Future roles allowed**. Prepare another with **Application only**.
+2. Open an active vacancy and select **Add from candidate pool**. Confirm the
+   first candidate is marked **Ready to add**, while the second is not selectable
+   and shows the permission reason. Candidates already in the vacancy must not
+   appear.
+3. Select the reusable candidate and choose **Add selected candidates**. Confirm
+   the vacancy page now lists that candidate.
+4. Open the candidate. Confirm **Vacancy history** records **Added from candidate
+   pool**, the vacancy, **This vacancy only**, and the time. Existing source and
+   candidate records must not be duplicated.
+5. If the vacancy had a shortlist before the addition, confirm its historical
+   link remains available and is now labelled stale. Generate again only through
+   the normal recruiter action.
+
+Expected result: reuse requires one explicit recruiter action and valid future-
+role permission. The server rejects inactive, restricted, duplicate, deleted,
+or cross-organization candidate IDs even if a request is manually altered.
+
 ## 10. Test blank confirmation protection
 
 Create another vacancy, do not enter any structured requirements, return to its

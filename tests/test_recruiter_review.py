@@ -162,7 +162,7 @@ def test_changed_inputs_are_visible_and_assessment_detail_keeps_history(client):
     assert detail_response.status_code == 200
     assert "Inspect as historical assessment" in detail_content
     assert (
-        "active candidate pool or candidate matching evidence changed" in detail_content
+        "vacancy candidate set or candidate matching evidence changed" in detail_content
     )
     assert "Matches" in detail_content
     assert "Gaps" in detail_content

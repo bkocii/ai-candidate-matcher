@@ -37,6 +37,7 @@
         </div>
         <div class="button-row">
             <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Organization candidate pool</a>
+            {% if vacancy.status == "open" and current_requirements %}<a class="secondary-button" href="{% url 'candidates:vacancy-candidate-pool-add' organization.slug vacancy.pk %}">Add from candidate pool</a>{% endif %}
             {% if vacancy_candidate_count %}<a class="secondary-button" href="{% url 'candidates:vacancy-candidate-list' organization.slug vacancy.pk %}">View vacancy candidates</a>{% endif %}
             {% if vacancy.status == "open" and current_requirements %}<a class="primary-button button-link" href="{% url 'candidates:vacancy-candidate-intake-create' organization.slug vacancy.pk %}">Add candidate CVs</a>{% endif %}
         </div>
