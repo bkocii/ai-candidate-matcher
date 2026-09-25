@@ -249,6 +249,8 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Employment type.
 - Explicit hard constraints.
 - Ambiguities requiring recruiter confirmation.
+- Controlled target role family and seniority, each grounded in explicit source
+  title evidence or left not determined.
 
 ### Candidate profile
 
@@ -260,6 +262,12 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Education and certifications.
 - Availability when supplied.
 - Missing or ambiguous information.
+- Controlled likely role family and seniority, each grounded in explicit CV
+  title evidence or left not determined.
+
+Role and seniority do not change hard eligibility or the numeric skill score.
+They order candidates only when skill scores are equal, with missing information
+shown as **Needs verification** rather than treated as failure.
 
 ### Match assessment
 

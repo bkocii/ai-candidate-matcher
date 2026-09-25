@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 
+from matching.role_taxonomy import ROLE_FAMILY_CHOICES, SENIORITY_CHOICES
 from organizations.models import (
     ClientCompany,
     Organization,
@@ -172,7 +173,7 @@ class VacancyRequirements(models.Model):
     version = models.PositiveIntegerField(default=1)
     schema_version = models.CharField(
         max_length=50,
-        default="vacancy_requirements.v1",
+        default="vacancy_requirements.v2",
     )
     status = models.CharField(
         max_length=20,
@@ -189,6 +190,18 @@ class VacancyRequirements(models.Model):
     source_content_type = models.CharField(max_length=150, blank=True)
     source_sha256 = models.CharField(max_length=64, blank=True)
     summary = models.TextField(blank=True)
+    role_family = models.CharField(
+        max_length=30,
+        choices=ROLE_FAMILY_CHOICES,
+        default="unknown",
+    )
+    role_family_evidence = models.CharField(max_length=500, blank=True)
+    seniority = models.CharField(
+        max_length=20,
+        choices=SENIORITY_CHOICES,
+        default="unknown",
+    )
+    seniority_evidence = models.CharField(max_length=500, blank=True)
     must_have_skills = models.JSONField(
         default=list,
         blank=True,
@@ -278,6 +291,18 @@ class VacancyRequirements(models.Model):
             ),
             models.CheckConstraint(
                 condition=models.Q(
+                    role_family__in=[value for value, _ in ROLE_FAMILY_CHOICES]
+                ),
+                name="vacancy_requirement_valid_role_family",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    seniority__in=[value for value, _ in SENIORITY_CHOICES]
+                ),
+                name="vacancy_requirement_valid_seniority",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
                     creation_method__in=["manual", "ai_assisted", "imported"]
                 ),
                 name="vacancy_requirement_has_valid_creation_method",
@@ -348,6 +373,10 @@ class VacancyRequirements(models.Model):
             "source_content_type",
             "source_sha256",
             "summary",
+            "role_family",
+            "role_family_evidence",
+            "seniority",
+            "seniority_evidence",
             "must_have_skills",
             "nice_to_have_skills",
             "minimum_years_experience",

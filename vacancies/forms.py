@@ -23,6 +23,10 @@ LIST_FIELD_NAMES = (
 
 REQUIREMENTS_VALUE_FIELDS = (
     "summary",
+    "role_family",
+    "role_family_evidence",
+    "seniority",
+    "seniority_evidence",
     "must_have_skills",
     "nice_to_have_skills",
     "minimum_years_experience",
@@ -49,6 +53,8 @@ ELIGIBILITY_SELECTION_FIELDS = (
 
 REVIEW_REQUIREMENTS_FIELDS = (
     "summary",
+    "role_family",
+    "seniority",
     "must_have_skills",
     "nice_to_have_skills",
     "minimum_years_experience",
@@ -198,6 +204,27 @@ class VacancyEditForm(forms.Form):
 
 
 class VacancyRequirementsForm(forms.Form):
+    role_family = forms.ChoiceField(
+        label="Target role",
+        choices=VacancyRequirements._meta.get_field("role_family").choices,
+        required=False,
+        help_text="Used only to order candidates with the same skill score.",
+    )
+    role_family_evidence = forms.CharField(
+        required=False,
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 2}),
+    )
+    seniority = forms.ChoiceField(
+        choices=VacancyRequirements._meta.get_field("seniority").choices,
+        required=False,
+        help_text="Used only to order candidates with the same skill score.",
+    )
+    seniority_evidence = forms.CharField(
+        required=False,
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 2}),
+    )
     summary = forms.CharField(
         required=False,
         widget=forms.Textarea(attrs={"rows": 4}),
@@ -343,6 +370,8 @@ class VacancyRequirementsForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
+        cleaned_data["role_family"] = cleaned_data.get("role_family") or "unknown"
+        cleaned_data["seniority"] = cleaned_data.get("seniority") or "unknown"
         for field_name in LIST_FIELD_NAMES:
             value = cleaned_data.get(field_name)
             if isinstance(value, str):
@@ -410,6 +439,10 @@ def _parse_line_list(value: str) -> list[str]:
 def requirements_form_initial(requirements: VacancyRequirements) -> dict:
     initial = {
         "summary": requirements.summary,
+        "role_family": requirements.role_family,
+        "role_family_evidence": requirements.role_family_evidence,
+        "seniority": requirements.seniority,
+        "seniority_evidence": requirements.seniority_evidence,
         "minimum_years_experience": requirements.minimum_years_experience,
         "location_requirement": requirements.location_requirement,
         "work_mode": requirements.work_mode,
@@ -547,6 +580,10 @@ def review_requirements_values_from_form(
             for field_name in REVIEW_REQUIREMENTS_FIELDS
         }
     )
+    if values["role_family"] != requirements.role_family:
+        values["role_family_evidence"] = ""
+    if values["seniority"] != requirements.seniority:
+        values["seniority_evidence"] = ""
     return values
 
 

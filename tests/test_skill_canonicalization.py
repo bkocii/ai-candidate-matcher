@@ -223,7 +223,7 @@ def test_existing_saved_aliases_match_for_hard_filter_and_shortlist() -> None:
     )
     assert entry.score_breakdown[0]["candidate_label"] == "Python"
     assert run.algorithm_version == ALGORITHM_VERSION
-    assert ALGORITHM_VERSION == "deterministic_skill_relevance.v5"
+    assert ALGORITHM_VERSION == "deterministic_skill_relevance.v6"
 
 
 def test_existing_pytest_skill_matches_automated_testing_with_source_evidence() -> None:
@@ -262,7 +262,7 @@ def test_existing_pytest_skill_matches_automated_testing_with_source_evidence() 
         entry.score_breakdown[0]["evidence"]
         == "Built automated test suites with pytest."
     )
-    assert run.algorithm_version == "deterministic_skill_relevance.v5"
+    assert run.algorithm_version == "deterministic_skill_relevance.v6"
 
 
 @pytest.mark.parametrize("unsafe_label", ["manual testing", "test management"])

@@ -31,8 +31,8 @@ remaining user-run under the agreed low-output workflow. `DIR-001` now records
 the focused product direction in `docs/product_direction_plan.md`. `DEMO-002` is
 deferred until the revised core workflow reaches an approved positioning
 checkpoint. `FLOW-001`, `VAC-001`, `FLOW-002`, and `FLOW-003` behavior,
-acceptance criteria, and implementation are complete; `MATCH-005` is next for
-scope review. Track each finding's separate
+acceptance criteria, and implementation are complete; `MATCH-005` is also
+complete and `MATCH-006` is next for scope review. Track each finding's separate
 implementation/browser-test state in `docs/manual_testing_review.md`.
 
 `DIR-002` is also complete as a documentation decision. It records an AI-first,
@@ -92,6 +92,15 @@ duplicating candidate or source data. Previous shortlist history remains visible
 and becomes stale after an accepted addition; regeneration remains explicit.
 Focused candidate, vacancy, matching, review, privacy, and outreach verification
 passes with 135 tests.
+
+`MATCH-005` was completed on 2026-09-25. Candidate profiles and vacancy
+requirements now store a controlled role family and seniority with exact source
+evidence. Unsupported or absent values remain **Not determined / Needs
+verification**. Shortlist policy v6 keeps the 0–100 skill score and deterministic
+eligibility unchanged, using role then seniority only to order equal skill
+scores. Input signatures v3 make older runs stale. The frozen synthetic ranking
+evaluation remains unchanged when the new signals are unknown; dedicated tests
+cover grounded extraction, equal-score ordering, and evidence snapshots.
 
 ## Decisions made
 
@@ -1457,14 +1466,15 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-Review and approve the detailed scope for `MATCH-005 — Add supported role and
-seniority discovery plus measured semantic matching improvements`.
+Review and approve the detailed scope for `MATCH-006 — Make the ranked,
+evidence-backed shortlist the central vacancy result`.
 
 `docs/product_direction_plan.md` is the canonical record for the newly approved
 direction and phased task sequence. `DEMO-002` is deferred until the revised core
 workflow reaches an approved positioning checkpoint. Preserve the completed
 vacancy scoping and explicit reuse boundaries from `FLOW-001` through
-`FLOW-003`; do not weaken deterministic eligibility, evidence grounding, or
+`FLOW-003` and the bounded `MATCH-005` signals; do not weaken deterministic
+eligibility, evidence grounding, or
 recruiter review.
 
 The MT-029 platform organization list now surfaces active tenants without an

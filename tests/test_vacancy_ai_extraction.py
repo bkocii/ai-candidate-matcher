@@ -131,6 +131,26 @@ def test_extraction_schema_rejects_unbounded_or_unknown_fields() -> None:
         VacancyRequirementsExtraction.model_validate(payload)
 
 
+def test_extraction_grounds_role_and_seniority_in_vacancy_title() -> None:
+    user, _, _, requirements = make_workspace()
+    result = extract_vacancy_requirements(
+        requirements=requirements,
+        user=user,
+        gateway=SuccessfulGateway(
+            output=extracted_output(
+                role_family="backend",
+                role_family_evidence="Senior Django Developer",
+                seniority="senior",
+                seniority_evidence="Senior Django Developer",
+            )
+        ),
+    )
+
+    assert result.requirements.role_family == "backend"
+    assert result.requirements.role_family_evidence == "Senior Django Developer"
+    assert result.requirements.seniority == "senior"
+
+
 def test_sensitive_source_flag_adds_only_generic_reviewer_warning() -> None:
     output = extracted_output(
         excluded_sensitive_content_detected=True,

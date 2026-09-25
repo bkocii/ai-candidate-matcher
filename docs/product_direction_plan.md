@@ -283,7 +283,9 @@ changes begin.
 ### Phase C — Shortlist and recruiter experience
 
 - `MATCH-005` Add supported role/seniority discovery and improve measured
-  semantic matching without weakening deterministic evidence rules.
+  semantic matching without weakening deterministic evidence rules. **Complete
+  — 2026-09-25.** Controlled, evidence-backed role and seniority signals order
+  equal skill scores only; missing values require verification and never fail.
 - `MATCH-006` Make a concise ranked, evidence-backed shortlist the vacancy's
   central result.
 - `REV-003` Extend exception-focused review across intake, matching, and ranking
@@ -362,9 +364,13 @@ the original permitted source; it does not duplicate candidate/source records or
 regenerate a shortlist automatically. The changed candidate set makes earlier
 shortlists visibly stale.
 
-Review and approve the detailed `MATCH-005` scope next. Semantic improvements
-must remain measured, evidence-backed, and separate from deterministic hard
-constraints.
+`MATCH-005` was implemented on 2026-09-25. Vacancy and CV extraction now capture
+controlled role family and seniority only from explicit title evidence. The
+shortlist shows both sides' evidence and uses matched, unknown, then different
+as tie-breakers only after the unchanged numeric skill score. Unknown values are
+labelled **Needs verification**; role/seniority never change eligibility.
+
+Review and approve the detailed `MATCH-006` scope next.
 
 `VAC-001` followed `FLOW-001` because its final
 **Confirm and upload CVs** action requires the vacancy-scoped intake destination.

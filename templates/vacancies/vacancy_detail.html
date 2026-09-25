@@ -144,6 +144,8 @@
             <dl class="requirement-list">
                 <div><dt>Version</dt><dd>{{ current_requirements.version }}</dd></div>
                 <div><dt>Summary</dt><dd>{{ current_requirements.summary|default:"Not recorded" }}</dd></div>
+                <div><dt>Target role</dt><dd>{{ current_requirements.get_role_family_display }}</dd></div>
+                <div><dt>Seniority</dt><dd>{{ current_requirements.get_seniority_display }}</dd></div>
                 <div><dt>Must-have skills</dt><dd>{{ current_requirements.must_have_skills|join:", "|default:"Not recorded" }}</dd></div>
                 <div><dt>Nice-to-have skills</dt><dd>{{ current_requirements.nice_to_have_skills|join:", "|default:"Not recorded" }}</dd></div>
                 <div><dt>Minimum experience</dt><dd>{% if current_requirements.minimum_years_experience is not None %}{{ current_requirements.minimum_years_experience }} years{% else %}Not recorded{% endif %}</dd></div>

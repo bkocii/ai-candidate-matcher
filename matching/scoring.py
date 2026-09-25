@@ -12,6 +12,7 @@ from matching.models import (
     RequirementSkill,
     ShortlistEntry,
 )
+from matching.role_taxonomy import DiscoverySignal, compare_discovery_value
 from matching.scoring_policy import ALGORITHM_VERSION
 from matching.skill_matching import (
     candidate_skills_by_canonical_key,
@@ -69,6 +70,7 @@ class CandidateRelevanceScore:
     matched_nice_to_have: int
     total_nice_to_have: int
     skill_scores: tuple[SkillScore, ...]
+    discovery_signals: tuple[DiscoverySignal, ...]
 
 
 def _allocate_skill_points(
@@ -112,6 +114,7 @@ def score_candidate_relevance(
     *,
     filter_result: CandidateFilterResult,
     requirement_skills: tuple[RequirementSkill, ...],
+    requirements: VacancyRequirements | None = None,
 ) -> CandidateRelevanceScore:
     """Score recorded skill matches without treating missing evidence as failure."""
     requirement_skills = unique_requirement_skills(requirement_skills)
@@ -171,6 +174,29 @@ def score_candidate_relevance(
         (item.awarded_points for item in skill_scores),
         start=Decimal("0"),
     ).quantize(SCORE_QUANTUM, rounding=ROUND_HALF_UP)
+    profile = filter_result.candidate.current_profile
+    discovery_signals: tuple[DiscoverySignal, ...] = ()
+    if requirements is not None:
+        discovery_signals = (
+            compare_discovery_value(
+                signal="role_family",
+                requirement_value=requirements.role_family,
+                candidate_value=profile.role_family if profile else "unknown",
+                requirement_evidence=requirements.role_family_evidence,
+                candidate_evidence=(
+                    profile.fact_evidence.get("role_family", "") if profile else ""
+                ),
+            ),
+            compare_discovery_value(
+                signal="seniority",
+                requirement_value=requirements.seniority,
+                candidate_value=profile.seniority if profile else "unknown",
+                requirement_evidence=requirements.seniority_evidence,
+                candidate_evidence=(
+                    profile.fact_evidence.get("seniority", "") if profile else ""
+                ),
+            ),
+        )
     return CandidateRelevanceScore(
         candidate=filter_result.candidate,
         filter_outcome=filter_result.outcome,
@@ -180,12 +206,18 @@ def score_candidate_relevance(
         matched_nice_to_have=matched_nice_to_have,
         total_nice_to_have=len(nice_to_have),
         skill_scores=tuple(skill_scores),
+        discovery_signals=discovery_signals,
     )
 
 
-def _ranking_key(score: CandidateRelevanceScore) -> tuple[Decimal, int, int]:
+def _ranking_key(score: CandidateRelevanceScore) -> tuple[Decimal, int, int, int, int]:
+    priority = {"matched": 0, "unknown": 1, "different": 2}
+    signal_priorities = tuple(
+        priority[signal.status] for signal in score.discovery_signals
+    )
+    signal_priorities = (signal_priorities + (1, 1))[:2]
     filter_priority = 0 if score.filter_outcome == FilterOutcome.PASSED else 1
-    return (-score.score, filter_priority, score.candidate.pk)
+    return (-score.score, *signal_priorities, filter_priority, score.candidate.pk)
 
 
 @transaction.atomic
@@ -221,6 +253,7 @@ def generate_shortlist(
         score_candidate_relevance(
             filter_result=result,
             requirement_skills=requirement_skills,
+            requirements=requirements,
         )
         for result in filter_report.results
         if result.is_eligible
@@ -253,5 +286,6 @@ def generate_shortlist(
             matched_nice_to_have=score.matched_nice_to_have,
             total_nice_to_have=score.total_nice_to_have,
             score_breakdown=[item.as_snapshot() for item in score.skill_scores],
+            discovery_signals=[item.as_snapshot() for item in score.discovery_signals],
         )
     return run

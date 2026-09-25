@@ -15,6 +15,10 @@ from vacancies.models import Vacancy, VacancyRequirements
 
 REQUIREMENTS_COPY_FIELDS = (
     "summary",
+    "role_family",
+    "role_family_evidence",
+    "seniority",
+    "seniority_evidence",
     "must_have_skills",
     "nice_to_have_skills",
     "minimum_years_experience",
@@ -212,7 +216,11 @@ def update_requirements_draft(
         )
 
     for field_name in REQUIREMENTS_COPY_FIELDS:
-        setattr(requirements, field_name, values[field_name])
+        setattr(
+            requirements,
+            field_name,
+            values.get(field_name, getattr(requirements, field_name)),
+        )
     requirements.save()
     from matching.services import (
         sync_requirement_skills,
@@ -240,6 +248,10 @@ def _has_meaningful_requirements(requirements: VacancyRequirements) -> bool:
         if field_name
         not in {
             "summary",
+            "role_family",
+            "role_family_evidence",
+            "seniority",
+            "seniority_evidence",
             "minimum_years_experience",
             "location_requirement",
             "work_mode",
@@ -326,6 +338,10 @@ def create_next_requirements_draft(
         values.update(
             {
                 "summary": "",
+                "role_family": "unknown",
+                "role_family_evidence": "",
+                "seniority": "unknown",
+                "seniority_evidence": "",
                 "minimum_years_experience": None,
                 "location_requirement": "",
                 "work_mode": VacancyRequirements.WorkMode.UNKNOWN,

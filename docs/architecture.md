@@ -721,14 +721,14 @@ content are not copied into the audit ledger.
   deletion actor, and deletion timestamp remain available for future match
   integrity and administrative audit. Service calls reject later lifecycle or
   requirements mutations on a deleted vacancy.
-- The vacancy description and each requirement version's source-description
-  snapshot remain application input. AI-assisted extraction uses only that
-  preserved snapshot through the application gateway.
+- The vacancy title and each requirement version's preserved source-description
+  snapshot are the application input used by AI-assisted extraction through the
+  application gateway.
 - A recruiter can trigger AI extraction only for an editable requirements draft.
   The business service repeats organization authorization and rejects confirmed
   versions, deleted vacancies, blank sources, and sources over 30,000 characters
   before constructing a gateway request.
-- The application-owned `vacancy_requirements_extraction.v1` Pydantic schema
+- The application-owned `vacancy_requirements_extraction.v2` Pydantic schema
   forbids extra output, bounds every field, accepts only controlled work-mode and
   employment-type values, and rejects duplicate or cross-group skill entries.
   Missing facts stay empty, null, or `unknown`; they are not inferred.
@@ -1185,3 +1185,12 @@ Embedding-based retrieval may be added after the deterministic baseline is measu
   compatibility.
 - GitHub Actions runs the locked environment and shared quality gate on every
   pull request and push to `main` across Python 3.11 through 3.14.
+## Controlled role and seniority discovery
+
+`CandidateProfile` and `VacancyRequirements` store one controlled role family
+and seniority value plus exact source evidence. Provider output is schema-bound;
+application validation rejects or downgrades unsupported classifications. There
+is no embedding search or unrestricted fuzzy role matching. Matching policy v6
+preserves hard-filter precedence and the existing skill score, then uses role
+and seniority status only as stable equal-score tie-breakers. These values are
+included in input-signature v3 so changed evidence makes historical runs stale.

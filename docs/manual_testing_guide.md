@@ -2310,7 +2310,30 @@ The current milestone is behaving correctly when all of these are true:
   or live AI request; only explicit vacancy extraction, candidate extraction,
   match-assessment, or outreach-generation actions do.
 
-## 34. Reset disposable local test data
+## 34. Test role and seniority discovery (`MATCH-005`)
+
+1. Create and analyze a vacancy titled **Senior Django Developer**.
+2. On **Check the matching essentials**, verify **Target role** is Backend
+   engineering and **Seniority** is Senior, with the title shown as evidence.
+3. Upload and extract one CV containing **Senior Python Engineer** and one CV
+   without an explicit role title; confirm both profiles.
+4. Give both candidates the same matching skills and generate a shortlist.
+
+Expected:
+
+- Both candidates keep the same numeric skill score and normal eligibility.
+- The explicit backend/senior profile ranks first only because the skill score
+  is tied; its candidate and vacancy evidence are visible.
+- The untitled CV shows **Needs verification** and is not rejected.
+- Changing confirmed role/seniority input makes the previous shortlist stale.
+
+Focused check:
+
+```powershell
+uv run pytest -q tests/test_candidate_ai_extraction.py tests/test_vacancy_ai_extraction.py tests/test_matching_shortlist.py tests/test_matching_staleness.py
+```
+
+## 35. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

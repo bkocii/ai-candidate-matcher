@@ -35,12 +35,13 @@ from audit.services import (
     complete_ai_usage_success,
     start_ai_usage_event,
 )
+from matching.role_taxonomy import normalize_role_family, normalize_seniority
 from matching.skill_taxonomy import canonicalize_skill
 from organizations.permissions import require_organization_object_access
 from vacancies.models import VacancyRequirements
 from vacancies.services import REQUIREMENTS_COPY_FIELDS, update_requirements_draft
 
-VACANCY_EXTRACTION_SCHEMA_VERSION = "vacancy_requirements_extraction.v1"
+VACANCY_EXTRACTION_SCHEMA_VERSION = "vacancy_requirements_extraction.v2"
 MAX_SOURCE_DESCRIPTION_CHARACTERS = 30_000
 
 _WORD_RE = re.compile(r"[^\W_]+", re.UNICODE)
@@ -82,6 +83,31 @@ class VacancyRequirementsExtraction(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     summary: str = Field(default="", max_length=2_000)
+    role_family: Literal[
+        "unknown",
+        "backend",
+        "frontend",
+        "full_stack",
+        "mobile",
+        "devops",
+        "data",
+        "qa",
+        "security",
+        "product",
+        "design",
+        "other",
+    ] = "unknown"
+    role_family_evidence: str = Field(default="", max_length=500)
+    seniority: Literal[
+        "unknown",
+        "junior",
+        "mid",
+        "senior",
+        "lead",
+        "manager",
+        "executive",
+    ] = "unknown"
+    seniority_evidence: str = Field(default="", max_length=500)
     must_have_skills: list[BoundedItem] = Field(default_factory=list, max_length=50)
     nice_to_have_skills: list[BoundedItem] = Field(default_factory=list, max_length=50)
     minimum_years_experience: Decimal | None = Field(
@@ -141,6 +167,10 @@ class VacancyRequirementsExtraction(BaseModel):
         )
         if overlap:
             raise ValueError("A skill cannot be both must-have and nice-to-have.")
+        if self.role_family != "unknown" and not self.role_family_evidence:
+            raise ValueError("Role-family evidence is required when classified.")
+        if self.seniority != "unknown" and not self.seniority_evidence:
+            raise ValueError("Seniority evidence is required when classified.")
         return self
 
     def as_requirements_values(self) -> dict:
@@ -157,6 +187,10 @@ class VacancyRequirementsExtraction(BaseModel):
             ambiguities.append(sensitive_warning)
         return {
             "summary": self.summary,
+            "role_family": self.role_family,
+            "role_family_evidence": self.role_family_evidence,
+            "seniority": self.seniority,
+            "seniority_evidence": self.seniority_evidence,
             "must_have_skills": list(self.must_have_skills),
             "nice_to_have_skills": list(self.nice_to_have_skills),
             "minimum_years_experience": self.minimum_years_experience,
@@ -190,6 +224,14 @@ Represent missing scalar facts with an empty string, null, or the controlled
 value \"unknown\" as appropriate. Represent missing list facts with an empty list.
 
 Classification rules:
+- role_family must be one of unknown, backend, frontend, full_stack, mobile,
+  devops, data, qa, security, product, design, or other. Django Developer and
+  Python Developer map to backend.
+- seniority must be one of unknown, junior, mid, senior, lead, manager, or
+  executive.
+- Classify role and seniority only from an explicit role title. Copy a short
+  verbatim source excerpt into the matching evidence field. Do not infer either
+  value from responsibilities, skills, age, dates, or years of experience.
 - Skill lists contain atomic skill names only, such as "Python" or "Django".
   Remove generic wrappers such as "professional", "development experience", or
   "proficiency in" when the underlying explicitly named skill is unchanged.
@@ -275,6 +317,26 @@ def _requirements_values_for_source(
     supported_skill_keys: set[str] = set()
     ambiguities = list(values["ambiguities"])
     ambiguity_keys = {item.casefold() for item in ambiguities}
+    normalized_source = _normalized_source_text(source_description)
+    discovery_fields = (
+        ("role_family", "role_family_evidence", normalize_role_family, "role"),
+        ("seniority", "seniority_evidence", normalize_seniority, "seniority"),
+    )
+    for value_field, evidence_field, normalizer, label in discovery_fields:
+        value = values[value_field]
+        evidence = values[evidence_field]
+        supported = value == "unknown" or (
+            _normalized_source_text(evidence) in normalized_source
+            and (normalizer(evidence) == value or value == "other")
+        )
+        if supported:
+            continue
+        values[value_field] = "unknown"
+        values[evidence_field] = ""
+        ambiguity = f"AI could not ground the suggested {label}; verify it manually."
+        if ambiguity.casefold() not in ambiguity_keys:
+            ambiguities.append(ambiguity)
+            ambiguity_keys.add(ambiguity.casefold())
     for skill in extraction.must_have_skills:
         canonical = canonicalize_skill(skill)
         if _source_explicitly_requires_skill(
@@ -306,6 +368,11 @@ def _requirements_values_for_source(
     values["nice_to_have_skills"] = normalized_nice_to_have
     values["ambiguities"] = ambiguities
     return values
+
+
+def _normalized_source_text(value: str) -> str:
+    normalized = unicodedata.normalize("NFKC", value)
+    return " ".join(normalized.casefold().split())
 
 
 def _draft_signature(requirements: VacancyRequirements) -> str:
@@ -359,6 +426,10 @@ def _load_extractable_draft(
     return authoritative
 
 
+def _extraction_source(draft: VacancyRequirements) -> str:
+    return f"Role title: {draft.vacancy.title}\n{draft.source_description}".strip()
+
+
 def extract_vacancy_requirements(
     *,
     requirements: VacancyRequirements,
@@ -378,8 +449,9 @@ def extract_vacancy_requirements(
     gateway_result: AIGatewayResult[VacancyRequirementsExtraction] | None = None
     try:
         active_gateway = gateway if gateway is not None else get_ai_gateway()
+        source = _extraction_source(draft)
         gateway_result = active_gateway.request_structured(
-            prompt=build_vacancy_requirements_prompt(draft.source_description),
+            prompt=build_vacancy_requirements_prompt(source),
             response_type=VacancyRequirementsExtraction,
         )
         with transaction.atomic():
@@ -399,7 +471,7 @@ def extract_vacancy_requirements(
                 user=user,
                 values=_requirements_values_for_source(
                     extraction=gateway_result.data,
-                    source_description=locked.source_description,
+                    source_description=_extraction_source(locked),
                 ),
             )
             updated.creation_method = VacancyRequirements.CreationMethod.AI_ASSISTED

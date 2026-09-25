@@ -11,6 +11,7 @@ from candidates.privacy import (
     contact_permission_display,
     lawful_basis_display,
 )
+from matching.role_taxonomy import ROLE_FAMILY_CHOICES, SENIORITY_CHOICES
 from organizations.models import Organization, OrganizationScopedQuerySet
 
 
@@ -937,7 +938,7 @@ class CandidateProfile(models.Model):
     version = models.PositiveIntegerField()
     schema_version = models.CharField(
         max_length=50,
-        default="candidate_profile.v1",
+        default="candidate_profile.v2",
     )
     status = models.CharField(
         max_length=20,
@@ -963,6 +964,16 @@ class CandidateProfile(models.Model):
         ],
     )
     relevant_experience_summary = models.TextField(blank=True)
+    role_family = models.CharField(
+        max_length=30,
+        choices=ROLE_FAMILY_CHOICES,
+        default="unknown",
+    )
+    seniority = models.CharField(
+        max_length=20,
+        choices=SENIORITY_CHOICES,
+        default="unknown",
+    )
     skills = models.JSONField(default=list, blank=True)
     employment_history = models.JSONField(default=list, blank=True)
     location = models.CharField(max_length=200, blank=True)
@@ -1015,6 +1026,18 @@ class CandidateProfile(models.Model):
             ),
             models.CheckConstraint(
                 condition=models.Q(
+                    role_family__in=[value for value, _ in ROLE_FAMILY_CHOICES]
+                ),
+                name="candidate_profile_valid_role_family",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    seniority__in=[value for value, _ in SENIORITY_CHOICES]
+                ),
+                name="candidate_profile_valid_seniority",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
                     work_mode_preference__in=[
                         "unknown",
                         "on_site",
@@ -1061,6 +1084,8 @@ class CandidateProfile(models.Model):
             "source_document_sha256",
             "source_text_sha256",
             "relevant_experience_summary",
+            "role_family",
+            "seniority",
             "skills",
             "employment_history",
             "location",

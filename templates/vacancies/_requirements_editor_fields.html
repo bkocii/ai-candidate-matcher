@@ -13,6 +13,12 @@
         {% if form.summary.help_text %}<small class="help-text">{{ form.summary.help_text }}</small>{% endif %}
         {% if form.summary.errors %}<div class="field-errors">{{ form.summary.errors }}</div>{% endif %}
     </div>
+    <div class="requirements-field-grid">
+        <div class="field">{{ form.role_family.label_tag }}{{ form.role_family }}{% if form.role_family.help_text %}<small class="help-text">{{ form.role_family.help_text }}</small>{% endif %}{{ form.role_family.errors }}</div>
+        <div class="field">{{ form.seniority.label_tag }}{{ form.seniority }}{% if form.seniority.help_text %}<small class="help-text">{{ form.seniority.help_text }}</small>{% endif %}{{ form.seniority.errors }}</div>
+        <div class="field">{{ form.role_family_evidence.label_tag }}{{ form.role_family_evidence }}<small class="help-text">Verbatim vacancy title evidence.</small>{{ form.role_family_evidence.errors }}</div>
+        <div class="field">{{ form.seniority_evidence.label_tag }}{{ form.seniority_evidence }}<small class="help-text">Verbatim vacancy title evidence.</small>{{ form.seniority_evidence.errors }}</div>
+    </div>
 </section>
 
 <section class="requirements-editor-section requirements-editor-section-wide" aria-labelledby="skills-title">

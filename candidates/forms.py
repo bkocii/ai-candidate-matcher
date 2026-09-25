@@ -117,6 +117,27 @@ class CandidateSourceEditForm(forms.ModelForm):
 
 
 class CandidateProfileCorrectionForm(forms.Form):
+    role_family = forms.ChoiceField(
+        label="Likely role",
+        choices=CandidateProfile._meta.get_field("role_family").choices,
+        required=False,
+    )
+    role_family_evidence = forms.CharField(
+        label="Role CV evidence",
+        required=False,
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 2}),
+    )
+    seniority = forms.ChoiceField(
+        choices=CandidateProfile._meta.get_field("seniority").choices,
+        required=False,
+    )
+    seniority_evidence = forms.CharField(
+        label="Seniority CV evidence",
+        required=False,
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 2}),
+    )
     relevant_experience_summary = forms.CharField(
         label="Relevant experience summary",
         required=False,
@@ -173,6 +194,10 @@ class CandidateProfileCorrectionForm(forms.Form):
     def __init__(self, *args, profile: CandidateProfile, **kwargs):
         self.profile = profile
         initial = {
+            "role_family": profile.role_family,
+            "role_family_evidence": profile.fact_evidence.get("role_family", ""),
+            "seniority": profile.seniority,
+            "seniority_evidence": profile.fact_evidence.get("seniority", ""),
             "relevant_experience_summary": profile.relevant_experience_summary,
             "relevant_experience_summary_evidence": profile.fact_evidence.get(
                 "relevant_experience_summary", ""
@@ -207,6 +232,22 @@ class CandidateProfileCorrectionForm(forms.Form):
         if len({line.casefold() for line in lines}) != len(lines):
             raise forms.ValidationError("Remove duplicate ambiguity lines.")
         return lines
+
+    def clean(self):
+        cleaned_data = super().clean()
+        for field_name in (
+            "role_family",
+            "role_family_evidence",
+            "seniority",
+            "seniority_evidence",
+        ):
+            if field_name not in self.data:
+                if field_name.endswith("_evidence"):
+                    key = field_name.removesuffix("_evidence")
+                    cleaned_data[field_name] = self.profile.fact_evidence.get(key, "")
+                else:
+                    cleaned_data[field_name] = getattr(self.profile, field_name)
+        return cleaned_data
 
 
 class CandidateManualEntryForm(forms.Form):

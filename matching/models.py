@@ -829,6 +829,7 @@ class ShortlistEntry(models.Model):
     matched_nice_to_have = models.PositiveIntegerField(default=0)
     total_nice_to_have = models.PositiveIntegerField(default=0)
     score_breakdown = models.JSONField(default=list)
+    discovery_signals = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
 
     objects = ShortlistEntryQuerySet.as_manager()
@@ -874,6 +875,10 @@ class ShortlistEntry(models.Model):
 
     def clean(self) -> None:
         super().clean()
+        if not isinstance(self.discovery_signals, list):
+            raise ValidationError(
+                {"discovery_signals": "Discovery signals must be stored as a list."}
+            )
         if (
             self.match_run_id
             and self.candidate_id

@@ -39,11 +39,12 @@ from audit.services import (
 )
 from candidates.models import Candidate, CandidateDocument, CandidateProfile
 from matching.models import CandidateSkill
+from matching.role_taxonomy import normalize_role_family, normalize_seniority
 from matching.services import get_or_create_skill
 from organizations.permissions import require_organization_object_access
 
-CANDIDATE_PROFILE_EXTRACTION_SCHEMA_VERSION = "candidate_profile_extraction.v1"
-CANDIDATE_PROFILE_SCHEMA_VERSION = "candidate_profile.v1"
+CANDIDATE_PROFILE_EXTRACTION_SCHEMA_VERSION = "candidate_profile_extraction.v2"
+CANDIDATE_PROFILE_SCHEMA_VERSION = "candidate_profile.v2"
 MAX_PROFILE_SOURCE_CHARACTERS = 60_000
 
 EMAIL_RE = re.compile(r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b")
@@ -124,6 +125,31 @@ class CandidateProfileExtraction(BaseModel):
 
     relevant_experience_summary: str = Field(default="", max_length=2_000)
     relevant_experience_summary_evidence: str = Field(default="", max_length=500)
+    role_family: Literal[
+        "unknown",
+        "backend",
+        "frontend",
+        "full_stack",
+        "mobile",
+        "devops",
+        "data",
+        "qa",
+        "security",
+        "product",
+        "design",
+        "other",
+    ] = "unknown"
+    role_family_evidence: str = Field(default="", max_length=500)
+    seniority: Literal[
+        "unknown",
+        "junior",
+        "mid",
+        "senior",
+        "lead",
+        "manager",
+        "executive",
+    ] = "unknown"
+    seniority_evidence: str = Field(default="", max_length=500)
     skills: list[SkillEvidence] = Field(default_factory=list, max_length=100)
     employment_history: list[EmploymentEvidence] = Field(
         default_factory=list,
@@ -181,6 +207,8 @@ class CandidateProfileExtraction(BaseModel):
     def require_facts_or_ambiguity(self) -> CandidateProfileExtraction:
         has_facts = bool(
             self.relevant_experience_summary
+            or self.role_family != "unknown"
+            or self.seniority != "unknown"
             or self.skills
             or self.employment_history
             or self.location
@@ -201,6 +229,16 @@ class CandidateProfileExtraction(BaseModel):
                 self.relevant_experience_summary,
                 self.relevant_experience_summary_evidence,
                 "relevant-experience summary",
+            ),
+            (
+                self.role_family != "unknown",
+                self.role_family_evidence,
+                "role family",
+            ),
+            (
+                self.seniority != "unknown",
+                self.seniority_evidence,
+                "seniority",
             ),
             (self.location, self.location_evidence, "location"),
             (
@@ -240,6 +278,8 @@ class CandidateProfileExtraction(BaseModel):
             ambiguities.append(sensitive_warning)
         return {
             "relevant_experience_summary": self.relevant_experience_summary,
+            "role_family": self.role_family,
+            "seniority": self.seniority,
             "skills": [item.model_dump(mode="json") for item in self.skills],
             "employment_history": [
                 item.model_dump(mode="json") for item in self.employment_history
@@ -257,6 +297,8 @@ class CandidateProfileExtraction(BaseModel):
                 "relevant_experience_summary": (
                     self.relevant_experience_summary_evidence
                 ),
+                "role_family": self.role_family_evidence,
+                "seniority": self.seniority_evidence,
                 "location": self.location_evidence,
                 "work_mode_preference": self.work_mode_preference_evidence,
                 "employment_type_preferences": (
@@ -377,6 +419,17 @@ from the supplied source.
 When location, work mode, employment-type preferences, or availability is
 recorded, its corresponding evidence field must contain a source excerpt too.
 
+Role discovery rules:
+- role_family must be one of unknown, backend, frontend, full_stack, mobile,
+  devops, data, qa, security, product, design, or other.
+- seniority must be one of unknown, junior, mid, senior, lead, manager, or
+  executive.
+- Classify only from an explicit current or recent job title or role statement.
+  Django Developer and Python Developer map to backend. Do not infer a role from
+  a skills list, and do not infer seniority from age, dates, or years alone.
+- A non-unknown value requires a short verbatim title/role excerpt in its
+  corresponding evidence field. Use unknown when the wording is unclear.
+
 Skill completeness rules:
 - Inspect the entire source, including profile summaries and experience text; do
   not limit skill extraction to a section labelled Skills or Technologies.
@@ -472,6 +525,8 @@ def _evidence_values(output: CandidateProfileExtraction):
             "relevant-experience summary",
             output.relevant_experience_summary_evidence,
         ),
+        ("role family", output.role_family_evidence),
+        ("seniority", output.seniority_evidence),
         ("location", output.location_evidence),
         ("work-mode preference", output.work_mode_preference_evidence),
         (
@@ -564,6 +619,24 @@ def _profile_evidence_issues(
         fact=output.location,
         evidence=output.location_evidence,
     )
+    if (
+        output.role_family not in {"unknown", "other"}
+        and normalize_role_family(output.role_family_evidence) != output.role_family
+    ):
+        issues.append(
+            CandidateProfileEvidenceIssue(
+                label="role family", reason="fact_not_in_evidence"
+            )
+        )
+    if (
+        output.seniority != "unknown"
+        and normalize_seniority(output.seniority_evidence) != output.seniority
+    ):
+        issues.append(
+            CandidateProfileEvidenceIssue(
+                label="seniority", reason="fact_not_in_evidence"
+            )
+        )
     if output.work_mode_preference != "unknown":
         check_fact(
             label="work-mode preference",

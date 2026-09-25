@@ -42,6 +42,21 @@
 
         <div class="requirements-field-grid">
             <div class="field">
+                {{ form.role_family.label_tag }}
+                {{ form.role_family }}
+                {% if requirements.role_family_evidence %}<small class="help-text">Source: {{ requirements.role_family_evidence }}</small>{% else %}<small class="help-text">Needs verification. Used only to order equal skill scores.</small>{% endif %}
+                {% if form.role_family.errors %}<div class="field-errors">{{ form.role_family.errors }}</div>{% endif %}
+            </div>
+            <div class="field">
+                {{ form.seniority.label_tag }}
+                {{ form.seniority }}
+                {% if requirements.seniority_evidence %}<small class="help-text">Source: {{ requirements.seniority_evidence }}</small>{% else %}<small class="help-text">Needs verification. Used only to order equal skill scores.</small>{% endif %}
+                {% if form.seniority.errors %}<div class="field-errors">{{ form.seniority.errors }}</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="requirements-field-grid">
+            <div class="field">
                 {{ form.must_have_skills.label_tag }}
                 {{ form.must_have_skills }}
                 <small class="help-text">One atomic skill per line, such as Python or Django.</small>

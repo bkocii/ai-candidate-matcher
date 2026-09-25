@@ -4,9 +4,10 @@ import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import OrganizationMembership, User
-from candidates.models import Candidate
+from candidates.models import Candidate, CandidateDocument, CandidateProfile
 from candidates.services import delete_candidate, request_candidate_deletion
 from matching.models import MatchRun, ShortlistEntry
 from matching.scoring import (
@@ -82,6 +83,48 @@ def generate_shortlist(*, requirements: VacancyRequirements, user: User) -> Matc
         user=user,
     )
     return generate_shortlist_service(requirements=requirements, user=user)
+
+
+def add_confirmed_profile(
+    *,
+    candidate: Candidate,
+    user: User,
+    role_family: str = "unknown",
+    seniority: str = "unknown",
+) -> CandidateProfile:
+    source_text = f"Synthetic CV: {seniority} {role_family} engineer."
+    document = CandidateDocument.objects.create(
+        candidate=candidate,
+        document_type=CandidateDocument.DocumentType.CV,
+        original_filename=f"candidate-{candidate.pk}.pdf",
+        file=f"candidate_documents/candidate-{candidate.pk}.pdf",
+        content_type="application/pdf",
+        size_bytes=len(source_text),
+        sha256="a" * 64,
+        extraction_status=CandidateDocument.ExtractionStatus.SUCCEEDED,
+        extracted_text=source_text,
+        extracted_at=timezone.now(),
+        uploaded_by=user,
+    )
+    evidence = {}
+    if role_family != "unknown":
+        evidence["role_family"] = source_text
+    if seniority != "unknown":
+        evidence["seniority"] = source_text
+    return CandidateProfile.objects.create(
+        candidate=candidate,
+        source_document=document,
+        version=1,
+        status=CandidateProfile.Status.CONFIRMED,
+        source_document_sha256=document.sha256,
+        source_text_sha256="b" * 64,
+        role_family=role_family,
+        seniority=seniority,
+        fact_evidence=evidence,
+        confirmed_by=user,
+        confirmed_at=timezone.now(),
+        created_by=user,
+    )
 
 
 def test_relevance_score_uses_visible_two_to_one_per_skill_weights() -> None:
@@ -289,6 +332,60 @@ def test_shortlist_is_bounded_and_uses_stable_non_name_tie_break() -> None:
     assert list(run.entries.values_list("rank", flat=True)) == list(
         range(1, SHORTLIST_LIMIT + 1)
     )
+
+
+def test_role_and_seniority_order_only_equal_skill_scores() -> None:
+    user, organization = make_workspace()
+    _, requirements = make_requirements(
+        organization=organization,
+        user=user,
+        must_have=["Python"],
+    )
+    requirements.role_family = "backend"
+    requirements.role_family_evidence = "Senior Django Developer"
+    requirements.seniority = "senior"
+    requirements.seniority_evidence = "Senior Django Developer"
+    requirements.save()
+    confirm(requirements, user)
+
+    different = Candidate.objects.create(
+        organization=organization, full_name="Different role"
+    )
+    unknown = Candidate.objects.create(
+        organization=organization, full_name="Unknown role"
+    )
+    matching = Candidate.objects.create(
+        organization=organization, full_name="Matching role"
+    )
+    add_confirmed_profile(
+        candidate=different,
+        user=user,
+        role_family="frontend",
+        seniority="senior",
+    )
+    add_confirmed_profile(
+        candidate=unknown,
+        user=user,
+    )
+    add_confirmed_profile(
+        candidate=matching,
+        user=user,
+        role_family="backend",
+        seniority="senior",
+    )
+    for candidate in (different, unknown, matching):
+        assign_candidate_skill(candidate=candidate, user=user, label="Python")
+
+    entries = list(
+        generate_shortlist(requirements=requirements, user=user).entries.all()
+    )
+
+    assert [entry.candidate for entry in entries] == [matching, unknown, different]
+    assert {entry.score for entry in entries} == {Decimal("100.00")}
+    assert entries[0].discovery_signals[0]["status"] == "matched"
+    assert entries[1].discovery_signals[0]["status"] == "unknown"
+    assert entries[2].discovery_signals[0]["status"] == "different"
+    assert entries[0].discovery_signals[0]["candidate_evidence"]
 
 
 def test_score_orders_candidates_before_filter_tie_break() -> None:

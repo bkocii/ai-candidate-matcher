@@ -44,6 +44,16 @@
         <p class="eyebrow">Profile summary</p>
         <h2>Core profile facts</h2>
         <div class="profile-fact-grid">
+            <section class="profile-fact-card">
+                <h3>Likely role</h3>
+                <p class="profile-fact-value">{{ profile.get_role_family_display }}</p>
+                {% if profile.fact_evidence.role_family %}<blockquote class="profile-fact-evidence"><strong>CV evidence</strong><p>{{ profile.fact_evidence.role_family }}</p></blockquote>{% endif %}
+            </section>
+            <section class="profile-fact-card">
+                <h3>Seniority</h3>
+                <p class="profile-fact-value">{{ profile.get_seniority_display }}</p>
+                {% if profile.fact_evidence.seniority %}<blockquote class="profile-fact-evidence"><strong>CV evidence</strong><p>{{ profile.fact_evidence.seniority }}</p></blockquote>{% endif %}
+            </section>
             {% if profile.relevant_experience_summary %}<section class="profile-fact-card profile-fact-wide">
                 <h3>Relevant experience</h3>
                 <p class="profile-fact-value">{{ profile.relevant_experience_summary }}</p>

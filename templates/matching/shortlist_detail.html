@@ -118,6 +118,19 @@
                     {% endif %}
                 </div>
 
+                {% if entry.discovery_signals %}
+                    <div class="shortlist-match-counts">
+                        {% for signal in entry.discovery_signals %}
+                            <span>{% if signal.signal == "role_family" %}Role{% else %}Seniority{% endif %}
+                                <strong>{% if signal.status == "matched" %}Match{% elif signal.status == "different" %}Different{% else %}Needs verification{% endif %}</strong>
+                                <small>{{ signal.candidate_label }} · vacancy {{ signal.requirement_label }}</small>
+                                {% if signal.candidate_evidence or signal.requirement_evidence %}<small>Candidate evidence: {{ signal.candidate_evidence|default:"Not recorded" }} · Vacancy evidence: {{ signal.requirement_evidence|default:"Not recorded" }}</small>{% endif %}
+                            </span>
+                        {% endfor %}
+                    </div>
+                    <p class="section-note">Role and seniority order candidates only when skill scores are equal. They never change eligibility or the skill score.</p>
+                {% endif %}
+
                 <div class="shortlist-primary-action">
                     {% if entry.latest_assessment %}
                         <a class="primary-button" href="{% url 'matching:assessment-review-detail' organization.slug entry.latest_assessment.pk %}">Review assessment</a>

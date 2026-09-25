@@ -13,9 +13,9 @@ python-ai-toolkit[django]==1.0.0
 ## Current status
 
 Sprint 0 through Sprint 6, `EVAL-001` through `EVAL-003`, and `DEMO-001` are
-complete. The manual-review correction pass is closed. `FLOW-001`, the first
-vacancy-centric workflow task, is complete. The approved next activity is
-`VAC-001`, the simplified AI-first vacancy creation path. `DEMO-002` is deferred until the revised workflow reaches an
+complete. The manual-review correction pass is closed. `FLOW-001` through
+`FLOW-003`, `VAC-001`, and `MATCH-005` are complete. The approved next activity
+is `MATCH-006`, the shortlist-centered vacancy experience. `DEMO-002` is deferred until the revised workflow reaches an
 approved positioning checkpoint; see `docs/product_direction_plan.md`.
 
 The approved experience principle is AI-first and low-interaction: recruiters

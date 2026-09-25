@@ -104,6 +104,10 @@ def _profile_output(
 ) -> CandidateProfileExtraction:
     retained_indices = {int(value) for value in values["retained_skills"]}
     payload = {
+        "role_family": values["role_family"],
+        "role_family_evidence": values["role_family_evidence"],
+        "seniority": values["seniority"],
+        "seniority_evidence": values["seniority_evidence"],
         "relevant_experience_summary": values["relevant_experience_summary"],
         "relevant_experience_summary_evidence": values[
             "relevant_experience_summary_evidence"

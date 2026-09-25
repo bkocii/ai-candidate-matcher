@@ -182,7 +182,8 @@ and acceptance-criteria approval before code changes begin.
 The canonical plan is `docs/product_direction_plan.md`. `FLOW-001` behavior,
 acceptance criteria, and implementation were completed on 2026-09-22. `VAC-001`
 was completed on 2026-09-23. `FLOW-002` was completed on 2026-09-24, and
-`FLOW-003` was completed on 2026-09-25. `MATCH-005` is next for scope review.
+`FLOW-003` and `MATCH-005` were completed on 2026-09-25. `MATCH-006` is next for
+scope review.
 
 ### Vacancy-centric candidate workflow
 
@@ -204,7 +205,9 @@ was completed on 2026-09-23. `FLOW-002` was completed on 2026-09-24, and
 ### Shortlist and recruiter experience
 
 - `MATCH-005` Add supported role/seniority discovery and measured semantic-
-  matching improvements.
+  matching improvements. **Complete — 2026-09-25.** The first measured stage
+  uses evidence-grounded controlled values only as equal-score tie-breakers;
+  numeric skill scoring and hard eligibility are unchanged.
 - `MATCH-006` Make the ranked evidence-backed shortlist the central vacancy
   result.
 - `REV-003` Extend exception-focused review across the core workflow.

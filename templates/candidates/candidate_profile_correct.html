@@ -16,6 +16,8 @@
     <section class="form-panel profile-correction-section" aria-labelledby="profile-facts-title">
         <header><p class="eyebrow">Profile facts</p><h2 id="profile-facts-title">Correct structured facts</h2><p>Leave a fact blank when the CV does not support it.</p></header>
         <div class="profile-correction-grid">
+            <div class="field">{{ form.role_family.label_tag }}{{ form.role_family }}{% if form.role_family.errors %}<div class="field-errors">{{ form.role_family.errors }}</div>{% endif %}</div>
+            <div class="field">{{ form.seniority.label_tag }}{{ form.seniority }}{% if form.seniority.errors %}<div class="field-errors">{{ form.seniority.errors }}</div>{% endif %}</div>
             <div class="field profile-correction-wide">{{ form.relevant_experience_summary.label_tag }}{{ form.relevant_experience_summary }}{% if form.relevant_experience_summary.errors %}<div class="field-errors">{{ form.relevant_experience_summary.errors }}</div>{% endif %}</div>
             <div class="field">{{ form.location.label_tag }}{{ form.location }}{% if form.location.errors %}<div class="field-errors">{{ form.location.errors }}</div>{% endif %}</div>
             <div class="field">{{ form.work_mode_preference.label_tag }}{{ form.work_mode_preference }}{% if form.work_mode_preference.errors %}<div class="field-errors">{{ form.work_mode_preference.errors }}</div>{% endif %}</div>
@@ -26,6 +28,8 @@
     <section class="form-panel profile-correction-section" aria-labelledby="profile-evidence-title">
         <header><p class="eyebrow">CV evidence</p><h2 id="profile-evidence-title">Keep facts traceable</h2><p>Evidence must remain a short verbatim excerpt from the same CV.</p></header>
         <div class="profile-correction-grid">
+            <div class="field">{{ form.role_family_evidence.label_tag }}{{ form.role_family_evidence }}{% if form.role_family_evidence.errors %}<div class="field-errors">{{ form.role_family_evidence.errors }}</div>{% endif %}</div>
+            <div class="field">{{ form.seniority_evidence.label_tag }}{{ form.seniority_evidence }}{% if form.seniority_evidence.errors %}<div class="field-errors">{{ form.seniority_evidence.errors }}</div>{% endif %}</div>
             <div class="field">{{ form.relevant_experience_summary_evidence.label_tag }}{{ form.relevant_experience_summary_evidence }}{% if form.relevant_experience_summary_evidence.help_text %}<small class="help-text">{{ form.relevant_experience_summary_evidence.help_text }}</small>{% endif %}{% if form.relevant_experience_summary_evidence.errors %}<div class="field-errors">{{ form.relevant_experience_summary_evidence.errors }}</div>{% endif %}</div>
             <div class="field">{{ form.location_evidence.label_tag }}{{ form.location_evidence }}{% if form.location_evidence.help_text %}<small class="help-text">{{ form.location_evidence.help_text }}</small>{% endif %}{% if form.location_evidence.errors %}<div class="field-errors">{{ form.location_evidence.errors }}</div>{% endif %}</div>
         </div>

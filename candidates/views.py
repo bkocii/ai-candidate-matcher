@@ -383,6 +383,10 @@ def candidate_profile_detail(
         candidate=candidate,
     )
     missing_facts = []
+    if profile.role_family == "unknown":
+        missing_facts.append("Likely role")
+    if profile.seniority == "unknown":
+        missing_facts.append("Seniority")
     if not profile.relevant_experience_summary:
         missing_facts.append("Relevant experience summary")
     if not profile.location:

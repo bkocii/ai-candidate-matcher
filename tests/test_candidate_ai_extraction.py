@@ -273,6 +273,29 @@ def test_profile_schema_requires_supported_fact_or_ambiguity() -> None:
         CandidateProfileExtraction()
 
 
+def test_role_and_seniority_require_matching_cv_title_evidence() -> None:
+    output = extracted_output(
+        role_family="backend",
+        role_family_evidence="Senior Python Engineer at Northstar, 2020-2025.",
+        seniority="senior",
+        seniority_evidence="Senior Python Engineer at Northstar, 2020-2025.",
+    )
+
+    validate_profile_evidence(output=output, sanitized_source=CV_TEXT)
+    values = output.as_profile_values()
+
+    assert values["role_family"] == "backend"
+    assert values["seniority"] == "senior"
+    assert values["fact_evidence"]["role_family"].startswith("Senior Python")
+
+    unsupported = extracted_output(
+        role_family="frontend",
+        role_family_evidence="Senior Python Engineer at Northstar, 2020-2025.",
+    )
+    with pytest.raises(ValidationError):
+        validate_profile_evidence(output=unsupported, sanitized_source=CV_TEXT)
+
+
 def test_contact_redaction_removes_known_and_generic_contact_data() -> None:
     _, _, candidate, _ = make_workspace()
 

@@ -11,7 +11,7 @@ from matching.scoring_policy import ALGORITHM_VERSION
 from organizations.permissions import require_organization_object_access
 from vacancies.models import VacancyRequirements
 
-INPUT_SNAPSHOT_VERSION = "deterministic_match_inputs.v2"
+INPUT_SNAPSHOT_VERSION = "deterministic_match_inputs.v3"
 
 
 def _decimal_value(value: Decimal | None) -> str | None:
@@ -60,6 +60,10 @@ def requirements_input_signature(requirements: VacancyRequirements) -> str:
             "requirements_id": requirements.pk,
             "version": requirements.version,
             "schema_version": requirements.schema_version,
+            "role_family": requirements.role_family,
+            "role_family_evidence": requirements.role_family_evidence,
+            "seniority": requirements.seniority,
+            "seniority_evidence": requirements.seniority_evidence,
             "skills": skills,
             "rules": rules,
         }
@@ -104,6 +108,8 @@ def candidate_input_signature(candidates: Iterable[Candidate]) -> str:
                         "version": profile.version,
                         "source_document_id": profile.source_document_id,
                         "source_document_sha256": profile.source_document_sha256,
+                        "role_family": profile.role_family,
+                        "seniority": profile.seniority,
                         "location": profile.location,
                         "work_mode_preference": profile.work_mode_preference,
                         "languages": profile.languages,
