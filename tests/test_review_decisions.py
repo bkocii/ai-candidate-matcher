@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.test import override_settings
@@ -152,49 +154,108 @@ def test_recruiter_records_individual_decision_and_queue_updates(client):
         },
         follow=True,
     )
-    attention_queue = client.get(queue_url(organization))
+    exception_queue = client.get(queue_url(organization))
     pending_queue = client.get(queue_url(organization, scope="pending"))
-    all_queue = client.get(queue_url(organization, scope="all"))
+    completed_queue = client.get(queue_url(organization, scope="completed"))
     content = post_response.content.decode()
     before_content = detail_before.content.decode()
-    expected_detail_url = detail_url(organization, assessment)
+    expected_vacancy_url = reverse(
+        "vacancies:vacancy-detail",
+        args=[organization.slug, assessment.requirements.vacancy_id],
+    )
 
     assert get_response.status_code == 405
     assert detail_before.status_code == 200
     assert "Your decision" in before_content
-    assert before_content.count('class="decision-option-card"') == 3
-    assert before_content.index('class="decision-options"') < before_content.index(
-        'class="field decision-notes-field"'
+    assert before_content.count('name="decision"') == 3
+    assert before_content.index('class="field decision-notes-field"') < (
+        before_content.index('class="decision-action-buttons"')
     )
     assert post_response.status_code == 200
-    assert post_response.redirect_chain == [
-        (f"{expected_detail_url}?decision=1#decision-saved", 302)
-    ]
+    assert post_response.redirect_chain == [(expected_vacancy_url, 302)]
     assert "Decision version 1 was recorded as approve" in content
-    assert "Decision saved" in content
-    assert 'id="decision-saved" data-page-focus' in content
-    assert "Current decision · v1" in content
-    assert "Change decision" in content
-    assert "This creates decision v2" in content
-    assert "Email was not prepared" in content
-    assert "Review source and contact" in content
-    assert 'class="review-secondary-detail"' in content
-    assert "The recruiter inspected the supplied evidence" in content
-    assert user.username in content
-    assert "Needs attention" in attention_queue.content.decode()
-    assert detail_url(organization, assessment) in attention_queue.content.decode()
-    assert "No assessments in this view" in pending_queue.content.decode()
-    assert "Decision: Approved" in all_queue.content.decode()
+    assert "Review complete for the current candidate list" in content
+    assert detail_url(organization, assessment) not in exception_queue.content.decode()
+    assert "No candidates in this view" in pending_queue.content.decode()
+    assert "Decision: Approved" in completed_queue.content.decode()
     decision = ReviewDecision.objects.get()
     assert decision.created_by == user
     assert decision.assessment == assessment
     assert not OutreachDraft.objects.exists()
 
 
+def test_approval_uses_visible_standard_note_when_notes_are_blank(client):
+    user, organization, _, _, profile, _, _, entry = make_workspace()
+    assessment = create_assessment(user, profile, entry)
+    client.force_login(user)
+
+    response = client.post(
+        decision_url(organization, assessment),
+        {"decision": ReviewDecision.Decision.APPROVED, "notes": ""},
+    )
+
+    decision = ReviewDecision.objects.get()
+    assert response.status_code == 302
+    assert decision.notes == "Reviewed the current assessment and supporting evidence."
+
+
+def test_saved_decision_opens_next_eligible_candidate(client, monkeypatch):
+    user, organization, _, _, profile, _, _, entry = make_workspace()
+    assessment = create_assessment(user, profile, entry)
+    next_item = SimpleNamespace(
+        assessment=SimpleNamespace(pk=999),
+        decision_pending=True,
+        inputs_changed=False,
+    )
+    monkeypatch.setattr(
+        "matching.views.build_assessment_review_queue",
+        lambda **_kwargs: SimpleNamespace(items=(next_item,)),
+    )
+    client.force_login(user)
+
+    response = client.post(
+        decision_url(organization, assessment),
+        {
+            "decision": ReviewDecision.Decision.REVISIT,
+            "notes": "Verify availability next week.",
+        },
+    )
+
+    assert response.status_code == 302
+    assert response.url == (
+        reverse(
+            "matching:assessment-review-detail",
+            args=[organization.slug, 999],
+        )
+        + "?previous=1#assessment-review-summary"
+    )
+
+
+@pytest.mark.parametrize(
+    "decision_value",
+    [ReviewDecision.Decision.REJECTED, ReviewDecision.Decision.REVISIT],
+)
+def test_reject_and_revisit_require_a_reason(client, decision_value):
+    user, organization, _, _, profile, _, _, entry = make_workspace()
+    assessment = create_assessment(user, profile, entry)
+    client.force_login(user)
+
+    response = client.post(
+        decision_url(organization, assessment),
+        {"decision": decision_value, "notes": ""},
+        follow=True,
+    )
+
+    assert "Choose a decision and add a reason when rejecting or revisiting" in (
+        response.content.decode()
+    )
+    assert not ReviewDecision.objects.exists()
+
+
 @override_settings(
     AI_GATEWAY_FACTORY="tests.test_outreach_drafts.ConfiguredOutreachGateway"
 )
-def test_approval_prepares_email_and_opens_focused_composer(client):
+def test_approval_keeps_email_preparation_optional(client):
     user, organization, candidate, _, profile, _, _, entry = make_workspace()
     assessment = create_assessment(user, profile, entry)
     CandidateSource.objects.create(
@@ -208,12 +269,34 @@ def test_approval_prepares_email_and_opens_focused_composer(client):
     )
     client.force_login(user)
 
-    response = client.post(
+    decision_response = client.post(
         decision_url(organization, assessment),
         {
             "decision": ReviewDecision.Decision.APPROVED,
-            "notes": "The recruiter approved this candidate and prepared an email.",
+            "notes": "The recruiter approved this candidate.",
         },
+        follow=True,
+    )
+    decision = ReviewDecision.objects.get()
+    review_response = client.get(detail_url(organization, assessment))
+
+    assert not OutreachDraft.objects.exists()
+    assert "Prepare email" in review_response.content.decode()
+    assert decision_response.redirect_chain == [
+        (
+            reverse(
+                "vacancies:vacancy-detail",
+                args=[organization.slug, assessment.requirements.vacancy_id],
+            ),
+            302,
+        )
+    ]
+
+    response = client.post(
+        reverse(
+            "outreach:outreach-draft-generate",
+            args=[organization.slug, decision.pk],
+        ),
         follow=True,
     )
     draft = OutreachDraft.objects.get()
@@ -223,15 +306,12 @@ def test_approval_prepares_email_and_opens_focused_composer(client):
     )
     content = response.content.decode()
 
-    assert response.redirect_chain == [(f"{draft_url}?prepared=1#email-composer", 302)]
-    assert "Candidate approved and email draft version 1 prepared" in content
-    assert "Email ready for review" in content
-    assert 'id="email-ready" data-page-focus' in content
+    assert response.redirect_chain == [(draft_url, 302)]
     assert "Email composer" in content
     assert candidate.email in content
     assert "Contact allowed" in content
     assert "Open in email app" in content
-    assert draft.review_decision == ReviewDecision.objects.get()
+    assert draft.review_decision == decision
 
 
 @pytest.mark.parametrize(
@@ -256,15 +336,13 @@ def test_non_approval_save_focuses_current_state_and_returns_to_queue(
     )
     content = response.content.decode()
 
-    assert response.redirect_chain == [
-        (f"{detail_url(organization, assessment)}?decision=1#decision-saved", 302)
-    ]
-    assert "Decision saved" in content
-    assert "Back to review queue" in content
-    saved_summary = content.split('id="decision-saved"', 1)[1].split("</section>", 1)[0]
-    assert "Generate outreach draft" not in saved_summary
-    assert "Current decision · v1" in content
-    assert "Change decision" in content
+    expected_vacancy_url = reverse(
+        "vacancies:vacancy-detail",
+        args=[organization.slug, assessment.requirements.vacancy_id],
+    )
+    assert response.redirect_chain == [(expected_vacancy_url, 302)]
+    assert "Review complete for the current candidate list" in content
+    assert ReviewDecision.objects.get().decision == decision_value
 
 
 def test_decision_on_older_assessment_is_not_carried_to_new_version(client):

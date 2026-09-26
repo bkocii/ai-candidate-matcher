@@ -11,6 +11,7 @@ from django.views.decorators.http import require_POST
 
 from ai_gateway import AIGatewayError
 from candidates.models import Candidate
+from matching.evaluation import FilterOutcome, filter_candidates
 from matching.forms import HardConstraintRuleForm, hard_constraint_values_from_form
 from matching.models import MatchRun
 from matching.services import (
@@ -261,6 +262,39 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
         if latest_match_run is not None
         else None
     )
+    latest_match_entries = []
+    if latest_match_run is not None:
+        latest_match_entries = list(
+            latest_match_run.entries.select_related("candidate")
+            .prefetch_related("candidate__profile_versions", "assessments")
+            .order_by("rank", "id")
+        )
+        for entry in latest_match_entries:
+            entry.confirmed_profile = next(
+                (
+                    profile
+                    for profile in entry.candidate.profile_versions.all()
+                    if profile.status == "confirmed"
+                ),
+                None,
+            )
+            entry.latest_assessment = next(iter(entry.assessments.all()), None)
+    excluded_candidates = []
+    if current_requirements is not None:
+        excluded_candidates = [
+            result
+            for result in filter_candidates(
+                requirements=current_requirements,
+                user=request.user,
+            ).results
+            if result.outcome == FilterOutcome.FAILED
+        ]
+    historical_runs_query = MatchRun.objects.for_organization(organization).filter(
+        requirements__vacancy=vacancy
+    )
+    if latest_match_run is not None:
+        historical_runs_query = historical_runs_query.exclude(pk=latest_match_run.pk)
+    historical_match_runs = list(historical_runs_query[:10])
     confirmed_hard_constraint_rules = (
         current_requirements.hard_constraint_rules.select_related("skill")
         if current_requirements is not None
@@ -289,6 +323,9 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
             "confirmed_hard_constraint_rules": confirmed_hard_constraint_rules,
             "latest_match_run": latest_match_run,
             "latest_match_run_staleness": latest_match_run_staleness,
+            "latest_match_entries": latest_match_entries,
+            "excluded_candidates": excluded_candidates,
+            "historical_match_runs": historical_match_runs,
             "draft": draft,
             "versions": versions,
             "status_transitions": available_vacancy_status_transitions(vacancy),

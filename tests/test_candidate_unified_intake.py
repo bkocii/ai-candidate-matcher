@@ -23,10 +23,12 @@ from candidates.models import (
     CandidateSource,
 )
 from candidates.profile_batch import IntakeProfileReviewRow, review_intake_profiles
-from matching.models import ReviewDecision
+from matching.models import MatchRun, ReviewDecision
 from operations.services import queue_candidate_profile_documents
 from organizations.models import Organization
 from outreach.models import OutreachDraft
+from vacancies.models import Vacancy, VacancyRequirements
+from vacancies.services import confirm_requirements_and_open_vacancy
 
 pytestmark = pytest.mark.django_db
 
@@ -120,6 +122,67 @@ def create_profile(*, item, document, text, user, ambiguities=()):
         ambiguities=list(ambiguities),
         created_by=user,
     )
+
+
+def test_vacancy_batch_confirmation_builds_shortlist_and_returns_to_vacancy(
+    client, settings, tmp_path
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    user = User.objects.create_user(username="vacancy-recruiter")
+    organization = Organization.objects.create(name="Northstar", slug="northstar")
+    add_member(user, organization)
+    vacancy = Vacancy.objects.create(
+        organization=organization,
+        title="Backend Engineer",
+        description="Python services",
+        created_by=user,
+    )
+    requirements = VacancyRequirements.objects.create(
+        vacancy=vacancy,
+        source_description=vacancy.description,
+        summary="Backend role",
+        must_have_skills=["Python"],
+        created_by=user,
+    )
+    confirm_requirements_and_open_vacancy(requirements=requirements, user=user)
+    batch = create_candidate_intake_batch(
+        organization=organization,
+        user=user,
+        values={**batch_values(), "vacancy": vacancy},
+    )
+    text = "Automatic Candidate\nauto@example.test | Prishtina\nPython experience"
+    pending = upload_candidate_intake_cv(
+        batch=batch,
+        user=user,
+        uploaded_file=docx_upload("automatic.docx", text),
+    )
+    item, document, _ = accept_uploaded_item(
+        item=pending,
+        user=user,
+        name="Automatic Candidate",
+        email="auto@example.test",
+        text=text,
+    )
+    create_profile(item=item, document=document, text=text, user=user)
+    client.force_login(user)
+
+    response = client.post(
+        reverse(
+            "candidates:candidate-intake-confirm-profiles",
+            args=[organization.slug, batch.pk],
+        ),
+        follow=True,
+    )
+
+    run = MatchRun.objects.get()
+    assert response.redirect_chain[-1][0] == reverse(
+        "vacancies:vacancy-detail", args=[organization.slug, vacancy.pk]
+    )
+    assert list(run.entries.values_list("candidate_id", flat=True)) == [
+        item.candidate_id
+    ]
+    assert "Your shortlist is ready with 1 candidate." in response.content.decode()
+    assert "Best candidates for this vacancy" in response.content.decode()
 
 
 def test_exact_csv_mapping_updates_only_one_to_one_pending_filename(

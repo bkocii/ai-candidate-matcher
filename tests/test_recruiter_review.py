@@ -66,11 +66,29 @@ def test_review_queue_has_safe_empty_state_and_navigation(client):
     content = response.content.decode()
 
     assert response.status_code == 200
-    assert "Assessment review queue" in content
-    assert 'href="?scope=attention" aria-current="page"' in content
+    assert "Candidate reviews" in content
+    assert 'href="?scope=exceptions" aria-current="page"' in content
     assert "No assessments are ready for review" in content
     assert "Confirmed candidate profiles can be reused across vacancies" in content
     assert queue_url(organization) in content
+
+
+def test_review_queue_surfaces_latest_draft_profile_exception(client):
+    user, organization, candidate, _, profile, *_ = make_workspace()
+    CandidateProfile.objects.filter(pk=profile.pk).update(
+        status=CandidateProfile.Status.DRAFT,
+        confirmed_by=None,
+        confirmed_at=None,
+    )
+    client.force_login(user)
+
+    response = client.get(queue_url(organization))
+    content = response.content.decode()
+
+    assert "Profile exceptions" in content
+    assert candidate.full_name in content
+    assert "extracted detail" in content
+    assert "Review candidate" in content
 
 
 def test_queue_consolidates_versions_and_prioritizes_evidence_exceptions(client):
@@ -83,16 +101,16 @@ def test_queue_consolidates_versions_and_prioritizes_evidence_exceptions(client)
     content = response.content.decode()
 
     assert response.status_code == 200
-    assert "Needs attention</span><strong>1" in content
-    assert "Latest assessments</span><strong>1" in content
+    assert "Exceptions</span><strong>1" in content
+    assert "Decision pending</span><strong>1" in content
     assert "Assessment v2" in content
     assert "Assessment v1" not in content
     assert "1 gap" in content
     assert "uncertaint" in content
     assert "AI assessment" in content
     assert "Green · 82/100" in content
-    assert "Show review details" in content
-    assert "Preparing an email does not send it" in content
+    assert "Review candidate" in content
+    assert "Internal decision notes are never candidate-facing email content" in content
     assert detail_url(organization, latest) in content
     assert detail_url(organization, first) not in content
     assert candidate.email not in content
@@ -102,6 +120,11 @@ def test_queue_consolidates_versions_and_prioritizes_evidence_exceptions(client)
 def test_routine_assessment_is_compact_but_remains_inspectable(client):
     user, organization, _, _, profile, _, _, entry = make_workspace()
     CandidateProfile.objects.filter(pk=profile.pk).update(ambiguities=[])
+    entry.discovery_signals = [
+        {"signal": "role_family", "status": "matched"},
+        {"signal": "seniority", "status": "matched"},
+    ]
+    entry.save(update_fields=("discovery_signals",))
     profile.refresh_from_db()
     from matching.ai_assessment import build_assessment_context
 
@@ -116,14 +139,19 @@ def test_routine_assessment_is_compact_but_remains_inspectable(client):
     focused = client.get(queue_url(organization, scope="exceptions"))
     all_items = client.get(queue_url(organization, scope="all"))
 
-    assert "No assessments in this view" in focused.content.decode()
+    assert "No candidates in this view" in focused.content.decode()
     assert "No recorded exception" in all_items.content.decode()
     assert detail_url(organization, assessment) in all_items.content.decode()
 
 
-def test_default_attention_scope_includes_routine_pending_assessment(client):
+def test_default_exception_scope_hides_routine_pending_assessment(client):
     user, organization, _, _, profile, _, _, entry = make_workspace()
     CandidateProfile.objects.filter(pk=profile.pk).update(ambiguities=[])
+    entry.discovery_signals = [
+        {"signal": "role_family", "status": "matched"},
+        {"signal": "seniority", "status": "matched"},
+    ]
+    entry.save(update_fields=("discovery_signals",))
     profile.refresh_from_db()
     from matching.ai_assessment import build_assessment_context
 
@@ -136,12 +164,13 @@ def test_default_attention_scope_includes_routine_pending_assessment(client):
     client.force_login(user)
 
     response = client.get(queue_url(organization))
+    pending = client.get(queue_url(organization, scope="pending"))
     content = response.content.decode()
 
     assert response.status_code == 200
-    assert "Needs attention</span><strong>1" in content
-    assert "Decision pending" in content
-    assert detail_url(organization, assessment) in content
+    assert "Exceptions</span><strong>0" in content
+    assert detail_url(organization, assessment) not in content
+    assert detail_url(organization, assessment) in pending.content.decode()
 
 
 def test_changed_inputs_are_visible_and_assessment_detail_keeps_history(client):
@@ -168,16 +197,13 @@ def test_changed_inputs_are_visible_and_assessment_detail_keeps_history(client):
     assert "Gaps" in detail_content
     assert "Verify" in detail_content
     assert "Profile exceptions" in detail_content
-    assert '<details class="assessment-finding-group" open>' in detail_content
+    assert '<details class="assessment-finding-group" open>' not in detail_content
     assert "Decision history" in detail_content
     assert "Assessment history" in detail_content
     assert f"Version {latest.version}" in detail_content
     assert f"Version {first.version}" in detail_content
     assert (
-        reverse(
-            "matching:shortlist-detail",
-            args=[organization.slug, vacancy.pk, run.pk],
-        )
+        reverse("vacancies:vacancy-detail", args=[organization.slug, vacancy.pk])
         in detail_content
     )
     assert candidate.email not in detail_content

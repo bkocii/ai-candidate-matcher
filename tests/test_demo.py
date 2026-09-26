@@ -125,7 +125,7 @@ def test_demo_pages_are_real_tenant_scoped_workflow_views(client, tmp_path):
         (
             reverse("matching:assessment-review-queue", args=[organization.slug])
             + "?scope=all",
-            "Assessment review queue",
+            "Candidate reviews",
         ),
         (
             reverse(

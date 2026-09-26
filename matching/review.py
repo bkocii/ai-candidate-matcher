@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from django.db.models import OuterRef, Prefetch, Subquery
 
 from accounts.models import User
-from candidates.models import CandidateProfile
+from candidates.models import Candidate, CandidateProfile
+from candidates.profile_review import candidate_profile_conflicts
 from matching.models import MatchAssessment, ReviewDecision
 from matching.staleness import MatchRunStaleness, assess_match_run_staleness
 from organizations.models import Organization
@@ -21,6 +22,13 @@ class AssessmentReviewItem:
     uncertainty_count: int
     profile_ambiguity_count: int
     latest_decision: ReviewDecision | None
+
+    @property
+    def role_seniority_review_count(self) -> int:
+        return sum(
+            signal.get("status") == "unknown"
+            for signal in self.assessment.shortlist_entry.discovery_signals
+        )
 
     @property
     def profile_changed(self) -> bool:
@@ -56,8 +64,13 @@ class AssessmentReviewItem:
                 self.uncertainty_count,
                 self.profile_ambiguity_count,
                 self.deterministic_review_needed,
+                self.role_seniority_review_count,
             )
         )
+
+    @property
+    def actionable_exception(self) -> bool:
+        return self.inputs_changed or (self.decision_pending and self.needs_focus)
 
     @property
     def needs_attention(self) -> bool:
@@ -73,7 +86,11 @@ class AssessmentReviewItem:
             category = 2
         elif self.uncertainty_count:
             category = 3
-        elif self.profile_ambiguity_count or self.deterministic_review_needed:
+        elif (
+            self.profile_ambiguity_count
+            or self.deterministic_review_needed
+            or self.role_seniority_review_count
+        ):
             category = 4
         else:
             category = 5
@@ -84,6 +101,15 @@ class AssessmentReviewItem:
             -self.profile_ambiguity_count,
             -self.assessment.created_at.timestamp(),
         )
+
+
+@dataclass(frozen=True)
+class ProfileReviewException:
+    """One latest draft profile that needs individual recruiter correction."""
+
+    profile: CandidateProfile
+    ambiguity_count: int
+    conflict_count: int
 
 
 @dataclass(frozen=True)
@@ -98,6 +124,44 @@ class AssessmentReviewQueue:
     approved_count: int
     rejected_count: int
     revisit_count: int
+    profile_exceptions: tuple[ProfileReviewException, ...]
+    exception_count: int
+    completed_count: int
+
+
+def _profile_review_exceptions(
+    organization: Organization,
+) -> tuple[ProfileReviewException, ...]:
+    latest_profile_id = (
+        CandidateProfile.objects.filter(candidate_id=OuterRef("candidate_id"))
+        .order_by("-version", "-created_at", "-id")
+        .values("pk")[:1]
+    )
+    profiles = (
+        CandidateProfile.objects.for_organization(organization)
+        .filter(
+            pk=Subquery(latest_profile_id),
+            status=CandidateProfile.Status.DRAFT,
+            candidate__status=Candidate.Status.ACTIVE,
+        )
+        .select_related("candidate")
+        .order_by("candidate__full_name", "candidate_id")
+    )
+    exceptions = []
+    for profile in profiles:
+        conflict_count = len(
+            candidate_profile_conflicts(candidate=profile.candidate, profile=profile)
+        )
+        ambiguity_count = len(profile.ambiguities)
+        if ambiguity_count or conflict_count:
+            exceptions.append(
+                ProfileReviewException(
+                    profile=profile,
+                    ambiguity_count=ambiguity_count,
+                    conflict_count=conflict_count,
+                )
+            )
+    return tuple(exceptions)
 
 
 def _latest_assessments(organization: Organization):
@@ -202,6 +266,11 @@ def build_assessment_review_queue(
         and item.current_decision.decision == ReviewDecision.Decision.REVISIT
         for item in items
     )
+    profile_exceptions = _profile_review_exceptions(organization)
+    exception_count = len(profile_exceptions) + sum(
+        item.actionable_exception for item in items
+    )
+    completed_count = sum(item.current_decision is not None for item in items)
     return AssessmentReviewQueue(
         items=tuple(items),
         total_count=len(items),
@@ -213,6 +282,9 @@ def build_assessment_review_queue(
         approved_count=approved_count,
         rejected_count=rejected_count,
         revisit_count=revisit_count,
+        profile_exceptions=profile_exceptions,
+        exception_count=exception_count,
+        completed_count=completed_count,
     )
 
 

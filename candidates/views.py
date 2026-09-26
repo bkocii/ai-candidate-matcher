@@ -61,6 +61,7 @@ from candidates.services import (
     import_candidate_csv,
     request_candidate_deletion,
 )
+from matching.automation import refresh_vacancy_shortlist
 from organizations.models import Organization
 from organizations.permissions import (
     can_administer_organization,
@@ -516,10 +517,31 @@ def candidate_profile_confirm(
     except ValidationError as error:
         messages.error(request, "; ".join(error.messages))
     else:
+        refreshed_runs = [
+            run
+            for consideration in candidate.vacancy_considerations.select_related(
+                "vacancy"
+            ).filter(
+                vacancy__status=Vacancy.Status.OPEN,
+                vacancy__deleted_at__isnull=True,
+            )
+            if (
+                run := refresh_vacancy_shortlist(
+                    vacancy=consideration.vacancy,
+                    user=request.user,
+                )
+            )
+            is not None
+        ]
         messages.success(
             request,
             "Candidate profile confirmed. Its grounded facts and skill evidence "
-            "are now available to deterministic matching.",
+            + (
+                f"updated {len(refreshed_runs)} vacancy shortlist"
+                f"{'s' if len(refreshed_runs) != 1 else ''}."
+                if refreshed_runs
+                else "are now available to deterministic matching."
+            ),
         )
     return redirect(
         "candidates:candidate-profile-detail",

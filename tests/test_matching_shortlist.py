@@ -9,6 +9,7 @@ from django.utils import timezone
 from accounts.models import OrganizationMembership, User
 from candidates.models import Candidate, CandidateDocument, CandidateProfile
 from candidates.services import delete_candidate, request_candidate_deletion
+from matching.automation import refresh_vacancy_shortlist
 from matching.models import MatchRun, ShortlistEntry
 from matching.scoring import (
     ALGORITHM_VERSION,
@@ -83,6 +84,33 @@ def generate_shortlist(*, requirements: VacancyRequirements, user: User) -> Matc
         user=user,
     )
     return generate_shortlist_service(requirements=requirements, user=user)
+
+
+def test_automatic_refresh_builds_current_vacancy_shortlist() -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_requirements(
+        organization=organization,
+        user=user,
+        must_have=["Python"],
+    )
+    confirm(requirements, user)
+    vacancy.status = Vacancy.Status.OPEN
+    vacancy.save(update_fields=("status", "updated_at"))
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Automatic Candidate",
+    )
+    associate_candidate_with_vacancy(
+        candidate=candidate,
+        vacancy=vacancy,
+        user=user,
+    )
+
+    run = refresh_vacancy_shortlist(vacancy=vacancy, user=user)
+
+    assert run is not None
+    assert run.requirements == requirements
+    assert list(run.entries.values_list("candidate_id", flat=True)) == [candidate.pk]
 
 
 def add_confirmed_profile(
@@ -662,8 +690,9 @@ def test_generate_route_is_post_only_and_redirects_to_report(client) -> None:
     assert post_response.status_code == 200
     assert "Visible Candidate" in content
     assert "<strong>67%</strong>" in content
-    assert '<details class="score-audit-detail">' in content
-    assert "<summary>Exact calculation</summary>" in content
+    assert "Score details" in content
+    assert "Review candidate" in content
+    assert "points" in content
     assert "66.67 / 66.67 points" in content
     assert "Inspectable evidence only." in content
     assert "Requirements version 1" in content

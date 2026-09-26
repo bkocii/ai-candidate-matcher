@@ -1,29 +1,18 @@
 <form class="decision-form" method="post" action="{% url 'matching:assessment-review-decide' organization.slug assessment.pk %}">
     {% csrf_token %}
     {% if decision_form.non_field_errors %}<div class="form-error">{{ decision_form.non_field_errors }}</div>{% endif %}
-    <fieldset class="decision-options">
-        <legend>{{ decision_form.decision.label }}</legend>
-        {% for choice in decision_form.decision %}
-            <label class="decision-option-card" for="{{ choice.id_for_label }}">
-                {{ choice.tag }}
-                <span>
-                    <strong>{{ choice.choice_label }}</strong>
-                    <small>
-                        {% if forloop.counter == 1 %}Approve this candidate and prepare an email when contact is allowed.
-                        {% elif forloop.counter == 2 %}Close this review without generating outreach.
-                        {% else %}Keep this candidate pending for later review.
-                        {% endif %}
-                    </small>
-                </span>
-            </label>
-        {% endfor %}
-        {% if decision_form.decision.errors %}<div class="field-errors">{{ decision_form.decision.errors }}</div>{% endif %}
-    </fieldset>
     <div class="field decision-notes-field">
         {{ decision_form.notes.label_tag }}
         {{ decision_form.notes }}
         {% if decision_form.notes.help_text %}<small class="help-text">{{ decision_form.notes.help_text }}</small>{% endif %}
+        <small class="help-text">Blank approval note records: “Reviewed the current assessment and supporting evidence.”</small>
         {% if decision_form.notes.errors %}<div class="field-errors">{{ decision_form.notes.errors }}</div>{% endif %}
     </div>
-    <button class="primary-button" type="submit">Save decision</button>
+    {% if decision_form.decision.errors %}<div class="field-errors">{{ decision_form.decision.errors }}</div>{% endif %}
+    <div class="decision-action-buttons" aria-label="Recruiter decision">
+        <button class="primary-button" type="submit" name="decision" value="approved">Approve</button>
+        <button class="secondary-button" type="submit" name="decision" value="revisit">Revisit later</button>
+        <button class="secondary-button decision-reject-button" type="submit" name="decision" value="rejected">Reject</button>
+    </div>
+    <small class="help-text">Each click records an individual human decision and then opens the next candidate.</small>
 </form>

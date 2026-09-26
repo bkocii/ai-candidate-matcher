@@ -12,7 +12,7 @@
     </div>
     <div class="button-row">
         <a class="secondary-button" href="{% url 'matching:assessment-review-queue' organization.slug %}">Back to review queue</a>
-        <a class="secondary-button" href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk run.pk %}#assessment-entry-{{ entry.pk }}">Open source shortlist</a>
+        <a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Open vacancy shortlist</a>
     </div>
 </section>
 
@@ -24,6 +24,12 @@
             <p>The evidence-linked result is ready for recruiter review. No hiring decision was made automatically.</p>
         </div>
         <a class="primary-button" href="#assessment-review-summary">Review assessment</a>
+    </section>
+{% endif %}
+
+{% if previous_decision_saved %}
+    <section class="success-callout confirmation-success" role="status">
+        <div><strong>Decision saved.</strong><p>Continue with the next candidate.</p></div>
     </section>
 {% endif %}
 
@@ -111,7 +117,7 @@
                     {% empty %}<p class="assessment-empty-finding">No evidence-backed matches were recorded.</p>{% endfor %}
                 </div>
             </details>
-            <details class="assessment-finding-group" open>
+            <details class="assessment-finding-group">
                 <summary><span>Gaps</span><strong>{{ assessment.gaps|length }}</strong></summary>
                 <div>
                     {% for finding in assessment.gaps %}
@@ -127,7 +133,7 @@
                     {% empty %}<p class="assessment-empty-finding">No proven gaps were recorded.</p>{% endfor %}
                 </div>
             </details>
-            <details class="assessment-finding-group" open>
+            <details class="assessment-finding-group">
                 <summary><span>Verify</span><strong>{{ assessment.uncertainties|length }}</strong></summary>
                 <div>
                     {% for finding in assessment.uncertainties %}

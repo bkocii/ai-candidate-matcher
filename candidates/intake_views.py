@@ -37,6 +37,7 @@ from candidates.profile_batch import (
     review_intake_profiles,
 )
 from candidates.services import CandidateDuplicateFinder
+from matching.automation import refresh_vacancy_shortlist
 from operations.models import BackgroundJob
 from operations.services import queue_candidate_profile_documents
 from organizations.models import Organization
@@ -611,11 +612,27 @@ def candidate_intake_confirm_profiles(request, organization_slug: str, batch_id:
         except ValidationError as error:
             messages.error(request, "; ".join(error.messages))
         else:
+            run = (
+                refresh_vacancy_shortlist(vacancy=batch.vacancy, user=request.user)
+                if batch.vacancy_id
+                else None
+            )
             messages.success(
                 request,
                 f"Confirmed {len(confirmed)} profile{pluralize(len(confirmed))}. "
-                "Candidate decisions and outreach remain separate actions.",
+                + (
+                    f"Your shortlist is ready with {run.entries.count()} candidate"
+                    f"{pluralize(run.entries.count())}."
+                    if run is not None
+                    else "Candidate decisions and outreach remain separate actions."
+                ),
             )
+            if run is not None:
+                return redirect(
+                    "vacancies:vacancy-detail",
+                    organization_slug=organization.slug,
+                    vacancy_id=batch.vacancy_id,
+                )
         return redirect(
             "candidates:candidate-intake-confirm-profiles",
             organization.slug,

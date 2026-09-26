@@ -6,25 +6,43 @@
 <section class="page-heading action-heading" aria-labelledby="review-queue-title">
     <div>
         <p class="eyebrow">Recruiter review</p>
-        <h1 id="review-queue-title">Assessment review queue</h1>
-        <p class="lede">Start with every latest assessment that needs a decision, has changed inputs, or contains evidence to verify.</p>
+        <h1 id="review-queue-title">Candidate reviews</h1>
+        <p class="lede">Resolve exceptions first, then make the remaining individual decisions.</p>
     </div>
 </section>
 
 <section class="review-status-strip" aria-label="Review queue summary">
-    <article class="review-status-attention"><span>Needs attention</span><strong>{{ queue.attention_count }}</strong></article>
+    <article class="review-status-attention"><span>Exceptions</span><strong>{{ queue.exception_count }}</strong></article>
     <article><span>Decision pending</span><strong>{{ queue.pending_count }}</strong></article>
+    <article><span>Completed</span><strong>{{ queue.completed_count }}</strong></article>
     <article><span>Approved</span><strong>{{ queue.approved_count }}</strong></article>
-    <article><span>Latest assessments</span><strong>{{ queue.total_count }}</strong></article>
 </section>
 
 <nav class="review-scope-nav" aria-label="Review queue scope">
-    <a href="?scope=attention"{% if scope == "attention" %} aria-current="page"{% endif %}>Needs attention ({{ queue.attention_count }})</a>
+    <a href="?scope=exceptions"{% if scope == "exceptions" %} aria-current="page"{% endif %}>Exceptions ({{ queue.exception_count }})</a>
     <a href="?scope=pending"{% if scope == "pending" %} aria-current="page"{% endif %}>Decision pending ({{ queue.pending_count }})</a>
-    <a href="?scope=changed"{% if scope == "changed" %} aria-current="page"{% endif %}>Changed inputs ({{ queue.changed_count }})</a>
-    <a href="?scope=all"{% if scope == "all" %} aria-current="page"{% endif %}>All ({{ queue.total_count }})</a>
+    <a href="?scope=completed"{% if scope == "completed" %} aria-current="page"{% endif %}>Completed ({{ queue.completed_count }})</a>
 </nav>
 <p class="review-secondary-counts">Rejected: {{ queue.rejected_count }} · Revisit later: {{ queue.revisit_count }}</p>
+
+{% if profile_exceptions %}
+    <section class="review-queue" aria-labelledby="profile-exceptions-title">
+        <h2 id="profile-exceptions-title">Profile exceptions</h2>
+        {% for item in profile_exceptions %}
+            <article class="review-card review-card-changed">
+                <header>
+                    <div>
+                        <p class="eyebrow">CV profile · version {{ item.profile.version }}</p>
+                        <h2>{{ item.profile.candidate.full_name }}</h2>
+                    </div>
+                    <span class="review-badge review-badge-attention">Needs correction</span>
+                </header>
+                <p class="review-card-summary">{% if item.conflict_count %}{{ item.conflict_count }} candidate detail conflict{{ item.conflict_count|pluralize }} must be resolved.{% else %}{{ item.ambiguity_count }} extracted detail{{ item.ambiguity_count|pluralize }} need individual verification.{% endif %}</p>
+                <a class="primary-button" href="{% url 'candidates:candidate-profile-correct' organization.slug item.profile.candidate.pk item.profile.pk %}">Review candidate</a>
+            </article>
+        {% endfor %}
+    </section>
+{% endif %}
 
 {% if page.object_list %}
     <div class="review-queue">
@@ -50,6 +68,7 @@
                         {% if item.uncertainty_count %}<span class="review-badge">{{ item.uncertainty_count }} uncertaint{{ item.uncertainty_count|pluralize:"y,ies" }}</span>{% endif %}
                         {% if item.profile_ambiguity_count %}<span class="review-badge">{{ item.profile_ambiguity_count }} profile ambiguit{{ item.profile_ambiguity_count|pluralize:"y,ies" }}</span>{% endif %}
                         {% if item.deterministic_review_needed %}<span class="review-badge">Unknown hard-filter fact</span>{% endif %}
+                        {% if item.role_seniority_review_count %}<span class="review-badge">Role or seniority needs verification</span>{% endif %}
                         {% if not item.needs_focus %}<span class="review-badge review-badge-routine">No recorded exception</span>{% endif %}
                         {% if item.current_decision %}
                             <span class="review-badge decision-badge decision-badge-{{ item.current_decision.decision }}">Decision: {% if item.current_decision.decision == "approved" %}Approved{% elif item.current_decision.decision == "rejected" %}Rejected{% else %}Revisit later{% endif %}</span>
@@ -59,12 +78,17 @@
                         {% endif %}
                     </div>
 
-                    <p class="review-card-summary">{{ assessment.summary }}</p>
-                    <details class="review-focus-details">
-                        <summary>Show review details</summary>
-                        <p><strong>Review focus:</strong> {{ assessment.review_recommendation }}</p>
-                    </details>
-                    <a class="primary-button" href="{% url 'matching:assessment-review-detail' organization.slug assessment.pk %}">{% if item.decision_pending %}Inspect and decide{% else %}Inspect decision{% endif %}</a>
+                    <p class="review-card-summary">
+                        {% if item.inputs_changed %}Candidate or vacancy inputs changed; refresh matching before deciding.
+                        {% elif item.gap_count %}AI found {{ item.gap_count }} evidence-backed gap{{ item.gap_count|pluralize }} to inspect.
+                        {% elif item.uncertainty_count %}{{ item.uncertainty_count }} requirement{{ item.uncertainty_count|pluralize }} need verification.
+                        {% elif item.profile_ambiguity_count %}The confirmed profile contains {{ item.profile_ambiguity_count }} recorded exception{{ item.profile_ambiguity_count|pluralize }}.
+                        {% elif item.deterministic_review_needed %}At least one eligibility fact is unknown and needs human verification.
+                        {% elif item.role_seniority_review_count %}Role or seniority could not be confirmed from the supplied evidence.
+                        {% elif item.decision_pending %}No recorded exception; an individual decision is still required.
+                        {% else %}The individual decision and its audit history are complete.{% endif %}
+                    </p>
+                    <a class="primary-button" href="{% url 'matching:assessment-review-detail' organization.slug assessment.pk %}">Review candidate</a>
                 </article>
             {% endwith %}
         {% endfor %}
@@ -77,12 +101,12 @@
             {% if page.has_next %}<a href="?scope={{ scope }}&amp;page={{ page.next_page_number }}">Next</a>{% endif %}
         </nav>
     {% endif %}
-{% else %}
+{% elif not profile_exceptions %}
     <section class="empty-state">
         <span class="empty-icon" aria-hidden="true">0</span>
         {% if queue.total_count %}
-            <h2>No assessments in this view</h2>
-            <p>Choose another queue scope or All to inspect every latest assessment.</p>
+            <h2>No candidates in this view</h2>
+            <p>Choose another review tab to continue.</p>
         {% else %}
             <h2>No assessments are ready for review</h2>
             <p>Generate an evidence-based assessment from a current shortlist. Confirmed candidate profiles can be reused across vacancies.</p>
@@ -90,5 +114,5 @@
     </section>
 {% endif %}
 
-<p class="human-review-note">Every candidate decision remains an individual recruiter action tied to the exact assessment reviewed. Preparing an email does not send it; opening, copying, or exporting the reviewed email is the explicit external-use approval.</p>
+<p class="human-review-note">Every candidate decision remains an individual recruiter action tied to the exact assessment reviewed. Internal decision notes are never candidate-facing email content.</p>
 {% endblock %}

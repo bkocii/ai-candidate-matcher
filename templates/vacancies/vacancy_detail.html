@@ -16,17 +16,103 @@
     <div class="button-row">
         <a class="secondary-button" href="{% url 'vacancies:vacancy-list' organization.slug %}">All vacancies</a>
         <a class="secondary-button" href="{% url 'vacancies:vacancy-edit' organization.slug vacancy.pk %}">Edit vacancy</a>
-        {% if current_requirements %}
-            {% if latest_match_run %}
-                <a class="secondary-button button-link" href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_match_run.pk %}">Open latest shortlist{% if latest_match_run_staleness.is_stale %} (stale){% endif %}</a>
-            {% elif vacancy.status == "open" %}
-                <a class="secondary-button button-link" href="{% url 'matching:candidate-filter-report' organization.slug vacancy.pk %}">Evaluate candidates</a>
-            {% endif %}
-        {% elif draft %}
+        {% if not current_requirements and draft %}
             <a class="primary-button button-link" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk draft.pk %}">Edit draft v{{ draft.version }}</a>
         {% endif %}
     </div>
 </section>
+
+{% if current_requirements %}
+<section class="report-section" aria-labelledby="shortlist-title">
+    <div class="rule-editor-heading">
+        <div>
+            <p class="eyebrow">Current shortlist</p>
+            <h2 id="shortlist-title">Best candidates for this vacancy</h2>
+            {% if latest_match_run %}
+                <p class="section-note"><strong>Current result:</strong> {{ latest_match_run.shortlisted_count }} shortlisted from {{ latest_match_run.evaluated_count }} confirmed candidate{{ latest_match_run.evaluated_count|pluralize }} · updated {{ latest_match_run.created_at|date:"Y-m-d H:i" }}</p>
+                <p class="section-note">Requirements version {{ latest_match_run.requirements.version }} · ranking supports recruiter review and does not automatically reject candidates.</p>
+            {% else %}
+                <p class="section-note">Confirm candidate profiles and the ranked shortlist will appear here automatically.</p>
+            {% endif %}
+        </div>
+        {% if latest_match_run and latest_match_run_staleness.is_stale %}
+            <form method="post" action="{% url 'matching:shortlist-generate' organization.slug vacancy.pk %}">
+                {% csrf_token %}
+                <button class="primary-button" type="submit">Update shortlist</button>
+            </form>
+        {% elif vacancy.status == "open" and latest_match_run and latest_match_entries %}
+            <form method="post" action="{% url 'operations:shortlist-assessment-batch-queue' organization.slug vacancy.pk latest_match_run.pk %}">
+                {% csrf_token %}
+                <button class="primary-button" type="submit">Assess shortlist with AI</button>
+            </form>
+        {% elif vacancy.status == "open" and not latest_match_run and vacancy_candidate_count %}
+            <form method="post" action="{% url 'matching:shortlist-generate' organization.slug vacancy.pk %}">
+                {% csrf_token %}
+                <button class="primary-button" type="submit">Create shortlist</button>
+            </form>
+        {% endif %}
+    </div>
+
+    {% if latest_match_run_staleness.is_stale %}
+        <div class="stale-result-callout" role="alert">
+            <div>
+                <strong>Candidate or vacancy details changed.</strong>
+                <p>This saved result remains visible as history. Update it before requesting AI assessment or reviewing current candidates.</p>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if latest_match_entries %}
+        <div class="filter-results">
+            {% for entry in latest_match_entries %}
+                <article class="filter-candidate shortlist-candidate">
+                    <header>
+                        <div class="shortlist-rank">
+                            <span>#{{ entry.rank }}</span>
+                            <div><p class="eyebrow">Candidate</p><h3>{{ entry.candidate.full_name }}</h3></div>
+                        </div>
+                        <span class="filter-outcome filter-outcome-{{ entry.filter_outcome }}">{% if entry.filter_outcome == "review" %}Eligibility needs review{% else %}Eligible{% endif %}</span>
+                    </header>
+                    <div class="shortlist-signal-grid">
+                        <article><span>Skill match</span><strong>{{ entry.score|floatformat:0 }}%</strong><small>{{ entry.matched_must_have }}/{{ entry.total_must_have }} must-have · {{ entry.matched_nice_to_have }}/{{ entry.total_nice_to_have }} nice-to-have</small></article>
+                        <article><span>Role / seniority</span><strong>{% for signal in entry.discovery_signals %}{% if signal.signal == "role_family" %}Role{% else %}Seniority{% endif %}: {% if signal.status == "matched" %}Match{% elif signal.status == "different" %}Different{% else %}Verify{% endif %}{% if not forloop.last %} · {% endif %}{% empty %}Not recorded{% endfor %}</strong><small>Tie-break only; does not change skill score</small></article>
+                        <article><span>AI assessment</span>{% if entry.latest_assessment %}<strong>{{ entry.latest_assessment.score }}/100 · {{ entry.latest_assessment.get_traffic_light_display }}</strong><small>Evidence-linked assessment available</small>{% else %}<strong>Not assessed</strong><small>Run the single bulk action above when ready</small>{% endif %}</article>
+                    </div>
+                    {% if not latest_match_run_staleness.is_stale %}
+                        <div class="shortlist-primary-action">
+                            {% if entry.latest_assessment %}
+                                <a class="primary-button" href="{% url 'matching:assessment-review-detail' organization.slug entry.latest_assessment.pk %}">Review candidate</a>
+                            {% else %}
+                                <a class="primary-button" href="{% url 'candidates:candidate-detail' organization.slug entry.candidate.pk %}">Review candidate</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    <details class="shortlist-detail-disclosure">
+                        <summary>Score details</summary>
+                        {% for item in entry.score_breakdown %}<p><strong>{{ item.skill_label }}</strong> · {% if item.matched %}matched{% else %}not recorded{% endif %} · {{ item.awarded_points }} / {{ item.possible_points }} points<br><small>{{ item.evidence|default:"No source evidence recorded" }}</small></p>{% empty %}<p>No normalized skill requirements were recorded.</p>{% endfor %}
+                    </details>
+                </article>
+            {% endfor %}
+        </div>
+    {% elif latest_match_run %}
+        <div class="empty-state inline-empty"><h3>No eligible candidates yet</h3><p>Review excluded candidates below or add more CVs.</p></div>
+    {% else %}
+        <div class="empty-state inline-empty"><h3>No shortlist yet</h3><p>Add CVs and confirm their extracted profiles. Matching then runs automatically.</p></div>
+    {% endif %}
+
+    {% if excluded_candidates %}
+        <details class="shortlist-detail-disclosure">
+            <summary>Excluded candidates · {{ excluded_candidates|length }}</summary>
+            {% for result in excluded_candidates %}<p><a href="{% url 'candidates:candidate-detail' organization.slug result.candidate.pk %}">{{ result.candidate.full_name }}</a> · failed an explicit eligibility rule</p>{% endfor %}
+        </details>
+    {% endif %}
+    <details class="shortlist-detail-disclosure">
+        <summary>Shortlist history{% if historical_match_runs %} · {{ historical_match_runs|length }} earlier{% endif %}</summary>
+        {% if latest_match_run %}<p><a href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_match_run.pk %}">Open full current run and audit details</a></p>{% endif %}
+        {% for run in historical_match_runs %}<p><a href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk run.pk %}">{{ run.created_at|date:"Y-m-d H:i" }} · {{ run.shortlisted_count }} shortlisted</a></p>{% empty %}<p>No earlier shortlist runs.</p>{% endfor %}
+    </details>
+</section>
+{% endif %}
 
 <section class="report-section" aria-labelledby="vacancy-candidates-title">
     <div class="rule-editor-heading">

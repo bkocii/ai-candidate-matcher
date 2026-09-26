@@ -31,8 +31,8 @@ remaining user-run under the agreed low-output workflow. `DIR-001` now records
 the focused product direction in `docs/product_direction_plan.md`. `DEMO-002` is
 deferred until the revised core workflow reaches an approved positioning
 checkpoint. `FLOW-001`, `VAC-001`, `FLOW-002`, and `FLOW-003` behavior,
-acceptance criteria, and implementation are complete; `MATCH-005` is also
-complete and `MATCH-006` is next for scope review. Track each finding's separate
+acceptance criteria, and implementation are complete; `MATCH-005` and
+`MATCH-006` and `REV-003` are also complete and `OUT-003` is next. Track each finding's separate
 implementation/browser-test state in `docs/manual_testing_review.md`.
 
 `DIR-002` is also complete as a documentation decision. It records an AI-first,
@@ -101,6 +101,41 @@ eligibility unchanged, using role then seniority only to order equal skill
 scores. Input signatures v3 make older runs stale. The frozen synthetic ranking
 evaluation remains unchanged when the new signals are unknown; dedicated tests
 cover grounded extraction, equal-score ordering, and evidence snapshots.
+
+`MATCH-006` was completed on 2026-09-26. Confirming all ready profiles from a
+vacancy-scoped intake now generates one deterministic shortlist and returns to
+the vacancy. Individual profile confirmation also refreshes associated open
+vacancies. Vacancy detail is the routine ranked result and shows skill score,
+role/seniority signals, eligibility, AI-assessment status, and one **Review
+candidate** action. Stale results expose **Update shortlist**; excluded
+candidates, score evidence, and immutable history remain available under
+disclosures. Whole-shortlist AI assessment remains explicit, and the flow makes
+no automatic rejection, outreach, or hiring decision.
+
+Focused vacancy-intake, central-shortlist, filtering, staleness, and vacancy-flow
+verification passes with `130 passed`; Django system checks, migration-drift,
+focused Ruff linting, and focused formatting checks also pass.
+
+`REV-003` was completed on 2026-09-26 without a migration. The review queue now
+defaults to actionable exceptions derived from latest draft-profile ambiguity or
+conflict, changed inputs, unknown eligibility facts, role/seniority verification,
+and AI gaps or uncertainties. Routine pending decisions and completed reviews
+have separate tabs. Each row has one **Review candidate** action, evidence stays
+collapsed, blank approval notes use a visible standard audit statement, and
+reject/revisit require a reason. A saved decision opens the next eligible
+candidate or returns to the vacancy when review is complete. No bulk or AI-made
+decision was introduced.
+
+Focused review, decision, outreach, and demo regression coverage passes with
+`52 passed`; Django system checks, migration-drift, focused Ruff linting, and
+focused formatting checks also pass.
+
+The user approved `OUT-003` email purposes on 2026-09-26: optional approved
+outreach, revisit/status update, and respectful rejection. Internal decision
+notes must never be copied into prompts or candidate emails. Optional
+candidate-facing guidance must be separate. Permission/currentness checks,
+editing, exact-draft approval, explicit recruiter action, and no automatic send
+remain required.
 
 ## Decisions made
 
@@ -1466,8 +1501,8 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-Review and approve the detailed scope for `MATCH-006 — Make the ranked,
-evidence-backed shortlist the central vacancy result`.
+Implement `OUT-003 — Simplify outreach and add optional decision-specific
+candidate emails`.
 
 `docs/product_direction_plan.md` is the canonical record for the newly approved
 direction and phased task sequence. `DEMO-002` is deferred until the revised core

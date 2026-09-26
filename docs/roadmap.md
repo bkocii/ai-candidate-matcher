@@ -182,8 +182,8 @@ and acceptance-criteria approval before code changes begin.
 The canonical plan is `docs/product_direction_plan.md`. `FLOW-001` behavior,
 acceptance criteria, and implementation were completed on 2026-09-22. `VAC-001`
 was completed on 2026-09-23. `FLOW-002` was completed on 2026-09-24, and
-`FLOW-003` and `MATCH-005` were completed on 2026-09-25. `MATCH-006` is next for
-scope review.
+`FLOW-003` and `MATCH-005` were completed on 2026-09-25. `MATCH-006` was
+completed on 2026-09-26.
 
 ### Vacancy-centric candidate workflow
 
@@ -209,10 +209,16 @@ scope review.
   uses evidence-grounded controlled values only as equal-score tie-breakers;
   numeric skill scoring and hard eligibility are unchanged.
 - `MATCH-006` Make the ranked evidence-backed shortlist the central vacancy
-  result.
-- `REV-003` Extend exception-focused review across the core workflow.
+  result. **Complete — 2026-09-26.** Confirming vacancy-scoped candidate
+  profiles refreshes the deterministic shortlist once, and vacancy detail shows
+  the ranked result, one bulk AI-assessment action, exceptions, and history.
+- `REV-003` Extend exception-focused review across the core workflow. **Complete
+  — 2026-09-26.** Reviews default to actionable profile, matching, ranking, and
+  AI exceptions; individual decisions advance to the next candidate.
 - `OUT-003` Simplify outreach presentation while retaining currentness,
-  permission, exact-draft, and explicit human-action safeguards.
+  permission, exact-draft, and explicit human-action safeguards. Approved scope
+  includes optional approved, revisit/status-update, and rejection emails while
+  keeping internal decision notes out of candidate-facing content.
 
 ### Client readiness
 

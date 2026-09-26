@@ -932,7 +932,8 @@ def test_recruiter_confirms_and_opens_vacancy_with_focused_next_action(client) -
     assert "Version 1 is now the matching input" in content
     assert "The vacancy is open. Add the CVs received for this role" in content
     assert "Add candidate CVs" in content
-    assert "Evaluate candidates" in content
+    assert "Best candidates for this vacancy" in content
+    assert "Evaluate candidates" not in content
     assert "data-confirmation-focus" in content
     assert "confirmation-focus.js" in content
 

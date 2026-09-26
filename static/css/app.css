@@ -3396,6 +3396,16 @@ tbody tr:last-child td {
     resize: vertical;
 }
 
+.decision-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+}
+
+.decision-reject-button {
+    color: #8a2f2f;
+}
+
 .current-decision-card {
     margin-top: 16px;
     padding: 15px;

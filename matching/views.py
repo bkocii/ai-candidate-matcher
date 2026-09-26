@@ -40,13 +40,19 @@ from organizations.models import Organization
 from outreach.generation import (
     OutreachDraftEligibility,
     assess_outreach_draft_eligibility,
-    generate_outreach_draft,
 )
 from outreach.models import OutreachDraft
 from outreach.workflow import assess_contact_permission
 from vacancies.models import Vacancy, VacancyRequirements
 
-REVIEW_QUEUE_SCOPES = {"attention", "pending", "exceptions", "changed", "all"}
+REVIEW_QUEUE_SCOPES = {
+    "exceptions",
+    "pending",
+    "completed",
+    "attention",
+    "changed",
+    "all",
+}
 
 
 def _rule_editor_objects(
@@ -325,10 +331,9 @@ def shortlist_generate(request, organization_slug: str, vacancy_id: int):
         f"Generated a shortlist of {run.entries.count()} candidates.",
     )
     return redirect(
-        "matching:shortlist-detail",
+        "vacancies:vacancy-detail",
         organization_slug=organization.slug,
         vacancy_id=vacancy.pk,
-        match_run_id=run.pk,
     )
 
 
@@ -456,19 +461,26 @@ def assessment_review_queue(request, organization_slug: str):
         organization=organization,
         user=request.user,
     )
-    scope = request.GET.get("scope", "attention")
+    scope = request.GET.get("scope", "exceptions")
     if scope not in REVIEW_QUEUE_SCOPES:
-        scope = "attention"
-    if scope == "attention":
+        scope = "exceptions"
+    profile_exceptions = queue.profile_exceptions if scope == "exceptions" else ()
+    if scope == "exceptions":
+        selected_items = [item for item in queue.items if item.actionable_exception]
+    elif scope == "attention":
         selected_items = [item for item in queue.items if item.needs_attention]
     elif scope == "pending":
         selected_items = [item for item in queue.items if item.decision_pending]
+    elif scope == "completed":
+        selected_items = [
+            item for item in queue.items if item.current_decision is not None
+        ]
     elif scope == "changed":
         selected_items = [item for item in queue.items if item.inputs_changed]
     elif scope == "all":
         selected_items = list(queue.items)
     else:
-        selected_items = [item for item in queue.items if item.needs_focus]
+        selected_items = list(queue.items)
     page = Paginator(selected_items, 20).get_page(request.GET.get("page"))
     return render(
         request,
@@ -478,6 +490,7 @@ def assessment_review_queue(request, organization_slug: str):
             "queue": queue,
             "scope": scope,
             "page": page,
+            "profile_exceptions": profile_exceptions,
         },
     )
 
@@ -589,6 +602,7 @@ def assessment_review_detail(
             "entry": assessment.shortlist_entry,
             "run": assessment.shortlist_entry.match_run,
             "assessment_created": request.GET.get("created") == "1",
+            "previous_decision_saved": request.GET.get("previous") == "1",
         },
     )
 
@@ -615,11 +629,10 @@ def assessment_review_decide(
     )
     form = ReviewDecisionForm(request.POST)
     saved_decision = None
-    prepared_draft = None
     if not form.is_valid():
         messages.error(
             request,
-            "Select a decision and record recruiter notes before saving.",
+            "Choose a decision and add a reason when rejecting or revisiting.",
         )
     else:
         try:
@@ -633,75 +646,40 @@ def assessment_review_decide(
             messages.error(request, "; ".join(error.messages))
         else:
             saved_decision = decision
-            if decision.decision == ReviewDecision.Decision.APPROVED:
-                contact_eligibility = assess_contact_permission(
-                    candidate=assessment.shortlist_entry.candidate,
-                    vacancy=assessment.requirements.vacancy,
-                )
-                if not assessment.shortlist_entry.candidate.email.strip():
-                    messages.success(
-                        request,
-                        f"Decision version {decision.version} was recorded as approve.",
-                    )
-                    messages.warning(
-                        request,
-                        "Email was not prepared because the candidate has no email "
-                        "address. Add it, then prepare the email from this review.",
-                    )
-                elif not contact_eligibility.can_proceed:
-                    messages.success(
-                        request,
-                        f"Decision version {decision.version} was recorded as approve.",
-                    )
-                    messages.warning(
-                        request,
-                        f"Email was not prepared: {contact_eligibility.reason}",
-                    )
-                else:
-                    try:
-                        prepared_draft = generate_outreach_draft(
-                            decision=decision,
-                            user=request.user,
-                        ).draft
-                    except (AIGatewayError, ValidationError) as error:
-                        public_message = (
-                            "; ".join(error.messages)
-                            if isinstance(error, ValidationError)
-                            else str(error)
-                        )
-                        messages.success(
-                            request,
-                            f"Decision version {decision.version} was recorded as "
-                            "approve.",
-                        )
-                        messages.warning(
-                            request,
-                            f"The email draft could not be prepared: {public_message}",
-                        )
-                    else:
-                        messages.success(
-                            request,
-                            f"Candidate approved and email draft version "
-                            f"{prepared_draft.version} prepared for review.",
-                        )
-            else:
-                messages.success(
-                    request,
-                    f"Decision version {decision.version} was recorded as "
-                    f"{decision.get_decision_display().lower()}.",
-                )
+            messages.success(
+                request,
+                f"Decision version {decision.version} was recorded as "
+                f"{decision.get_decision_display().lower()}.",
+            )
     detail_url = reverse(
         "matching:assessment-review-detail",
         args=[organization.slug, assessment.pk],
     )
     if saved_decision is not None:
-        if prepared_draft is not None:
-            draft_url = reverse(
-                "outreach:outreach-draft-detail",
-                args=[organization.slug, prepared_draft.pk],
+        queue = build_assessment_review_queue(
+            organization=organization,
+            user=request.user,
+        )
+        next_item = next(
+            (
+                item
+                for item in queue.items
+                if item.assessment.pk != assessment.pk
+                and item.decision_pending
+                and not item.inputs_changed
+            ),
+            None,
+        )
+        if next_item is not None:
+            next_url = reverse(
+                "matching:assessment-review-detail",
+                args=[organization.slug, next_item.assessment.pk],
             )
-            return redirect(f"{draft_url}?prepared=1#email-composer")
+            return redirect(f"{next_url}?previous=1#assessment-review-summary")
+        messages.info(request, "Review complete for the current candidate list.")
         return redirect(
-            f"{detail_url}?decision={saved_decision.version}#decision-saved"
+            "vacancies:vacancy-detail",
+            organization_slug=organization.slug,
+            vacancy_id=assessment.requirements.vacancy_id,
         )
     return redirect(f"{detail_url}#decision-section")

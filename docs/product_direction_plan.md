@@ -287,11 +287,19 @@ changes begin.
   — 2026-09-25.** Controlled, evidence-backed role and seniority signals order
   equal skill scores only; missing values require verification and never fail.
 - `MATCH-006` Make a concise ranked, evidence-backed shortlist the vacancy's
-  central result.
+  central result. **Complete — 2026-09-26.** The vacancy page now owns the
+  routine ranked result; profile confirmation refreshes it automatically,
+  while AI assessment remains one explicit bulk action and recruiter decisions
+  remain separate.
 - `REV-003` Extend exception-focused review across intake, matching, and ranking
-  while retaining individual human decisions.
+  while retaining individual human decisions. **Complete — 2026-09-26.** The
+  default queue shows actionable exceptions, decisions use compact controls,
+  and successful review advances to the next candidate.
 - `OUT-003` Simplify the outreach interface without removing permission,
-  currentness, exact-draft, or human-action safeguards.
+  currentness, exact-draft, or human-action safeguards. Approved email purposes
+  are outreach for an approved candidate, a revisit/status update, and a
+  respectful rejection. Every draft is optional and recruiter-triggered;
+  internal decision notes are never copied into prompts or emails.
 
 ### Phase D — Client readiness
 
@@ -370,7 +378,33 @@ shortlist shows both sides' evidence and uses matched, unknown, then different
 as tie-breakers only after the unchanged numeric skill score. Unknown values are
 labelled **Needs verification**; role/seniority never change eligibility.
 
-Review and approve the detailed `MATCH-006` scope next.
+`MATCH-006` was implemented on 2026-09-26. Confirming the ready profiles from a
+vacancy intake generates one current deterministic shortlist and returns to the
+vacancy. The central result shows rank, skill score, role/seniority signals,
+eligibility, and AI-assessment status with one **Review candidate** action per
+current row. Stale results offer **Update shortlist**; excluded candidates,
+technical score evidence, and historical runs stay in disclosures. AI
+assessment remains a single explicit bulk action, and no rejection, outreach,
+or hiring decision is automated.
+
+`REV-003` was implemented on 2026-09-26. **Reviews** now defaults to actionable
+profile conflicts/ambiguities, changed inputs, unknown eligibility facts,
+role/seniority verification, and AI gaps or uncertainties. Routine pending and
+completed decisions stay on separate tabs. Each row has one **Review candidate**
+action; technical evidence and history remain collapsed. Approval can use a
+visible standard audit note, while rejection and revisit require a short reason.
+Saving advances to the next eligible candidate and returns to the vacancy when
+the list is complete. Decisions remain individual and human-controlled.
+
+The approved `OUT-003` scope adds optional candidate-facing emails for approved,
+revisit, and rejected decisions. Revisit uses a neutral status update and may
+include a follow-up date; rejection uses respectful neutral wording. Internal
+decision notes, AI scores, ranking, gaps, and sensitive reasoning are never
+copied automatically. Candidate-facing guidance, if added, is a separate field.
+All drafts remain editable, permission-checked, explicitly triggered, and never
+automatically sent.
+
+Implement `OUT-003` next.
 
 `VAC-001` followed `FLOW-001` because its final
 **Confirm and upload CVs** action requires the vacancy-scoped intake destination.

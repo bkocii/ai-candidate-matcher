@@ -166,23 +166,39 @@ def hard_constraint_values_from_form(form: HardConstraintRuleForm) -> dict:
 
 
 class ReviewDecisionForm(forms.Form):
+    DEFAULT_APPROVAL_NOTE = "Reviewed the current assessment and supporting evidence."
+
     decision = forms.ChoiceField(
         choices=ReviewDecision.Decision.choices,
         widget=forms.RadioSelect,
         label="Recruiter decision",
     )
     notes = forms.CharField(
+        required=False,
         max_length=2_000,
-        label="Recruiter notes",
-        widget=forms.Textarea(attrs={"rows": 5}),
+        label="Reason or follow-up note",
+        widget=forms.Textarea(attrs={"rows": 4}),
         help_text=(
-            "Record the evidence considered, follow-up needed, or reason for this "
-            "individual decision."
+            "Optional for approval. Required when rejecting or revisiting later. "
+            "These notes stay internal and are never copied into candidate emails."
         ),
     )
 
-    def clean_notes(self) -> str:
-        notes = self.cleaned_data["notes"].strip()
-        if not notes:
-            raise forms.ValidationError("Record recruiter notes for the decision.")
-        return notes
+    def clean(self):
+        cleaned_data = super().clean()
+        decision = cleaned_data.get("decision")
+        notes = cleaned_data.get("notes", "").strip()
+        if decision == ReviewDecision.Decision.APPROVED and not notes:
+            cleaned_data["notes"] = self.DEFAULT_APPROVAL_NOTE
+        elif (
+            decision
+            in {
+                ReviewDecision.Decision.REJECTED,
+                ReviewDecision.Decision.REVISIT,
+            }
+            and not notes
+        ):
+            self.add_error("notes", "Add a short reason for this decision.")
+        else:
+            cleaned_data["notes"] = notes
+        return cleaned_data

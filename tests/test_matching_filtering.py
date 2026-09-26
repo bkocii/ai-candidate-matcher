@@ -682,9 +682,10 @@ def test_vacancy_detail_links_to_filter_only_after_confirmation_and_opening(
     confirm_requirements_and_open_vacancy(requirements=requirements, user=user)
     confirmed_response = client.get(detail_url)
 
-    assert "Evaluate candidates" not in draft_response.content.decode()
+    assert "Best candidates for this vacancy" not in draft_response.content.decode()
     confirmed_content = confirmed_response.content.decode()
-    assert "Evaluate candidates" in confirmed_content
+    assert "Best candidates for this vacancy" in confirmed_content
+    assert "Evaluate candidates" not in confirmed_content
     assert "Hiring client:" in confirmed_content
     assert 'class="status-pill status-open"' in confirmed_content
     requirements_position = confirmed_content.index("Current confirmed requirements")

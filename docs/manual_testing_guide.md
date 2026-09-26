@@ -2,7 +2,8 @@
 
 This guide verifies the application from the Django foundation through
 `PROD-005`, `INTAKE-001`, `EVAL-001` through `EVAL-003`, `DEMO-001`,
-`DEF-001`, `FLOW-001`, `FLOW-002`, `VAC-001`, and `CR-001` through `CR-005`. Use only the
+`DEF-001`, `FLOW-001` through `FLOW-003`, `VAC-001`, `MATCH-005`, `MATCH-006`,
+and `CR-001` through `CR-005`. Use only the
 synthetic files in `manual_testing/fixtures` or other
 invented data. Do not upload real candidate records or CVs to a development
 machine merely for testing.
@@ -2333,7 +2334,47 @@ Focused check:
 uv run pytest -q tests/test_candidate_ai_extraction.py tests/test_vacancy_ai_extraction.py tests/test_matching_shortlist.py tests/test_matching_staleness.py
 ```
 
-## 35. Reset disposable local test data
+## 35. Test the central automatic shortlist (`MATCH-006`)
+
+1. Open an active vacancy, upload two synthetic CVs, run extraction, and confirm
+   all ready profiles.
+2. Confirm the app returns directly to the vacancy and shows **Current
+   shortlist** with both ranked candidates; do not click a separate evaluate or
+   generate action.
+3. Check each row shows skill score, role/seniority, eligibility, AI status, and
+   one **Review candidate** action. Open **Score details** and **Shortlist
+   history**.
+4. Use **Assess shortlist with AI** only when a configured test provider is
+   intended. Change one matching input and confirm the stale result offers one
+   **Update shortlist** action.
+
+Focused check:
+
+```powershell
+uv run pytest -q tests/test_matching_shortlist.py tests/test_matching_staleness.py tests/test_candidate_unified_intake.py tests/test_vacancy_candidate_intake.py
+```
+
+## 36. Test exception-first reviews (`REV-003`)
+
+1. Create assessments for candidates with an AI gap, an uncertainty, and one
+   clean assessment. Open **Reviews**.
+2. Confirm **Exceptions** is selected by default and shows only actionable
+   profile, eligibility, role/seniority, AI, or changed-input issues. Confirm the
+   clean candidate remains under **Decision pending**.
+3. Open one candidate. Confirm evidence/history is collapsed and the decision
+   controls are immediately visible.
+4. Approve without typing a note; confirm the visible standard audit note is
+   stored. Confirm reject and revisit are blocked without a short reason.
+5. Save a decision and confirm the next eligible candidate opens automatically;
+   after the final decision, confirm the vacancy shortlist opens.
+
+Focused check:
+
+```powershell
+uv run pytest -q tests/test_recruiter_review.py tests/test_review_decisions.py
+```
+
+## 37. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 
