@@ -5,44 +5,109 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('vacancies', '0003_vacancyrequirements_source_provenance'),
+        ("vacancies", "0003_vacancyrequirements_source_provenance"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='vacancyrequirements',
-            name='role_family',
-            field=models.CharField(choices=[('unknown', 'Not determined'), ('backend', 'Backend engineering'), ('frontend', 'Frontend engineering'), ('full_stack', 'Full-stack engineering'), ('mobile', 'Mobile engineering'), ('devops', 'DevOps / platform / SRE'), ('data', 'Data / machine learning'), ('qa', 'Quality assurance / testing'), ('security', 'Security engineering'), ('product', 'Product management'), ('design', 'Product / UX design'), ('other', 'Other supported role')], default='unknown', max_length=30),
+            model_name="vacancyrequirements",
+            name="role_family",
+            field=models.CharField(
+                choices=[
+                    ("unknown", "Not determined"),
+                    ("backend", "Backend engineering"),
+                    ("frontend", "Frontend engineering"),
+                    ("full_stack", "Full-stack engineering"),
+                    ("mobile", "Mobile engineering"),
+                    ("devops", "DevOps / platform / SRE"),
+                    ("data", "Data / machine learning"),
+                    ("qa", "Quality assurance / testing"),
+                    ("security", "Security engineering"),
+                    ("product", "Product management"),
+                    ("design", "Product / UX design"),
+                    ("other", "Other supported role"),
+                ],
+                default="unknown",
+                max_length=30,
+            ),
         ),
         migrations.AddField(
-            model_name='vacancyrequirements',
-            name='role_family_evidence',
+            model_name="vacancyrequirements",
+            name="role_family_evidence",
             field=models.CharField(blank=True, max_length=500),
         ),
         migrations.AddField(
-            model_name='vacancyrequirements',
-            name='seniority',
-            field=models.CharField(choices=[('unknown', 'Not determined'), ('junior', 'Junior'), ('mid', 'Mid-level'), ('senior', 'Senior'), ('lead', 'Lead / principal'), ('manager', 'Manager / head'), ('executive', 'Executive')], default='unknown', max_length=20),
+            model_name="vacancyrequirements",
+            name="seniority",
+            field=models.CharField(
+                choices=[
+                    ("unknown", "Not determined"),
+                    ("junior", "Junior"),
+                    ("mid", "Mid-level"),
+                    ("senior", "Senior"),
+                    ("lead", "Lead / principal"),
+                    ("manager", "Manager / head"),
+                    ("executive", "Executive"),
+                ],
+                default="unknown",
+                max_length=20,
+            ),
         ),
         migrations.AddField(
-            model_name='vacancyrequirements',
-            name='seniority_evidence',
+            model_name="vacancyrequirements",
+            name="seniority_evidence",
             field=models.CharField(blank=True, max_length=500),
         ),
         migrations.AlterField(
-            model_name='vacancyrequirements',
-            name='schema_version',
-            field=models.CharField(default='vacancy_requirements.v2', max_length=50),
+            model_name="vacancyrequirements",
+            name="schema_version",
+            field=models.CharField(default="vacancy_requirements.v2", max_length=50),
         ),
         migrations.AddConstraint(
-            model_name='vacancyrequirements',
-            constraint=models.CheckConstraint(condition=models.Q(('role_family__in', ['unknown', 'backend', 'frontend', 'full_stack', 'mobile', 'devops', 'data', 'qa', 'security', 'product', 'design', 'other'])), name='vacancy_requirement_valid_role_family'),
+            model_name="vacancyrequirements",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    (
+                        "role_family__in",
+                        [
+                            "unknown",
+                            "backend",
+                            "frontend",
+                            "full_stack",
+                            "mobile",
+                            "devops",
+                            "data",
+                            "qa",
+                            "security",
+                            "product",
+                            "design",
+                            "other",
+                        ],
+                    )
+                ),
+                name="vacancy_requirement_valid_role_family",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='vacancyrequirements',
-            constraint=models.CheckConstraint(condition=models.Q(('seniority__in', ['unknown', 'junior', 'mid', 'senior', 'lead', 'manager', 'executive'])), name='vacancy_requirement_valid_seniority'),
+            model_name="vacancyrequirements",
+            constraint=models.CheckConstraint(
+                condition=models.Q(
+                    (
+                        "seniority__in",
+                        [
+                            "unknown",
+                            "junior",
+                            "mid",
+                            "senior",
+                            "lead",
+                            "manager",
+                            "executive",
+                        ],
+                    )
+                ),
+                name="vacancy_requirement_valid_seniority",
+            ),
         ),
     ]

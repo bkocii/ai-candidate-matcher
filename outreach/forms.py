@@ -2,6 +2,8 @@ import re
 
 from django import forms
 
+from matching.models import ReviewDecision
+
 _UNSAFE_CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 
@@ -10,6 +12,34 @@ def _clean_plain_text(value: str) -> str:
     if _UNSAFE_CONTROL_RE.search(value):
         raise forms.ValidationError("Remove unsupported control characters.")
     return value
+
+
+class DecisionEmailGenerationForm(forms.Form):
+    candidate_facing_guidance = forms.CharField(
+        required=False,
+        max_length=1_000,
+        label="Anything the candidate should know?",
+        widget=forms.Textarea(attrs={"rows": 3}),
+        help_text=(
+            "Optional. Add only wording suitable for the candidate. Internal decision "
+            "notes are never included."
+        ),
+    )
+    follow_up_date = forms.DateField(
+        required=False,
+        label="Follow up by",
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text="Optional. Used only for a revisit-later status update.",
+    )
+
+    def __init__(self, *args, decision: ReviewDecision, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.decision = decision
+        if decision.decision != ReviewDecision.Decision.REVISIT:
+            self.fields.pop("follow_up_date")
+
+    def clean_candidate_facing_guidance(self) -> str:
+        return _clean_plain_text(self.cleaned_data["candidate_facing_guidance"])
 
 
 class OutreachDraftEditForm(forms.Form):

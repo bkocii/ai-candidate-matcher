@@ -37,6 +37,7 @@ from matching.services import (
 )
 from matching.staleness import assess_match_run_staleness
 from organizations.models import Organization
+from outreach.forms import DecisionEmailGenerationForm
 from outreach.generation import (
     OutreachDraftEligibility,
     assess_outreach_draft_eligibility,
@@ -549,13 +550,12 @@ def assessment_review_detail(
     if latest_decision is None:
         outreach_eligibility = OutreachDraftEligibility(
             False,
-            "Record an explicit current approval before generating outreach.",
+            "Record a current recruiter decision before preparing email.",
         )
     elif latest_decision.assessment_id != assessment.pk:
         outreach_eligibility = OutreachDraftEligibility(
             False,
-            "Record an explicit approval for this latest assessment before "
-            "generating outreach.",
+            "Record a decision for this latest assessment before preparing email.",
         )
     else:
         outreach_eligibility = assess_outreach_draft_eligibility(
@@ -598,6 +598,11 @@ def assessment_review_detail(
             "outreach_history": outreach_history,
             "current_outreach_draft": current_outreach_draft,
             "contact_eligibility": contact_eligibility,
+            "email_generation_form": (
+                DecisionEmailGenerationForm(decision=current_decision)
+                if current_decision is not None
+                else None
+            ),
             "vacancy": assessment.requirements.vacancy,
             "entry": assessment.shortlist_entry,
             "run": assessment.shortlist_entry.match_run,

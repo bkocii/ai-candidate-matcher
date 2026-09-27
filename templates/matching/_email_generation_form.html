@@ -1,0 +1,25 @@
+<form method="post" action="{% url 'outreach:outreach-draft-generate' organization.slug current_decision.pk %}">
+    {% csrf_token %}
+    <details>
+        <summary>Optional email details</summary>
+        <div class="field">
+            {{ email_generation_form.candidate_facing_guidance.label_tag }}
+            {{ email_generation_form.candidate_facing_guidance }}
+            <small class="help-text">{{ email_generation_form.candidate_facing_guidance.help_text }}</small>
+        </div>
+        {% if email_generation_form.follow_up_date %}
+            <div class="field">
+                {{ email_generation_form.follow_up_date.label_tag }}
+                {{ email_generation_form.follow_up_date }}
+                <small class="help-text">{{ email_generation_form.follow_up_date.help_text }}</small>
+            </div>
+        {% endif %}
+    </details>
+    {% if current_decision.decision == "approved" %}
+        <button class="{{ email_button_class|default:'primary-button' }}" type="submit">Prepare outreach email</button>
+    {% elif current_decision.decision == "revisit" %}
+        <button class="{{ email_button_class|default:'primary-button' }}" type="submit">Prepare status update</button>
+    {% else %}
+        <button class="{{ email_button_class|default:'primary-button' }}" type="submit">Prepare rejection email</button>
+    {% endif %}
+</form>

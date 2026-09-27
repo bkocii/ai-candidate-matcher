@@ -121,7 +121,57 @@ def test_prompt_minimizes_candidate_data_and_uses_confirmed_match_evidence():
     assert "No certification information" not in prompt
 
 
-def test_only_latest_explicit_current_approval_can_generate():
+@pytest.mark.parametrize(
+    ("decision_value", "purpose", "instruction"),
+    [
+        (
+            ReviewDecision.Decision.REVISIT,
+            "revisit_status_update",
+            "remains under consideration",
+        ),
+        (
+            ReviewDecision.Decision.REJECTED,
+            "rejection",
+            "respectful rejection",
+        ),
+    ],
+)
+def test_revisit_and_rejection_email_prompts_exclude_internal_decision_notes(
+    decision_value,
+    purpose,
+    instruction,
+):
+    user, _, _, _, _, _, _, _, assessment, _ = approved_workspace()
+    internal_notes = "Internal: do not disclose the score or reviewer concern."
+    decision = record_review_decision(
+        assessment=assessment,
+        user=user,
+        decision=decision_value,
+        notes=internal_notes,
+    )
+    gateway = FakeAIGateway(response=draft_output())
+
+    generate_outreach_draft(
+        decision=decision,
+        user=user,
+        gateway=gateway,
+        candidate_facing_guidance="Thank them for the time they invested.",
+        follow_up_date="2026-10-15",
+    )
+
+    prompt = gateway.calls[0].prompt
+    assert f'"message_purpose": "{purpose}"' in prompt
+    assert instruction in prompt
+    assert "Thank them for the time they invested." in prompt
+    assert internal_notes not in prompt
+    assert '"approved_match_facts": []' in prompt
+    if decision_value == ReviewDecision.Decision.REVISIT:
+        assert '"follow_up_date": "2026-10-15"' in prompt
+    else:
+        assert "follow_up_date" not in prompt
+
+
+def test_only_latest_explicit_current_decision_can_generate():
     user, _, _, _, _, _, _, _, assessment, approved = approved_workspace()
     rejected = record_review_decision(
         assessment=assessment,
@@ -135,16 +185,20 @@ def test_only_latest_explicit_current_approval_can_generate():
 
     assert older.can_generate is False
     assert "latest recruiter decision" in older.reason
-    assert latest.can_generate is False
-    assert "explicit current approval" in latest.reason
+    assert latest.can_generate is True
     with pytest.raises(ValidationError, match="latest recruiter decision"):
         generate_outreach_draft(
             decision=approved,
             user=user,
             gateway=FakeAIGateway(response=draft_output()),
         )
-    assert not OutreachDraft.objects.exists()
-    assert not AIUsageEvent.objects.filter(
+    generated = generate_outreach_draft(
+        decision=rejected,
+        user=user,
+        gateway=FakeAIGateway(response=draft_output()),
+    ).draft
+    assert generated.review_decision == rejected
+    assert AIUsageEvent.objects.filter(
         workflow=AIUsageEvent.Workflow.OUTREACH_DRAFT
     ).exists()
 
@@ -179,7 +233,7 @@ def test_historical_assessment_page_does_not_offer_current_generation(client):
 
     assert "latest assessment version" in older_page
     assert "Generate outreach draft</button>" not in older_page
-    assert "explicit approval for this latest assessment" in latest_page
+    assert "decision for this latest assessment" in latest_page
     assert "Generate outreach draft</button>" not in latest_page
 
 
@@ -235,7 +289,7 @@ def test_approval_is_rechecked_after_provider_returns():
         )
         return draft_output()
 
-    with pytest.raises(ValidationError, match="Approval or matching inputs changed"):
+    with pytest.raises(ValidationError, match="Decision or matching inputs changed"):
         generate_outreach_draft(
             decision=decision,
             user=user,
@@ -275,10 +329,10 @@ def test_recruiter_generates_and_reviews_email_without_automatic_send(client):
     content = response.content.decode()
 
     assert review.status_code == 200
-    assert "Prepare email" in review.content.decode()
+    assert "Prepare outreach email" in review.content.decode()
     assert get_generate.status_code == 405
     assert response.status_code == 200
-    assert "Outreach draft version 1 was generated for review" in content
+    assert "Email draft version 1 was generated for review" in content
     assert "Review email" in content
     assert "Email composer" in content
     assert "No email is sent automatically" in content

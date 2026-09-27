@@ -216,9 +216,10 @@ completed on 2026-09-26.
   — 2026-09-26.** Reviews default to actionable profile, matching, ranking, and
   AI exceptions; individual decisions advance to the next candidate.
 - `OUT-003` Simplify outreach presentation while retaining currentness,
-  permission, exact-draft, and explicit human-action safeguards. Approved scope
-  includes optional approved, revisit/status-update, and rejection emails while
-  keeping internal decision notes out of candidate-facing content.
+  permission, exact-draft, and explicit human-action safeguards. **Complete —
+  2026-09-26.** Recruiters can optionally prepare approved-outreach,
+  revisit/status-update, or rejection emails while internal decision notes stay
+  out of candidate-facing prompts and content.
 
 ### Client readiness
 

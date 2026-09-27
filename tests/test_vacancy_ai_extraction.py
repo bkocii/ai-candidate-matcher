@@ -502,7 +502,8 @@ def test_create_and_analyze_runs_ai_and_opens_compact_review(client) -> None:
     )
     assert "Check the matching essentials" in content
     assert "Confirm and upload CVs" in content
-    assert "Advanced details and original vacancy" in content
+    assert "Other requirements and original vacancy" in content
+    assert "Open advanced editor" not in content
 
 
 @override_settings(AI_GATEWAY_FACTORY="tests.test_vacancy_ai_extraction.FailingGateway")

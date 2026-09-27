@@ -66,6 +66,11 @@ Sign out of Django admin and sign in to the normal application as
 `platform-owner-test`. Confirm `/` opens **Platform → Organizations**, not a
 candidate workspace.
 
+Confirm the platform header shows the product logo and account menu without
+duplicate **Organizations** or **Platform** links to the same page. If a platform
+owner is deliberately given access to an internal/demo workspace, that workspace
+must still show **Platform** as the distinct return route.
+
 Select **Create organization** and enter:
 
 - Organization name: `Northstar Recruitment Test`
@@ -83,6 +88,8 @@ Expected result:
   content and does not provide tenant-workspace navigation.
 - The platform owner has no organization membership unless one is separately
   and deliberately added.
+- The summary labels organizations as **Active**, **Suspended**, or **Without
+  administrator** without exposing tenant recruitment data.
 
 Sign out and sign in as `northstar-admin` using the temporary password. Select
 **Change password**, replace it with another strong disposable password, and
@@ -130,18 +137,26 @@ confirm the current session remains signed in.
 4. Confirm the recruiter appears as active. Remove access, then confirm that
    account can no longer enter Northstar while the global user remains active.
 5. Restore the membership.
-6. Sign in as `platform-owner-test` and create a second organization named
+6. Try adding the same recruiter again. Confirm lookup immediately says the
+   account already has an active recruiter membership and does not offer the
+   grant action; a duplicate submission must also display the error.
+7. Sign in as `platform-owner-test` and create a second organization named
    `Second Agency Test`, with a different first administrator.
-7. Sign in as the second administrator and add the existing username
+8. Sign in as the second administrator and add the existing username
    `shared-recruiter`; leave email, names, and password fields blank.
-8. Sign in as `shared-recruiter`. Confirm the workspace chooser lists both
+9. Sign in as `shared-recruiter`. Confirm the workspace chooser lists both
    organizations and **Switch workspace** appears in tenant navigation.
-9. Remove the recruiter from only one organization and confirm the other
+10. Remove the recruiter from only one organization and confirm the other
    workspace remains available with the same password.
-10. As platform owner, add a second administrator to Northstar. Confirm the
+11. As platform owner, add a second administrator to Northstar. Confirm the
     last active administrator cannot be removed, but either administrator can be
     removed while the other remains active.
-11. Confirm a technical Django superuser without **Platform owner** cannot open
+12. From **Add administrator**, search for an account that is already an
+    administrator of that organization. Confirm the page says the account already
+    has an active administrator membership, does not offer the grant action, and
+    provides **All organizations**. Directly submitting the duplicate must show
+    the same error instead of appearing to reload silently.
+13. Confirm a technical Django superuser without **Platform owner** cannot open
     `/platform/organizations/`.
 
 Platform lifecycle check:
@@ -631,9 +646,9 @@ Expected result:
 - Select Python plus any genuinely excluding constraints, then choose
   **Confirm and upload CVs**. The edits, rules, confirmation, vacancy opening,
   and redirect to scoped CV intake happen in that one submit.
-- Less common fields, saved custom rules, and original input remain under
-  **Advanced details and original vacancy**. **Open advanced editor** remains
-  available for uncommon corrections without blocking the routine path.
+- Less common fields and original input remain under **Other requirements and
+  original vacancy** on the same page. Only the exceptional custom-rule builder
+  remains behind **Manage custom eligibility rules**.
 - **Save draft without AI** instead opens the manual editor without an AI call.
 
 Skill precision check: if AI returns **Professional Python development
@@ -689,8 +704,8 @@ Expected result:
 
 ## 9. Test confirmation and immutable corrections
 
-From the compact review (or after **Save and review** in the editor), inspect the
-essentials and advanced details, then select **Confirm and upload CVs**.
+From the compact review, inspect the essentials and collapsed other details,
+then select **Confirm and upload CVs**.
 
 Expected result:
 
@@ -707,6 +722,11 @@ the browser stays in the vacancy workspace. A failed open transition must roll
 back confirmation rather than leaving half of the combined action saved.
 
 Select **Create correction draft**.
+
+For an already-open vacancy, edit and confirm the correction. The buttons must
+say **Confirm changes** and **Confirm changes and upload CVs**, not ask to open
+the vacancy again. Confirmation must succeed, keep the vacancy open, and refresh
+the shortlist immediately without an **already open** error.
 
 Expected result:
 
@@ -2341,10 +2361,14 @@ uv run pytest -q tests/test_candidate_ai_extraction.py tests/test_vacancy_ai_ext
 2. Confirm the app returns directly to the vacancy and shows **Current
    shortlist** with both ranked candidates; do not click a separate evaluate or
    generate action.
-3. Check each row shows skill score, role/seniority, eligibility, AI status, and
+3. In **Candidates for this vacancy**, confirm the **Matching profile** column
+   shows **Review and confirm profile** for a draft, **Confirmed profile** for a
+   confirmed version, and **Prepare profile** when none exists. Open the draft
+   action and confirm the profile before continuing.
+4. Check each row shows skill score, role/seniority, eligibility, AI status, and
    one **Review candidate** action. Open **Score details** and **Shortlist
    history**.
-4. Use **Assess shortlist with AI** only when a configured test provider is
+5. Use **Assess shortlist with AI** only when a configured test provider is
    intended. Change one matching input and confirm the stale result offers one
    **Update shortlist** action.
 
@@ -2374,7 +2398,24 @@ Focused check:
 uv run pytest -q tests/test_recruiter_review.py tests/test_review_decisions.py
 ```
 
-## 37. Reset disposable local test data
+## 37. Test automatic shortlist refresh after edits
+
+1. Open an active vacancy with a current shortlist. Create a new requirements
+   draft, change a matching requirement, and confirm it.
+2. Confirm the vacancy immediately shows a new shortlist run using the new
+   requirements version; no separate **Update shortlist** click is needed.
+3. Edit the location of a candidate already assigned to that open vacancy.
+4. Confirm the vacancy receives another current shortlist run. Editing only the
+   candidate's name/contact data or the vacancy's display title/client must not
+   create a redundant run because those fields are not matching inputs.
+
+Focused check:
+
+```powershell
+uv run pytest -q tests/test_matching_shortlist.py
+```
+
+## 38. Reset disposable local test data
 
 Only if this database and uploaded-media folder contain nothing you need:
 

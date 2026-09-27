@@ -300,9 +300,11 @@ def confirm_requirements_and_open_vacancy(
     requirements: VacancyRequirements,
     user: User,
 ) -> tuple[VacancyRequirements, Vacancy]:
-    """Confirm one draft and open its draft vacancy as one recruiter action."""
+    """Confirm one draft and ensure its vacancy is open as one recruiter action."""
     require_organization_object_access(user, requirements)
     confirmed = confirm_requirements_draft(requirements=requirements, user=user)
+    if confirmed.vacancy.status == Vacancy.Status.OPEN:
+        return confirmed, confirmed.vacancy
     vacancy = change_vacancy_status(
         vacancy=confirmed.vacancy,
         user=user,

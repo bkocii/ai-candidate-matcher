@@ -193,7 +193,20 @@ def recruiter_create(request, organization_slug: str):
     if request.method == "GET" and mode == "existing" and request.GET.get("username"):
         form = form_class({"username": request.GET["username"]})
         if form.is_valid():
-            matched_user = form.existing_user
+            existing_membership = OrganizationMembership.objects.filter(
+                user=form.existing_user,
+                organization=organization,
+            ).first()
+            if existing_membership is not None:
+                state = "active" if existing_membership.is_active else "inactive"
+                form.add_error(
+                    "username",
+                    f"This user already has an {state} "
+                    f"{existing_membership.get_role_display().lower()} membership "
+                    "in this organization.",
+                )
+            else:
+                matched_user = form.existing_user
     if request.method == "POST" and form.is_valid():
         try:
             membership, created_user = add_organization_member(
@@ -420,7 +433,20 @@ def platform_administrator_create(request, organization_id: int):
     if request.method == "GET" and mode == "existing" and request.GET.get("username"):
         form = form_class({"username": request.GET["username"]})
         if form.is_valid():
-            matched_user = form.existing_user
+            existing_membership = OrganizationMembership.objects.filter(
+                user=form.existing_user,
+                organization=managed_organization,
+            ).first()
+            if existing_membership is not None:
+                state = "active" if existing_membership.is_active else "inactive"
+                form.add_error(
+                    "username",
+                    f"This user already has an {state} "
+                    f"{existing_membership.get_role_display().lower()} membership "
+                    "in this organization.",
+                )
+            else:
+                matched_user = form.existing_user
     if request.method == "POST" and form.is_valid():
         try:
             membership, created_user = add_organization_member(

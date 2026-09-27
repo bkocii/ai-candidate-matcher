@@ -33,10 +33,17 @@ from matching.models import ReviewDecision, ShortlistEntry
 from organizations.permissions import require_organization_object_access
 from outreach.models import OutreachDraft
 
-OUTREACH_DRAFT_SCHEMA_VERSION = "outreach_draft.v1"
+OUTREACH_DRAFT_SCHEMA_VERSION = "outreach_draft.v2"
 CANDIDATE_NAME_PLACEHOLDER = "[Candidate name]"
 MAX_OUTREACH_CONTEXT_CHARACTERS = 20_000
 MAX_MATCH_FACTS = 8
+MAX_CANDIDATE_GUIDANCE_CHARACTERS = 1_000
+
+MESSAGE_PURPOSES = {
+    ReviewDecision.Decision.APPROVED: "approved_outreach",
+    ReviewDecision.Decision.REVISIT: "revisit_status_update",
+    ReviewDecision.Decision.REJECTED: "rejection",
+}
 
 OutreachSubject = Annotated[
     str,
@@ -104,7 +111,7 @@ def assess_outreach_draft_eligibility(
     decision: ReviewDecision,
     user: User,
 ) -> OutreachDraftEligibility:
-    """Require the latest explicit approval against the current evidence boundary."""
+    """Require the latest explicit recruiter decision against current evidence."""
     require_organization_object_access(user, decision)
     entry = decision.shortlist_entry
     latest_decision = (
@@ -115,12 +122,12 @@ def assess_outreach_draft_eligibility(
     if latest_decision is None or latest_decision.pk != decision.pk:
         return OutreachDraftEligibility(
             False,
-            "Only the latest recruiter decision can authorize a new outreach draft.",
+            "Only the latest recruiter decision can authorize a new email draft.",
         )
-    if decision.decision != ReviewDecision.Decision.APPROVED:
+    if decision.decision not in MESSAGE_PURPOSES:
         return OutreachDraftEligibility(
             False,
-            "Record an explicit current approval before generating outreach.",
+            "Record a supported current recruiter decision before preparing email.",
         )
     decision_eligibility = assess_review_decision_eligibility(
         assessment=decision.assessment,
@@ -135,11 +142,21 @@ def _bounded_text(value: object, *, maximum: int) -> str:
     return str(value).strip()[:maximum]
 
 
-def build_outreach_context(*, decision: ReviewDecision) -> dict[str, object]:
+def build_outreach_context(
+    *,
+    decision: ReviewDecision,
+    candidate_facing_guidance: str = "",
+    follow_up_date: str = "",
+) -> dict[str, object]:
     """Build minimized, source-grounded context without candidate identity/contact."""
     assessment = decision.assessment
     match_facts: list[dict[str, object]] = []
-    for finding in assessment.matching_requirements[:MAX_MATCH_FACTS]:
+    findings = (
+        assessment.matching_requirements
+        if decision.decision == ReviewDecision.Decision.APPROVED
+        else []
+    )
+    for finding in findings[:MAX_MATCH_FACTS]:
         if not isinstance(finding, dict):
             continue
         evidence_values: list[str] = []
@@ -160,6 +177,7 @@ def build_outreach_context(*, decision: ReviewDecision) -> dict[str, object]:
     context: dict[str, object] = {
         "schema_version": OUTREACH_DRAFT_SCHEMA_VERSION,
         "candidate_name_placeholder": CANDIDATE_NAME_PLACEHOLDER,
+        "message_purpose": MESSAGE_PURPOSES[decision.decision],
         "organization_name": _bounded_text(
             decision.organization.name,
             maximum=200,
@@ -170,6 +188,14 @@ def build_outreach_context(*, decision: ReviewDecision) -> dict[str, object]:
         ),
         "approved_match_facts": match_facts,
     }
+    guidance = _bounded_text(
+        candidate_facing_guidance,
+        maximum=MAX_CANDIDATE_GUIDANCE_CHARACTERS,
+    )
+    if guidance:
+        context["candidate_facing_guidance"] = guidance
+    if decision.decision == ReviewDecision.Decision.REVISIT and follow_up_date:
+        context["follow_up_date"] = _bounded_text(follow_up_date, maximum=10)
     serialized = json.dumps(context, ensure_ascii=True, sort_keys=True)
     if len(serialized) > MAX_OUTREACH_CONTEXT_CHARACTERS:
         raise ValidationError("The approved outreach context is too large.")
@@ -178,19 +204,35 @@ def build_outreach_context(*, decision: ReviewDecision) -> dict[str, object]:
 
 def build_outreach_prompt(context: dict[str, object]) -> str:
     payload = json.dumps(context, ensure_ascii=True, sort_keys=True)
+    purpose = context["message_purpose"]
+    purpose_instruction = {
+        "approved_outreach": (
+            "Invite the candidate to discuss the named vacancy. Mention at most two "
+            "supplied match facts and ask whether they are open to a conversation."
+        ),
+        "revisit_status_update": (
+            "Write a neutral status update saying the application remains under "
+            "consideration. Include the supplied follow-up date when present, but do "
+            "not promise a decision or outcome."
+        ),
+        "rejection": (
+            "Write a concise, respectful rejection for the named vacancy. Do not "
+            "state or invent a rejection reason."
+        ),
+    }[purpose]
     return (
-        "Create a concise recruiter outreach draft from only the supplied JSON. "
+        "Create a concise candidate email draft from only the supplied JSON. "
         "Return a subject and plain-text body. Address the person using the exact "
         f"token {CANDIDATE_NAME_PLACEHOLDER} exactly once in the body and do not put "
-        "it in the subject. Mention at most two supplied match facts. If no match "
-        "facts are supplied, make only a general invitation to discuss the named "
-        "vacancy. Do not invent employers, experience, skills, compensation, contact "
+        f"it in the subject. {purpose_instruction} Candidate-facing guidance is an "
+        "optional recruiter instruction, not verified evidence; use it only when it "
+        "is compatible with these rules. Do not invent employers, experience, "
+        "skills, compensation, contact "
         "details, links, deadlines, or availability. Do not mention scores, internal "
-        "review, approval, gaps, uncertainty, protected characteristics, or source "
-        "evidence. Do not make a job offer, hiring decision, or promise. Ask whether "
-        "the candidate is open to a conversation. This is a draft for later human "
+        "notes, ranking, gaps, uncertainty, protected characteristics, or source "
+        "evidence. Do not make a job offer or promise. This is a draft for later human "
         "editing and approval; do not send anything.\n\n"
-        f"Approved context:\n{payload}"
+        f"Minimized context:\n{payload}"
     )
 
 
@@ -199,6 +241,8 @@ def generate_outreach_draft(
     decision: ReviewDecision,
     user: User,
     gateway: AIGateway | None = None,
+    candidate_facing_guidance: str = "",
+    follow_up_date: str = "",
 ) -> OutreachDraftResult:
     """Generate one inspectable draft without approving or sending it."""
     require_organization_object_access(user, decision)
@@ -211,7 +255,11 @@ def generate_outreach_draft(
     eligibility = assess_outreach_draft_eligibility(decision=decision, user=user)
     if not eligibility.can_generate:
         raise ValidationError(eligibility.reason)
-    context = build_outreach_context(decision=decision)
+    context = build_outreach_context(
+        decision=decision,
+        candidate_facing_guidance=candidate_facing_guidance,
+        follow_up_date=follow_up_date,
+    )
     usage_event = start_ai_usage_event(
         organization=decision.organization,
         actor=user,
@@ -243,7 +291,7 @@ def generate_outreach_draft(
             )
             if not current_eligibility.can_generate:
                 raise ValidationError(
-                    f"Approval or matching inputs changed while outreach was being "
+                    f"Decision or matching inputs changed while email was being "
                     f"generated. No draft was saved. {current_eligibility.reason}"
                 )
             version = (

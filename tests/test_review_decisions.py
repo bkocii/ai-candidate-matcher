@@ -281,7 +281,7 @@ def test_approval_keeps_email_preparation_optional(client):
     review_response = client.get(detail_url(organization, assessment))
 
     assert not OutreachDraft.objects.exists()
-    assert "Prepare email" in review_response.content.decode()
+    assert "Prepare outreach email" in review_response.content.decode()
     assert decision_response.redirect_chain == [
         (
             reverse(

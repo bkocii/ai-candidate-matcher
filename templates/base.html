@@ -31,11 +31,11 @@
                         {% if workspace_count > 1 %}
                             <a href="{% url 'organizations:dashboard' %}">Switch workspace</a>
                         {% endif %}
-                    {% else %}
+                        {% if user.is_platform_owner %}
+                            <a href="{% url 'organizations:platform-organization-list' %}">Platform</a>
+                        {% endif %}
+                    {% elif not user.is_platform_owner %}
                         <a href="{% url 'organizations:dashboard' %}">Organizations</a>
-                    {% endif %}
-                    {% if user.is_platform_owner %}
-                        <a href="{% url 'organizations:platform-organization-list' %}">Platform</a>
                     {% endif %}
                     {% if user.is_staff %}
                         <a href="{% url 'admin:index' %}">Django admin</a>

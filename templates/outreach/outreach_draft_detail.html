@@ -6,7 +6,7 @@
 {% block content %}
 <section class="page-heading action-heading" aria-labelledby="outreach-draft-title">
     <div>
-        <p class="eyebrow">Prepared email · {{ vacancy.title }}</p>
+        <p class="eyebrow">Prepared {{ draft.review_decision.get_decision_display|lower }} email · {{ vacancy.title }}</p>
         <h1 id="outreach-draft-title">Review email for {{ candidate.full_name }}</h1>
         <p class="lede">Draft v{{ draft.version }} · {{ draft.get_creation_method_display }} · decision v{{ draft.review_decision.version }} · {{ draft.created_by.get_username }} · {{ draft.created_at|date:"Y-m-d H:i" }}</p>
     </div>

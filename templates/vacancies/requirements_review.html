@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Check vacancy details | {{ vacancy.title }}{% endblock %}
 
@@ -9,7 +10,6 @@
         <h1 id="requirements-review-title">Check the matching essentials</h1>
         <p class="lede">Correct the essentials and choose which requirements can exclude a candidate. Then continue directly to CV upload.</p>
     </div>
-    <a class="secondary-button" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk requirements.pk %}">Open advanced editor</a>
 </section>
 
 {% if requirements.ambiguities %}
@@ -21,7 +21,7 @@
             {% for ambiguity in requirements.ambiguities %}<li>{{ ambiguity }}</li>{% endfor %}
         </ul>
     </div>
-    <a class="secondary-button" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk requirements.pk %}">Review advanced details</a>
+    <a class="secondary-button" href="#advanced-details">Review unresolved details</a>
 </section>
 {% endif %}
 
@@ -110,20 +110,28 @@
         </div>
     </section>
 
-    <details class="source-panel requirements-page-block">
-        <summary>Advanced details and original vacancy</summary>
+    <details class="source-panel requirements-page-block" id="advanced-details"{% if requirements.ambiguities or advanced_has_errors %} open{% endif %}>
+        <summary>Other requirements and original vacancy</summary>
         <div class="detail-grid requirement-review-grid">
             <article class="detail-panel">
-                <h2>Other extracted details</h2>
-                <dl class="requirement-list">
-                    <div><dt>Languages</dt><dd>{{ requirements.language_requirements|join:", "|default:"Not recorded" }}</dd></div>
-                    <div><dt>Education</dt><dd>{{ requirements.education_requirements|join:", "|default:"Not recorded" }}</dd></div>
-                    <div><dt>Certifications</dt><dd>{{ requirements.certification_requirements|join:", "|default:"Not recorded" }}</dd></div>
-                    <div><dt>Other requirements</dt><dd>{{ requirements.hard_constraints|join:", "|default:"Not recorded" }}</dd></div>
-                </dl>
+                <h2>Less common matching details</h2>
+                <div class="field">
+                    {{ form.language_requirements.label_tag }}{{ form.language_requirements }}{{ form.language_requirements.errors }}
+                    <div class="eligibility-toggle-group" data-eligibility-list data-source-id="{{ form.language_requirements.id_for_label }}" data-field-name="eligibility_languages"><strong>{{ form.eligibility_languages.label }}</strong>{{ form.eligibility_languages }}<small class="eligibility-empty-note"{% if form.eligibility_languages.field.choices %} hidden{% endif %}>Add a language above to make it required.</small></div>
+                </div>
+                <div class="field">
+                    {{ form.education_requirements.label_tag }}{{ form.education_requirements }}{{ form.education_requirements.errors }}
+                    <div class="eligibility-toggle-group" data-eligibility-list data-source-id="{{ form.education_requirements.id_for_label }}" data-field-name="eligibility_education"><strong>{{ form.eligibility_education.label }}</strong>{{ form.eligibility_education }}<small class="eligibility-empty-note"{% if form.eligibility_education.field.choices %} hidden{% endif %}>Add an education requirement above to make it required.</small></div>
+                </div>
+                <div class="field">
+                    {{ form.certification_requirements.label_tag }}{{ form.certification_requirements }}{{ form.certification_requirements.errors }}
+                    <div class="eligibility-toggle-group" data-eligibility-list data-source-id="{{ form.certification_requirements.id_for_label }}" data-field-name="eligibility_certifications"><strong>{{ form.eligibility_certifications.label }}</strong>{{ form.eligibility_certifications }}<small class="eligibility-empty-note"{% if form.eligibility_certifications.field.choices %} hidden{% endif %}>Add a certification above to make it required.</small></div>
+                </div>
+                <div class="field">{{ form.hard_constraints.label_tag }}{{ form.hard_constraints }}{% if form.hard_constraints.help_text %}<small class="help-text">{{ form.hard_constraints.help_text }}</small>{% endif %}{{ form.hard_constraints.errors }}</div>
+                <div class="field">{{ form.ambiguities.label_tag }}{{ form.ambiguities }}{% if form.ambiguities.help_text %}<small class="help-text">{{ form.ambiguities.help_text }}</small>{% endif %}{{ form.ambiguities.errors }}</div>
                 <h3>Saved eligibility rules</h3>
                 {% include "matching/_hard_constraint_rules.html" with rules=hard_constraint_rules editable=False requirements=requirements %}
-                <a class="secondary-button" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk requirements.pk %}">Edit uncommon details or custom rules</a>
+                <a class="secondary-button" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk requirements.pk %}#eligibility-rules">Manage custom eligibility rules</a>
             </article>
             <article class="detail-panel">
                 <h2>Original vacancy</h2>
@@ -141,9 +149,16 @@
         </div>
         <div class="button-row">
             <button class="secondary-button" type="submit" name="intent" value="save_review">Save changes</button>
-            <button class="secondary-button" type="submit" name="intent" value="confirm_and_open">Confirm and open only</button>
-            <button class="primary-button" type="submit" name="intent" value="confirm_and_upload">Confirm and upload CVs</button>
+            {% if vacancy.status == "open" %}
+                <button class="secondary-button" type="submit" name="intent" value="confirm_and_open">Confirm changes</button>
+                <button class="primary-button" type="submit" name="intent" value="confirm_and_upload">Confirm changes and upload CVs</button>
+            {% else %}
+                <button class="secondary-button" type="submit" name="intent" value="confirm_and_open">Confirm and open only</button>
+                <button class="primary-button" type="submit" name="intent" value="confirm_and_upload">Confirm and upload CVs</button>
+            {% endif %}
         </div>
     </section>
 </form>
 {% endblock %}
+
+{% block scripts %}<script src="{% static 'js/eligibility-rule-form.js' %}" defer></script>{% endblock %}

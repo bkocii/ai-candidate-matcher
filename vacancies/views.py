@@ -11,6 +11,7 @@ from django.views.decorators.http import require_POST
 
 from ai_gateway import AIGatewayError
 from candidates.models import Candidate
+from matching.automation import refresh_vacancy_shortlist
 from matching.evaluation import FilterOutcome, filter_candidates
 from matching.forms import HardConstraintRuleForm, hard_constraint_values_from_form
 from matching.models import MatchRun
@@ -309,10 +310,16 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
         and request.GET.get("opened") == "1"
         and vacancy.status == Vacancy.Status.OPEN
     )
-    vacancy_candidates = (
-        Candidate.objects.for_vacancy(vacancy).not_deleted().order_by("full_name", "id")
+    vacancy_candidate_query = (
+        Candidate.objects.for_vacancy(vacancy)
+        .not_deleted()
+        .prefetch_related("profile_versions", "documents")
+        .order_by("full_name", "id")
     )
-    vacancy_candidate_count = vacancy_candidates.count()
+    vacancy_candidate_count = vacancy_candidate_query.count()
+    vacancy_candidates = list(vacancy_candidate_query[:5])
+    for candidate in vacancy_candidates:
+        candidate.latest_profile = next(iter(candidate.profile_versions.all()), None)
     return render(
         request,
         "vacancies/vacancy_detail.html",
@@ -331,7 +338,7 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
             "status_transitions": available_vacancy_status_transitions(vacancy),
             "requirements_confirmed": requirements_confirmed,
             "confirmation_opened": confirmation_opened,
-            "vacancy_candidates": vacancy_candidates[:5],
+            "vacancy_candidates": vacancy_candidates,
             "vacancy_candidate_count": vacancy_candidate_count,
             "can_administer": can_administer_organization(request.user, organization),
         },
@@ -547,6 +554,7 @@ def requirements_review(
     )
     if request.method == "POST" and form.is_valid():
         intent = request.POST.get("intent", "")
+        was_open = vacancy.status == Vacancy.Status.OPEN
         try:
             with transaction.atomic():
                 update_requirements_draft(
@@ -575,11 +583,20 @@ def requirements_review(
         except ValidationError as error:
             form.add_error(None, "; ".join(error.messages))
         else:
+            refreshed_run = (
+                refresh_vacancy_shortlist(vacancy=vacancy, user=request.user)
+                if intent in {"confirm_and_upload", "confirm_and_open"}
+                else None
+            )
+            shortlist_message = (
+                " The vacancy shortlist was updated." if refreshed_run else ""
+            )
             if intent == "confirm_and_upload":
                 messages.success(
                     request,
-                    f"Confirmed requirements version {requirements.version} and "
-                    "opened the vacancy.",
+                    f"Confirmed requirements version {requirements.version}"
+                    + ("." if was_open else " and opened the vacancy.")
+                    + shortlist_message,
                 )
                 return redirect(
                     "candidates:vacancy-candidate-intake-create",
@@ -589,8 +606,9 @@ def requirements_review(
             if intent == "confirm_and_open":
                 messages.success(
                     request,
-                    f"Confirmed requirements version {requirements.version} and "
-                    "opened the vacancy.",
+                    f"Confirmed requirements version {requirements.version}"
+                    + ("." if was_open else " and opened the vacancy.")
+                    + shortlist_message,
                 )
                 detail_url = reverse(
                     "vacancies:vacancy-detail",
@@ -613,6 +631,19 @@ def requirements_review(
             "vacancy": vacancy,
             "requirements": requirements,
             "form": form,
+            "advanced_has_errors": any(
+                form[field_name].errors
+                for field_name in (
+                    "language_requirements",
+                    "education_requirements",
+                    "certification_requirements",
+                    "hard_constraints",
+                    "ambiguities",
+                    "eligibility_languages",
+                    "eligibility_education",
+                    "eligibility_certifications",
+                )
+            ),
             "hard_constraint_rules": requirements.hard_constraint_rules.select_related(
                 "skill"
             ),
@@ -672,6 +703,7 @@ def requirements_confirm(
     intent = request.POST.get("intent")
     open_vacancy = intent in {"confirm_and_open", "confirm_and_upload"}
     upload_candidates = intent == "confirm_and_upload"
+    was_open = vacancy.status == Vacancy.Status.OPEN
     try:
         if open_vacancy:
             requirements, vacancy = confirm_requirements_and_open_vacancy(
@@ -692,10 +724,15 @@ def requirements_confirm(
             requirements_id=requirements.pk,
         )
     else:
-        action = " and opened the vacancy" if open_vacancy else ""
+        action = " and opened the vacancy" if open_vacancy and not was_open else ""
+        refreshed_run = refresh_vacancy_shortlist(
+            vacancy=vacancy,
+            user=request.user,
+        )
         messages.success(
             request,
-            f"Confirmed requirements version {requirements.version}{action}.",
+            f"Confirmed requirements version {requirements.version}{action}."
+            + (" The vacancy shortlist was updated." if refreshed_run else ""),
         )
     if upload_candidates:
         return redirect(

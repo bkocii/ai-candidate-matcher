@@ -60,7 +60,12 @@ REVIEW_REQUIREMENTS_FIELDS = (
     "minimum_years_experience",
     "location_requirement",
     "work_mode",
+    "language_requirements",
+    "education_requirements",
+    "certification_requirements",
     "employment_type",
+    "hard_constraints",
+    "ambiguities",
 )
 
 REVIEW_ELIGIBILITY_FIELDS = (
@@ -68,6 +73,9 @@ REVIEW_ELIGIBILITY_FIELDS = (
     "eligibility_minimum_experience",
     "eligibility_location",
     "eligibility_work_mode",
+    "eligibility_languages",
+    "eligibility_education",
+    "eligibility_certifications",
     "eligibility_employment_type",
 )
 

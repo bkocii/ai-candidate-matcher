@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('matching', '0007_reviewdecision'),
+        ("matching", "0007_reviewdecision"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='shortlistentry',
-            name='discovery_signals',
+            model_name="shortlistentry",
+            name="discovery_signals",
             field=models.JSONField(default=list),
         ),
     ]

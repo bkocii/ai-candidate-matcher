@@ -426,11 +426,16 @@ def test_save_and_review_persists_edits_and_previews_complete_draft(client) -> N
         assert expected in content
     assert "Check the matching essentials" in content
     assert "AI could not determine" in content
-    assert "Open advanced editor" in content
+    assert "Open advanced editor" not in content
+    assert "Other requirements and original vacancy" in content
+    assert "Manage custom eligibility rules" in content
     assert "Confirm and upload CVs" in content
     assert "Confirm and open only" in content
     assert content.index("Essential requirements") < content.index("Ready to continue")
-    assert f'href="{edit_url}">Open advanced editor</a>' in content
+    custom_rule_link = (
+        f'href="{edit_url}#eligibility-rules">Manage custom eligibility rules</a>'
+    )
+    assert custom_rule_link in content
     assert "Current confirmed requirements" not in content
 
     detail = client.get(
@@ -467,7 +472,12 @@ def test_compact_review_saves_eligibility_and_continues_to_cv_upload(client) -> 
             "minimum_years_experience": "4.0",
             "location_requirement": "Prishtina",
             "work_mode": VacancyRequirements.WorkMode.HYBRID,
+            "language_requirements": "English",
+            "education_requirements": "",
+            "certification_requirements": "",
             "employment_type": VacancyRequirements.EmploymentType.FULL_TIME,
+            "hard_constraints": "Kosovo work eligibility",
+            "ambiguities": "",
             "eligibility_required_skills": ["Python"],
             "eligibility_minimum_experience": "on",
             "eligibility_work_mode": "on",
@@ -996,9 +1006,7 @@ def test_confirm_only_keeps_draft_vacancy_and_offers_open_action(client) -> None
     assert "Open vacancy" in content
 
 
-def test_confirm_and_open_rolls_back_confirmation_when_vacancy_is_already_open(
-    client,
-) -> None:
+def test_confirming_revised_requirements_keeps_open_vacancy_open(client) -> None:
     user, organization = make_workspace()
     vacancy, requirements = make_vacancy(organization, user=user)
     confirm_requirements_for_status(
@@ -1016,21 +1024,30 @@ def test_confirm_and_open_rolls_back_confirmation_when_vacancy_is_already_open(
     correction.save(update_fields=("summary",))
     client.force_login(user)
 
+    review_url = reverse(
+        "vacancies:requirements-review",
+        args=[organization.slug, vacancy.pk, correction.pk],
+    )
+    review = client.get(review_url).content.decode()
     response = client.post(
-        reverse(
-            "vacancies:requirements-confirm",
-            args=[organization.slug, vacancy.pk, correction.pk],
+        review_url,
+        requirements_form_data(
+            summary="Corrected requirements",
+            intent="confirm_and_open",
         ),
-        {"intent": "confirm_and_open"},
         follow=True,
     )
 
     correction.refresh_from_db()
     vacancy.refresh_from_db()
     assert response.status_code == 200
-    assert correction.status == VacancyRequirements.Status.DRAFT
+    assert "Confirm changes" in review
+    assert "Confirm and open only" not in review
+    assert correction.status == VacancyRequirements.Status.CONFIRMED
     assert vacancy.status == Vacancy.Status.OPEN
-    assert "already open" in response.content.decode()
+    assert "already open" not in response.content.decode()
+    assert "Confirmed requirements version 2" in response.content.decode()
+    assert "shortlist was updated" in response.content.decode()
 
 
 def test_confirm_service_repeats_object_permission_check() -> None:

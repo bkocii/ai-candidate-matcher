@@ -61,7 +61,7 @@ from candidates.services import (
     import_candidate_csv,
     request_candidate_deletion,
 )
-from matching.automation import refresh_vacancy_shortlist
+from matching.automation import refresh_candidate_shortlists
 from organizations.models import Organization
 from organizations.permissions import (
     can_administer_organization,
@@ -233,10 +233,12 @@ def candidate_edit(request, organization_slug: str, candidate_id: int):
         Candidate.objects.for_organization(organization).not_deleted(),
         pk=candidate_id,
     )
+    original_location = candidate.location
     form = CandidateEditForm(request.POST or None, instance=candidate)
     if request.method == "POST" and form.is_valid():
+        matching_inputs_changed = original_location != form.cleaned_data["location"]
         try:
-            update_candidate_record(
+            candidate = update_candidate_record(
                 candidate=candidate,
                 user=request.user,
                 values={field: form.cleaned_data[field] for field in form.fields},
@@ -244,7 +246,21 @@ def candidate_edit(request, organization_slug: str, candidate_id: int):
         except ValidationError as error:
             form.add_error(None, "; ".join(error.messages))
         else:
-            messages.success(request, "Candidate details updated and audited.")
+            refreshed_runs = (
+                refresh_candidate_shortlists(candidate=candidate, user=request.user)
+                if matching_inputs_changed
+                else ()
+            )
+            messages.success(
+                request,
+                "Candidate details updated and audited."
+                + (
+                    f" Updated {len(refreshed_runs)} vacancy shortlist"
+                    f"{'s' if len(refreshed_runs) != 1 else ''}."
+                    if refreshed_runs
+                    else ""
+                ),
+            )
             return redirect(
                 "candidates:candidate-detail",
                 organization_slug=organization.slug,
@@ -517,22 +533,10 @@ def candidate_profile_confirm(
     except ValidationError as error:
         messages.error(request, "; ".join(error.messages))
     else:
-        refreshed_runs = [
-            run
-            for consideration in candidate.vacancy_considerations.select_related(
-                "vacancy"
-            ).filter(
-                vacancy__status=Vacancy.Status.OPEN,
-                vacancy__deleted_at__isnull=True,
-            )
-            if (
-                run := refresh_vacancy_shortlist(
-                    vacancy=consideration.vacancy,
-                    user=request.user,
-                )
-            )
-            is not None
-        ]
+        refreshed_runs = refresh_candidate_shortlists(
+            candidate=candidate,
+            user=request.user,
+        )
         messages.success(
             request,
             "Candidate profile confirmed. Its grounded facts and skill evidence "

@@ -483,6 +483,19 @@ administrator membership status, and invoke the existing staged tenant
 suspension/recovery workflow. Platform ownership alone still receives `404` from
 candidate and other tenant-content routes.
 
+Platform-only pages now use the product logo as Home without rendering redundant
+**Organizations** and **Platform** links to the same destination. The **Platform**
+link remains visible from a workspace only when the signed-in platform owner also
+has an explicit membership there. The organization summary uses **Without
+administrator** for the orphaned-tenant count.
+
+The add-administrator flow now detects an existing organization membership during
+account lookup, omits the duplicate grant confirmation, and displays the same
+validation if a duplicate POST is submitted. Non-field service errors are visible
+instead of looking like a silent reload, and **All organizations** provides a
+direct return route. The equivalent existing-recruiter flow now provides the same
+early duplicate detection and visible service error.
+
 Organization administrators manage recruiter memberships under **Organization
 settings → Team members**. New accounts require a validated temporary password;
 an existing username is linked without changing its password, identity fields,
@@ -1021,6 +1034,20 @@ GET and cannot reapply the CSV. The report omits **Details** when every row maps
 but retains explanations for mixed outcomes. Browser retesting is pending; no
 migration was added.
 
+The same 2026-09-27 browser pass found that corrected requirements on an open
+vacancy attempted another open and returned **already open**. The confirmation
+service is now idempotent for an open vacancy, and the compact review uses
+**Confirm changes** wording while refreshing the shortlist. The duplicate
+**Open advanced editor** path was removed from routine review: less-common
+requirements are editable in the collapsed section on the same page, with only
+custom eligibility rules retaining a specialized advanced link.
+
+The same review found that vacancy candidates showed only generic candidate
+status, hiding profile confirmation. Vacancy detail now has a **Matching
+profile** column linking draft profiles directly to evidence review and
+confirmation, identifying confirmed versions, and routing missing profiles to
+preparation. No confirmation is automated.
+
 The MT-006 selection controls and review-first hierarchy, including collapsed
 repeat upload and advanced mapping placement, passed Chrome browser testing on
 2026-09-07. Severity-styled upload notices still need a separate visible retest.
@@ -1428,3 +1455,19 @@ on existing staged retention with a 24-month meaningful-activity default,
 optional 12 months, and 30-day warning), and `LEGAL-001` (prepare onboarding and
 data-processing agreement inputs for qualified legal review). No application
 code changed in this documentation checkpoint.
+
+`OUT-003` was implemented on 2026-09-26 without a migration. Optional email
+preparation now supports approved outreach, a neutral revisit/status update
+with an optional follow-up date, and respectful rejection. Recruiter-provided
+candidate-facing guidance is separate; internal decision notes and AI scoring
+details never enter the generation prompt. Existing currentness, contact-
+permission, editable-version, exact-draft approval, audit, and no-auto-send
+boundaries remain. Focused verification passes with `43 passed`. Browser
+confirmation is next; after approval, continue with `ACCESS-001`.
+
+On 2026-09-27 the user reported that vacancy/candidate edits did not update the
+shortlist. The correction refreshes an open vacancy immediately after a revised
+requirements version is confirmed, and refreshes every linked open vacancy when
+the candidate's matching-relevant location changes. Display-only name/contact,
+vacancy-title, and client edits intentionally do not append redundant runs. No
+migration was added.

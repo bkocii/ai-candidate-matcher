@@ -113,12 +113,154 @@ def test_automatic_refresh_builds_current_vacancy_shortlist() -> None:
     assert list(run.entries.values_list("candidate_id", flat=True)) == [candidate.pk]
 
 
+def test_vacancy_candidates_show_missing_and_draft_profile_actions(client):
+    user, organization = make_workspace()
+    vacancy, requirements = make_requirements(
+        organization=organization,
+        user=user,
+        must_have=["Python"],
+    )
+    confirm(requirements, user)
+    vacancy.status = Vacancy.Status.OPEN
+    vacancy.save(update_fields=("status", "updated_at"))
+    draft_candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Draft Profile Candidate",
+        created_by=user,
+    )
+    missing_candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Missing Profile Candidate",
+        created_by=user,
+    )
+    for candidate in (draft_candidate, missing_candidate):
+        associate_candidate_with_vacancy(
+            candidate=candidate,
+            vacancy=vacancy,
+            user=user,
+        )
+    profile = add_confirmed_profile(
+        candidate=draft_candidate,
+        user=user,
+        status=CandidateProfile.Status.DRAFT,
+    )
+    client.force_login(user)
+
+    response = client.get(
+        reverse("vacancies:vacancy-detail", args=[organization.slug, vacancy.pk])
+    )
+
+    content = response.content.decode()
+    profile_url = reverse(
+        "candidates:candidate-profile-detail",
+        args=[organization.slug, draft_candidate.pk, profile.pk],
+    )
+    missing_url = reverse(
+        "candidates:candidate-detail",
+        args=[organization.slug, missing_candidate.pk],
+    )
+    assert response.status_code == 200
+    assert "Matching profile" in content
+    assert f'href="{profile_url}">Review and confirm profile v1</a>' in content
+    assert f'href="{missing_url}#documents-title">Prepare profile</a>' in content
+
+
+def test_candidate_location_edit_refreshes_linked_open_vacancy_shortlist(client):
+    user, organization = make_workspace()
+    vacancy, requirements = make_requirements(
+        organization=organization,
+        user=user,
+        must_have=["Python"],
+    )
+    confirm(requirements, user)
+    vacancy.status = Vacancy.Status.OPEN
+    vacancy.save(update_fields=("status", "updated_at"))
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Location Candidate",
+        location="Prishtina",
+        created_by=user,
+    )
+    associate_candidate_with_vacancy(
+        candidate=candidate,
+        vacancy=vacancy,
+        user=user,
+    )
+    first = refresh_vacancy_shortlist(vacancy=vacancy, user=user)
+    client.force_login(user)
+
+    response = client.post(
+        reverse("candidates:candidate-edit", args=[organization.slug, candidate.pk]),
+        {
+            "full_name": candidate.full_name,
+            "email": "",
+            "phone": "",
+            "location": "Gjilan",
+            "retention_until": "",
+        },
+    )
+
+    vacancy_runs = MatchRun.objects.filter(requirements__vacancy=vacancy)
+    latest = vacancy_runs.first()
+    assert response.status_code == 302
+    assert vacancy_runs.count() == 2
+    assert latest.pk != first.pk
+    assert latest.candidate_input_signature != first.candidate_input_signature
+
+
+def test_confirming_revised_requirements_refreshes_open_vacancy_shortlist(client):
+    user, organization = make_workspace()
+    vacancy, requirements = make_requirements(
+        organization=organization,
+        user=user,
+        must_have=["Python"],
+    )
+    confirm(requirements, user)
+    vacancy.status = Vacancy.Status.OPEN
+    vacancy.save(update_fields=("status", "updated_at"))
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="Requirements Candidate",
+        created_by=user,
+    )
+    associate_candidate_with_vacancy(
+        candidate=candidate,
+        vacancy=vacancy,
+        user=user,
+    )
+    first = refresh_vacancy_shortlist(vacancy=vacancy, user=user)
+    revised = VacancyRequirements.objects.create(
+        vacancy=vacancy,
+        version=2,
+        source_description=vacancy.description,
+        summary="Revised requirements",
+        must_have_skills=["Django"],
+        created_by=user,
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse(
+            "vacancies:requirements-confirm",
+            args=[organization.slug, vacancy.pk, revised.pk],
+        )
+    )
+
+    vacancy_runs = MatchRun.objects.filter(requirements__vacancy=vacancy)
+    latest = vacancy_runs.first()
+    assert response.status_code == 302
+    assert vacancy_runs.count() == 2
+    assert latest.pk != first.pk
+    assert latest.requirements == revised
+
+
 def add_confirmed_profile(
     *,
     candidate: Candidate,
     user: User,
     role_family: str = "unknown",
     seniority: str = "unknown",
+    status: str = CandidateProfile.Status.CONFIRMED,
 ) -> CandidateProfile:
     source_text = f"Synthetic CV: {seniority} {role_family} engineer."
     document = CandidateDocument.objects.create(
@@ -143,14 +285,16 @@ def add_confirmed_profile(
         candidate=candidate,
         source_document=document,
         version=1,
-        status=CandidateProfile.Status.CONFIRMED,
+        status=status,
         source_document_sha256=document.sha256,
         source_text_sha256="b" * 64,
         role_family=role_family,
         seniority=seniority,
         fact_evidence=evidence,
-        confirmed_by=user,
-        confirmed_at=timezone.now(),
+        confirmed_by=(user if status == CandidateProfile.Status.CONFIRMED else None),
+        confirmed_at=(
+            timezone.now() if status == CandidateProfile.Status.CONFIRMED else None
+        ),
         created_by=user,
     )
 

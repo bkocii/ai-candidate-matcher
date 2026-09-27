@@ -74,6 +74,18 @@ is deterministically normalized to atomic **Python**. Matching policy v5 applies
 that exact controlled alias to existing records, so confirmed candidate
 **Python** evidence passes without fuzzy matching.
 
+The 2026-09-27 vacancy-edit follow-up removes the duplicate routine/advanced
+review choice. Matching essentials and less-common requirements are now edited
+on one compact page; only custom eligibility-rule management remains advanced.
+Confirming corrected requirements on an already-open vacancy no longer attempts
+an invalid second open: it keeps the vacancy open and refreshes its shortlist.
+
+The candidate-profile navigation follow-up adds the missing confirmation path
+to the vacancy workspace. Each linked candidate now shows its latest matching-
+profile state with a direct **Review and confirm profile**, **Confirmed profile**,
+or **Prepare profile** action. This restores the required human confirmation
+step before evidence-backed AI assessment without adding another workflow page.
+
 `FLOW-002` was completed on 2026-09-24. Vacancy detail, vacancy candidate views,
 deterministic eligibility evaluation, and shortlist generation now use only
 active candidates explicitly associated with the vacancy. The reusable
@@ -137,6 +149,16 @@ candidate-facing guidance must be separate. Permission/currentness checks,
 editing, exact-draft approval, explicit recruiter action, and no automatic send
 remain required.
 
+`OUT-003` was completed on 2026-09-26 without a migration. The latest current
+approved, revisit, or rejected decision can now explicitly prepare a purpose-
+specific email. Revisit drafts may include an optional follow-up date, and all
+three purposes accept separate optional candidate-facing guidance. Internal
+decision notes, scores, ranking, gaps, and candidate identity/contact data are
+not copied into the AI prompt. Existing permission/currentness checks, editable
+immutable versions, exact-draft approval, audited manual use, and no automatic
+send remain unchanged. Focused outreach, workflow, and decision coverage passes
+with `43 passed`.
+
 ## Decisions made
 
 - The first product is recruiter-side candidate search, not job search for candidates.
@@ -151,6 +173,16 @@ remain required.
 - Platform owners provision organizations and first administrators. Organization
   administrators manage recruiters, and shared accounts can switch active
   workspaces without one membership change affecting another.
+- Platform-only pages use the product logo as Home and omit duplicate
+  **Organizations**/**Platform** links. A distinct **Platform** return link remains
+  available when a platform owner is inside an explicitly assigned internal or
+  demo workspace.
+- Administrator lookup rejects an account that already has a membership in the
+  organization before showing the grant confirmation. Duplicate submissions show
+  the service validation error, and the form links directly to **All
+  organizations**.
+- Recruiter lookup and duplicate submission use the same visible membership
+  validation instead of silently returning to the form.
 - Before real client onboarding, platform-owner accounts must be prevented from
   receiving normal membership in a client organization. Routine testing uses a
   separate internal/demo organization and non-platform account; exceptional
@@ -1501,8 +1533,8 @@ rule corrections require a copied draft version.
 
 ## Next task
 
-Implement `OUT-003 — Simplify outreach and add optional decision-specific
-candidate emails`.
+Confirm `OUT-003` in the browser, then continue with the client-readiness
+checkpoint `ACCESS-001`.
 
 `docs/product_direction_plan.md` is the canonical record for the newly approved
 direction and phased task sequence. `DEMO-002` is deferred until the revised core
@@ -2021,3 +2053,10 @@ reuse, a central ranked shortlist, optional organization BYOK with platform
 fallback, and hosted-SaaS delivery. The staged plan is in
 `docs/product_direction_plan.md`. No product-direction implementation was made
 in this documentation-only checkpoint.
+
+The shortlist edit-refresh follow-up was implemented on 2026-09-27 without a
+migration. Confirming a revised requirements version now regenerates the
+shortlist immediately when the vacancy is open. Editing a linked candidate's
+location does the same for each open vacancy considering that candidate.
+Display-only candidate name/contact and vacancy title/client edits do not create
+redundant immutable runs because they are not deterministic matching inputs.

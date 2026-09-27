@@ -11,7 +11,11 @@ from django.views.decorators.http import require_POST
 from ai_gateway import AIGatewayError
 from matching.models import ReviewDecision
 from organizations.models import Organization
-from outreach.forms import OutreachDraftApprovalForm, OutreachDraftEditForm
+from outreach.forms import (
+    DecisionEmailGenerationForm,
+    OutreachDraftApprovalForm,
+    OutreachDraftEditForm,
+)
 from outreach.generation import generate_outreach_draft
 from outreach.models import OutreachDraft, OutreachDraftAction
 from outreach.workflow import (
@@ -63,6 +67,14 @@ def outreach_draft_generate(request, organization_slug: str, decision_id: int):
         pk=decision_id,
         shortlist_entry__match_run__requirements__vacancy__deleted_at__isnull=True,
     )
+    form = DecisionEmailGenerationForm(request.POST, decision=decision)
+    if not form.is_valid():
+        messages.error(request, "Check the optional email details and try again.")
+        return redirect(
+            "matching:assessment-review-detail",
+            organization_slug=organization.slug,
+            assessment_id=decision.assessment_id,
+        )
     candidate = decision.shortlist_entry.candidate
     contact_eligibility = assess_contact_permission(
         candidate=candidate,
@@ -86,7 +98,16 @@ def outreach_draft_generate(request, organization_slug: str, decision_id: int):
             assessment_id=decision.assessment_id,
         )
     try:
-        result = generate_outreach_draft(decision=decision, user=request.user)
+        result = generate_outreach_draft(
+            decision=decision,
+            user=request.user,
+            candidate_facing_guidance=form.cleaned_data["candidate_facing_guidance"],
+            follow_up_date=(
+                form.cleaned_data.get("follow_up_date").isoformat()
+                if form.cleaned_data.get("follow_up_date")
+                else ""
+            ),
+        )
     except (AIGatewayError, ValidationError) as error:
         public_message = (
             "; ".join(error.messages)
@@ -101,7 +122,7 @@ def outreach_draft_generate(request, organization_slug: str, decision_id: int):
         )
     messages.success(
         request,
-        f"Outreach draft version {result.draft.version} was generated for review.",
+        f"Email draft version {result.draft.version} was generated for review.",
     )
     return redirect(
         "outreach:outreach-draft-detail",

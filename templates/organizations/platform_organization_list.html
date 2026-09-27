@@ -10,7 +10,7 @@
 <div class="platform-summary" aria-label="Organization summary">
     <div><strong>{{ organization_summary.active }}</strong><span>Active</span></div>
     <div><strong>{{ organization_summary.suspended }}</strong><span>Suspended</span></div>
-    <div class="{% if organization_summary.needs_administrator %}summary-warning{% endif %}"><strong>{{ organization_summary.needs_administrator }}</strong><span>Need an administrator</span></div>
+    <div class="{% if organization_summary.needs_administrator %}summary-warning{% endif %}"><strong>{{ organization_summary.needs_administrator }}</strong><span>Without administrator</span></div>
 </div>
 <form class="list-filters" method="get" role="search">
     <div class="field"><label for="organization-search">Search organizations</label><input id="organization-search" name="q" type="search" value="{{ organization_query }}" placeholder="Name or workspace slug"></div>

@@ -228,6 +228,41 @@ def test_platform_create_route_and_content_boundary(client) -> None:
     )
 
 
+def test_platform_navigation_avoids_duplicate_links(client) -> None:
+    owner = make_platform_owner()
+    client.force_login(owner)
+
+    response = client.get(reverse("organizations:platform-organization-list"))
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert '<a href="/">Organizations</a>' not in content
+    assert '<a href="/platform/organizations/">Platform</a>' not in content
+
+
+def test_platform_link_remains_available_from_owner_workspace(client) -> None:
+    owner = make_platform_owner()
+    organization = Organization.objects.create(
+        name="Internal Demo",
+        slug="internal-demo",
+    )
+    OrganizationMembership.objects.create(
+        user=owner,
+        organization=organization,
+        role=OrganizationMembership.Role.ADMIN,
+    )
+    client.force_login(owner)
+
+    response = client.get(
+        reverse("organizations:organization-dashboard", args=[organization.slug])
+    )
+
+    assert response.status_code == 200
+    assert (
+        '<a href="/platform/organizations/">Platform</a>' in response.content.decode()
+    )
+
+
 def test_platform_organization_create_separates_sections_and_accepts_slug(
     client,
 ) -> None:
@@ -649,6 +684,26 @@ def test_platform_administrator_existing_account_requires_lookup_confirmation(
         is_active=True,
     ).exists()
 
+    duplicate_lookup = client.get(
+        url,
+        {"mode": "existing", "username": existing.username},
+    )
+    duplicate_content = duplicate_lookup.content.decode()
+    assert duplicate_lookup.status_code == 200
+    assert "already has an active administrator membership" in duplicate_content
+    assert "Grant administrator access" not in duplicate_content
+    assert reverse("organizations:platform-organization-list") in duplicate_content
+
+    duplicate_submit = client.post(
+        url,
+        {"account_mode": "existing", "username": existing.username},
+    )
+    assert duplicate_submit.status_code == 200
+    assert (
+        "already has an active administrator membership"
+        in duplicate_submit.content.decode()
+    )
+
 
 def test_platform_administrator_new_account_mode_rejects_existing_username(
     client,
@@ -802,6 +857,23 @@ def test_recruiter_create_separates_new_and_existing_account_flows(client) -> No
         organization=organization,
         role=OrganizationMembership.Role.RECRUITER,
     ).exists()
+
+    duplicate_lookup = client.get(
+        url,
+        {"mode": "existing", "username": existing.username},
+    )
+    assert "already has an active recruiter membership" in (
+        duplicate_lookup.content.decode()
+    )
+
+    duplicate_submit = client.post(
+        url,
+        {"account_mode": "existing", "username": existing.username},
+    )
+    assert duplicate_submit.status_code == 200
+    assert "already has an active recruiter membership" in (
+        duplicate_submit.content.decode()
+    )
 
 
 def test_new_recruiter_mode_rejects_existing_username(client) -> None:

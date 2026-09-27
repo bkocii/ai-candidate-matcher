@@ -299,7 +299,8 @@ changes begin.
   currentness, exact-draft, or human-action safeguards. Approved email purposes
   are outreach for an approved candidate, a revisit/status update, and a
   respectful rejection. Every draft is optional and recruiter-triggered;
-  internal decision notes are never copied into prompts or emails.
+  internal decision notes are never copied into prompts or emails. **Complete
+  — 2026-09-26.**
 
 ### Phase D — Client readiness
 
@@ -404,7 +405,8 @@ copied automatically. Candidate-facing guidance, if added, is a separate field.
 All drafts remain editable, permission-checked, explicitly triggered, and never
 automatically sent.
 
-Implement `OUT-003` next.
+`OUT-003` was implemented on 2026-09-26. The next implementation checkpoint is
+`ACCESS-001`, before onboarding a real client organization.
 
 `VAC-001` followed `FLOW-001` because its final
 **Confirm and upload CVs** action requires the vacancy-scoped intake destination.

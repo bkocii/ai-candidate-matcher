@@ -156,11 +156,13 @@ class OutreachDraft(models.Model):
             raise ValidationError(
                 {"review_decision": "Use a decision for this shortlist entry."}
             )
-        if self.review_decision_id and (
-            self.review_decision.decision != ReviewDecision.Decision.APPROVED
-        ):
+        if self.review_decision_id and self.review_decision.decision not in {
+            ReviewDecision.Decision.APPROVED,
+            ReviewDecision.Decision.REVISIT,
+            ReviewDecision.Decision.REJECTED,
+        }:
             raise ValidationError(
-                {"review_decision": "Outreach drafts require an approved decision."}
+                {"review_decision": "Email drafts require a supported decision."}
             )
         if self.parent_draft_id:
             if self.parent_draft.shortlist_entry_id != self.shortlist_entry_id:
