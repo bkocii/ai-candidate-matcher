@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.urls import reverse
@@ -660,8 +662,11 @@ def test_platform_administrator_existing_account_requires_lookup_confirmation(
     url = reverse("organizations:platform-administrator-create", args=[organization.pk])
 
     initial = client.get(url)
-    assert "Add existing account" in initial.content.decode()
-    assert "Temporary password" not in initial.content.decode()
+    initial_content = initial.content.decode()
+    assert "Add existing account" in initial_content
+    assert "Temporary password" not in initial_content
+    assert 'class="mode-switcher management-mode-switcher"' in initial_content
+    assert 'class="form-panel management-form-panel"' in initial_content
 
     lookup = client.get(url, {"mode": "existing", "username": existing.username})
     content = lookup.content.decode()
@@ -837,6 +842,8 @@ def test_recruiter_create_separates_new_and_existing_account_flows(client) -> No
     new_content = new_page.content.decode()
     assert "Create a new recruiter account" in new_content
     assert 'autocomplete="new-password"' in new_content
+    assert 'class="mode-switcher management-mode-switcher"' in new_content
+    assert 'class="form-panel stacked-form management-form-panel"' in new_content
 
     lookup = client.get(url, {"mode": "existing", "username": existing.username})
     lookup_content = lookup.content.decode()
@@ -873,6 +880,28 @@ def test_recruiter_create_separates_new_and_existing_account_flows(client) -> No
     assert duplicate_submit.status_code == 200
     assert "already has an active recruiter membership" in (
         duplicate_submit.content.decode()
+    )
+
+
+def test_management_forms_use_wide_left_aligned_layout() -> None:
+    stylesheet = (
+        Path(__file__).resolve().parents[1] / "static" / "css" / "app.css"
+    ).read_text(encoding="utf-8")
+
+    assert (
+        """.management-mode-switcher {
+    width: 100%;
+    margin-inline: 0;
+}"""
+        in stylesheet
+    )
+    assert (
+        """.management-form-panel {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+}"""
+        in stylesheet
     )
 
 

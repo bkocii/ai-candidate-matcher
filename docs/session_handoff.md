@@ -496,6 +496,11 @@ instead of looking like a silent reload, and **All organizations** provides a
 direct return route. The equivalent existing-recruiter flow now provides the same
 early duplicate detection and visible service error.
 
+Administrator, recruiter, and hiring-client create/edit forms now use one shared
+wide management-panel class. On desktop the switcher and panel align with the
+heading and page grid instead of appearing as a narrow centered column; existing
+mobile stacking remains in place.
+
 Organization administrators manage recruiter memberships under **Organization
 settings → Team members**. New accounts require a validated temporary password;
 an existing username is linked without changing its password, identity fields,

@@ -70,10 +70,20 @@ def test_only_organization_admins_can_open_client_company_settings(client) -> No
         "organizations:organization-settings", args=[organization.slug]
     )
     list_url = reverse("organizations:client-company-list", args=[organization.slug])
+    create_url = reverse(
+        "organizations:client-company-create",
+        args=[organization.slug],
+    )
 
     client.force_login(admin)
     assert client.get(settings_url).status_code == 200
     assert client.get(list_url).status_code == 200
+    create_page = client.get(create_url)
+    assert create_page.status_code == 200
+    assert (
+        'class="form-panel stacked-form management-form-panel"'
+        in create_page.content.decode()
+    )
 
     client.force_login(recruiter)
     assert client.get(settings_url).status_code == 403

@@ -4259,6 +4259,15 @@ tbody tr:last-child td {
 .mode-switcher a { flex: 1; padding: 0.65rem 0.9rem; border-radius: 0.5rem; text-align: center; text-decoration: none; font-weight: 700; color: var(--muted); }
 .mode-switcher a.active { background: var(--accent); color: var(--primary-dark); }
 .compact-form-panel { max-width: 760px; }
+.management-mode-switcher {
+    width: 100%;
+    margin-inline: 0;
+}
+.management-form-panel {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+}
 .identity-confirmation { margin-top: 1.25rem; padding: 1.25rem; border: 1px solid var(--primary); border-radius: 0.75rem; background: var(--surface-soft); }
 .identity-confirmation h3 { margin-top: 0.25rem; }
 .form-cancel { margin-top: 1rem; }

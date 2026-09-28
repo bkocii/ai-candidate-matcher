@@ -183,6 +183,9 @@ with `43 passed`.
   organizations**.
 - Recruiter lookup and duplicate submission use the same visible membership
   validation instead of silently returning to the form.
+- Administrator, recruiter, and hiring-client forms share a full-width
+  management layout aligned to the page heading; their responsive stacking is
+  unchanged.
 - Before real client onboarding, platform-owner accounts must be prevented from
   receiving normal membership in a client organization. Routine testing uses a
   separate internal/demo organization and non-platform account; exceptional

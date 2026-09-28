@@ -159,6 +159,12 @@ confirm the current session remains signed in.
 13. Confirm a technical Django superuser without **Platform owner** cannot open
     `/platform/organizations/`.
 
+Desktop layout check: open **Add administrator**, **Add recruiter**, and **Add
+hiring client**. Their account switchers and form panels must begin on the same
+left edge as the page heading and use the wider page content area rather than a
+narrow centered column. At mobile width, fields and buttons must remain inside
+the viewport and stack normally.
+
 Platform lifecycle check:
 
 1. As platform owner, open the disposable second organization.
