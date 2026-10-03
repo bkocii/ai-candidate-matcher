@@ -1047,6 +1047,17 @@ service is now idempotent for an open vacancy, and the compact review uses
 requirements are editable in the collapsed section on the same page, with only
 custom eligibility rules retaining a specialized advanced link.
 
+The 2026-10-02 vacancy videos led to a further routine-flow simplification.
+Vacancy creation now exposes only **Analyze vacancy with AI** and Cancel; the
+no-AI draft button is gone. Success and bounded AI failure both open one compact
+**Review vacancy** page. Essentials, eligibility, additional details,
+uncertainties, original input, and the final action use one consistent width.
+New vacancies have one **Save vacancy and add candidates** action; corrections
+to open vacancies have one **Save vacancy changes** action. The separate
+intermediate save, confirm-without-upload, and custom-editor link are absent from
+the routine page. Vacancy creation and password change also use the shared wide
+form alignment.
+
 The same review found that vacancy candidates showed only generic candidate
 status, hiding profile confirmation. Vacancy detail now has a **Matching
 profile** column linking draft profiles directly to evidence review and
@@ -1476,3 +1487,10 @@ requirements version is confirmed, and refreshes every linked open vacancy when
 the candidate's matching-relevant location changes. Display-only name/contact,
 vacancy-title, and client edits intentionally do not append redundant runs. No
 migration was added.
+
+On 2026-10-02 the first browser review of the simplified vacancy page showed an
+overlong, poorly balanced layout. A visual-only refinement groups the essential
+fields into Role, Skills, and Work requirements, compacts eligibility controls,
+uses a two-column optional-details grid, hides the empty saved-rules state, and
+places the original vacancy in a collapsed scroll-bounded preview. The approved
+Analyze → Review → Save and add candidates flow remains unchanged.

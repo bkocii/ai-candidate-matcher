@@ -644,18 +644,22 @@ Open **Vacancies** and select **Add vacancy**. Use:
 
 Expected result:
 
-- **Create and analyze vacancy** creates one `Draft` vacancy and requirements
-  version 1, runs AI extraction, and opens **Check the matching essentials**.
-- AI ambiguities appear first. Essential matching details are immediately
-  editable on the same page. Each must-have skill and the supported structured
-  constraints can be explicitly selected as **Required for eligibility**.
+- **Analyze vacancy with AI** is the only create action besides Cancel. It
+  creates one `Draft` vacancy and requirements version 1, runs AI extraction,
+  and opens **Review vacancy**.
+- Confirm the create form starts on the same left edge as its heading and uses
+  the wider page content area. **Save draft without AI** must not appear.
+- Essential matching details are immediately editable. Each must-have skill and
+  supported structured constraint can be explicitly selected as **Required for
+  eligibility**.
 - Select Python plus any genuinely excluding constraints, then choose
-  **Confirm and upload CVs**. The edits, rules, confirmation, vacancy opening,
+  **Save vacancy and add candidates**. The edits, rules, confirmation, vacancy opening,
   and redirect to scoped CV intake happen in that one submit.
-- Less common fields and original input remain under **Other requirements and
-  original vacancy** on the same page. Only the exceptional custom-rule builder
-  remains behind **Manage custom eligibility rules**.
-- **Save draft without AI** instead opens the manual editor without an AI call.
+- Less common fields, uncertainties, saved eligibility rules, and original input
+  remain under **Additional details** on the same page. Confirm the original
+  vacancy text stays collapsed until **View original vacancy text** is opened.
+  The heading, essentials, additional details, and final action must all share
+  one width. There is no duplicate advanced-editor link or intermediate save.
 
 Skill precision check: if AI returns **Professional Python development
 experience**, confirm the saved must-have skill is the atomic **Python** skill.
@@ -710,8 +714,8 @@ Expected result:
 
 ## 9. Test confirmation and immutable corrections
 
-From the compact review, inspect the essentials and collapsed other details,
-then select **Confirm and upload CVs**.
+From **Review vacancy**, inspect the essentials and collapsed additional details,
+then select **Save vacancy and add candidates**.
 
 Expected result:
 
@@ -722,17 +726,12 @@ Expected result:
 - The browser opens the vacancy-scoped CV intake from `FLOW-001`; it does not
   evaluate or contact candidates.
 
-Repeat with a disposable draft vacancy and select **Confirm and open only**.
-Expected result: the version is confirmed and the vacancy becomes `Open`, but
-the browser stays in the vacancy workspace. A failed open transition must roll
-back confirmation rather than leaving half of the combined action saved.
-
 Select **Create correction draft**.
 
-For an already-open vacancy, edit and confirm the correction. The buttons must
-say **Confirm changes** and **Confirm changes and upload CVs**, not ask to open
-the vacancy again. Confirmation must succeed, keep the vacancy open, and refresh
-the shortlist immediately without an **already open** error.
+For an already-open vacancy, edit and confirm the correction. The single primary
+button must say **Save vacancy changes**, not ask to open the vacancy or upload
+CVs again. Confirmation must succeed, keep the vacancy open, and refresh the
+shortlist immediately without an **already open** error.
 
 Expected result:
 
@@ -803,9 +802,8 @@ structured requirement. The version remains a draft.
 
 ## 11. Test vacancy lifecycle and dashboard count
 
-New vacancies remain `Draft` until confirmation. The routine **Confirm and
-upload CVs** and secondary **Confirm and open only** actions perform confirmation
-and opening together.
+New vacancies remain `Draft` until **Save vacancy and add candidates** confirms
+the reviewed version and opens the vacancy atomically.
 
 1. Before confirming requirements, confirm that **Change to Open** is unavailable
    and the page explains that a confirmed version is required.
@@ -1191,16 +1189,15 @@ Expected result:
 - You can edit every suggestion before using the separate confirmation action.
 
 To test bounded failure behavior, remove the API key, restart the server, and
-select **Create and analyze vacancy** with a new synthetic vacancy.
+select **Analyze vacancy with AI** with a new synthetic vacancy.
 
 Expected result:
 
 - A safe configuration message appears without provider details, prompts, or raw
   output.
-- The vacancy and exactly one manual requirements draft remain; retry and manual
-  editing are available.
-- Retrying **Extract with AI** on a draft containing a recognizable manual
-  summary preserves that summary and all other values when the retry fails.
+- The vacancy and exactly one manual requirements draft remain, and the browser
+  opens the same **Review vacancy** page for manual completion rather than the
+  separate full editor.
 - Confirmed versions do not expose the extraction action, and the extraction URL
   rejects a confirmed version.
 
@@ -2339,8 +2336,8 @@ The current milestone is behaving correctly when all of these are true:
 
 ## 34. Test role and seniority discovery (`MATCH-005`)
 
-1. Create and analyze a vacancy titled **Senior Django Developer**.
-2. On **Check the matching essentials**, verify **Target role** is Backend
+1. Select **Analyze vacancy with AI** for a vacancy titled **Senior Django Developer**.
+2. On **Review vacancy**, verify **Target role** is Backend
    engineering and **Seniority** is Senior, with the title shown as evidence.
 3. Upload and extract one CV containing **Senior Python Engineer** and one CV
    without an explicit role title; confirm both profiles.

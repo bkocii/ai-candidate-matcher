@@ -129,17 +129,6 @@ def vacancy_create(request, organization_slug: str):
             source_provenance=vacancy_source_provenance_from_form(form),
         )
         requirements = vacancy.requirement_versions.get(version=1)
-        if request.POST.get("intent") == "save_without_ai":
-            messages.success(
-                request,
-                "Vacancy draft saved. Add the matching requirements when ready.",
-            )
-            return redirect(
-                "vacancies:requirements-edit",
-                organization_slug=organization.slug,
-                vacancy_id=vacancy.pk,
-                requirements_id=requirements.pk,
-            )
         try:
             result = extract_vacancy_requirements(
                 requirements=requirements,
@@ -153,11 +142,11 @@ def vacancy_create(request, organization_slug: str):
             )
             messages.error(
                 request,
-                "The vacancy draft was saved, but AI analysis could not finish. "
-                f"{public_message} You can retry or complete it manually.",
+                "AI analysis could not finish, but the vacancy was saved. "
+                f"{public_message} Review and complete the matching details manually.",
             )
             return redirect(
-                "vacancies:requirements-edit",
+                "vacancies:requirements-review",
                 organization_slug=organization.slug,
                 vacancy_id=vacancy.pk,
                 requirements_id=requirements.pk,
@@ -186,7 +175,7 @@ def vacancy_create(request, organization_slug: str):
                 "Paste a vacancy or upload its file. AI prepares the matching "
                 "details for a quick review."
             ),
-            "submit_label": "Create and analyze vacancy",
+            "submit_label": "Analyze vacancy with AI",
             "cancel_url": reverse("vacancies:vacancy-list", args=[organization.slug]),
             "can_add_client_company": can_administer_organization(
                 request.user, organization
@@ -677,12 +666,12 @@ def requirements_extract(
     else:
         messages.success(
             request,
-            "AI suggestions were saved to the draft. Review every field and add "
-            "any eligibility rules before confirming.",
+            "AI suggestions were saved to the draft. Review the matching details "
+            "before saving the vacancy.",
         )
         requirements = result.requirements
     return redirect(
-        "vacancies:requirements-edit",
+        "vacancies:requirements-review",
         organization_slug=organization.slug,
         vacancy_id=vacancy.pk,
         requirements_id=requirements.pk,

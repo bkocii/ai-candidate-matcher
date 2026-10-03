@@ -421,10 +421,6 @@ a {
     margin-bottom: 36px;
 }
 
-.vacancy-form-heading {
-    margin-inline: auto;
-}
-
 .dashboard-heading {
     display: flex;
     max-width: none;
@@ -1788,6 +1784,162 @@ tbody tr:last-child td {
 .requirements-form {
     max-width: 1080px;
     margin-inline: auto;
+}
+
+.requirements-review-form {
+    max-width: 1080px;
+    margin: 0 auto;
+    gap: 16px;
+}
+
+.requirements-review-form > .requirements-page-block {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+}
+
+.requirements-review-form > .form-panel {
+    padding: 26px 28px;
+}
+
+.requirements-review-form .inline-review-note {
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    border: 1px solid #e5c86f;
+    border-radius: 10px;
+    background: #fff8df;
+    color: #65501b;
+}
+
+.requirements-review-card {
+    overflow: hidden;
+}
+
+.review-card-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 28px;
+    margin-bottom: 6px;
+}
+
+.review-card-heading h2,
+.review-card-heading p {
+    margin-bottom: 0;
+}
+
+.review-card-heading > p {
+    max-width: 520px;
+    color: var(--muted);
+    line-height: 1.55;
+}
+
+.review-section {
+    display: grid;
+    gap: 16px;
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border);
+}
+
+.review-section h3,
+.review-section .field,
+.review-advanced-grid .field {
+    margin: 0;
+}
+
+.review-section h3 {
+    font-size: 1rem;
+}
+
+.requirements-review-form textarea {
+    min-height: 94px;
+}
+
+.requirements-review-form .review-summary-field textarea {
+    min-height: 104px;
+}
+
+.requirements-review-form .eligibility-toggle,
+.requirements-review-form .eligibility-toggle-group {
+    padding: 9px 11px;
+    border-radius: 9px;
+}
+
+.requirements-review-form .eligibility-toggle {
+    min-height: 42px;
+    align-items: center;
+}
+
+.requirements-review-form .eligibility-toggle input {
+    margin-top: 0;
+}
+
+.requirements-review-form .source-panel {
+    padding: 0;
+}
+
+.requirements-review-form .source-panel > summary {
+    display: grid;
+    gap: 3px;
+    padding: 18px 22px;
+    list-style-position: inside;
+}
+
+.requirements-review-form .source-panel > summary span {
+    font-weight: 800;
+}
+
+.requirements-review-form .source-panel > summary small {
+    margin-left: 18px;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.review-advanced-content {
+    display: grid;
+    gap: 22px;
+    padding: 22px;
+    border-top: 1px solid var(--border);
+}
+
+.review-advanced-fields > h2 {
+    margin-bottom: 18px;
+    font-size: 1.15rem;
+}
+
+.review-advanced-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 20px;
+}
+
+.review-ambiguities-field {
+    grid-column: 1 / -1;
+}
+
+.review-source-preview {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-soft);
+}
+
+.review-source-preview > summary {
+    padding: 14px 16px;
+    cursor: pointer;
+    color: var(--primary-dark);
+    font-weight: 750;
+}
+
+.review-source-preview > div {
+    max-height: 320px;
+    padding: 0 18px 18px;
+    overflow-y: auto;
+    border-top: 1px solid var(--border);
+}
+
+.review-source-preview .source-description {
+    margin-top: 14px;
 }
 
 .requirements-editor-layout {
@@ -3847,8 +3999,13 @@ tbody tr:last-child td {
     .requirements-editor-layout,
     .requirements-field-grid,
     .requirements-field-grid-three,
+    .review-advanced-grid,
     .assessment-review-workspace {
         grid-template-columns: 1fr;
+    }
+
+    .review-ambiguities-field {
+        grid-column: auto;
     }
 
     .requirements-save-panel,
@@ -3879,6 +4036,12 @@ tbody tr:last-child td {
     .rule-editor-heading {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .review-card-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
     }
 
     .danger-zone {

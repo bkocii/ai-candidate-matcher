@@ -317,6 +317,7 @@ def test_voluntary_password_change_uses_validated_same_site_return(client) -> No
     assert f'href="{return_url}"' in content
     assert "Show current password" in content
     assert "Show new passwords" in content
+    assert 'class="form-panel stacked-form management-form-panel"' in content
 
     changed = client.post(
         reverse("accounts:password-change"),

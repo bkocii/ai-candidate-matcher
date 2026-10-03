@@ -194,9 +194,11 @@ completed on 2026-09-26.
   permission separate. **Complete — 2026-09-22.**
 - `VAC-001` Replace the multi-screen routine vacancy setup with an AI-first flow
   accepting pasted text or one validated PDF/DOCX/TXT vacancy document, compact
-  recruiter review, explicit confirm/open, and direct handoff to vacancy CV
-  intake. Keep manual fallback and immutable requirement history. **Complete —
-  2026-09-23.**
+  recruiter review, atomic save/open, and direct handoff to vacancy CV intake.
+  The 2026-10-02 refinement leaves one visible **Analyze vacancy with AI** action,
+  one consistent-width review page, and one **Save vacancy and add candidates**
+  action while preserving manual failure recovery and immutable requirement
+  history. **Complete — 2026-09-23; simplified 2026-10-02.**
 - `FLOW-002` Default vacancy views to their associated candidates and separate
   access to the wider organization candidate pool. **Complete — 2026-09-24.**
 - `FLOW-003` Add deliberate cross-vacancy reuse through **Add from candidate

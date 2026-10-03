@@ -127,16 +127,19 @@ Routine CV intake should begin from a vacancy. Vacancy views should default to
 candidates deliberately associated with that vacancy and expose the wider
 organization pool only through a separate reuse action.
 
-`VAC-001` composes vacancy creation, AI extraction, draft editing, and
+`VAC-001` composes vacancy creation, AI extraction, compact review, and
 confirm/open services behind one routine path. Input is exactly one source:
 pasted text or one bounded PDF, DOCX, or UTF-8 TXT upload. It generalizes the
 hardened document validation and text-extraction boundary rather than routing
 vacancy files through candidate models. The extracted text is the immutable
 requirements source; uploaded sources additionally retain safe original
 filename, normalized content type, and SHA-256 provenance without retaining the
-raw file. AI failure leaves one usable manual draft and exposes retry/manual
-editing. The routine final action confirms the exact reviewed requirements,
-opens the draft vacancy atomically, and redirects to vacancy-scoped CV intake.
+raw file. AI failure leaves one usable manual draft and opens the same review
+surface for manual completion. The routine UI exposes one AI create action and
+one final save action; the final transaction confirms the exact reviewed
+requirements, opens the draft vacancy atomically, and redirects to
+vacancy-scoped CV intake. Legacy draft-edit services remain available for
+history/correction support but are not a second routine creation path.
 
 ### matching
 

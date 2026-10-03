@@ -340,13 +340,17 @@ as the secondary advanced path. Automatic candidate review dates remain blank
 until `RET-001` supplies the approved meaningful-activity calculation rather
 than borrowing unrelated operational-cleanup durations.
 
-`VAC-001` was implemented on 2026-09-23. The create page now accepts exactly one
+`VAC-001` was implemented on 2026-09-23 and its routine flow was simplified on
+2026-10-02. The create page now accepts exactly one
 pasted or validated PDF/DOCX/UTF-8 TXT source, preserves extracted text plus
 safe filename/type/hash provenance without retaining the raw vacancy file, and
-runs AI extraction through **Create and analyze vacancy**. AI failure retains
-one manual draft. Compact review leads with ambiguities and matching essentials;
-**Confirm and upload CVs** atomically confirms/opens and continues to the
-vacancy-scoped intake delivered by `FLOW-001`.
+runs AI extraction through **Analyze vacancy with AI**. AI failure retains one
+manual draft and opens the same review page for completion. One consistent-width
+review page contains editable essentials, eligibility choices, additional
+details, and original input; **Save vacancy and add candidates** atomically
+confirms/opens and continues to the vacancy-scoped intake delivered by
+`FLOW-001`. The routine create page no longer offers the separate no-AI draft
+path.
 
 The 2026-09-23 browser refinement makes those essentials editable and places
 explicit structured eligibility selections on the compact review itself. The
@@ -408,8 +412,8 @@ automatically sent.
 `OUT-003` was implemented on 2026-09-26. The next implementation checkpoint is
 `ACCESS-001`, before onboarding a real client organization.
 
-`VAC-001` followed `FLOW-001` because its final
-**Confirm and upload CVs** action requires the vacancy-scoped intake destination.
+`VAC-001` followed `FLOW-001` because its final **Save vacancy and add
+candidates** action requires the vacancy-scoped intake destination.
 The compact review and exact upload validation behavior now reuse the existing
 hardened document services.
 
@@ -425,17 +429,21 @@ hardened document services.
   unsupported input with recruiter-safe messages.
 - Preserve extracted source text and safe upload provenance. The raw vacancy file
   does not need to be retained in the first version.
-- The primary action is **Create and analyze vacancy**. It creates the draft and
+- The primary action is **Analyze vacancy with AI**. It creates the draft and
   runs AI requirement extraction without a separate recruiter action.
-- AI failure preserves a usable manual draft and offers safe retry/manual editing;
-  it must not discard the vacancy or create duplicate drafts.
-- The review page leads with AI ambiguities and essential matching requirements.
-  Less common fields and custom eligibility-rule controls remain available under
-  a clearly labelled advanced section.
-- The routine final action is **Confirm and upload CVs**. It confirms the exact
+- AI failure preserves a usable manual draft and opens the same review page for
+  safe manual completion; it must not discard the vacancy or create duplicate
+  drafts.
+- The single compact review page contains essential matching requirements,
+  eligibility selections, less-common details, AI uncertainties, and original
+  input. All sections share one width; additional details may remain collapsed
+  when no attention is required.
+- The routine final action is **Save vacancy and add candidates**. It confirms the exact
   reviewed requirements, opens a draft vacancy atomically, and redirects to the
   `FLOW-001` vacancy intake page. It does not evaluate candidates automatically.
-- **Save draft without AI** and manual correction remain secondary fallbacks.
+- The visible **Save draft without AI**, intermediate save/review, and
+  confirm-without-upload branches are removed from routine creation. Existing
+  correction/history services remain available where needed.
 - Existing tenant authorization, immutable confirmed versions, correction
   drafts, deterministic eligibility boundaries, safe AI usage events, and
   provider-free tests remain intact.

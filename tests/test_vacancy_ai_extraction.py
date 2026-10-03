@@ -439,8 +439,8 @@ def test_recruiter_triggers_ai_extraction_from_draft_editor(client) -> None:
     assert response.status_code == 200
     assert requirements.must_have_skills == ["Python", "Django"]
     assert "AI suggestions were saved to the draft" in content
-    assert "Review every field" in content
-    assert "Extract with AI" in content
+    assert "Review the matching details" in content
+    assert "Review vacancy" in content
 
 
 @override_settings(AI_GATEWAY_FACTORY="tests.test_vacancy_ai_extraction.FailingGateway")
@@ -500,9 +500,10 @@ def test_create_and_analyze_runs_ai_and_opens_compact_review(client) -> None:
     assert (
         requirements.creation_method == VacancyRequirements.CreationMethod.AI_ASSISTED
     )
-    assert "Check the matching essentials" in content
-    assert "Confirm and upload CVs" in content
-    assert "Other requirements and original vacancy" in content
+    assert "Review vacancy" in content
+    assert "Save vacancy and add candidates" in content
+    assert "Additional details" in content
+    assert "View original vacancy text" in content
     assert "Open advanced editor" not in content
 
 
@@ -527,6 +528,6 @@ def test_create_ai_failure_keeps_one_manual_draft_for_retry(client) -> None:
     assert response.status_code == 200
     assert vacancy.requirement_versions.count() == 1
     assert requirements.creation_method == VacancyRequirements.CreationMethod.MANUAL
-    assert "draft was saved" in content
-    assert "retry or complete it manually" in content
-    assert "Extract with AI" in content
+    assert "vacancy was saved" in content
+    assert "complete the matching details manually" in content
+    assert "Review vacancy" in content

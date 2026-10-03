@@ -58,16 +58,17 @@ the approved meaningful-activity calculation.
 `VAC-001` was completed on 2026-09-23. Vacancy creation accepts exactly one
 pasted source or validated PDF/DOCX/UTF-8 TXT upload. Hardened bounded document
 validation extracts text, stores safe filename/content-type/SHA-256 provenance,
-and retains no raw vacancy file. **Create and analyze vacancy** creates one draft
+and retains no raw vacancy file. **Analyze vacancy with AI** creates one draft
 and runs existing AI extraction; failure preserves that manual draft for retry.
-Compact review leads with AI ambiguities and matching essentials, keeps less
-common details and original input under Advanced, and uses **Confirm and upload
-CVs** to confirm/open atomically before redirecting to vacancy-scoped intake.
+Compact review keeps matching essentials, eligibility, less-common details, AI
+uncertainties, and original input on one consistent-width page, and uses **Save
+vacancy and add candidates** to confirm/open atomically before redirecting to
+vacancy-scoped intake.
 Provider-free focused vacancy/document verification passes with 94 tests.
 
 The first `VAC-001` browser review exposed two follow-up corrections, completed
 on 2026-09-23. The compact review now edits matching essentials and selects
-structured eligibility rules directly; one **Confirm and upload CVs** submit
+structured eligibility rules directly; one **Save vacancy and add candidates** submit
 saves them, confirms/opens, and continues to intake. The full editor remains an
 advanced fallback. AI-extracted **Professional Python development experience**
 is deterministically normalized to atomic **Python**. Matching policy v5 applies
@@ -79,6 +80,13 @@ review choice. Matching essentials and less-common requirements are now edited
 on one compact page; only custom eligibility-rule management remains advanced.
 Confirming corrected requirements on an already-open vacancy no longer attempts
 an invalid second open: it keeps the vacancy open and refreshes its shortlist.
+
+The 2026-10-02 browser follow-up removes the remaining routine branches. The
+create page has only **Analyze vacancy with AI** and Cancel; AI failure opens the
+same editable review instead of the full draft editor. Review has one final
+action—**Save vacancy and add candidates** for a new vacancy, or **Save vacancy
+changes** for a correction—and no duplicate advanced-editor link. Review
+sections, vacancy creation, and password change now align to the wider page grid.
 
 The candidate-profile navigation follow-up adds the missing confirmation path
 to the vacancy workspace. Each linked candidate now shows its latest matching-
@@ -2063,3 +2071,9 @@ shortlist immediately when the vacancy is open. Editing a linked candidate's
 location does the same for each open vacancy considering that candidate.
 Display-only candidate name/contact and vacancy title/client edits do not create
 redundant immutable runs because they are not deterministic matching inputs.
+
+The 2026-10-02 browser review of the simplified vacancy flow found that the
+single review page was still visually long and uneven. The review is now grouped
+into Role, Skills, and Work requirements; optional details use a balanced grid;
+the original vacancy is a collapsed bounded preview; and empty saved-rule output
+is hidden. No workflow or data behavior changed.

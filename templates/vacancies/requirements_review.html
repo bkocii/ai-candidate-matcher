@@ -1,120 +1,118 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Check vacancy details | {{ vacancy.title }}{% endblock %}
+{% block title %}Review vacancy | {{ vacancy.title }}{% endblock %}
 
 {% block content %}
-<section class="page-heading action-heading" aria-labelledby="requirements-review-title">
+<section class="page-heading requirements-page-block" aria-labelledby="requirements-review-title">
     <div>
         <p class="eyebrow">AI-assisted vacancy setup</p>
-        <h1 id="requirements-review-title">Check the matching essentials</h1>
-        <p class="lede">Correct the essentials and choose which requirements can exclude a candidate. Then continue directly to CV upload.</p>
+        <h1 id="requirements-review-title">Review vacancy</h1>
+        <p class="lede">Check the AI-prepared matching details, correct anything needed, and save the vacancy before adding candidates.</p>
     </div>
 </section>
 
-{% if requirements.ambiguities %}
-<section class="review-callout" aria-labelledby="ambiguities-title">
-    <div>
-        <p class="eyebrow">Needs your attention</p>
-        <h2 id="ambiguities-title">AI could not determine</h2>
-        <ul>
-            {% for ambiguity in requirements.ambiguities %}<li>{{ ambiguity }}</li>{% endfor %}
-        </ul>
-    </div>
-    <a class="secondary-button" href="#advanced-details">Review unresolved details</a>
-</section>
-{% endif %}
-
-<form class="stacked-form" method="post">
+<form class="stacked-form requirements-review-form" method="post">
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
 
-    <section class="form-panel requirements-page-block" aria-labelledby="essentials-title">
-        <p class="eyebrow">Used for matching</p>
-        <h2 id="essentials-title">Essential requirements</h2>
-        <p class="section-note">AI suggestions stay editable. Select <strong>Required for eligibility</strong> only when a conflicting candidate fact should exclude the candidate. Missing information still goes to recruiter review.</p>
-
-        <div class="field">
-            {{ form.summary.label_tag }}
-            {{ form.summary }}
-            {% if form.summary.errors %}<div class="field-errors">{{ form.summary.errors }}</div>{% endif %}
-        </div>
-
-        <div class="requirements-field-grid">
-            <div class="field">
-                {{ form.role_family.label_tag }}
-                {{ form.role_family }}
-                {% if requirements.role_family_evidence %}<small class="help-text">Source: {{ requirements.role_family_evidence }}</small>{% else %}<small class="help-text">Needs verification. Used only to order equal skill scores.</small>{% endif %}
-                {% if form.role_family.errors %}<div class="field-errors">{{ form.role_family.errors }}</div>{% endif %}
+    <section class="form-panel requirements-page-block requirements-review-card" aria-labelledby="essentials-title">
+        <header class="review-card-heading">
+            <div>
+                <p class="eyebrow">Used for matching</p>
+                <h2 id="essentials-title">Matching essentials</h2>
             </div>
-            <div class="field">
-                {{ form.seniority.label_tag }}
-                {{ form.seniority }}
-                {% if requirements.seniority_evidence %}<small class="help-text">Source: {{ requirements.seniority_evidence }}</small>{% else %}<small class="help-text">Needs verification. Used only to order equal skill scores.</small>{% endif %}
-                {% if form.seniority.errors %}<div class="field-errors">{{ form.seniority.errors }}</div>{% endif %}
-            </div>
-        </div>
+            <p>Check the AI suggestions. Mark a value as required only when it should exclude a candidate.</p>
+        </header>
+        {% if requirements.ambiguities %}<div class="inline-review-note"><strong>AI left some details unresolved.</strong> Review the open additional-details section below before saving.</div>{% endif %}
 
-        <div class="requirements-field-grid">
-            <div class="field">
-                {{ form.must_have_skills.label_tag }}
-                {{ form.must_have_skills }}
-                <small class="help-text">One atomic skill per line, such as Python or Django.</small>
-                {% if form.must_have_skills.errors %}<div class="field-errors">{{ form.must_have_skills.errors }}</div>{% endif %}
-                <div class="eligibility-toggle-group">
-                    <strong>{{ form.eligibility_required_skills.label }}</strong>
-                    {{ form.eligibility_required_skills }}
-                    {% if form.eligibility_required_skills.errors %}<div class="field-errors">{{ form.eligibility_required_skills.errors }}</div>{% endif %}
+        <div class="review-section">
+            <h3>Role</h3>
+            <div class="field review-summary-field">
+                {{ form.summary.label_tag }}
+                {{ form.summary }}
+                {% if form.summary.errors %}<div class="field-errors">{{ form.summary.errors }}</div>{% endif %}
+            </div>
+            <div class="requirements-field-grid">
+                <div class="field">
+                    {{ form.role_family.label_tag }}
+                    {{ form.role_family }}
+                    {% if requirements.role_family_evidence %}<small class="help-text">Source: {{ requirements.role_family_evidence }}</small>{% else %}<small class="help-text">Needs verification. Used only to order equal skill scores.</small>{% endif %}
+                    {% if form.role_family.errors %}<div class="field-errors">{{ form.role_family.errors }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    {{ form.seniority.label_tag }}
+                    {{ form.seniority }}
+                    {% if requirements.seniority_evidence %}<small class="help-text">Source: {{ requirements.seniority_evidence }}</small>{% else %}<small class="help-text">Needs verification. Used only to order equal skill scores.</small>{% endif %}
+                    {% if form.seniority.errors %}<div class="field-errors">{{ form.seniority.errors }}</div>{% endif %}
                 </div>
             </div>
-            <div class="field">
-                {{ form.nice_to_have_skills.label_tag }}
-                {{ form.nice_to_have_skills }}
-                <small class="help-text">Helpful skills never become eligibility filters here.</small>
-                {% if form.nice_to_have_skills.errors %}<div class="field-errors">{{ form.nice_to_have_skills.errors }}</div>{% endif %}
+        </div>
+
+        <div class="review-section">
+            <h3>Skills</h3>
+            <div class="requirements-field-grid">
+                <div class="field">
+                    {{ form.must_have_skills.label_tag }}
+                    {{ form.must_have_skills }}
+                    <small class="help-text">One specific skill per line, such as Python or Django.</small>
+                    {% if form.must_have_skills.errors %}<div class="field-errors">{{ form.must_have_skills.errors }}</div>{% endif %}
+                    <div class="eligibility-toggle-group">
+                        <strong>Skills that must be present</strong>
+                        {{ form.eligibility_required_skills }}
+                        {% if form.eligibility_required_skills.errors %}<div class="field-errors">{{ form.eligibility_required_skills.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                <div class="field">
+                    {{ form.nice_to_have_skills.label_tag }}
+                    {{ form.nice_to_have_skills }}
+                    <small class="help-text">Helpful skills improve the match but never exclude a candidate.</small>
+                    {% if form.nice_to_have_skills.errors %}<div class="field-errors">{{ form.nice_to_have_skills.errors }}</div>{% endif %}
+                </div>
             </div>
         </div>
 
-        <div class="requirements-field-grid requirements-field-grid-three">
-            <div class="field">
-                {{ form.minimum_years_experience.label_tag }}
-                {{ form.minimum_years_experience }}
-                {% if form.minimum_years_experience.errors %}<div class="field-errors">{{ form.minimum_years_experience.errors }}</div>{% endif %}
-                <label class="eligibility-toggle">{{ form.eligibility_minimum_experience }} {{ form.eligibility_minimum_experience.label }}</label>
-                {% if form.eligibility_minimum_experience.errors %}<div class="field-errors">{{ form.eligibility_minimum_experience.errors }}</div>{% endif %}
-            </div>
-            <div class="field">
-                {{ form.location_requirement.label_tag }}
-                {{ form.location_requirement }}
-                {% if form.location_requirement.errors %}<div class="field-errors">{{ form.location_requirement.errors }}</div>{% endif %}
-                <label class="eligibility-toggle">{{ form.eligibility_location }} {{ form.eligibility_location.label }}</label>
-                {% if form.eligibility_location.errors %}<div class="field-errors">{{ form.eligibility_location.errors }}</div>{% endif %}
-            </div>
-            <div class="field">
-                {{ form.work_mode.label_tag }}
-                {{ form.work_mode }}
-                {% if form.work_mode.errors %}<div class="field-errors">{{ form.work_mode.errors }}</div>{% endif %}
-                <label class="eligibility-toggle">{{ form.eligibility_work_mode }} {{ form.eligibility_work_mode.label }}</label>
-                {% if form.eligibility_work_mode.errors %}<div class="field-errors">{{ form.eligibility_work_mode.errors }}</div>{% endif %}
-            </div>
-        </div>
-
-        <div class="requirements-field-grid">
-            <div class="field">
-                {{ form.employment_type.label_tag }}
-                {{ form.employment_type }}
-                {% if form.employment_type.errors %}<div class="field-errors">{{ form.employment_type.errors }}</div>{% endif %}
-                <label class="eligibility-toggle">{{ form.eligibility_employment_type }} {{ form.eligibility_employment_type.label }}</label>
-                {% if form.eligibility_employment_type.errors %}<div class="field-errors">{{ form.eligibility_employment_type.errors }}</div>{% endif %}
+        <div class="review-section">
+            <h3>Work requirements</h3>
+            <div class="requirements-field-grid review-work-grid">
+                <div class="field">
+                    {{ form.minimum_years_experience.label_tag }}
+                    {{ form.minimum_years_experience }}
+                    {% if form.minimum_years_experience.errors %}<div class="field-errors">{{ form.minimum_years_experience.errors }}</div>{% endif %}
+                    <label class="eligibility-toggle">{{ form.eligibility_minimum_experience }} {{ form.eligibility_minimum_experience.label }}</label>
+                    {% if form.eligibility_minimum_experience.errors %}<div class="field-errors">{{ form.eligibility_minimum_experience.errors }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    {{ form.location_requirement.label_tag }}
+                    {{ form.location_requirement }}
+                    {% if form.location_requirement.errors %}<div class="field-errors">{{ form.location_requirement.errors }}</div>{% endif %}
+                    <label class="eligibility-toggle">{{ form.eligibility_location }} {{ form.eligibility_location.label }}</label>
+                    {% if form.eligibility_location.errors %}<div class="field-errors">{{ form.eligibility_location.errors }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    {{ form.work_mode.label_tag }}
+                    {{ form.work_mode }}
+                    {% if form.work_mode.errors %}<div class="field-errors">{{ form.work_mode.errors }}</div>{% endif %}
+                    <label class="eligibility-toggle">{{ form.eligibility_work_mode }} {{ form.eligibility_work_mode.label }}</label>
+                    {% if form.eligibility_work_mode.errors %}<div class="field-errors">{{ form.eligibility_work_mode.errors }}</div>{% endif %}
+                </div>
+                <div class="field">
+                    {{ form.employment_type.label_tag }}
+                    {{ form.employment_type }}
+                    {% if form.employment_type.errors %}<div class="field-errors">{{ form.employment_type.errors }}</div>{% endif %}
+                    <label class="eligibility-toggle">{{ form.eligibility_employment_type }} {{ form.eligibility_employment_type.label }}</label>
+                    {% if form.eligibility_employment_type.errors %}<div class="field-errors">{{ form.eligibility_employment_type.errors }}</div>{% endif %}
+                </div>
             </div>
         </div>
     </section>
 
     <details class="source-panel requirements-page-block" id="advanced-details"{% if requirements.ambiguities or advanced_has_errors %} open{% endif %}>
-        <summary>Other requirements and original vacancy</summary>
-        <div class="detail-grid requirement-review-grid">
-            <article class="detail-panel">
-                <h2>Less common matching details</h2>
+        <summary><span>Additional details</span><small>Languages, education, other requirements, and the original vacancy</small></summary>
+        <div class="review-advanced-content">
+            <section class="review-advanced-fields" aria-labelledby="additional-matching-title">
+                <h2 id="additional-matching-title">Additional matching details</h2>
+                <div class="review-advanced-grid">
                 <div class="field">
                     {{ form.language_requirements.label_tag }}{{ form.language_requirements }}{{ form.language_requirements.errors }}
                     <div class="eligibility-toggle-group" data-eligibility-list data-source-id="{{ form.language_requirements.id_for_label }}" data-field-name="eligibility_languages"><strong>{{ form.eligibility_languages.label }}</strong>{{ form.eligibility_languages }}<small class="eligibility-empty-note"{% if form.eligibility_languages.field.choices %} hidden{% endif %}>Add a language above to make it required.</small></div>
@@ -128,34 +126,36 @@
                     <div class="eligibility-toggle-group" data-eligibility-list data-source-id="{{ form.certification_requirements.id_for_label }}" data-field-name="eligibility_certifications"><strong>{{ form.eligibility_certifications.label }}</strong>{{ form.eligibility_certifications }}<small class="eligibility-empty-note"{% if form.eligibility_certifications.field.choices %} hidden{% endif %}>Add a certification above to make it required.</small></div>
                 </div>
                 <div class="field">{{ form.hard_constraints.label_tag }}{{ form.hard_constraints }}{% if form.hard_constraints.help_text %}<small class="help-text">{{ form.hard_constraints.help_text }}</small>{% endif %}{{ form.hard_constraints.errors }}</div>
-                <div class="field">{{ form.ambiguities.label_tag }}{{ form.ambiguities }}{% if form.ambiguities.help_text %}<small class="help-text">{{ form.ambiguities.help_text }}</small>{% endif %}{{ form.ambiguities.errors }}</div>
+                <div class="field review-ambiguities-field">{{ form.ambiguities.label_tag }}{{ form.ambiguities }}{% if form.ambiguities.help_text %}<small class="help-text">{{ form.ambiguities.help_text }}</small>{% endif %}{{ form.ambiguities.errors }}</div>
+                </div>
+                {% if hard_constraint_rules %}
                 <h3>Saved eligibility rules</h3>
                 {% include "matching/_hard_constraint_rules.html" with rules=hard_constraint_rules editable=False requirements=requirements %}
-                <a class="secondary-button" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk requirements.pk %}#eligibility-rules">Manage custom eligibility rules</a>
-            </article>
-            <article class="detail-panel">
-                <h2>Original vacancy</h2>
-                {% if requirements.source_original_filename %}<p class="section-note">Extracted from {{ requirements.source_original_filename }}. The original file is not retained.</p>{% endif %}
-                <div class="source-description">{{ requirements.source_description|linebreaks }}</div>
-            </article>
+                {% endif %}
+            </section>
+            <details class="review-source-preview">
+                <summary>View original vacancy text</summary>
+                <div>
+                    {% if requirements.source_original_filename %}<p class="section-note">Extracted from {{ requirements.source_original_filename }}. The original file is not retained.</p>{% endif %}
+                    <div class="source-description">{{ requirements.source_description|linebreaks }}</div>
+                </div>
+            </details>
         </div>
     </details>
 
-    <section class="review-callout requirement-confirmation" aria-labelledby="confirm-requirements-title">
+    <section class="review-callout requirement-confirmation requirements-page-block" aria-labelledby="confirm-requirements-title">
         <div>
             <p class="eyebrow">Ready to continue</p>
-            <h2 id="confirm-requirements-title">Save these matching details</h2>
-            <p>Confirmation makes this version read-only. It does not evaluate or contact candidates.</p>
+            <h2 id="confirm-requirements-title">{% if vacancy.status == "open" %}Save vacancy changes{% else %}Save vacancy and add candidates{% endif %}</h2>
+            <p>This saves a read-only matching version. It does not evaluate or contact candidates.</p>
         </div>
         <div class="button-row">
-            <button class="secondary-button" type="submit" name="intent" value="save_review">Save changes</button>
             {% if vacancy.status == "open" %}
-                <button class="secondary-button" type="submit" name="intent" value="confirm_and_open">Confirm changes</button>
-                <button class="primary-button" type="submit" name="intent" value="confirm_and_upload">Confirm changes and upload CVs</button>
+                <button class="primary-button" type="submit" name="intent" value="confirm_and_open">Save vacancy changes</button>
             {% else %}
-                <button class="secondary-button" type="submit" name="intent" value="confirm_and_open">Confirm and open only</button>
-                <button class="primary-button" type="submit" name="intent" value="confirm_and_upload">Confirm and upload CVs</button>
+                <button class="primary-button" type="submit" name="intent" value="confirm_and_upload">Save vacancy and add candidates</button>
             {% endif %}
+            <a class="secondary-button" href="{% url 'vacancies:vacancy-list' organization.slug %}">Cancel</a>
         </div>
     </section>
 </form>

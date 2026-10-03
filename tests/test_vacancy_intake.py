@@ -216,7 +216,7 @@ def test_recruiter_creates_vacancy_and_initial_draft_atomically(client) -> None:
             "title": "  Senior Python Engineer  ",
             "client_company": client_company.pk,
             "description": "  Build reliable Python services.  ",
-            "intent": "save_without_ai",
+            "intent": "create_and_analyze",
         },
     )
 
@@ -224,7 +224,7 @@ def test_recruiter_creates_vacancy_and_initial_draft_atomically(client) -> None:
     requirements = vacancy.requirement_versions.get()
     assert response.status_code == 302
     assert response.url == reverse(
-        "vacancies:requirements-edit",
+        "vacancies:requirements-review",
         args=[organization.slug, vacancy.pk, requirements.pk],
     )
     assert vacancy.title == "Senior Python Engineer"
@@ -246,6 +246,9 @@ def test_direct_employer_creation_accepts_no_client(client) -> None:
     assert b"Hiring client (optional):</label>" in page.content
     assert b"Paste vacancy description:</label>" in page.content
     assert b"Or upload vacancy:</label>" in page.content
+    assert b"Analyze vacancy with AI" in page.content
+    assert b"Save draft without AI" not in page.content
+    assert b"management-form-panel" in page.content
     assert b'<option value="" selected>No hiring client (direct employer)</option>' in (
         page.content
     )
@@ -421,21 +424,20 @@ def test_save_and_review_persists_edits_and_previews_complete_draft(client) -> N
         "Full time",
         "Eligible to work in Kosovo",
         "On-call frequency is not stated",
-        "No eligibility rules have been added",
     ):
         assert expected in content
-    assert "Check the matching essentials" in content
-    assert "AI could not determine" in content
+    assert "Review vacancy" in content
+    assert "AI left some details unresolved" in content
     assert "Open advanced editor" not in content
-    assert "Other requirements and original vacancy" in content
-    assert "Manage custom eligibility rules" in content
-    assert "Confirm and upload CVs" in content
-    assert "Confirm and open only" in content
-    assert content.index("Essential requirements") < content.index("Ready to continue")
-    custom_rule_link = (
-        f'href="{edit_url}#eligibility-rules">Manage custom eligibility rules</a>'
-    )
-    assert custom_rule_link in content
+    assert "Additional details" in content
+    assert "View original vacancy text" in content
+    assert "No eligibility rules have been added" not in content
+    assert "Manage custom eligibility rules" not in content
+    assert "Save vacancy and add candidates" in content
+    assert "Confirm and open only" not in content
+    assert 'class="stacked-form requirements-review-form"' in content
+    assert content.count("requirements-page-block") == 4
+    assert content.index("Matching essentials") < content.index("Ready to continue")
     assert "Current confirmed requirements" not in content
 
     detail = client.get(
@@ -540,7 +542,7 @@ def test_utf8_txt_vacancy_upload_is_extracted_without_retaining_file(client) -> 
         {
             "title": "Backend Engineer",
             "description": "",
-            "intent": "save_without_ai",
+            "intent": "create_and_analyze",
             "vacancy_document": uploaded,
         },
     )
@@ -1041,7 +1043,7 @@ def test_confirming_revised_requirements_keeps_open_vacancy_open(client) -> None
     correction.refresh_from_db()
     vacancy.refresh_from_db()
     assert response.status_code == 200
-    assert "Confirm changes" in review
+    assert "Save vacancy changes" in review
     assert "Confirm and open only" not in review
     assert correction.status == VacancyRequirements.Status.CONFIRMED
     assert vacancy.status == Vacancy.Status.OPEN

@@ -17,7 +17,7 @@
         <a class="secondary-button" href="{% url 'vacancies:vacancy-list' organization.slug %}">All vacancies</a>
         <a class="secondary-button" href="{% url 'vacancies:vacancy-edit' organization.slug vacancy.pk %}">Edit vacancy</a>
         {% if not current_requirements and draft %}
-            <a class="primary-button button-link" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk draft.pk %}">Edit draft v{{ draft.version }}</a>
+            <a class="primary-button button-link" href="{% url 'vacancies:requirements-review' organization.slug vacancy.pk draft.pk %}">Review draft v{{ draft.version }}</a>
         {% endif %}
     </div>
 </section>

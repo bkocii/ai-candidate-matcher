@@ -1927,3 +1927,36 @@ also corrected to enforce the already-approved administrator-only boundary.
   cross-vacancy submission.
 - Confirm the privacy-default warning is prominent without making routine
   upload feel blocked.
+
+### MT-045 — Simplified AI vacancy setup
+
+- **Date:** 2026-10-02
+- **Evidence:** `matcher-create-analyze.mp4`, `matcher-save-no-ai.mp4`
+- **Routes:** Add vacancy → requirements review → vacancy-scoped candidate intake
+- **Visual status:** Implemented; browser confirmation pending
+- **Functional status:** Focused automated coverage passes
+
+#### Resolved findings
+
+- The narrow centered password and vacancy forms now use the same wider,
+  left-aligned page grid as other management forms.
+- **Save draft without AI** no longer sends routine users into the full editor
+  and then a second review step. **Analyze vacancy with AI** is the one create
+  action.
+- AI success and failure both lead to the same editable **Review vacancy** page;
+  failure preserves exactly one draft for manual completion.
+- Review no longer repeats an ambiguity callout with an anchor that looks like a
+  separate page. Essentials, additional details, original input, and the final
+  action share one compact width.
+- The reviewed page is grouped into Role, Skills, and Work requirements.
+  Additional fields use a balanced grid, the original vacancy is a bounded
+  collapsed preview, and an empty saved-rules panel is no longer shown.
+- A new vacancy has one final action: **Save vacancy and add candidates**. An
+  already-open correction uses **Save vacancy changes**.
+
+#### Pending browser checks
+
+- Confirm the grouped essentials, compact eligibility controls, optional-details
+  grid, and source preview remain clear at desktop and narrow widths.
+- Confirm the final action opens vacancy-scoped candidate upload and that a
+  simulated AI failure stays on the same usable review page.
