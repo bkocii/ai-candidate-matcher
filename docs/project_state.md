@@ -2077,3 +2077,35 @@ single review page was still visually long and uneven. The review is now grouped
 into Role, Skills, and Work requirements; optional details use a balanced grid;
 the original vacancy is a collapsed bounded preview; and empty saved-rule output
 is hidden. No workflow or data behavior changed.
+
+On 2026-10-03 an identical management-consulting vacancy produced different
+categories when pasted versus uploaded because separate AI calls classified
+general mandatory statements differently. Vacancy extraction now has a
+deterministic post-processing boundary: languages are not skills, while
+availability, attendance, schedule, motivation, commitment, willingness, and
+work-eligibility statements are retained as notes-only Other requirements. The
+guard evaluates the complete source sentence, including when the provider emits
+only a misleading fragment such as **Consulting profession**. The same source
+therefore persists the same categories across both intake methods.
+
+The recordings `matcher-pasted-vac-res.mp4` and
+`matcher-uploaded-vac-res.mp4` exposed remaining drift in nice-to-have skills,
+certification outcomes, education grouping, summary, and ambiguities. Vacancy
+extraction policy v4 now validates source sections, removes course learning
+outcomes from applicant skills, removes credentials awarded by the programme,
+and reconstructs education requirements from source statements. Each successful
+analysis stores a normalized snapshot keyed by organization plus normalized
+canonical-source fingerprint. An explicit title line inside the source takes
+precedence over a temporary form title, so later equivalent pasted/uploaded input
+reuses the snapshot without another AI call. Non-actionable programme-role and
+waived-experience ambiguities are removed, including duplicate skill warnings
+for phrases routed to Other requirements. Unknown/other role with unknown
+seniority is omitted from routine review. Migration `vacancies.0005` adds only the policy,
+fingerprint, and snapshot fields to the existing requirement version.
+
+On 2026-10-04 the compact vacancy review gained the same shared eligibility-rule
+editor as the full draft page. Recruiters can add a custom rule without leaving
+review, inspect existing rules, and use Edit/Delete actions that return to the
+same review section. Rule and review-field updates remain draft-only,
+tenant-scoped, transactional, and subject to the existing human-review safeguard
+for missing candidate facts. No migration was added.

@@ -12,6 +12,7 @@
 
 <form class="form-panel stacked-form eligibility-rule-builder" method="post">
     {% csrf_token %}
+    {% if return_to %}<input type="hidden" name="return_to" value="{{ return_to }}">{% endif %}
     {% include "matching/_eligibility_rule_form_fields.html" with eligibility_form=form %}
     <div class="rule-policy-note">
         <strong>Human-review safeguard</strong>
@@ -19,7 +20,7 @@
     </div>
     <div class="button-row">
         <button class="primary-button" type="submit">{% if rule %}Save changes{% else %}Add rule{% endif %}</button>
-        <a class="secondary-button" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk requirements.pk %}">Cancel</a>
+        <a class="secondary-button" href="{{ return_url }}">Cancel</a>
     </div>
 </form>
 {% endblock %}

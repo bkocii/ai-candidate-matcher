@@ -431,8 +431,8 @@ def test_save_and_review_persists_edits_and_previews_complete_draft(client) -> N
     assert "Open advanced editor" not in content
     assert "Additional details" in content
     assert "View original vacancy text" in content
-    assert "No eligibility rules have been added" not in content
-    assert "Manage custom eligibility rules" not in content
+    assert "No eligibility rules have been added" in content
+    assert "Add a custom eligibility rule" in content
     assert "Save vacancy and add candidates" in content
     assert "Confirm and open only" not in content
     assert 'class="stacked-form requirements-review-form"' in content
@@ -629,6 +629,57 @@ def test_add_eligibility_rule_saves_new_requirement_skill_in_one_action(
     assert "Other requirements" in content
     assert "If information is missing" in content
     assert "Add typed rule" not in content
+
+
+def test_review_adds_and_manages_custom_eligibility_rules(client) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_vacancy(organization, user=user)
+    update_requirements_draft(
+        requirements=requirements,
+        user=user,
+        values=requirements_values(),
+    )
+    client.force_login(user)
+    review_url = reverse(
+        "vacancies:requirements-review",
+        args=[organization.slug, vacancy.pk, requirements.pk],
+    )
+
+    response = client.post(
+        review_url,
+        requirements_form_data(
+            must_have_skills="Python\nDjango\nGo",
+            intent="add_rule",
+            **{
+                "eligibility-rule_type": "required_skill",
+                "eligibility-source_text": "Go is required.",
+                "eligibility-skill": "Go",
+                "eligibility-numeric_value": "",
+                "eligibility-expected_value": "",
+            },
+        ),
+    )
+
+    requirements.refresh_from_db()
+    rule = requirements.hard_constraint_rules.select_related("skill").get()
+    assert response.status_code == 302
+    assert response.url == f"{review_url}#eligibility-rules"
+    assert requirements.must_have_skills == ["Python", "Django", "Go"]
+    assert rule.skill.name == "Go"
+
+    content = client.get(response.url).content.decode()
+    edit_url = reverse(
+        "matching:hard-constraint-edit",
+        args=[organization.slug, vacancy.pk, requirements.pk, rule.pk],
+    )
+    delete_url = reverse(
+        "matching:hard-constraint-delete",
+        args=[organization.slug, vacancy.pk, requirements.pk, rule.pk],
+    )
+    assert "Go is required." in content
+    assert f"{edit_url}?return_to=review" in content
+    assert f"{delete_url}?return_to=review" in content
+    assert "Add a custom eligibility rule" in content
 
 
 def test_save_draft_syncs_structured_eligibility_toggles(client) -> None:

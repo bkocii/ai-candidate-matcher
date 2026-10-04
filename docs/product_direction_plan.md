@@ -352,6 +352,15 @@ confirms/opens and continues to the vacancy-scoped intake delivered by
 `FLOW-001`. The routine create page no longer offers the separate no-AI draft
 path.
 
+The 2026-10-03 consistency refinement treats learning topics and credentials
+awarded by an advertised programme as outcomes rather than applicant
+requirements. An explicit title inside the source is canonical, so a temporary
+form title cannot make an uploaded copy differ from pasted text. Equivalent
+source text receives one organization-scoped, policy-versioned normalized
+extraction snapshot. Unknown/other role plus unknown seniority remain internal
+unknowns and redundant programme-role or unstated-experience warnings are
+omitted from routine review.
+
 The 2026-09-23 browser refinement makes those essentials editable and places
 explicit structured eligibility selections on the compact review itself. The
 same confirmation submit saves the reviewed values and rules before opening and

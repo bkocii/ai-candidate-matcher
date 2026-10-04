@@ -198,7 +198,11 @@ completed on 2026-09-26.
   The 2026-10-02 refinement leaves one visible **Analyze vacancy with AI** action,
   one consistent-width review page, and one **Save vacancy and add candidates**
   action while preserving manual failure recovery and immutable requirement
-  history. **Complete — 2026-09-23; simplified 2026-10-02.**
+  history. The 2026-10-03 consistency pass validates course outcomes against
+  source sections, uses an explicit title inside the source as canonical, and
+  reuses one tenant-scoped normalized result for identical source inputs.
+  **Complete — 2026-09-23; simplified 2026-10-02;
+  consistency-hardened 2026-10-03.**
 - `FLOW-002` Default vacancy views to their associated candidates and separate
   access to the wider organization candidate pool. **Complete — 2026-09-24.**
 - `FLOW-003` Add deliberate cross-vacancy reuse through **Add from candidate

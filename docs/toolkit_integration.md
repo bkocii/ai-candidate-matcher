@@ -34,6 +34,12 @@ only the preserved vacancy source-description snapshot, receives
 It accepts an injected `AIGateway` for tests and otherwise resolves the configured
 gateway. Python AI Toolkit remains unaware of Django vacancy models, recruiter
 confirmation, typed hard rules, and draft concurrency policy.
+Application-owned policy v4 validates source sections, canonicalizes an explicit
+title inside the source ahead of any temporary form title, normalizes redundant
+programme ambiguities, and stores one organization-scoped normalized snapshot
+for an identical canonical-source fingerprint. A cache hit avoids a provider call and therefore creates no AI
+usage event; policy versions and tenant boundaries prevent unsafe reuse. The
+toolkit remains unaware of this consistency and persistence policy.
 
 ### Candidate profile extraction
 

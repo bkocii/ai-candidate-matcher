@@ -137,3 +137,14 @@ instructs the same structured request to scan the complete CV for explicitly
 named job-relevant skills instead of favoring a Skills heading, while the
 existing exact-evidence validator prevents synonym or umbrella-skill inference.
 No generic toolkit behavior changed.
+
+### `APP-002` — Vacancy extraction consistency — 2026-10-03
+
+Separate valid structured responses for identical vacancy text can choose
+different summaries, ambiguities, and categories. This is expected model
+variation combined with recruitment-specific semantics, not a failure of the
+toolkit's schema validation or retry contract. The application now validates
+source sections, canonicalizes an explicit title inside the source, normalizes
+non-actionable programme ambiguities, and reuses one organization-scoped,
+policy-versioned normalized snapshot for identical source input. No toolkit API,
+dependency, provider adapter, or retry behavior changed.

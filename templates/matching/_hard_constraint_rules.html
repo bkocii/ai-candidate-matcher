@@ -22,8 +22,8 @@
                         {% if editable %}
                             <td data-label="Actions">
                                 <div class="table-actions">
-                                    <a href="{% url 'matching:hard-constraint-edit' organization.slug vacancy.pk requirements.pk rule.pk %}">Edit</a>
-                                    <a class="danger-link" href="{% url 'matching:hard-constraint-delete' organization.slug vacancy.pk requirements.pk rule.pk %}">Delete</a>
+                                    <a href="{% url 'matching:hard-constraint-edit' organization.slug vacancy.pk requirements.pk rule.pk %}{% if return_to %}?return_to={{ return_to|urlencode }}{% endif %}">Edit</a>
+                                    <a class="danger-link" href="{% url 'matching:hard-constraint-delete' organization.slug vacancy.pk requirements.pk rule.pk %}{% if return_to %}?return_to={{ return_to|urlencode }}{% endif %}">Delete</a>
                                 </div>
                             </td>
                         {% endif %}

@@ -1,0 +1,18 @@
+<section class="inline-rule-editor" id="eligibility-rules" aria-labelledby="eligibility-rules-title">
+    <div>
+        <p class="eyebrow">Candidate filtering</p>
+        <h2 id="eligibility-rules-title">Eligibility rules</h2>
+        <p class="section-note">Checked structured values become filtering rules when you save. Explicitly conflicting information can exclude a candidate; missing information always stays in recruiter review.</p>
+    </div>
+    <div class="eligibility-rule-list">
+        {% include "matching/_hard_constraint_rules.html" with rules=hard_constraint_rules editable=True return_to=return_to %}
+    </div>
+    <details class="eligibility-rule-builder advanced-rule-builder"{% if eligibility_form.errors %} open{% endif %}>
+        <summary>Add a custom eligibility rule</summary>
+        <p class="section-note">Use this only when a requirement is not already represented by a structured field above.</p>
+        <div class="advanced-rule-builder-fields">
+            {% include "matching/_eligibility_rule_form_fields.html" %}
+            <button class="secondary-button" type="submit" name="intent" value="add_rule">Add eligibility rule</button>
+        </div>
+    </details>
+</section>

@@ -174,6 +174,8 @@ def test_prompt_marks_source_as_untrusted_and_requires_explicit_unknowns() -> No
     assert "Do not infer missing facts" in prompt
     assert "responsibility or task is not a must-have skill" in prompt
     assert "atomic skill names only" in prompt
+    assert "Languages\n  belong in language_requirements" in prompt
+    assert "A Requirements heading does not" in prompt
     assert source in prompt
     assert "protected or sensitive" in prompt
 
@@ -213,6 +215,315 @@ Responsibilities:
         'AI suggested "Code review" as must-have, but the source does not clearly '
         "state it as mandatory. Review this classification."
     ]
+
+
+def test_general_requirements_are_classified_consistently_outside_skills() -> None:
+    source = """Management Consultant training programme
+
+Requirements
+Working proficiency in English
+Availability for all 11 training days in November 2026
+Genuine motivation to learn and contribute to the consulting profession
+"""
+    results = []
+    outputs = (
+        extracted_output(
+            must_have_skills=[
+                "English",
+                "Availability for all 11 training days in November 2026",
+                "Motivation to learn and contribute to the consulting profession",
+            ],
+            nice_to_have_skills=[],
+            language_requirements=[],
+            hard_constraints=[],
+            ambiguities=[],
+        ),
+        extracted_output(
+            must_have_skills=[],
+            nice_to_have_skills=[],
+            language_requirements=["English"],
+            hard_constraints=[
+                "Availability for all 11 training days in November 2026",
+                "Motivation to learn and contribute to the consulting profession",
+            ],
+            ambiguities=[],
+        ),
+        extracted_output(
+            must_have_skills=["Consulting profession"],
+            nice_to_have_skills=[],
+            language_requirements=["English"],
+            hard_constraints=[
+                "Availability for all 11 training days in November 2026",
+            ],
+            ambiguities=[],
+        ),
+    )
+
+    for index, output in enumerate(outputs):
+        user, _, vacancy, requirements = make_workspace(username=f"variant-{index}")
+        vacancy.description = source
+        vacancy.save(update_fields=("description",))
+        requirements.source_description = source
+        requirements.save(update_fields=("source_description",))
+
+        extract_vacancy_requirements(
+            requirements=requirements,
+            user=user,
+            gateway=RecordingGateway(output=output),
+        )
+        requirements.refresh_from_db()
+        results.append(
+            (
+                requirements.must_have_skills,
+                requirements.language_requirements,
+                requirements.hard_constraints,
+            )
+        )
+
+    assert (
+        results
+        == [
+            (
+                [],
+                ["English"],
+                [
+                    "Availability for all 11 training days in November 2026",
+                    "Genuine motivation to learn and contribute to the consulting "
+                    "profession",
+                ],
+            ),
+        ]
+        * 3
+    )
+
+
+def test_identical_sources_reuse_one_normalized_extraction_within_organization() -> (
+    None
+):
+    title = "Management Consultant–Practitioner Certification (MCPC)"
+    source = f"""Title: {title}
+
+What you will learn
+Management Consulting in Perspective
+Ethical conduct
+ISO 20700
+Responsible AI
+
+Who should apply
+Final-year undergraduate or master's students
+Recent graduates (within the past 3 years) from any discipline
+
+Requirements
+Working proficiency in English
+Availability for all 11 training days in November 2026
+Genuine motivation to learn and contribute to the consulting profession
+
+The fee includes
+Certification assessment leading to the MCPC Foundation Level credential
+"""
+    user, organization, first_vacancy, first_requirements = make_workspace()
+    first_vacancy.title = title
+    first_vacancy.description = source
+    first_vacancy.save(update_fields=("title", "description"))
+    first_requirements.source_description = source
+    first_requirements.save(update_fields=("source_description",))
+    second_vacancy = Vacancy.objects.create(
+        organization=organization,
+        title="test",
+        description=source.replace("\n", "\r\n"),
+        created_by=user,
+    )
+    second_requirements = VacancyRequirements.objects.create(
+        vacancy=second_vacancy,
+        source_description=second_vacancy.description,
+        created_by=user,
+    )
+    pasted_gateway = RecordingGateway(
+        output=extracted_output(
+            summary="Pasted extraction summary",
+            role_family="other",
+            role_family_evidence=title,
+            must_have_skills=["Management consulting", "Ethical conduct"],
+            nice_to_have_skills=["ISO 20700", "Responsible AI"],
+            language_requirements=["English"],
+            education_requirements=[
+                "Final-year undergraduate or master's students",
+                "Recent graduates within the past 3 years from any discipline",
+            ],
+            certification_requirements=["MCPC Foundation Level credential"],
+            hard_constraints=[
+                "Availability for all 11 training days in November 2026",
+                "Genuine motivation to learn and contribute to the consulting "
+                "profession",
+            ],
+            ambiguities=["Pasted-output ambiguity"],
+        )
+    )
+    uploaded_gateway = RecordingGateway(
+        output=extracted_output(
+            summary="Different uploaded extraction summary",
+            must_have_skills=[],
+            nice_to_have_skills=[],
+            language_requirements=["English"],
+            education_requirements=[
+                "Final-year undergraduates",
+                "Master's students",
+                "Recent graduates within the past 3 years from any discipline",
+            ],
+            certification_requirements=[],
+            hard_constraints=[],
+            ambiguities=["Different uploaded-output ambiguity"],
+        )
+    )
+
+    first_result = extract_vacancy_requirements(
+        requirements=first_requirements,
+        user=user,
+        gateway=pasted_gateway,
+    )
+    second_result = extract_vacancy_requirements(
+        requirements=second_requirements,
+        user=user,
+        gateway=uploaded_gateway,
+    )
+    first_requirements.refresh_from_db()
+    second_requirements.refresh_from_db()
+
+    assert first_result.reused is False
+    assert second_result.reused is True
+    assert second_result.metadata is None
+    assert uploaded_gateway.calls == []
+    assert second_requirements.extraction_fingerprint == (
+        first_requirements.extraction_fingerprint
+    )
+    assert second_requirements.summary == first_requirements.summary
+    assert second_requirements.ambiguities == first_requirements.ambiguities
+    assert first_requirements.must_have_skills == []
+    assert first_requirements.nice_to_have_skills == []
+    assert first_requirements.certification_requirements == []
+    assert first_requirements.education_requirements == [
+        "Final-year undergraduate or master's students",
+        "Recent graduates (within the past 3 years) from any discipline",
+    ]
+    assert second_requirements.education_requirements == (
+        first_requirements.education_requirements
+    )
+
+
+def test_programme_ambiguities_are_normalized_consistently() -> None:
+    source = """Title: Management Consultant–Practitioner Certification (MCPC)
+
+This certification programme is for students and recent graduates.
+No prior consulting experience is required.
+
+Requirements
+Working proficiency in English
+Genuine motivation to learn and contribute to the consulting profession
+"""
+    ambiguity_variants = (
+        [
+            'The role title is listed as "test", so role family and seniority '
+            "cannot be classified from an explicit role title.",
+            'The programme states "No prior consulting experience is required," '
+            "but no minimum years of experience is explicitly stated as a "
+            "requirement.",
+        ],
+        [
+            "Target audience includes multiple applicant groups rather than a "
+            "single job role.",
+            "Programme is a certification course; role/title extraction is based "
+            "on the stated title, not an employment vacancy.",
+            'AI suggested "Contribution to the consulting profession" as '
+            "must-have, but the source does not clearly state it as mandatory. "
+            "Review this classification.",
+        ],
+    )
+
+    results = []
+    for index, ambiguities in enumerate(ambiguity_variants):
+        user, _, vacancy, requirements = make_workspace(
+            username=f"programme-ambiguity-{index}"
+        )
+        vacancy.title = "test" if index == 0 else "MCPC programme"
+        vacancy.description = source
+        vacancy.save(update_fields=("title", "description"))
+        requirements.source_description = source
+        requirements.save(update_fields=("source_description",))
+
+        extract_vacancy_requirements(
+            requirements=requirements,
+            user=user,
+            gateway=RecordingGateway(
+                output=extracted_output(
+                    role_family="other",
+                    role_family_evidence="Management Consultant–Practitioner",
+                    must_have_skills=["Contribution to the consulting profession"],
+                    nice_to_have_skills=[],
+                    minimum_years_experience=None,
+                    location_requirement="",
+                    work_mode="unknown",
+                    language_requirements=["English"],
+                    hard_constraints=[],
+                    ambiguities=ambiguities,
+                )
+            ),
+        )
+        requirements.refresh_from_db()
+        results.append(
+            (
+                requirements.must_have_skills,
+                requirements.hard_constraints,
+                requirements.ambiguities,
+            )
+        )
+
+    assert (
+        results
+        == [
+            (
+                [],
+                [
+                    "Genuine motivation to learn and contribute to the consulting "
+                    "profession"
+                ],
+                [],
+            )
+        ]
+        * 2
+    )
+
+
+def test_extraction_reuse_never_crosses_organization_boundary() -> None:
+    first_user, _, first_vacancy, first_requirements = make_workspace(
+        username="first-tenant"
+    )
+    second_user, _, second_vacancy, second_requirements = make_workspace(
+        username="second-tenant"
+    )
+    for vacancy, requirements in (
+        (first_vacancy, first_requirements),
+        (second_vacancy, second_requirements),
+    ):
+        vacancy.title = "Backend Engineer"
+        vacancy.description = "Python is required. Docker is preferred."
+        vacancy.save(update_fields=("title", "description"))
+        requirements.source_description = vacancy.description
+        requirements.save(update_fields=("source_description",))
+
+    extract_vacancy_requirements(
+        requirements=first_requirements,
+        user=first_user,
+        gateway=RecordingGateway(),
+    )
+    second_gateway = RecordingGateway()
+    result = extract_vacancy_requirements(
+        requirements=second_requirements,
+        user=second_user,
+        gateway=second_gateway,
+    )
+
+    assert result.reused is False
+    assert len(second_gateway.calls) == 1
 
 
 def test_service_applies_validated_output_to_draft_and_syncs_skills() -> None:
@@ -505,6 +816,30 @@ def test_create_and_analyze_runs_ai_and_opens_compact_review(client) -> None:
     assert "Additional details" in content
     assert "View original vacancy text" in content
     assert "Open advanced editor" not in content
+    assert "Target role:" not in content
+    assert "Seniority:" not in content
+
+
+def test_review_shows_only_meaningful_role_classification(client) -> None:
+    user, organization, vacancy, requirements = make_workspace()
+    requirements.role_family = "backend"
+    requirements.role_family_evidence = "Senior Django Developer"
+    requirements.seniority = "senior"
+    requirements.seniority_evidence = "Senior Django Developer"
+    requirements.save()
+    client.force_login(user)
+
+    response = client.get(
+        reverse(
+            "vacancies:requirements-review",
+            args=[organization.slug, vacancy.pk, requirements.pk],
+        )
+    )
+    content = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Target role:" in content
+    assert "Seniority:" in content
 
 
 @override_settings(AI_GATEWAY_FACTORY="tests.test_vacancy_ai_extraction.FailingGateway")

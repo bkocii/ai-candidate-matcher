@@ -119,6 +119,12 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - One primary create-and-analyze action with compact AI-filled requirement review,
   manual/retry fallback, explicit confirmation/opening, and direct continuation
   to vacancy-scoped CV intake.
+- Equivalent vacancy source text reuses one organization-scoped,
+  policy-versioned normalized extraction; an explicit source title takes
+  precedence over a temporary form title, and source format alone cannot change
+  the review result. Course topics and awarded credentials are not applicant
+  skills or certification requirements. Redundant programme-role and
+  no-experience ambiguity messages are suppressed when the source resolves them.
 - Recruiter confirmation of extracted vacancy requirements.
 - Hard filters for explicit requirements.
 - Candidate-to-vacancy shortlist.
@@ -250,7 +256,8 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
 - Explicit hard constraints.
 - Ambiguities requiring recruiter confirmation.
 - Controlled target role family and seniority, each grounded in explicit source
-  title evidence or left not determined.
+  title evidence or left not determined. Routine review omits both controls when
+  neither value is meaningful.
 
 ### Candidate profile
 

@@ -17,9 +17,10 @@
     </dl>
     <form method="post">
         {% csrf_token %}
+        {% if return_to %}<input type="hidden" name="return_to" value="{{ return_to }}">{% endif %}
         <div class="button-row">
             <button class="danger-button" type="submit">Delete eligibility rule</button>
-            <a class="secondary-button" href="{% url 'vacancies:requirements-edit' organization.slug vacancy.pk requirements.pk %}">Keep rule</a>
+            <a class="secondary-button" href="{{ return_url }}">Keep rule</a>
         </div>
     </form>
 </section>

@@ -273,6 +273,57 @@ def test_recruiter_edits_rule_type_and_payload_from_app(client) -> None:
     assert rule.expected_value == ""
 
 
+def test_review_rule_actions_return_to_review(client) -> None:
+    user, organization, vacancy, requirements = make_workspace()
+    rule = create_hard_constraint_rule(
+        requirements=requirements,
+        user=user,
+        rule_type=HardConstraintRule.RuleType.LOCATION,
+        source_text="Prishtina required.",
+        expected_value="Prishtina",
+    )
+    client.force_login(user)
+    review_url = reverse(
+        "vacancies:requirements-review",
+        args=[organization.slug, vacancy.pk, requirements.pk],
+    )
+    edit_from_review = (
+        f"{edit_url(organization, vacancy, requirements, rule)}?return_to=review"
+    )
+
+    edit_page = client.get(edit_from_review)
+    edit_content = edit_page.content.decode()
+    assert edit_page.status_code == 200
+    assert 'name="return_to" value="review"' in edit_content
+    assert f'href="{review_url}#eligibility-rules"' in edit_content
+
+    response = client.post(
+        edit_from_review,
+        {
+            **rule_form_data(
+                requirements,
+                rule_type=HardConstraintRule.RuleType.LOCATION,
+                source_text="Kosovo required.",
+                skill="",
+                expected_value="Kosovo",
+            ),
+            "return_to": "review",
+        },
+    )
+    assert response.status_code == 302
+    assert response.url == f"{review_url}#eligibility-rules"
+
+    delete_from_review = (
+        f"{delete_url(organization, vacancy, requirements, rule)}?return_to=review"
+    )
+    delete_page = client.get(delete_from_review)
+    assert f'href="{review_url}#eligibility-rules"' in delete_page.content.decode()
+    response = client.post(delete_from_review, {"return_to": "review"})
+    assert response.status_code == 302
+    assert response.url == f"{review_url}#eligibility-rules"
+    assert not HardConstraintRule.objects.filter(pk=rule.pk).exists()
+
+
 def test_rule_delete_requires_confirmation_page(client) -> None:
     user, organization, vacancy, requirements = make_workspace()
     rule = create_hard_constraint_rule(

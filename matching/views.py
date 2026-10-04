@@ -92,6 +92,31 @@ def _redirect_if_confirmed(request, organization, vacancy, requirements):
     )
 
 
+def _rule_editor_return(
+    request,
+    organization: Organization,
+    vacancy: Vacancy,
+    requirements: VacancyRequirements,
+) -> tuple[str, str]:
+    return_to = request.POST.get("return_to") or request.GET.get("return_to", "")
+    if return_to == "review":
+        return (
+            return_to,
+            reverse(
+                "vacancies:requirements-review",
+                args=[organization.slug, vacancy.pk, requirements.pk],
+            )
+            + "#eligibility-rules",
+        )
+    return (
+        "",
+        reverse(
+            "vacancies:requirements-edit",
+            args=[organization.slug, vacancy.pk, requirements.pk],
+        ),
+    )
+
+
 @login_required
 def hard_constraint_add(
     request,
@@ -110,6 +135,9 @@ def hard_constraint_add(
     )
     if redirect_response is not None:
         return redirect_response
+    return_to, return_url = _rule_editor_return(
+        request, organization, vacancy, requirements
+    )
 
     form = HardConstraintRuleForm(
         request.POST or None,
@@ -126,12 +154,7 @@ def hard_constraint_add(
             form.add_error(None, "; ".join(error.messages))
         else:
             messages.success(request, "Added eligibility rule.")
-            return redirect(
-                "vacancies:requirements-edit",
-                organization_slug=organization.slug,
-                vacancy_id=vacancy.pk,
-                requirements_id=requirements.pk,
-            )
+            return redirect(return_url)
     return render(
         request,
         "matching/hard_constraint_form.html",
@@ -141,6 +164,8 @@ def hard_constraint_add(
             "requirements": requirements,
             "form": form,
             "rule": None,
+            "return_to": return_to,
+            "return_url": return_url,
         },
     )
 
@@ -171,6 +196,9 @@ def hard_constraint_edit(
     )
     if redirect_response is not None:
         return redirect_response
+    return_to, return_url = _rule_editor_return(
+        request, organization, vacancy, requirements
+    )
 
     form = HardConstraintRuleForm(
         request.POST or None,
@@ -188,12 +216,7 @@ def hard_constraint_edit(
             form.add_error(None, "; ".join(error.messages))
         else:
             messages.success(request, "Updated eligibility rule.")
-            return redirect(
-                "vacancies:requirements-edit",
-                organization_slug=organization.slug,
-                vacancy_id=vacancy.pk,
-                requirements_id=requirements.pk,
-            )
+            return redirect(return_url)
     return render(
         request,
         "matching/hard_constraint_form.html",
@@ -203,6 +226,8 @@ def hard_constraint_edit(
             "requirements": requirements,
             "form": form,
             "rule": rule,
+            "return_to": return_to,
+            "return_url": return_url,
         },
     )
 
@@ -233,6 +258,9 @@ def hard_constraint_delete(
     )
     if redirect_response is not None:
         return redirect_response
+    return_to, return_url = _rule_editor_return(
+        request, organization, vacancy, requirements
+    )
 
     if request.method == "POST":
         try:
@@ -241,12 +269,7 @@ def hard_constraint_delete(
             messages.error(request, "; ".join(error.messages))
         else:
             messages.success(request, "Deleted eligibility rule.")
-        return redirect(
-            "vacancies:requirements-edit",
-            organization_slug=organization.slug,
-            vacancy_id=vacancy.pk,
-            requirements_id=requirements.pk,
-        )
+        return redirect(return_url)
     return render(
         request,
         "matching/hard_constraint_confirm_delete.html",
@@ -255,6 +278,8 @@ def hard_constraint_delete(
             "vacancy": vacancy,
             "requirements": requirements,
             "rule": rule,
+            "return_to": return_to,
+            "return_url": return_url,
         },
     )
 

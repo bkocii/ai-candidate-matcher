@@ -189,6 +189,9 @@ class VacancyRequirements(models.Model):
     source_original_filename = models.CharField(max_length=255, blank=True)
     source_content_type = models.CharField(max_length=150, blank=True)
     source_sha256 = models.CharField(max_length=64, blank=True)
+    extraction_policy_version = models.CharField(max_length=50, blank=True)
+    extraction_fingerprint = models.CharField(max_length=64, blank=True, db_index=True)
+    extraction_snapshot = models.JSONField(default=dict, blank=True)
     summary = models.TextField(blank=True)
     role_family = models.CharField(
         max_length=30,
@@ -372,6 +375,9 @@ class VacancyRequirements(models.Model):
             "source_original_filename",
             "source_content_type",
             "source_sha256",
+            "extraction_policy_version",
+            "extraction_fingerprint",
+            "extraction_snapshot",
             "summary",
             "role_family",
             "role_family_evidence",

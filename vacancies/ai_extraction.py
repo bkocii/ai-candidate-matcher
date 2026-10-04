@@ -11,6 +11,7 @@ from decimal import Decimal
 from typing import Annotated, Literal
 
 from django.core.exceptions import ValidationError
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
 from pydantic import (
     BaseModel,
@@ -42,6 +43,7 @@ from vacancies.models import VacancyRequirements
 from vacancies.services import REQUIREMENTS_COPY_FIELDS, update_requirements_draft
 
 VACANCY_EXTRACTION_SCHEMA_VERSION = "vacancy_requirements_extraction.v2"
+VACANCY_EXTRACTION_POLICY_VERSION = "vacancy_extraction_policy.v4"
 MAX_SOURCE_DESCRIPTION_CHARACTERS = 30_000
 
 _WORD_RE = re.compile(r"[^\W_]+", re.UNICODE)
@@ -68,6 +70,107 @@ _OPTIONAL_SECTION_RE = re.compile(
 )
 _RESPONSIBILITY_SECTION_RE = re.compile(
     r"^(?:responsibilities|duties|what\s+you(?:'|’)ll\s+do|the\s+role)\s*:?$",
+    re.IGNORECASE,
+)
+_LEARNING_SECTION_RE = re.compile(
+    r"^(?:what\s+you\s+will\s+learn|curriculum|course\s+content|modules?)\s*:?$",
+    re.IGNORECASE,
+)
+_CANDIDATE_SECTION_RE = re.compile(
+    r"^(?:who\s+should\s+apply|who\s+can\s+apply|eligible\s+applicants?)\s*:?$",
+    re.IGNORECASE,
+)
+_NEUTRAL_SECTION_RE = re.compile(
+    r"^(?:about(?:\s+the\s+programme)?|programme\s+dates?|fees?|"
+    r"the\s+fee\s+includes?)\s*:?$",
+    re.IGNORECASE,
+)
+_NON_SKILL_REQUIREMENT_RE = re.compile(
+    r"\b(?:availability|available|attendance|attend|motivation|motivated|"
+    r"commitment|committed|willingness|willing|eligible|eligibility|"
+    r"contribut(?:e|ion)|profession|work\s+authori[sz]ation|training\s+days?|"
+    r"schedule)\b",
+    re.IGNORECASE,
+)
+_EXPLICIT_TITLE_LINE_RE = re.compile(
+    r"^(?:job\s+title|position|role|title)\s*:\s*\S.+$",
+    re.IGNORECASE,
+)
+_NON_EMPLOYMENT_SOURCE_RE = re.compile(
+    r"\b(?:certification|course|programme|program|training)\b",
+    re.IGNORECASE,
+)
+_ROLE_AMBIGUITY_RE = re.compile(
+    r"\b(?:job\s+role|employment\s+vacancy|role\s+family|role/title|seniority|"
+    r"single\s+job\s+role|certification\s+course)\b",
+    re.IGNORECASE,
+)
+_NO_EXPERIENCE_REQUIRED_RE = re.compile(
+    r"\bno\s+prior\s+[^.\n]*experience\s+is\s+required\b",
+    re.IGNORECASE,
+)
+_EXPERIENCE_AMBIGUITY_RE = re.compile(
+    r"\b(?:no\s+minimum\s+years?|minimum\s+years?\s+of\s+experience|"
+    r"experience\s+is\s+(?:not|not explicitly)\s+stated)\b",
+    re.IGNORECASE,
+)
+_MUST_HAVE_AMBIGUITY_RE = re.compile(
+    r'^AI suggested "(?P<value>.+)" as must-have, but the source does not clearly '
+    r"state it as mandatory\.",
+    re.IGNORECASE,
+)
+_REQUIREMENT_MATCH_STOP_WORDS = {
+    "a",
+    "an",
+    "and",
+    "for",
+    "in",
+    "of",
+    "the",
+    "to",
+}
+_LANGUAGE_LABELS = {
+    "albanian": "Albanian",
+    "bosnian": "Bosnian",
+    "croatian": "Croatian",
+    "english": "English",
+    "french": "French",
+    "german": "German",
+    "italian": "Italian",
+    "macedonian": "Macedonian",
+    "serbian": "Serbian",
+    "spanish": "Spanish",
+    "turkish": "Turkish",
+}
+_LANGUAGE_WRAPPER_WORDS = {
+    "advanced",
+    "basic",
+    "business",
+    "excellent",
+    "fluent",
+    "fluency",
+    "in",
+    "language",
+    "native",
+    "professional",
+    "proficiency",
+    "required",
+    "spoken",
+    "working",
+    "written",
+}
+_EDUCATION_CUE_RE = re.compile(
+    r"\b(?:student|students|undergraduate|graduate|graduates|bachelor|master|"
+    r"degree|university|college|academic)\b",
+    re.IGNORECASE,
+)
+_CERTIFICATION_CUE_RE = re.compile(
+    r"\b(?:certification|certificate|credential|licen[cs]e|certified)\b",
+    re.IGNORECASE,
+)
+_CERTIFICATION_OUTCOME_RE = re.compile(
+    r"\b(?:leading\s+to|final\s+step\s+to|will\s+(?:earn|receive)|"
+    r"programme|program|course|training)\b",
     re.IGNORECASE,
 )
 
@@ -210,7 +313,8 @@ class VacancyExtractionResult:
     """Updated draft plus non-persisted safe request metadata."""
 
     requirements: VacancyRequirements
-    metadata: AIGatewayMetadata
+    metadata: AIGatewayMetadata | None
+    reused: bool = False
 
 
 def build_vacancy_requirements_prompt(source_description: str) -> str:
@@ -235,12 +339,21 @@ Classification rules:
 - Skill lists contain atomic skill names only, such as "Python" or "Django".
   Remove generic wrappers such as "professional", "development experience", or
   "proficiency in" when the underlying explicitly named skill is unchanged.
+- A skill is a learned professional, technical, or domain capability. Languages
+  belong in language_requirements. Availability, attendance, schedule,
+  motivation, willingness, commitment, and work-eligibility statements belong
+  in hard_constraints, not in either skill list. A Requirements heading does not
+  make every item beneath it a skill.
 - Put a skill in must_have_skills only when the source clearly makes it mandatory.
 - A responsibility or task is not a must-have skill by itself. Only promote it
   when the source separately marks it as required, mandatory, essential, or lists
   it in a clearly required skills/requirements section. Otherwise keep it in the
   summary or add an ambiguity when its classification needs recruiter review.
 - Put a skill in nice_to_have_skills only when it is clearly preferred or optional.
+- Topics taught by a course, programme, curriculum, or training are learning
+  outcomes, not applicant skills. Do not put them in either skill list.
+- A certification or credential awarded by the advertised programme is an
+  outcome, not an applicant certification requirement.
 - Never put the same skill in both groups.
 - minimum_years_experience must be null unless a minimum is explicit.
 - hard_constraints contains concise source-grounded notes only. They are proposals
@@ -281,6 +394,15 @@ def _source_statements(source_description: str) -> tuple[tuple[str, str], ...]:
         if _RESPONSIBILITY_SECTION_RE.fullmatch(line):
             section = "responsibility"
             continue
+        if _LEARNING_SECTION_RE.fullmatch(line):
+            section = "learning"
+            continue
+        if _CANDIDATE_SECTION_RE.fullmatch(line):
+            section = "candidate"
+            continue
+        if _NEUTRAL_SECTION_RE.fullmatch(line):
+            section = "neutral"
+            continue
         statements.extend(
             (section, statement.strip())
             for statement in _STATEMENT_SPLIT_RE.split(line)
@@ -307,6 +429,161 @@ def _source_explicitly_requires_skill(
     return False
 
 
+def _source_explicitly_prefers_skill(
+    *,
+    skill: str,
+    source_description: str,
+) -> bool:
+    skill_words = _words(skill)
+    if not skill_words:
+        return False
+    for section, statement in _source_statements(source_description):
+        if not skill_words.issubset(_words(statement)):
+            continue
+        if section == "learning":
+            continue
+        if section == "optional" or _OPTIONAL_CUE_RE.search(statement):
+            return True
+    return False
+
+
+def _source_places_skill_outside_applicant_requirements(
+    *,
+    skill: str,
+    source_description: str,
+) -> bool:
+    skill_words = _words(skill)
+    if not skill_words:
+        return False
+    return any(
+        section in {"learning", "candidate"} and skill_words.issubset(_words(statement))
+        for section, statement in _source_statements(source_description)
+    )
+
+
+def _source_education_requirements(source_description: str) -> list[str]:
+    requirements: list[str] = []
+    keys: set[str] = set()
+    for section, statement in _source_statements(source_description):
+        if not _EDUCATION_CUE_RE.search(statement):
+            continue
+        if section not in {"candidate", "mandatory"} and not _MANDATORY_CUE_RE.search(
+            statement
+        ):
+            continue
+        normalized = " ".join(statement.split())
+        key = normalized.casefold()
+        if key not in keys:
+            requirements.append(normalized)
+            keys.add(key)
+    return requirements
+
+
+def _source_certification_requirements(source_description: str) -> list[str]:
+    requirements: list[str] = []
+    keys: set[str] = set()
+    for section, statement in _source_statements(source_description):
+        if not _CERTIFICATION_CUE_RE.search(statement):
+            continue
+        if _CERTIFICATION_OUTCOME_RE.search(statement):
+            continue
+        if section != "mandatory" and not _MANDATORY_CUE_RE.search(statement):
+            continue
+        normalized = " ".join(statement.split())
+        key = normalized.casefold()
+        if key not in keys:
+            requirements.append(normalized)
+            keys.add(key)
+    return requirements
+
+
+def _language_requirement_from_skill(value: str) -> str | None:
+    words = _words(value)
+    matches = [key for key in _LANGUAGE_LABELS if key in words]
+    if len(matches) != 1:
+        return None
+    language = matches[0]
+    if words - {language} - _LANGUAGE_WRAPPER_WORDS:
+        return None
+    return _LANGUAGE_LABELS[language]
+
+
+def _non_skill_requirement(
+    value: str,
+    *,
+    source_description: str,
+) -> tuple[str, str] | None:
+    language = _language_requirement_from_skill(value)
+    if language is not None:
+        return "language", language
+    value_words = _words(value)
+    meaningful_value_words = value_words - _REQUIREMENT_MATCH_STOP_WORDS
+    for _, statement in _source_statements(source_description):
+        statement_words = _words(statement)
+        meaningful_overlap = meaningful_value_words.intersection(
+            statement_words - _REQUIREMENT_MATCH_STOP_WORDS
+        )
+        if (
+            value_words
+            and (value_words.issubset(statement_words) or len(meaningful_overlap) >= 2)
+            and _NON_SKILL_REQUIREMENT_RE.search(statement)
+        ):
+            return "constraint", " ".join(statement.split())
+    if _NON_SKILL_REQUIREMENT_RE.search(value):
+        return "constraint", " ".join(value.split())
+    return None
+
+
+def _normalized_ambiguities(
+    ambiguities: list[str],
+    *,
+    source_description: str,
+    role_family: str,
+    seniority: str,
+) -> list[str]:
+    non_employment_source = bool(_NON_EMPLOYMENT_SOURCE_RE.search(source_description))
+    no_experience_required = bool(_NO_EXPERIENCE_REQUIRED_RE.search(source_description))
+    normalized: list[str] = []
+    keys: set[str] = set()
+    for ambiguity in ambiguities:
+        must_have_match = _MUST_HAVE_AMBIGUITY_RE.match(ambiguity)
+        if must_have_match and _non_skill_requirement(
+            must_have_match.group("value"),
+            source_description=source_description,
+        ):
+            continue
+        if (
+            non_employment_source
+            and role_family in {"unknown", "other"}
+            and seniority == "unknown"
+            and _ROLE_AMBIGUITY_RE.search(ambiguity)
+        ):
+            continue
+        if no_experience_required and _EXPERIENCE_AMBIGUITY_RE.search(ambiguity):
+            continue
+        key = ambiguity.casefold()
+        if key not in keys:
+            normalized.append(ambiguity)
+            keys.add(key)
+    return normalized
+
+
+def _merge_source_constraint(constraints: list[str], value: str) -> None:
+    normalized = " ".join(value.split())
+    normalized_words = _words(normalized)
+    for index, existing in enumerate(constraints):
+        existing_words = _words(existing)
+        if (
+            normalized.casefold() == existing.casefold()
+            or normalized_words.issubset(existing_words)
+            or existing_words.issubset(normalized_words)
+        ):
+            if len(normalized_words) > len(existing_words):
+                constraints[index] = normalized
+            return
+    constraints.append(normalized)
+
+
 def _requirements_values_for_source(
     *,
     extraction: VacancyRequirementsExtraction,
@@ -317,6 +594,18 @@ def _requirements_values_for_source(
     supported_skill_keys: set[str] = set()
     ambiguities = list(values["ambiguities"])
     ambiguity_keys = {item.casefold() for item in ambiguities}
+    language_requirements = list(values["language_requirements"])
+    language_keys = {item.casefold() for item in language_requirements}
+    hard_constraints = list(values["hard_constraints"])
+    for section, statement in _source_statements(source_description):
+        if section != "mandatory":
+            continue
+        language = _language_requirement_from_skill(statement)
+        if language is not None and language.casefold() not in language_keys:
+            language_requirements.append(language)
+            language_keys.add(language.casefold())
+        elif _NON_SKILL_REQUIREMENT_RE.search(statement):
+            _merge_source_constraint(hard_constraints, statement)
     normalized_source = _normalized_source_text(source_description)
     discovery_fields = (
         ("role_family", "role_family_evidence", normalize_role_family, "role"),
@@ -338,7 +627,25 @@ def _requirements_values_for_source(
             ambiguities.append(ambiguity)
             ambiguity_keys.add(ambiguity.casefold())
     for skill in extraction.must_have_skills:
+        routed_requirement = _non_skill_requirement(
+            skill,
+            source_description=source_description,
+        )
+        if routed_requirement is not None:
+            destination, value = routed_requirement
+            key = value.casefold()
+            if destination == "language" and key not in language_keys:
+                language_requirements.append(value)
+                language_keys.add(key)
+            elif destination == "constraint":
+                _merge_source_constraint(hard_constraints, value)
+            continue
         canonical = canonicalize_skill(skill)
+        if _source_places_skill_outside_applicant_requirements(
+            skill=canonical.display_name,
+            source_description=source_description,
+        ):
+            continue
         if _source_explicitly_requires_skill(
             skill=canonical.display_name,
             source_description=source_description,
@@ -358,21 +665,108 @@ def _requirements_values_for_source(
     normalized_nice_to_have: list[str] = []
     normalized_nice_keys: set[str] = set()
     for skill in extraction.nice_to_have_skills:
+        routed_requirement = _non_skill_requirement(
+            skill,
+            source_description=source_description,
+        )
+        if routed_requirement is not None:
+            destination, value = routed_requirement
+            key = value.casefold()
+            if destination == "language" and key not in language_keys:
+                language_requirements.append(value)
+                language_keys.add(key)
+            elif destination == "constraint":
+                _merge_source_constraint(hard_constraints, value)
+            continue
         canonical = canonicalize_skill(skill)
         if (
             canonical.key not in supported_skill_keys
             and canonical.key not in normalized_nice_keys
+            and _source_explicitly_prefers_skill(
+                skill=canonical.display_name,
+                source_description=source_description,
+            )
         ):
             normalized_nice_to_have.append(canonical.display_name)
             normalized_nice_keys.add(canonical.key)
     values["nice_to_have_skills"] = normalized_nice_to_have
-    values["ambiguities"] = ambiguities
+    values["language_requirements"] = language_requirements
+    source_education = _source_education_requirements(source_description)
+    if source_education:
+        values["education_requirements"] = source_education
+    values["certification_requirements"] = _source_certification_requirements(
+        source_description
+    )
+    values["hard_constraints"] = hard_constraints
+    values["ambiguities"] = _normalized_ambiguities(
+        ambiguities,
+        source_description=source_description,
+        role_family=values["role_family"],
+        seniority=values["seniority"],
+    )
     return values
 
 
 def _normalized_source_text(value: str) -> str:
     normalized = unicodedata.normalize("NFKC", value)
     return " ".join(normalized.casefold().split())
+
+
+def _extraction_fingerprint(requirements: VacancyRequirements) -> str:
+    payload = (
+        f"{VACANCY_EXTRACTION_POLICY_VERSION}\0"
+        f"{_normalized_source_text(_extraction_source(requirements))}"
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _json_safe_values(values: dict) -> dict:
+    return json.loads(json.dumps(values, cls=DjangoJSONEncoder))
+
+
+def _cached_extraction_values(
+    requirements: VacancyRequirements,
+    *,
+    fingerprint: str,
+) -> dict | None:
+    candidates = (
+        VacancyRequirements.objects.for_organization(requirements.organization)
+        .filter(
+            extraction_policy_version=VACANCY_EXTRACTION_POLICY_VERSION,
+            extraction_fingerprint=fingerprint,
+        )
+        .exclude(extraction_snapshot={})
+        .order_by("created_at", "id")
+    )
+    for candidate in candidates:
+        try:
+            extraction = VacancyRequirementsExtraction.model_validate(
+                candidate.extraction_snapshot
+            )
+        except (TypeError, ValueError):
+            continue
+        return extraction.as_requirements_values()
+    return None
+
+
+def _store_extraction_snapshot(
+    requirements: VacancyRequirements,
+    *,
+    fingerprint: str,
+    values: dict,
+) -> None:
+    requirements.creation_method = VacancyRequirements.CreationMethod.AI_ASSISTED
+    requirements.extraction_policy_version = VACANCY_EXTRACTION_POLICY_VERSION
+    requirements.extraction_fingerprint = fingerprint
+    requirements.extraction_snapshot = _json_safe_values(values)
+    requirements.save(
+        update_fields=(
+            "creation_method",
+            "extraction_policy_version",
+            "extraction_fingerprint",
+            "extraction_snapshot",
+        )
+    )
 
 
 def _draft_signature(requirements: VacancyRequirements) -> str:
@@ -427,7 +821,13 @@ def _load_extractable_draft(
 
 
 def _extraction_source(draft: VacancyRequirements) -> str:
-    return f"Role title: {draft.vacancy.title}\n{draft.source_description}".strip()
+    source_description = draft.source_description.strip()
+    if any(
+        _EXPLICIT_TITLE_LINE_RE.fullmatch(line.strip())
+        for line in source_description.splitlines()
+    ):
+        return source_description
+    return f"Role title: {draft.vacancy.title}\n{source_description}".strip()
 
 
 def extract_vacancy_requirements(
@@ -439,6 +839,36 @@ def extract_vacancy_requirements(
     """Extract, validate, and apply suggestions to an authorized draft."""
     draft = _load_extractable_draft(requirements=requirements, user=user)
     initial_signature = _draft_signature(draft)
+    fingerprint = _extraction_fingerprint(draft)
+    cached_values = _cached_extraction_values(draft, fingerprint=fingerprint)
+    if cached_values is not None:
+        with transaction.atomic():
+            locked = (
+                VacancyRequirements.objects.select_for_update()
+                .select_related("vacancy")
+                .get(pk=draft.pk)
+            )
+            if _draft_signature(locked) != initial_signature:
+                raise ValidationError(
+                    "The requirements draft changed before the saved analysis "
+                    "could be applied. Review the current draft and try again."
+                )
+            updated = update_requirements_draft(
+                requirements=locked,
+                user=user,
+                values=cached_values,
+            )
+            _store_extraction_snapshot(
+                updated,
+                fingerprint=fingerprint,
+                values=cached_values,
+            )
+        return VacancyExtractionResult(
+            requirements=updated,
+            metadata=None,
+            reused=True,
+        )
+
     usage_event = start_ai_usage_event(
         organization=draft.organization,
         actor=user,
@@ -466,16 +896,25 @@ def extract_vacancy_requirements(
                     "No AI suggestions were saved; review the current draft and try "
                     "again."
                 )
+            normalized_values = _requirements_values_for_source(
+                extraction=gateway_result.data,
+                source_description=_extraction_source(locked),
+            )
+            cached_values = _cached_extraction_values(
+                locked,
+                fingerprint=fingerprint,
+            )
+            values = cached_values or normalized_values
             updated = update_requirements_draft(
                 requirements=locked,
                 user=user,
-                values=_requirements_values_for_source(
-                    extraction=gateway_result.data,
-                    source_description=_extraction_source(locked),
-                ),
+                values=values,
             )
-            updated.creation_method = VacancyRequirements.CreationMethod.AI_ASSISTED
-            updated.save(update_fields=("creation_method",))
+            _store_extraction_snapshot(
+                updated,
+                fingerprint=fingerprint,
+                values=values,
+            )
             complete_ai_usage_success(
                 event=usage_event,
                 metadata=gateway_result.metadata,
@@ -493,4 +932,5 @@ def extract_vacancy_requirements(
     return VacancyExtractionResult(
         requirements=updated,
         metadata=gateway_result.metadata,
+        reused=False,
     )

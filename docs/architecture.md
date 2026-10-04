@@ -738,6 +738,33 @@ content are not copied into the audit ledger.
 - The source text is explicitly treated as untrusted data in the prompt. Output
   instructions exclude protected and sensitive criteria and produce only a
   generic recruiter/legal-review ambiguity when such source content is detected.
+- Before persistence, application-owned normalization also prevents general
+  requirements from becoming skills merely because they appear under a
+  Requirements heading. Recognized language phrases move to language
+  requirements; availability, attendance, scheduling, motivation, commitment,
+  willingness, and work-eligibility phrases remain notes-only hard constraints.
+  Classification checks the complete supporting source sentence, so a provider
+  cannot turn a fragment such as `Consulting profession` from a motivation
+  statement into a skill by shortening its label.
+  This produces the same categories when equivalent pasted and uploaded source
+  text receives different provider classifications.
+- Section-aware validation excludes curriculum/learning topics from both skill
+  lists and excludes credentials awarded by a programme from applicant
+  certification requirements. Education entries are reconstructed from the
+  source's applicant/mandatory statements, avoiding provider-dependent splitting.
+- Each successful draft stores a policy version, a normalized canonical-source
+  fingerprint, and the normalized extraction snapshot. When the source includes
+  an explicit `Title:`, `Job title:`, `Position:`, or `Role:` line, that title is
+  canonical and the temporary form title is not prepended. A later identical
+  input may reuse that snapshot only inside the same organization. This avoids a
+  second provider call and makes summaries, ambiguities, and structured fields
+  stable across pasted/uploaded representations without crossing tenant or
+  retention boundaries. Policy changes use a new version and cannot reuse an
+  older snapshot.
+- Policy v4 also removes non-actionable programme-role/seniority ambiguities and
+  an unstated-minimum-years warning when the source explicitly says prior
+  experience is not required. A provider-proposed must-have that resolves to a
+  language or general requirement cannot leave a duplicate skill ambiguity.
 - A successful response updates the same requirements draft, marks its creation
   method AI-assisted, resynchronizes normalized skills, and remains subject to
   ordinary recruiter editing and explicit confirmation. It does not alter the

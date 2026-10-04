@@ -655,8 +655,13 @@ Expected result:
 - Select Python plus any genuinely excluding constraints, then choose
   **Save vacancy and add candidates**. The edits, rules, confirmation, vacancy opening,
   and redirect to scoped CV intake happen in that one submit.
-- Less common fields, uncertainties, saved eligibility rules, and original input
-  remain under **Additional details** on the same page. Confirm the original
+- The review page uses the same **Eligibility rules** editor as the full draft
+  page. Add one custom rule, then use its **Edit** and **Delete** actions; each
+  action must return to the review page's eligibility section. Checked
+  structured values and custom rules must save together without an extra editor
+  visit.
+- Less common fields, uncertainties, and original input remain under
+  **Additional details** on the same page. Confirm the original
   vacancy text stays collapsed until **View original vacancy text** is opened.
   The heading, essentials, additional details, and final action must all share
   one width. There is no duplicate advanced-editor link or intermediate save.
@@ -1184,6 +1189,25 @@ Expected result:
   unless the source separately marks them as mandatory or places them in a
   clearly required section. If the provider proposes **Code review** anyway, it
   is removed from must-haves and shown as a classification ambiguity for review.
+- Run the same vacancy once by pasting its text and once by uploading it as a
+  UTF-8 TXT file. **English** belongs under languages; availability for specified
+  training days and motivation/commitment statements belong under Other
+  requirements, not must-have skills. Both intake methods must show the same
+  categories even if the provider initially classifies them differently. Repeat
+  the test if needed; a shortened proposal such as **Consulting profession** must
+  also remain absent from skills.
+- Confirm curriculum topics such as **ISO 20700** and **Responsible AI** do not
+  become nice-to-have applicant skills, and a credential awarded after the
+  programme does not become a certification requirement. Education wording,
+  summary, and ambiguities must remain identical on the second equivalent
+  creation. If role is Other/unknown and seniority is unknown, those empty
+  controls should not be displayed.
+- Put an explicit `Title:` line in the shared source, but enter **test** as the
+  form title for the uploaded copy. The two results must still match. Programme
+  audience/title warnings and a missing-years warning must not appear when the
+  source is a training/certification programme that explicitly says no prior
+  experience is required. A routed motivation statement must not leave a second
+  must-have ambiguity.
 - No eligibility rule is created automatically. Add any filtering rule
   deliberately in the Eligibility rules section.
 - You can edit every suggestion before using the separate confirmation action.

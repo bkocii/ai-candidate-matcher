@@ -1494,3 +1494,34 @@ fields into Role, Skills, and Work requirements, compacts eligibility controls,
 uses a two-column optional-details grid, hides the empty saved-rules state, and
 places the original vacancy in a collapsed scroll-bounded preview. The approved
 Analyze → Review → Save and add candidates flow remains unchanged.
+
+On 2026-10-03 pasted and uploaded copies of the same consulting-program vacancy
+exposed nondeterministic AI classification: English, training-day availability,
+and motivation could appear as must-have skills. The prompt now defines skills
+more narrowly, and server-side normalization routes recognized languages to
+language requirements and general availability/motivation/eligibility phrases
+to notes-only Other requirements. The guard resolves shortened provider labels
+against their complete source sentence, preventing **Consulting profession**
+from escaping the motivation rule. Regression coverage feeds three provider-
+output variants into the same source and verifies identical persisted categories.
+
+The next pasted/uploaded recordings showed broader drift: curriculum topics
+appeared as pasted-only nice-to-have skills, the programme's awarded MCPC
+credential appeared as an applicant certification, and education, summary, and
+ambiguities differed. Policy v4 now applies section-aware normalization and
+stores one organization-scoped fingerprinted extraction snapshot on the
+requirements version. An explicit title line in source text is canonical, so an
+uploaded copy called **test** and a pasted copy share the same normalized source
+fingerprint and snapshot. Reuse never crosses tenants or policy versions.
+Policy v4 also drops non-actionable programme-role/seniority warnings, drops a
+missing-years warning when no prior experience is explicitly required, and
+removes duplicate skill ambiguities for phrases routed to Other requirements.
+Empty Other/unknown role and unknown seniority controls are omitted from routine
+review. Migration `vacancies.0005` adds the three snapshot metadata fields.
+
+On 2026-10-04 the compact **Review vacancy** page began reusing the full draft
+page's shared Eligibility rules editor. It supports inline custom-rule creation
+and editable saved-rule rows; Edit/Delete actions and their cancel/completion
+paths return to `#eligibility-rules` on review. The add action saves current
+review values, structured eligibility selections, and the custom rule in one
+transaction. No migration was added.

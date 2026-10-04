@@ -1950,13 +1950,61 @@ also corrected to enforce the already-approved administrator-only boundary.
   action share one compact width.
 - The reviewed page is grouped into Role, Skills, and Work requirements.
   Additional fields use a balanced grid, the original vacancy is a bounded
-  collapsed preview, and an empty saved-rules panel is no longer shown.
+  collapsed preview, and the same Eligibility rules editor used on the full
+  draft page is available directly in review. Custom rules can be added inline;
+  Edit, Delete, cancel, and completion return to the review section.
 - A new vacancy has one final action: **Save vacancy and add candidates**. An
   already-open correction uses **Save vacancy changes**.
 
 #### Pending browser checks
 
 - Confirm the grouped essentials, compact eligibility controls, optional-details
-  grid, and source preview remain clear at desktop and narrow widths.
+  grid, shared custom-rule editor, and source preview remain clear at desktop
+  and narrow widths.
 - Confirm the final action opens vacancy-scoped candidate upload and that a
   simulated AI failure stays on the same usable review page.
+
+### MT-046 — Consistent vacancy requirement classification
+
+- **Date:** 2026-10-03
+- **Evidence:** `Title Management Consultant–Practit.txt`,
+  `matcher-pasted-vac-res.mp4`, `matcher-uploaded-vac-res.mp4`
+- **Routes:** Add vacancy by pasted text or uploaded file → Review vacancy
+- **Visual status:** Browser confirmation pending
+- **Functional status:** Focused automated coverage passes
+
+#### Resolved finding
+
+- Equivalent pasted and uploaded text could produce different categories across
+  separate AI calls. Mandatory language, availability, and motivation statements
+  could be accepted as must-have skills simply because they appeared under a
+  Requirements heading.
+- The prompt now distinguishes learned professional/domain skills from general
+  requirements. Server-side normalization independently moves recognized
+  languages to language requirements and availability, attendance, schedule,
+  motivation, commitment, willingness, and work-eligibility phrases to
+  notes-only Other requirements.
+- A follow-up live attempt shortened the motivation sentence to **Consulting
+  profession** and again proposed it as a must-have. Normalization now resolves
+  proposed fragments against the complete source sentence before classification.
+- Side-by-side recordings also showed pasted-only curriculum topics as
+  nice-to-have skills, a pasted-only MCPC certification requirement, different
+  education grouping, summaries, and ambiguities. Section-aware normalization
+  now removes learning outcomes and awarded credentials, reconstructs education
+  from source statements, and stores/reuses one tenant-scoped normalized result
+  for identical canonical source input. An explicit title inside the source now
+  prevents a temporary form title such as **test** from splitting paste/upload
+  behavior. Non-actionable programme-role, seniority, and explicitly waived
+  experience ambiguities are removed, as are duplicate skill ambiguities for a
+  phrase routed to Other requirements. Meaningless role/seniority controls are
+  hidden.
+
+#### Pending browser check
+
+- Create the attached vacancy once by pasting and once by TXT upload, using
+  **test** as the uploaded copy's form title while retaining the source's explicit
+  title. Both review
+  pages should show **English** under languages, the two general requirements
+  under Other requirements, no applicant skills or certification requirement,
+  identical education/summary/ambiguities, no redundant programme/experience
+  warnings, and no empty target-role or seniority controls.

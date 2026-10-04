@@ -27,12 +27,13 @@
         {% if requirements.ambiguities %}<div class="inline-review-note"><strong>AI left some details unresolved.</strong> Review the open additional-details section below before saving.</div>{% endif %}
 
         <div class="review-section">
-            <h3>Role</h3>
+            <h3>Overview</h3>
             <div class="field review-summary-field">
                 {{ form.summary.label_tag }}
                 {{ form.summary }}
                 {% if form.summary.errors %}<div class="field-errors">{{ form.summary.errors }}</div>{% endif %}
             </div>
+            {% if show_role_classification %}
             <div class="requirements-field-grid">
                 <div class="field">
                     {{ form.role_family.label_tag }}
@@ -47,6 +48,7 @@
                     {% if form.seniority.errors %}<div class="field-errors">{{ form.seniority.errors }}</div>{% endif %}
                 </div>
             </div>
+            {% endif %}
         </div>
 
         <div class="review-section">
@@ -105,6 +107,8 @@
                 </div>
             </div>
         </div>
+
+        {% include "vacancies/_eligibility_rule_editor.html" with return_to="review" %}
     </section>
 
     <details class="source-panel requirements-page-block" id="advanced-details"{% if requirements.ambiguities or advanced_has_errors %} open{% endif %}>
@@ -128,10 +132,6 @@
                 <div class="field">{{ form.hard_constraints.label_tag }}{{ form.hard_constraints }}{% if form.hard_constraints.help_text %}<small class="help-text">{{ form.hard_constraints.help_text }}</small>{% endif %}{{ form.hard_constraints.errors }}</div>
                 <div class="field review-ambiguities-field">{{ form.ambiguities.label_tag }}{{ form.ambiguities }}{% if form.ambiguities.help_text %}<small class="help-text">{{ form.ambiguities.help_text }}</small>{% endif %}{{ form.ambiguities.errors }}</div>
                 </div>
-                {% if hard_constraint_rules %}
-                <h3>Saved eligibility rules</h3>
-                {% include "matching/_hard_constraint_rules.html" with rules=hard_constraint_rules editable=False requirements=requirements %}
-                {% endif %}
             </section>
             <details class="review-source-preview">
                 <summary>View original vacancy text</summary>

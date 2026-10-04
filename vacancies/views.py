@@ -541,8 +541,68 @@ def requirements_review(
         request.POST or None,
         requirements=requirements,
     )
-    if request.method == "POST" and form.is_valid():
-        intent = request.POST.get("intent", "")
+    intent = request.POST.get("intent", "")
+    eligibility_form = HardConstraintRuleForm(
+        request.POST if request.method == "POST" and intent == "add_rule" else None,
+        prefix="eligibility",
+        requirements=requirements,
+    )
+    if request.method == "POST" and intent == "add_rule" and form.is_valid():
+        rule_created = False
+        with transaction.atomic():
+            try:
+                update_requirements_draft(
+                    requirements=requirements,
+                    user=request.user,
+                    values=review_requirements_values_from_form(
+                        requirements=requirements,
+                        form=form,
+                    ),
+                    validate_rules=False,
+                )
+                requirements.refresh_from_db()
+                sync_structured_eligibility_rules(
+                    requirements=requirements,
+                    user=request.user,
+                    selections=review_eligibility_values_from_form(
+                        requirements=requirements,
+                        form=form,
+                    ),
+                )
+            except ValidationError as error:
+                form.add_error(None, "; ".join(error.messages))
+            else:
+                eligibility_form = HardConstraintRuleForm(
+                    request.POST,
+                    prefix="eligibility",
+                    requirements=requirements,
+                )
+                if eligibility_form.is_valid():
+                    try:
+                        create_hard_constraint_rule(
+                            requirements=requirements,
+                            user=request.user,
+                            **hard_constraint_values_from_form(eligibility_form),
+                        )
+                    except ValidationError as error:
+                        eligibility_form.add_error(None, "; ".join(error.messages))
+                    else:
+                        rule_created = True
+                if not rule_created:
+                    transaction.set_rollback(True)
+        if rule_created:
+            messages.success(
+                request,
+                "Saved the vacancy details and added the eligibility rule.",
+            )
+            return redirect(
+                reverse(
+                    "vacancies:requirements-review",
+                    args=[organization.slug, vacancy.pk, requirements.pk],
+                )
+                + "#eligibility-rules"
+            )
+    elif request.method == "POST" and form.is_valid():
         was_open = vacancy.status == Vacancy.Status.OPEN
         try:
             with transaction.atomic():
@@ -620,6 +680,11 @@ def requirements_review(
             "vacancy": vacancy,
             "requirements": requirements,
             "form": form,
+            "eligibility_form": eligibility_form,
+            "show_role_classification": (
+                requirements.role_family not in {"unknown", "other"}
+                or requirements.seniority != "unknown"
+            ),
             "advanced_has_errors": any(
                 form[field_name].errors
                 for field_name in (
