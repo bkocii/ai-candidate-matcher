@@ -26,7 +26,24 @@
         <h2 id="privacy-default-title">Reason for storing applicants is not configured</h2>
         <p>You can upload now, but outreach stays blocked until an administrator records the organization's approved reason.</p>
     </div>
-    {% if can_administer %}<a class="secondary-button button-link" href="{% url 'organizations:retention-dashboard' organization.slug %}">Set privacy default</a>{% endif %}
+    {% if can_administer %}
+    <form class="privacy-default-inline-form" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="intent" value="save_privacy_default">
+        <div class="field">
+            {{ privacy_form.vacancy_candidate_lawful_basis.label_tag }}
+            {{ privacy_form.vacancy_candidate_lawful_basis }}
+            {% if privacy_form.vacancy_candidate_lawful_basis.errors %}<div class="field-errors">{{ privacy_form.vacancy_candidate_lawful_basis.errors }}</div>{% endif %}
+            <small class="help-text">{{ privacy_form.vacancy_candidate_lawful_basis.help_text }}</small>
+        </div>
+        <div class="button-row">
+            <button class="primary-button" type="submit">Save privacy default</button>
+            <a class="secondary-button button-link" href="{{ retention_settings_url }}">Advanced settings</a>
+        </div>
+    </form>
+    {% else %}
+    <p class="section-note">Ask an organization administrator to set this default. You can continue uploading CVs.</p>
+    {% endif %}
 </section>
 {% endif %}
 

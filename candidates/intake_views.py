@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -10,7 +11,7 @@ from django.template.defaultfilters import pluralize
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from audit.lifecycle import get_retention_policy
+from audit.lifecycle import get_retention_policy, update_retention_policy
 from candidates.bulk_intake import (
     CandidateIntakeDuplicateError,
     create_candidate_from_intake_item,
@@ -40,8 +41,12 @@ from candidates.services import CandidateDuplicateFinder
 from matching.automation import refresh_vacancy_shortlist
 from operations.models import BackgroundJob
 from operations.services import queue_candidate_profile_documents
+from organizations.forms import VacancyCandidatePrivacyDefaultForm
 from organizations.models import Organization
-from organizations.permissions import can_administer_organization
+from organizations.permissions import (
+    can_administer_organization,
+    require_organization_admin,
+)
 from vacancies.models import Vacancy
 
 REVIEW_FLAG_LABELS = {
@@ -322,8 +327,31 @@ def vacancy_candidate_intake_create(request, organization_slug: str, vacancy_id:
         )
 
     policy = get_retention_policy(organization)
+    can_administer = can_administer_organization(request.user, organization)
+    intent = request.POST.get("intent", "")
+    privacy_form = VacancyCandidatePrivacyDefaultForm(
+        request.POST
+        if request.method == "POST" and intent == "save_privacy_default"
+        else None,
+        instance=policy,
+        prefix="privacy",
+    )
     upload_form = CandidateIntakeUploadForm(request.POST or None, request.FILES or None)
-    if request.method == "POST" and upload_form.is_valid():
+    if request.method == "POST" and intent == "save_privacy_default":
+        require_organization_admin(request.user, organization)
+        if privacy_form.is_valid():
+            update_retention_policy(
+                organization=organization,
+                user=request.user,
+                values=privacy_form.cleaned_data,
+            )
+            messages.success(request, "Applicant privacy default saved.")
+            return redirect(
+                "candidates:vacancy-candidate-intake-create",
+                organization_slug=organization.slug,
+                vacancy_id=vacancy.pk,
+            )
+    elif request.method == "POST" and upload_form.is_valid():
         batch = create_candidate_intake_batch(
             organization=organization,
             user=request.user,
@@ -360,7 +388,13 @@ def vacancy_candidate_intake_create(request, organization_slug: str, vacancy_id:
             "lawful_basis_configured": (
                 policy.vacancy_candidate_lawful_basis != "not_recorded"
             ),
-            "can_administer": can_administer_organization(request.user, organization),
+            "can_administer": can_administer,
+            "privacy_form": privacy_form,
+            "retention_settings_url": (
+                reverse("organizations:retention-dashboard", args=[organization.slug])
+                + "?"
+                + urlencode({"next": request.get_full_path()})
+            ),
         },
     )
 

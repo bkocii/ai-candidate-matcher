@@ -9,7 +9,7 @@
         <h1 id="retention-title">Retention and deletion</h1>
         <p class="lede">Preview and remove only expired, dependency-safe bundles. Current workflows and decision-bearing history remain protected.</p>
     </div>
-    <a class="secondary-button button-link" href="{% url 'audit:privacy-dashboard' organization.slug %}">Back to Privacy &amp; audit</a>
+    {% if return_url %}<a class="secondary-button button-link" href="{{ return_url }}">Back to candidate upload</a>{% else %}<a class="secondary-button button-link" href="{% url 'audit:privacy-dashboard' organization.slug %}">Back to Privacy &amp; audit</a>{% endif %}
 </section>
 
 {% if policy.legal_hold %}<div class="notice warning"><strong>Legal hold active.</strong> All scheduled cleanup and organization purge are blocked.</div>{% endif %}
@@ -31,6 +31,7 @@
     <header><p class="eyebrow">Policy v{{ policy.policy_version }}</p><h2 id="policy-title">Candidate privacy and retention defaults</h2><p class="section-note">Set the recruitment basis once, then choose how long expired operational records remain before they can appear in the deletion preview.</p></header>
     <form class="stacked-form" method="post">
         {% csrf_token %}<input type="hidden" name="action" value="update_policy">
+        {% if return_url %}<input type="hidden" name="next" value="{{ return_url }}">{% endif %}
         {{ policy_form.non_field_errors }}
         <div class="retention-form-grid">
             {% for field in policy_form %}{% if field.name != "legal_hold" %}<div class="field">{{ field.label_tag }}{{ field }}{{ field.errors }}{% if field.help_text %}<small class="field-help">{{ field.help_text }}</small>{% endif %}</div>{% endif %}{% endfor %}

@@ -2109,3 +2109,11 @@ review, inspect existing rules, and use Edit/Delete actions that return to the
 same review section. Rule and review-field updates remain draft-only,
 tenant-scoped, transactional, and subject to the existing human-review safeguard
 for missing candidate facts. No migration was added.
+
+Also on 2026-10-04, vacancy-scoped candidate upload stopped requiring an
+administrator to leave the workflow merely to configure the routine applicant
+storage reason. The missing-default warning now contains a one-field
+administrator form; success stays on upload and removes the warning. Recruiters
+retain upload access but cannot change the organization policy. The advanced
+retention page accepts only a validated same-host return target and returns to
+candidate upload after its policy form is saved. No migration was added.

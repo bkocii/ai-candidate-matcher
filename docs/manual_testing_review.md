@@ -1912,6 +1912,10 @@ also corrected to enforce the already-approved administrator-only boundary.
   **This vacancy only** contact scope are recorded behind the scenes.
 - A missing organization processing basis stays visible and blocks outreach
   without blocking safe intake.
+- Administrators can set that basis directly inside the warning and remain on
+  candidate upload. **Advanced settings** preserves a safe return path after the
+  full policy is saved. Recruiters see administrator guidance and cannot mutate
+  the organization default.
 - New candidates receive a separate vacancy application. Exact documents and
   unambiguous active identities reuse the existing candidate; conflicting or
   inactive matches remain review exceptions.

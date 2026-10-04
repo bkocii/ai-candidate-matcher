@@ -292,8 +292,15 @@ Expected result:
   reason for storing vacancy applicants, a visible privacy-review warning is
   shown. Upload remains available, but outreach stays blocked.
 
-Set the default reason to **Legitimate interests** for this synthetic test, then
-upload `synthetic-drita-shembull-cv.docx` and continue through identity review.
+As an organization administrator, select **Legitimate interests** directly in
+the warning and choose **Save privacy default**. The page must stay on candidate
+upload, show a success message, and remove the warning. Open **Advanced settings**
+once, change the default on the full retention page, and verify **Save policy**
+returns to candidate upload. A recruiter must see administrator guidance instead
+of the inline form and must still be able to upload CVs.
+
+Then upload `synthetic-drita-shembull-cv.docx` and continue through identity
+review.
 
 Expected result:
 

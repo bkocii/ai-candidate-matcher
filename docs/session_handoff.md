@@ -1525,3 +1525,11 @@ and editable saved-rule rows; Edit/Delete actions and their cancel/completion
 paths return to `#eligibility-rules` on review. The add action saves current
 review values, structured eligibility selections, and the custom rule in one
 transaction. No migration was added.
+
+The 2026-10-04 vacancy-intake privacy follow-up keeps missing-policy setup inside
+**Add candidate CVs**. Organization administrators can select and save the
+approved applicant-storage reason inline; ordinary recruiters see a nonblocking
+administrator notice. **Advanced settings** passes a same-host return target to
+the full retention page, whose policy save returns to candidate upload. Tenant
+authorization and outreach blocking for an unconfigured reason are unchanged;
+no migration was added.

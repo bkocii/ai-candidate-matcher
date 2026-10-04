@@ -712,6 +712,7 @@ def retention_dashboard(request, organization_slug: str):
         slug=organization_slug,
     )
     require_organization_admin(request.user, organization)
+    return_url = _safe_return_url(request)
     policy = get_retention_policy(organization)
     policy_form = OrganizationRetentionPolicyForm(instance=policy, prefix="policy")
     exception_form = RetentionExceptionForm(
@@ -732,6 +733,8 @@ def retention_dashboard(request, organization_slug: str):
                     values=policy_form.cleaned_data,
                 )
                 messages.success(request, "Retention policy updated.")
+                if return_url:
+                    return redirect(return_url)
                 return redirect("organizations:retention-dashboard", organization.slug)
         elif action == "add_exception":
             exception_form = RetentionExceptionForm(
@@ -787,6 +790,7 @@ def retention_dashboard(request, organization_slug: str):
             "exceptions": organization.retention_exceptions.filter(
                 is_active=True
             ).select_related("created_by"),
+            "return_url": return_url,
         },
     )
 

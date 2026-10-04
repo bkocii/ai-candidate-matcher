@@ -2302,6 +2302,21 @@ tbody tr:last-child td {
     line-height: 1.55;
 }
 
+.privacy-default-inline-form {
+    display: grid;
+    flex: 0 1 440px;
+    gap: 12px;
+    margin: 0;
+}
+
+.privacy-default-inline-form .field {
+    margin: 0;
+}
+
+.privacy-default-inline-form .button-row {
+    margin-top: 0;
+}
+
 .detail-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4036,6 +4051,10 @@ tbody tr:last-child td {
     .rule-editor-heading {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .privacy-default-inline-form {
+        width: 100%;
     }
 
     .review-card-heading {

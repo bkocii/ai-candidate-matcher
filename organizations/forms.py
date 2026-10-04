@@ -284,6 +284,36 @@ class OrganizationRetentionPolicyForm(forms.ModelForm):
         }
 
 
+class VacancyCandidatePrivacyDefaultForm(forms.ModelForm):
+    """One-field privacy setup used during routine vacancy intake."""
+
+    class Meta:
+        model = OrganizationRetentionPolicy
+        fields = ("vacancy_candidate_lawful_basis",)
+        labels = {"vacancy_candidate_lawful_basis": "Reason for storing applicants"}
+        help_texts = {
+            "vacancy_candidate_lawful_basis": (
+                "Choose the organization-approved reason for routine vacancy CVs. "
+                "Confirm the appropriate choice with your privacy or legal adviser."
+            )
+        }
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        field = self.fields["vacancy_candidate_lawful_basis"]
+        field.choices = [
+            ("", "Select an approved reason"),
+            *(
+                (value, label)
+                for value, label in (
+                    OrganizationRetentionPolicy.CandidateLawfulBasis.choices
+                )
+                if value
+                != OrganizationRetentionPolicy.CandidateLawfulBasis.NOT_RECORDED
+            ),
+        ]
+
+
 class RetentionExceptionForm(forms.Form):
     target = forms.ChoiceField(label="What should be protected?")
     reason = forms.CharField(

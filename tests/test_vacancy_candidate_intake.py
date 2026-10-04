@@ -84,9 +84,102 @@ def test_vacancy_page_leads_to_minimal_cv_upload_and_flags_missing_privacy_defau
     assert "Add candidate CVs" in content
     assert "Shared details" not in content
     assert "Source name" not in content
-    assert "Consent" not in content
+    assert 'name="consent_status"' not in content
     assert "This vacancy only" in content
     assert "Reason for storing applicants is not configured" in content
+    assert "Save privacy default" in content
+    assert "Advanced settings" in content
+    assert 'name="privacy-vacancy_candidate_lawful_basis"' in content
+
+
+def test_admin_saves_vacancy_privacy_default_inline(client):
+    user, organization, vacancy = workspace_with_open_vacancy()
+    client.force_login(user)
+    route = intake_url(organization, vacancy)
+
+    response = client.post(
+        route,
+        {
+            "intent": "save_privacy_default",
+            "privacy-vacancy_candidate_lawful_basis": (
+                OrganizationRetentionPolicy.CandidateLawfulBasis.LEGITIMATE_INTERESTS
+            ),
+        },
+    )
+
+    policy = OrganizationRetentionPolicy.objects.get(organization=organization)
+    assert response.status_code == 302
+    assert response.url == route
+    assert policy.vacancy_candidate_lawful_basis == "legitimate_interests"
+    content = client.get(route).content.decode()
+    assert "Applicant privacy default saved" in content
+    assert "Reason for storing applicants is not configured" not in content
+
+
+def test_recruiter_cannot_change_privacy_default_from_intake(client):
+    _, organization, vacancy = workspace_with_open_vacancy()
+    recruiter = User.objects.create_user(username="privacy-recruiter")
+    OrganizationMembership.objects.create(
+        user=recruiter,
+        organization=organization,
+        role=OrganizationMembership.Role.RECRUITER,
+    )
+    client.force_login(recruiter)
+
+    page = client.get(intake_url(organization, vacancy))
+    content = page.content.decode()
+    assert "Save privacy default" not in content
+    assert "Ask an organization administrator" in content
+
+    response = client.post(
+        intake_url(organization, vacancy),
+        {
+            "intent": "save_privacy_default",
+            "privacy-vacancy_candidate_lawful_basis": (
+                OrganizationRetentionPolicy.CandidateLawfulBasis.CONTRACT
+            ),
+        },
+    )
+    assert response.status_code == 403
+    assert (
+        OrganizationRetentionPolicy.objects.get(
+            organization=organization
+        ).vacancy_candidate_lawful_basis
+        == "not_recorded"
+    )
+
+
+def test_retention_settings_return_to_vacancy_upload_after_policy_save(client):
+    user, organization, vacancy = workspace_with_open_vacancy()
+    client.force_login(user)
+    intake_route = intake_url(organization, vacancy)
+    retention_route = reverse(
+        "organizations:retention-dashboard", args=[organization.slug]
+    )
+
+    page = client.get(retention_route, {"next": intake_route})
+    content = page.content.decode()
+    assert page.status_code == 200
+    assert f'href="{intake_route}">Back to candidate upload' in content
+    assert f'name="next" value="{intake_route}"' in content
+
+    response = client.post(
+        retention_route,
+        {
+            "action": "update_policy",
+            "next": intake_route,
+            "policy-vacancy_candidate_lawful_basis": (
+                OrganizationRetentionPolicy.CandidateLawfulBasis.CONTRACT
+            ),
+            "policy-temporary_intake_days": "7",
+            "policy-completed_job_days": "90",
+            "policy-uncommitted_workflow_days": "180",
+            "policy-metadata_days": "365",
+            "policy-organization_recovery_days": "30",
+        },
+    )
+    assert response.status_code == 302
+    assert response.url == intake_route
 
 
 def test_vacancy_candidate_views_are_scoped_and_pool_remains_separate(client):
