@@ -286,7 +286,12 @@ def candidate_intake_list(request, organization_slug: str):
 @login_required
 def candidate_intake_create(request, organization_slug: str):
     organization = _organization(request, organization_slug)
-    form = CandidateIntakeBatchForm(request.POST or None)
+    policy = get_retention_policy(organization)
+    form = CandidateIntakeBatchForm(
+        request.POST if request.method == "POST" else None,
+        organization=organization,
+        vacancy_lawful_basis=policy.vacancy_candidate_lawful_basis,
+    )
     upload_form = CandidateIntakeUploadForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid() and upload_form.is_valid():
         batch = create_candidate_intake_batch(
@@ -307,7 +312,12 @@ def candidate_intake_create(request, organization_slug: str):
     return render(
         request,
         "candidates/candidate_intake_form.html",
-        {"organization": organization, "form": form, "upload_form": upload_form},
+        {
+            "organization": organization,
+            "form": form,
+            "upload_form": upload_form,
+            "vacancy": None,
+        },
     )
 
 
@@ -336,6 +346,12 @@ def vacancy_candidate_intake_create(request, organization_slug: str, vacancy_id:
         instance=policy,
         prefix="privacy",
     )
+    form = CandidateIntakeBatchForm(
+        request.POST if request.method == "POST" else None,
+        organization=organization,
+        fixed_vacancy=vacancy,
+        vacancy_lawful_basis=policy.vacancy_candidate_lawful_basis,
+    )
     upload_form = CandidateIntakeUploadForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and intent == "save_privacy_default":
         require_organization_admin(request.user, organization)
@@ -351,21 +367,11 @@ def vacancy_candidate_intake_create(request, organization_slug: str, vacancy_id:
                 organization_slug=organization.slug,
                 vacancy_id=vacancy.pk,
             )
-    elif request.method == "POST" and upload_form.is_valid():
+    elif request.method == "POST" and form.is_valid() and upload_form.is_valid():
         batch = create_candidate_intake_batch(
             organization=organization,
             user=request.user,
-            values={
-                "vacancy": vacancy,
-                "source_name": f"CV received for {vacancy.title}"[:200],
-                "lawful_basis": policy.vacancy_candidate_lawful_basis,
-                "consent_status": "unknown",
-                "contact_permission": "restricted",
-                "permission_notes": "",
-                "candidate_retention_until": None,
-                "source_retention_until": None,
-                "document_retention_until": None,
-            },
+            values=form.cleaned_data,
         )
         _upload_intake_files(
             request=request,
@@ -380,10 +386,11 @@ def vacancy_candidate_intake_create(request, organization_slug: str, vacancy_id:
 
     return render(
         request,
-        "candidates/candidate_vacancy_intake_form.html",
+        "candidates/candidate_intake_form.html",
         {
             "organization": organization,
             "vacancy": vacancy,
+            "form": form,
             "upload_form": upload_form,
             "lawful_basis_configured": (
                 policy.vacancy_candidate_lawful_basis != "not_recorded"

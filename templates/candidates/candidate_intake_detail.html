@@ -33,34 +33,8 @@
 </section>
 {% endif %}
 
-<section class="workspace-panel intake-provenance" aria-labelledby="intake-source-title">
-    {% if batch.vacancy %}
-    <div>
-        <p class="eyebrow">Application details</p>
-        <h2 id="intake-source-title">{{ batch.vacancy.title }}</h2>
-        <p>Source: CV received for this vacancy · Contact: This vacancy only</p>
-    </div>
-    <div>
-        <p><strong>Reason for storing data:</strong> {{ batch.recruiter_lawful_basis }}</p>
-        {% if batch.lawful_basis == "not_recorded" %}<p class="field-errors">Outreach waits until an administrator records the organization's approved reason.{% if can_administer %} <a href="{% url 'organizations:retention-dashboard' organization.slug %}">Set privacy default</a>.{% endif %}</p>{% endif %}
-        <p class="help-text">Retention dates will use the organization policy when automated applicant retention is added.</p>
-    </div>
-    {% else %}
-    <div>
-        <p class="eyebrow">Shared provenance</p>
-        <h2 id="intake-source-title">{{ batch.source_name }}</h2>
-        <p>Reason for storing data: {{ batch.recruiter_lawful_basis }} · Consent: {{ batch.recruiter_consent_status }} · Allowed contact: {{ batch.recruiter_contact_permission }}</p>
-    </div>
-    <div>
-        <p><strong>Delete or review candidate on:</strong> {{ batch.candidate_retention_until|default:"Not set" }}</p>
-        <p><strong>Delete or review source on:</strong> {{ batch.source_retention_until|default:"Not set" }}</p>
-        <p><strong>Delete or review CV on:</strong> {{ batch.document_retention_until|default:"Not set" }}</p>
-    </div>
-    {% endif %}
-</section>
-
 {% if mapping_result %}
-<section class="report-section" aria-labelledby="mapping-results-title">
+<section class="report-section" id="mapping-results" aria-labelledby="mapping-results-title">
     <h2 id="mapping-results-title">CSV mapping report</h2>
     <p>{{ mapping_result.mapped_count }} mapped · {{ mapping_result.unresolved_count }} unresolved · {{ mapping_result.invalid_count }} invalid</p>
     {% if mapping_result.rows %}
@@ -135,6 +109,23 @@
             </article>
             {% endfor %}
         </div>
+        <section class="intake-application-summary" aria-labelledby="intake-application-title">
+            <div>
+                <p class="eyebrow">Intake details</p>
+                {% if batch.vacancy %}
+                <h3 id="intake-application-title">{{ batch.vacancy.title }}</h3>
+                <p>CV received for this vacancy · Contact: <strong>This vacancy only</strong></p>
+                {% else %}
+                <h3 id="intake-application-title">Candidate pool</h3>
+                <p>Source: <strong>{{ batch.source_name }}</strong> · Contact: <strong>{{ batch.recruiter_contact_permission }}</strong></p>
+                {% endif %}
+            </div>
+            <div>
+                <p><strong>Reason for storing data:</strong> {{ batch.recruiter_lawful_basis }}</p>
+                {% if not batch.vacancy %}<p><strong>Consent:</strong> {{ batch.recruiter_consent_status }}</p>{% endif %}
+                {% if batch.lawful_basis == "not_recorded" %}<p class="field-errors">Outreach waits until an administrator records the organization's approved reason.{% if can_administer %} <a href="{% url 'organizations:retention-dashboard' organization.slug %}">Set privacy default</a>.{% endif %}</p>{% endif %}
+            </div>
+        </section>
         <label class="checkbox-row">
             <input type="checkbox" name="queue_profiles" checked>
             Create AI profile drafts in the background
@@ -156,25 +147,10 @@
     <details class="form-panel intake-optional-tool intake-more-cvs"{% if upload_form.errors %} open{% endif %}>
         <summary><strong>Add more CVs</strong> <span>Optional</span></summary>
         <div class="optional-tool-body">
-            {% include "candidates/_intake_upload_form.html" with upload_heading="Add more CVs" upload_button="Add more CVs" %}
+            {% include "candidates/_intake_upload_form.html" with upload_heading="Add more CVs" upload_button="Add CVs" %}
         </div>
     </details>
 
-    <details class="form-panel intake-optional-tool intake-advanced-tool"{% if mapping_form.errors %} open{% endif %}>
-        <summary><strong>Advanced: Match details from CSV</strong> <span>Optional</span></summary>
-        <div class="optional-tool-body" aria-labelledby="intake-csv-title">
-            <h2 id="intake-csv-title">Match candidate details to uploaded CVs</h2>
-            <p>Use this only when a spreadsheet contains details for CVs already in this intake. This is separate from importing candidates directly from CSV.</p>
-            <p>Each row needs an exact <code>cv_filename</code>. The system never guesses by candidate name; missing, repeated, or conflicting filenames remain unresolved.</p>
-            <form class="stacked-form" method="post" enctype="multipart/form-data" action="{% url 'candidates:candidate-intake-apply-csv' organization.slug batch.pk %}">
-                {% csrf_token %}
-                {% for field in mapping_form %}
-                <div class="field">{{ field.label_tag }}{{ field }}{% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}{% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}</div>
-                {% endfor %}
-                <button class="secondary-button" type="submit">Match details to CVs</button>
-            </form>
-        </div>
-    </details>
     {% else %}
     <section class="form-panel intake-upload" aria-labelledby="intake-upload-title">
         {% include "candidates/_intake_upload_form.html" with upload_heading="Add CVs" upload_button="Add CVs" %}

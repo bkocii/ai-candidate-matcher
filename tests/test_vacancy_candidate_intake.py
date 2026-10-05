@@ -447,6 +447,23 @@ def test_vacancy_upload_inherits_policy_and_creates_scoped_application(
     assert batch.contact_permission == CandidateSource.ContactPermission.RESTRICTED
     assert batch.candidate_retention_until is None
 
+    detail_url = reverse(
+        "candidates:candidate-intake-detail",
+        args=[organization.slug, batch.pk],
+    )
+    content = client.get(detail_url).content.decode()
+    assert content.index("Review proposed candidate identities") < content.index(
+        "Intake details"
+    )
+    assert content.index("Intake details") < content.index(
+        "Add selected candidates (0)"
+    )
+    assert "Shared provenance" not in content
+    assert "Advanced: Match details from CSV" not in content
+    assert "Match details to CVs" not in content
+    assert "Add more CVs" in content
+    assert ">Add CVs</button>" in content
+
     response = client.post(
         reverse(
             "candidates:candidate-intake-create-selected",
@@ -472,6 +489,37 @@ def test_vacancy_upload_inherits_policy_and_creates_scoped_application(
     assert consideration.get_contact_scope_display() == "This vacancy only"
     assert assess_contact_permission(candidate=candidate, vacancy=vacancy).can_proceed
     assert not assess_contact_permission(candidate=candidate).can_proceed
+
+
+def test_general_intake_can_select_vacancy_and_uses_automatic_context(
+    client, settings, tmp_path
+):
+    settings.MEDIA_ROOT = tmp_path
+    user, organization, vacancy = workspace_with_open_vacancy()
+    OrganizationRetentionPolicy.objects.create(
+        organization=organization,
+        vacancy_candidate_lawful_basis=(
+            OrganizationRetentionPolicy.CandidateLawfulBasis.CONTRACT
+        ),
+    )
+    client.force_login(user)
+
+    response = client.post(
+        reverse("candidates:candidate-intake-create", args=[organization.slug]),
+        {"vacancy": vacancy.pk, "cv_files": [cv_upload()]},
+    )
+
+    batch = CandidateIntakeBatch.objects.get()
+    assert response.status_code == 302
+    assert batch.vacancy == vacancy
+    assert batch.source_name == f"CV received for {vacancy.title}"
+    assert batch.lawful_basis == CandidateSource.LawfulBasis.CONTRACT
+    assert batch.consent_status == CandidateSource.ConsentStatus.UNKNOWN
+    assert batch.contact_permission == CandidateSource.ContactPermission.RESTRICTED
+
+    review = client.get(response.url).content.decode()
+    assert vacancy.title in review
+    assert "Advanced: Match details from CSV" not in review
 
 
 def test_unambiguous_identity_match_reuses_candidate_for_new_vacancy_application(

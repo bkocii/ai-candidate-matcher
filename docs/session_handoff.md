@@ -1533,3 +1533,23 @@ administrator notice. **Advanced settings** passes a same-host return target to
 the full retention page, whose policy save returns to candidate upload. Tenant
 authorization and outreach blocking for an unconfigured reason are unchanged;
 no migration was added.
+
+The 2026-10-04 vacancy-intake presentation follow-up moves the compact
+application context below candidate cards and directly before the final action,
+making identity review the page's primary task. Its text is contained in a
+bordered summary. **Select all ready** now toggles to **Clear selection**. The
+vacancy path omits the advanced CSV mapper (generic bulk intake still has it),
+and the repeat-upload button now says **Add CVs** beneath the **Add more CVs**
+disclosure. No migration was added.
+# Handoff update — 2026-10-05
+
+Unified the general and vacancy candidate-CV entry experience. Both routes now
+render `candidate_intake_form.html`; general intake can optionally select a
+tenant-scoped open vacancy. `CandidateIntakeBatchForm.clean()` applies vacancy
+source/privacy defaults server-side, so hidden browser fields cannot weaken the
+application-only boundary. The normal review page no longer advertises CSV
+mapping, while the legacy endpoint/report remains intact. Added
+`static/js/intake-start.js` for progressive disclosure. Focused tests: `30
+passed`; Ruff, Django check, and migration-drift check pass. No full suite run.
+The review hierarchy was then aligned: both variants render **Intake details**
+in the same post-card position, with conditional pool or vacancy content.

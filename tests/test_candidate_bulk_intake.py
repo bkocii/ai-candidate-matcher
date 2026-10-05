@@ -1,5 +1,6 @@
 from datetime import date
 from io import BytesIO
+from pathlib import Path
 
 import pytest
 from django.core.exceptions import PermissionDenied
@@ -200,13 +201,26 @@ def test_batch_creation_and_review_page_are_tenant_safe_and_hide_source_text(
     assert "data-create-selected disabled" in content
     assert "Create AI profile drafts in the background" in content
     assert content.index("Review proposed candidate identities") < content.index(
-        "Add more CVs"
+        "Intake details"
     )
-    assert content.index("Add more CVs") < content.index(
-        "Advanced: Match details from CSV"
+    assert content.index("Intake details") < content.index(
+        "Create selected candidates (0)"
     )
-    assert "This is separate from importing candidates directly from CSV" in content
-    assert "Match details to CVs" in content
+    assert "Shared provenance" not in content
+    assert "Candidate pool" in content
+    assert "Advanced: Match details from CSV" not in content
+    assert "Match details to CVs" not in content
+
+
+def test_ready_selection_control_toggles_and_can_clear_all_rows() -> None:
+    script = (
+        Path(__file__).resolve().parents[1] / "static" / "js" / "intake-review.js"
+    ).read_text()
+
+    assert '"Select all ready"' in script
+    assert '"Clear selection"' in script
+    assert 'selectReady.setAttribute("aria-pressed"' in script
+    assert "choices.forEach" in script
 
 
 def test_intake_start_leads_with_required_upload_and_does_not_create_empty_batch(
@@ -220,9 +234,12 @@ def test_intake_start_leads_with_required_upload_and_does_not_create_empty_batch
 
     page = client.get(url)
     content = page.content.decode()
-    assert content.index("1. Upload") < content.index("2. Shared details")
+    assert content.index("Upload CVs") < content.index("Check details")
+    assert content.index("Check details") < content.index("Review AI profiles")
     assert "Drop CVs here or browse files" in content
-    assert "Create intake and add CVs" in content
+    assert "Source and privacy" in content
+    assert "Additional privacy details" in content
+    assert "Upload and review candidates" in content
     assert "disabled" in content
 
     response = client.post(url, batch_values())

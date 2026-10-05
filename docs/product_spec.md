@@ -110,6 +110,11 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
   exceptions remain inspectable and editable later.
 - Generic talent-pool imports retain plain-language source/privacy controls with
   safe not-recorded defaults and explicit outreach-permission enforcement.
+- Candidate-pool and vacancy CV upload use the same compact page. A vacancy may
+  be selected from the general page; when selected, vacancy source, application-
+  only contact, and organization policy replace the pool controls automatically.
+  The routine CV flow does not expose CSV-to-CV mapping or per-upload retention
+  exceptions.
 - Audited recruiter correction of candidate/source records and immutable
   evidence-validated profile correction versions. Conflicting trusted candidate
   and CV-profile locations block individual and batch confirmation until resolved.

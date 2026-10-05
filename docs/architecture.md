@@ -119,6 +119,14 @@ review dates will inherit the approved candidate-retention calculation in
 durations. Record-level exceptions remain editable through existing privacy
 controls.
 
+The candidate-pool and vacancy entry routes render the same intake-start
+template. The general route supplies an organization-scoped choice of open
+vacancies with confirmed requirements. Server-side form cleaning, not browser
+state, replaces submitted pool metadata with the fixed vacancy source, policy,
+unknown consent, and restricted contact values whenever a vacancy is selected.
+The legacy exact CSV mapping service remains available internally, but its
+optional form is removed from routine CV review.
+
 ### vacancies
 
 Vacancy descriptions, extracted requirements, recruiter corrections, and lifecycle status.

@@ -188,6 +188,16 @@ Generic talent-pool imports may retain advanced source/privacy controls because
 they do not have a vacancy that supplies application purpose and contact scope.
 These controls are secondary, not part of the routine vacancy workflow.
 
+### Unified candidate-CV entry — 2026-10-05
+
+The Candidates-page and vacancy-page CV actions now share one compact upload
+surface. The Candidates-page version offers an optional open vacancy. Selecting
+one applies the same automatic source, organization-approved processing basis,
+and **This vacancy only** contact scope as entering from the vacancy itself.
+Without a vacancy, source and privacy remain explicit, with consent and notes
+collapsed under additional details. Per-upload retention dates and the optional
+CSV-to-CV mapper are no longer routine intake UI.
+
 ## Candidate discovery and reuse
 
 Candidates must not be permanently assigned to one role. Search and suggestions

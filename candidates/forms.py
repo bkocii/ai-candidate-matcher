@@ -379,6 +379,7 @@ class CandidateIntakeBatchForm(forms.ModelForm):
     class Meta:
         model = CandidateIntakeBatch
         fields = (
+            "vacancy",
             "source_name",
             "lawful_basis",
             "consent_status",
@@ -395,6 +396,10 @@ class CandidateIntakeBatchForm(forms.ModelForm):
             "document_retention_until": forms.DateInput(attrs={"type": "date"}),
         }
         help_texts = {
+            "vacancy": (
+                "Optional. Choose an open vacancy to link every uploaded CV to "
+                "that application."
+            ),
             "source_name": SOURCE_NAME_HELP_TEXT,
             "lawful_basis": LAWFUL_BASIS_HELP_TEXT,
             "consent_status": CONSENT_HELP_TEXT,
@@ -404,6 +409,7 @@ class CandidateIntakeBatchForm(forms.ModelForm):
             "document_retention_until": RETENTION_HELP_TEXT,
         }
         labels = {
+            "vacancy": "Vacancy",
             "lawful_basis": "Reason for storing data",
             "consent_status": "Consent",
             "contact_permission": "Allowed contact",
@@ -413,8 +419,31 @@ class CandidateIntakeBatchForm(forms.ModelForm):
             "document_retention_until": "CV — delete or review on",
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        *args,
+        organization=None,
+        fixed_vacancy=None,
+        vacancy_lawful_basis=CandidateSource.LawfulBasis.NOT_RECORDED,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
+        from vacancies.models import Vacancy
+
+        self.fixed_vacancy = fixed_vacancy
+        self.vacancy_lawful_basis = vacancy_lawful_basis
+        vacancies = Vacancy.objects.none()
+        if organization is not None:
+            vacancies = Vacancy.objects.filter(
+                organization=organization,
+                status=Vacancy.Status.OPEN,
+                requirement_versions__status="confirmed",
+            ).distinct().order_by("title", "id")
+        self.fields["vacancy"].queryset = vacancies
+        self.fields["vacancy"].required = False
+        self.fields["source_name"].required = False
+        for name in ("lawful_basis", "consent_status", "contact_permission"):
+            self.fields[name].required = False
         self.fields["lawful_basis"].choices = form_choices(
             CandidateSource.LawfulBasis.choices, LAWFUL_BASIS_LABELS
         )
@@ -424,6 +453,24 @@ class CandidateIntakeBatchForm(forms.ModelForm):
         self.fields["contact_permission"].choices = form_choices(
             CandidateSource.ContactPermission.choices, CONTACT_PERMISSION_LABELS
         )
+
+    def clean(self):
+        cleaned = super().clean()
+        vacancy = self.fixed_vacancy or cleaned.get("vacancy")
+        cleaned["vacancy"] = vacancy
+        if vacancy is not None:
+            cleaned.update(
+                {
+                    "source_name": f"CV received for {vacancy.title}"[:200],
+                    "lawful_basis": self.vacancy_lawful_basis,
+                    "consent_status": CandidateSource.ConsentStatus.UNKNOWN,
+                    "contact_permission": CandidateSource.ContactPermission.RESTRICTED,
+                    "permission_notes": "",
+                }
+            )
+        elif not cleaned.get("source_name", "").strip():
+            self.add_error("source_name", "Enter where these CVs came from.")
+        return cleaned
 
 
 class CandidateIntakeUploadForm(forms.Form):

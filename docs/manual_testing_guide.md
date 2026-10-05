@@ -304,6 +304,16 @@ review.
 
 Expected result:
 
+- Candidate cards are the main page content. The compact **Application details**
+  summary appears after the cards and immediately before the AI-profile option
+  and **Add selected candidates** action; its text remains inside the bordered
+  summary.
+- **Select all ready** changes to **Clear selection** after use. Clear selection
+  unchecks every selected row and disables the final action again.
+- Vacancy intake does not show **Match details from CSV**. That advanced tool
+  remains available only in generic bulk intake.
+- The optional section remains **Add more CVs**, while its upload action says
+  **Add CVs**.
 - The batch records the vacancy and source **CV received for [vacancy]** without
   recruiter entry or AI inference.
 - Selecting a new person creates one reusable organization candidate plus one
@@ -2464,3 +2474,18 @@ uv run python manage.py createsuperuser
 Do not run the removal commands against a shared, production, or valuable local
 environment. The SQLite database and `media/` directory are ignored by Git and
 must not be committed.
+# Unified candidate CV intake — 2026-10-05
+
+1. Open **Candidates → Add candidate CVs**. Confirm the page shows CV upload,
+   an optional Vacancy selector, compact Source and privacy fields, and one
+   **Upload and review candidates** action.
+2. Leave Vacancy blank, enter a source, upload a CV, and confirm the review batch
+   is a candidate-pool intake.
+3. Repeat with an open vacancy selected. Confirm source/privacy inputs collapse,
+   the review names the vacancy, and the created candidate is linked to it.
+4. Open **Add candidate CVs** from a vacancy. Confirm the same layout appears,
+   the vacancy is fixed, contact says **This vacancy only**, and no CSV-matching
+   control appears on the review page.
+5. On both review variants, confirm **Intake details** appears after the candidate
+   cards and immediately before the AI-profile option/final action. There should
+   be no separate top-level **Shared provenance** card.

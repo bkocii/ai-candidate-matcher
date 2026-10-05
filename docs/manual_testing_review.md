@@ -1919,6 +1919,11 @@ also corrected to enforce the already-approved administrator-only boundary.
 - New candidates receive a separate vacancy application. Exact documents and
   unambiguous active identities reuse the existing candidate; conflicting or
   inactive matches remain review exceptions.
+- The review page now keeps candidate cards first. A compact, bordered
+  **Application details** summary sits at the decision boundary before profile
+  queuing and the final add action. **Select all ready** toggles to **Clear
+  selection**; repeat upload uses **Add CVs**; CSV detail matching is omitted
+  from vacancy intake while remaining available in generic bulk intake.
 - Generic candidate-pool intake retains its advanced shared privacy controls.
 - Candidate review dates remain blank pending the approved `RET-001`
   meaningful-activity calculation.
@@ -2012,3 +2017,16 @@ also corrected to enforce the already-approved administrator-only boundary.
   under Other requirements, no applicant skills or certification requirement,
   identical education/summary/ambiguities, no redundant programme/experience
   warnings, and no empty target-role or seniority controls.
+# 2026-10-05 — Unified candidate CV intake
+
+- General and vacancy-scoped CV intake now share one compact start page.
+- General intake can optionally select an organization-owned open vacancy with
+  confirmed requirements.
+- Vacancy selection is enforced server-side and records the automatic source,
+  organization policy, unknown consent, and application-only contact scope.
+- Generic pool intake keeps source/privacy controls; consent and notes are
+  collapsed. Per-upload retention fields and routine CSV matching are hidden.
+- Focused verification: `30 passed`; Django check, Ruff, and migration-drift
+  check passed. The complete suite was not run during this manual-review step.
+- Follow-up alignment: both pool and vacancy review now use one **Intake
+  details** summary after the candidate cards and before the final action.

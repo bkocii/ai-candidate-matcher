@@ -238,6 +238,50 @@ a {
     justify-content: flex-end;
 }
 
+.intake-unified-panel {
+    display: grid;
+    gap: 22px;
+}
+
+.intake-context-settings {
+    display: grid;
+    gap: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+.intake-context-settings h3 {
+    margin-bottom: 6px;
+}
+
+.intake-privacy-more {
+    margin-top: 16px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+.intake-privacy-more summary {
+    cursor: pointer;
+    color: var(--primary-dark);
+    font-weight: 750;
+}
+
+.intake-privacy-more[open] summary {
+    margin-bottom: 16px;
+}
+
+.intake-vacancy-defaults {
+    padding: 18px;
+    border: 1px solid var(--accent-border);
+    border-radius: 12px;
+    background: var(--accent-soft);
+}
+
+.intake-vacancy-defaults p:last-child {
+    margin-bottom: 0;
+}
+
 .file-upload {
     display: grid;
     gap: 12px;
@@ -3664,6 +3708,22 @@ tbody tr:last-child td {
     margin-bottom: 24px;
 }
 
+.intake-application-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+    gap: 18px 28px;
+    margin: 22px 0 18px;
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface-soft);
+}
+
+.intake-application-summary h3,
+.intake-application-summary p:last-child {
+    margin-bottom: 0;
+}
+
 .intake-upload,
 .intake-optional-tool {
     max-width: none;
@@ -4055,6 +4115,10 @@ tbody tr:last-child td {
 
     .privacy-default-inline-form {
         width: 100%;
+    }
+
+    .intake-application-summary {
+        grid-template-columns: 1fr;
     }
 
     .review-card-heading {

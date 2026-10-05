@@ -2117,3 +2117,24 @@ administrator form; success stays on upload and removes the warning. Recruiters
 retain upload access but cannot change the organization policy. The advanced
 retention page accepts only a validated same-host return target and returns to
 candidate upload after its policy form is saved. No migration was added.
+
+The same 2026-10-04 manual review simplified the vacancy-intake detail page.
+Candidate identity review is now the dominant content. Application provenance,
+contact scope, and storage reason remain visible in one compact bordered summary
+immediately before profile queuing and the final add action. The ready-row bulk
+control toggles between **Select all ready** and **Clear selection**. Vacancy
+intake hides the CSV detail mapper, while generic bulk intake retains it. The
+repeat-upload disclosure remains **Add more CVs**, with the action renamed
+**Add CVs**. No model, service, or migration changed.
+# 2026-10-05 — Unified candidate CV intake
+
+Candidate-pool and vacancy-specific CV creation now use the same compact upload
+template and action. General intake includes an optional tenant-scoped open
+vacancy selector. Vacancy context always overrides pool metadata on the server
+with the generated application source, organization processing basis, unknown
+consent, and restricted current-vacancy contact. Pool source/privacy controls
+remain visible only without vacancy context; secondary consent/notes are
+collapsed, retention exceptions are omitted, and CSV mapping is not exposed in
+routine review. No migration was required. Focused result: `30 passed`.
+Both review variants now place one conditional **Intake details** summary after
+the candidate cards; the earlier top-level pool-only provenance card is removed.
