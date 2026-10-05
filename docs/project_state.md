@@ -2138,3 +2138,8 @@ collapsed, retention exceptions are omitted, and CSV mapping is not exposed in
 routine review. No migration was required. Focused result: `30 passed`.
 Both review variants now place one conditional **Intake details** summary after
 the candidate cards; the earlier top-level pool-only provenance card is removed.
+The post-creation phase now stays on that intake page: latest profile-job state,
+automatic refresh while processing, per-candidate collapsed preview/error
+details, durable retry, and explicit batch confirmation are inline. The worker
+remains separate and continuous; nothing is auto-confirmed. No migration was
+required. Focused candidate/background coverage: `46 passed`.

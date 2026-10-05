@@ -127,6 +127,15 @@ unknown consent, and restricted contact values whenever a vacancy is selected.
 The legacy exact CSV mapping service remains available internally, but its
 optional form is removed from routine CV review.
 
+The intake detail surface is also the recruiter-facing projection of profile
+background work. It derives the latest tenant-scoped candidate-profile job from
+the batch's accepted documents, renders processing/ready/attention/confirmed
+states, and performs bounded browser refreshes only while processing remains.
+Collapsed previews use saved evidence-validated drafts; raw prompts/responses
+are not exposed. Retry remains the durable job service and returns to the
+originating intake. The worker remains a separate continuously supervised
+process, and profile confirmation remains an explicit POST boundary.
+
 ### vacancies
 
 Vacancy descriptions, extracted requirements, recruiter corrections, and lifecycle status.

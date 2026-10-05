@@ -115,6 +115,11 @@ Recruiters often accumulate many previous applicants but rely on filenames, memo
   only contact, and organization policy replace the pool controls automatically.
   The routine CV flow does not expose CSV-to-CV mapping or per-upload retention
   exceptions.
+- After candidate creation, that intake page shows live profile-extraction
+  progress, collapsed results and exceptions, retry access, and batch
+  confirmation. Operational job pages remain available but are not part of the
+  routine recruiter path. Extraction may be automatic; publishing extracted
+  profile facts still requires an explicit recruiter confirmation.
 - Audited recruiter correction of candidate/source records and immutable
   evidence-validated profile correction versions. Conflicting trusted candidate
   and CV-profile locations block individual and batch confirmation until resolved.

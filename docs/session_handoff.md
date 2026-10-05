@@ -1553,3 +1553,8 @@ mapping, while the legacy endpoint/report remains intact. Added
 passed`; Ruff, Django check, and migration-drift check pass. No full suite run.
 The review hierarchy was then aligned: both variants render **Intake details**
 in the same post-card position, with conditional pool or vacancy content.
+The next simplification removed job/profile-page navigation from the routine
+path. Intake detail now derives its latest profile job, auto-refreshes during
+processing, shows collapsed saved-profile previews or bounded reasons, retries
+exceptions back to the intake, and posts batch confirmation inline. Diagnostic
+pages remain accessible. Focused result: `46 passed`; no migration.

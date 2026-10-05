@@ -198,6 +198,13 @@ Without a vacancy, source and privacy remain explicit, with consent and notes
 collapsed under additional details. Per-upload retention dates and the optional
 CSV-to-CV mapper are no longer routine intake UI.
 
+The same intake detail URL also owns AI-profile progress and confirmation.
+While the separately supervised worker runs, the page refreshes automatically,
+then shows each candidate's status, a collapsed profile preview or bounded
+problem reason, retry access, and one **Confirm ready profiles** action. Job and
+standalone profile-batch pages remain diagnostic/history destinations, not
+required recruiter steps. Confirmation is never automatic.
+
 ## Candidate discovery and reuse
 
 Candidates must not be permanently assigned to one role. Search and suggestions

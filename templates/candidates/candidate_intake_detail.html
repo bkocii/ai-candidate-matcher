@@ -11,7 +11,6 @@
         <p class="lede">{% if batch.vacancy %}{{ batch.vacancy.title }} · {% endif %}{{ batch.get_status_display }}</p>
     </div>
     <div class="button-row">
-        {% if created_count %}<a class="primary-button button-link" href="{% url 'candidates:candidate-intake-confirm-profiles' organization.slug batch.pk %}">Review profile confirmation</a>{% endif %}
         {% if batch.vacancy %}<a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug batch.vacancy.pk %}">Back to vacancy</a>{% else %}<a class="secondary-button" href="{% url 'candidates:candidate-intake-list' organization.slug %}">All intake batches</a>{% endif %}
         <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Candidates</a>
     </div>
@@ -22,16 +21,6 @@
     <article><span>Candidates created</span><strong>{{ created_count }}</strong></article>
     <article><span>Discarded</span><strong>{{ skipped_count }}</strong></article>
 </section>
-
-{% if queued_job %}
-<section class="success-callout">
-    <div>
-        <p class="eyebrow">Background work queued</p>
-        <p>The newly created CVs are queued for evidence-based AI profile drafts. No profile is confirmed automatically.</p>
-    </div>
-    <a class="secondary-button" href="{% url 'operations:job-detail' organization.slug queued_job.pk %}">Open job #{{ queued_job.pk }}</a>
-</section>
-{% endif %}
 
 {% if mapping_result %}
 <section class="report-section" id="mapping-results" aria-labelledby="mapping-results-title">
@@ -160,25 +149,68 @@
 {% endif %}
 
 {% if created_items %}
-<section class="report-section" aria-labelledby="created-candidates-title">
-    <h2 id="created-candidates-title">{% if batch.vacancy %}Candidates added{% else %}Created candidates{% endif %}</h2>
-    <ul class="record-list">
-        {% for item in created_items %}
-        <li>
-            {% if item.candidate %}<a href="{% url 'candidates:candidate-detail' organization.slug item.candidate.pk %}">{{ item.candidate.full_name }}</a>{% else %}Candidate record later removed{% endif %}
-            <span>{% if batch.vacancy %}Added{% else %}Created{% endif %} {{ item.processed_at }}{% if item.processed_by %} by {{ item.processed_by }}{% endif %}</span>
-        </li>
-        {% endfor %}
-    </ul>
-</section>
-
-<section class="review-callout">
-    <div>
-        <p class="eyebrow">Profile confirmation</p>
-        <h2>{{ profile_review.eligible_rows|length }} ready · {{ profile_review.processing_rows|length }} processing · {{ profile_review.needs_review_rows|length }} needs review</h2>
-        <p>Clean evidence-validated drafts can be confirmed together through one explicit recruiter action. Processing work is not treated as an exception, and profiles needing attention remain individual.</p>
+<section class="report-section intake-profile-progress" aria-labelledby="profile-progress-title" data-profile-processing="{{ profile_review.processing_rows|length }}">
+    <div class="intake-profile-progress-heading">
+        <div>
+            <p class="eyebrow">AI profile preparation</p>
+            <h2 id="profile-progress-title">Candidate profiles</h2>
+            {% if profile_review.processing_rows %}<p data-processing-message>Extraction is running. This page updates automatically while you keep it open.</p>{% else %}<p>Review extracted results and confirm the clean profiles together.</p>{% endif %}
+        </div>
+        {% if queued_job %}<a class="secondary-button" href="{% url 'operations:job-detail' organization.slug queued_job.pk %}">Technical details</a>{% endif %}
     </div>
-    <a class="primary-button button-link" href="{% url 'candidates:candidate-intake-confirm-profiles' organization.slug batch.pk %}">Review profile status</a>
+    <section class="profile-review-status" aria-label="Profile preparation summary">
+        <article><span>Processing</span><strong>{{ profile_review.processing_rows|length }}</strong></article>
+        <article><span>Ready to confirm</span><strong>{{ profile_review.eligible_rows|length }}</strong></article>
+        <article><span>Needs attention</span><strong>{{ profile_review.needs_review_rows|length }}</strong></article>
+        <article><span>Confirmed</span><strong>{{ profile_review.confirmed_rows|length }}</strong></article>
+    </section>
+    <div class="intake-profile-results">
+        {% for row in profile_review.rows %}
+        <article class="intake-profile-result">
+            <div>
+                <h3>{% if row.item.candidate %}<a href="{% url 'candidates:candidate-detail' organization.slug row.item.candidate.pk %}">{{ row.item.candidate.full_name }}</a>{% else %}Candidate unavailable{% endif %}</h3>
+                <span class="status-pill profile-status-{{ row.status }}">{{ row.status_label }}</span>
+                {% if row.profile %}<p>{{ row.skill_count }} skill{{ row.skill_count|pluralize }} · {{ row.fact_count }} other fact{{ row.fact_count|pluralize }}</p>{% endif %}
+            </div>
+            {% if row.profile %}
+            <details class="intake-profile-preview">
+                <summary>Preview extracted profile</summary>
+                {% if row.profile.relevant_experience_summary %}<p><strong>Experience:</strong> {{ row.profile.relevant_experience_summary }}</p>{% endif %}
+                <p><strong>Skills:</strong> {% for skill in row.profile.skills %}{{ skill.name }}{% if not forloop.last %}, {% endif %}{% empty %}None recorded{% endfor %}</p>
+                {% if row.status == "needs_review" %}<p class="field-errors">{{ row.reason }}</p>{% else %}<p class="help-text">{{ row.reason }}</p>{% endif %}
+                <a href="{% url 'candidates:candidate-profile-detail' organization.slug row.item.candidate.pk row.profile.pk %}">Open full profile and evidence</a>
+            </details>
+            {% else %}
+            <details class="intake-profile-preview">
+                <summary>{% if row.status == "processing" %}Processing details{% else %}Why attention is needed{% endif %}</summary>
+                <p>{{ row.reason }}</p>
+            </details>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </div>
+    {% if profile_review.eligible_rows %}
+    <section class="review-callout intake-profile-confirm">
+        <div>
+            <h2>Confirm {{ profile_review.eligible_rows|length }} ready profile{{ profile_review.eligible_rows|length|pluralize }}</h2>
+            <p>This publishes the reviewed extracted information for matching. Candidate decisions and outreach remain separate.</p>
+        </div>
+        <form method="post" action="{% url 'candidates:candidate-intake-confirm-profiles' organization.slug batch.pk %}">
+            {% csrf_token %}
+            <button class="primary-button" type="submit">Confirm {{ profile_review.eligible_rows|length }} ready profile{{ profile_review.eligible_rows|length|pluralize }}</button>
+        </form>
+    </section>
+    {% elif profile_review.processing_rows %}
+    <p class="human-review-note">The worker creates drafts only. Nothing is confirmed automatically.</p>
+    {% elif profile_review.confirmed_rows %}
+    <p class="success-note">{{ profile_review.confirmed_rows|length }} profile{{ profile_review.confirmed_rows|length|pluralize }} from this intake {{ profile_review.confirmed_rows|length|pluralize:"is,are" }} already confirmed.</p>
+    {% endif %}
+    {% if queued_job %}{% if queued_job.failed_count or queued_job.skipped_count %}
+    <form method="post" action="{% url 'operations:job-retry' organization.slug queued_job.pk %}">
+        {% csrf_token %}
+        <button class="secondary-button" type="submit">Retry failed profile extraction</button>
+    </form>
+    {% endif %}{% endif %}
 </section>
 {% endif %}
 
@@ -202,4 +234,5 @@
 {% block scripts %}
 <script src="{% static 'js/file-upload.js' %}" defer></script>
 <script src="{% static 'js/intake-review.js' %}" defer></script>
+<script src="{% static 'js/intake-progress.js' %}" defer></script>
 {% endblock %}

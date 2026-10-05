@@ -39,7 +39,7 @@ from candidates.profile_batch import (
 )
 from candidates.services import CandidateDuplicateFinder
 from matching.automation import refresh_vacancy_shortlist
-from operations.models import BackgroundJob
+from operations.models import BackgroundJob, BackgroundTask
 from operations.services import queue_candidate_profile_documents
 from organizations.forms import VacancyCandidatePrivacyDefaultForm
 from organizations.models import Organization
@@ -69,6 +69,27 @@ class IntakeReviewRow:
     form: CandidateIntakeReviewForm
     duplicate: object | None
     flag_labels: tuple[str, ...]
+
+
+def _latest_profile_job(batch: CandidateIntakeBatch) -> BackgroundJob | None:
+    document_ids = list(
+        batch.items.filter(
+            status=CandidateIntakeItem.Status.CREATED,
+            accepted_document_id__isnull=False,
+        ).values_list("accepted_document_id", flat=True)
+    )
+    if not document_ids:
+        return None
+    return (
+        BackgroundJob.objects.for_organization(batch.organization)
+        .filter(
+            workflow=BackgroundJob.Workflow.CANDIDATE_PROFILE_BATCH,
+            tasks__target_type=BackgroundTask.TargetType.CANDIDATE_DOCUMENT,
+            tasks__target_id__in=document_ids,
+        )
+        .distinct()
+        .first()
+    )
 
 
 def _mapping_report_key(batch_id: int) -> str:
@@ -236,6 +257,7 @@ def _render_batch(
     created_items = items.filter(status=CandidateIntakeItem.Status.CREATED)
     skipped_count = items.filter(status=CandidateIntakeItem.Status.SKIPPED).count()
     profile_review = review_intake_profiles(batch=batch, user=request.user)
+    queued_job = queued_job or _latest_profile_job(batch)
     return render(
         request,
         "candidates/candidate_intake_detail.html",
@@ -675,7 +697,7 @@ def candidate_intake_confirm_profiles(request, organization_slug: str, batch_id:
                     vacancy_id=batch.vacancy_id,
                 )
         return redirect(
-            "candidates:candidate-intake-confirm-profiles",
+            "candidates:candidate-intake-detail",
             organization.slug,
             batch.pk,
         )

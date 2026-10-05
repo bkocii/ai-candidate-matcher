@@ -2489,3 +2489,12 @@ must not be committed.
 5. On both review variants, confirm **Intake details** appears after the candidate
    cards and immediately before the AI-profile option/final action. There should
    be no separate top-level **Shared provenance** card.
+6. Create the selected candidates with AI profiles enabled while the continuous
+   worker is running. Stay on the intake page and confirm it shows processing
+   counts and refreshes automatically until drafts finish.
+7. Expand **Preview extracted profile** for a ready row. Confirm the compact
+   summary and skills appear, with a link to full evidence review.
+8. Confirm all ready profiles from this page. Candidate-pool intake stays on the
+   intake; vacancy intake proceeds to its refreshed shortlist.
+9. For a failed extraction, expand the reason and use **Retry failed profile
+   extraction**. Confirm it returns to the same intake page.

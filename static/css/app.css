@@ -282,6 +282,68 @@ a {
     margin-bottom: 0;
 }
 
+.intake-profile-progress {
+    display: grid;
+    gap: 20px;
+}
+
+.intake-profile-progress-heading,
+.intake-profile-result,
+.intake-profile-confirm {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.intake-profile-progress-heading p:last-child,
+.intake-profile-result p:last-child {
+    margin-bottom: 0;
+}
+
+.intake-profile-results {
+    display: grid;
+    gap: 12px;
+}
+
+.intake-profile-result {
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+}
+
+.intake-profile-result h3 {
+    margin-bottom: 8px;
+}
+
+.intake-profile-preview {
+    width: min(100%, 560px);
+}
+
+.intake-profile-preview summary {
+    cursor: pointer;
+    color: var(--primary-dark);
+    font-weight: 750;
+}
+
+.intake-profile-preview[open] summary {
+    margin-bottom: 12px;
+}
+
+@media (max-width: 760px) {
+    .intake-profile-progress-heading,
+    .intake-profile-result,
+    .intake-profile-confirm {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .intake-profile-preview {
+        width: 100%;
+    }
+}
+
 .file-upload {
     display: grid;
     gap: 12px;

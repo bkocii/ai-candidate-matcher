@@ -2030,3 +2030,7 @@ also corrected to enforce the already-approved administrator-only boundary.
   check passed. The complete suite was not run during this manual-review step.
 - Follow-up alignment: both pool and vacancy review now use one **Intake
   details** summary after the candidate cards and before the final action.
+- Profile-processing follow-up: the intake detail page now shows automatic
+  processing refresh, inline candidate results, collapsed previews/reasons,
+  retry, and batch confirmation. Standalone job/profile pages are secondary.
+  Focused coverage: `46 passed`; Ruff, Django check, and migration drift pass.

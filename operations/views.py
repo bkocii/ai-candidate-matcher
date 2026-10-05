@@ -267,4 +267,16 @@ def job_retry(request, organization_slug: str, job_id: int):
         messages.success(request, f"Requeued {count} exception target(s).")
     else:
         messages.error(request, "This job has no failed or skipped targets to retry.")
+    tasks = list(job.tasks.all())
+    origin_intake = _origin_intake_for_job(
+        job=job,
+        tasks=tasks,
+        organization=organization,
+    )
+    if origin_intake is not None:
+        return redirect(
+            "candidates:candidate-intake-detail",
+            organization.slug,
+            origin_intake.pk,
+        )
     return redirect("operations:job-detail", organization.slug, job.pk)
