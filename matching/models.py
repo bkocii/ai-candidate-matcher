@@ -828,7 +828,7 @@ class ShortlistEntry(models.Model):
     total_must_have = models.PositiveIntegerField(default=0)
     matched_nice_to_have = models.PositiveIntegerField(default=0)
     total_nice_to_have = models.PositiveIntegerField(default=0)
-    score_breakdown = models.JSONField(default=list)
+    score_breakdown = models.JSONField(default=list, blank=True)
     discovery_signals = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
 

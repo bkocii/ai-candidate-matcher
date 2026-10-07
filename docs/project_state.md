@@ -2126,20 +2126,12 @@ control toggles between **Select all ready** and **Clear selection**. Vacancy
 intake hides the CSV detail mapper, while generic bulk intake retains it. The
 repeat-upload disclosure remains **Add more CVs**, with the action renamed
 **Add CVs**. No model, service, or migration changed.
-# 2026-10-05 — Unified candidate CV intake
 
-Candidate-pool and vacancy-specific CV creation now use the same compact upload
-template and action. General intake includes an optional tenant-scoped open
-vacancy selector. Vacancy context always overrides pool metadata on the server
-with the generated application source, organization processing basis, unknown
-consent, and restricted current-vacancy contact. Pool source/privacy controls
-remain visible only without vacancy context; secondary consent/notes are
-collapsed, retention exceptions are omitted, and CSV mapping is not exposed in
-routine review. No migration was required. Focused result: `30 passed`.
-Both review variants now place one conditional **Intake details** summary after
-the candidate cards; the earlier top-level pool-only provenance card is removed.
-The post-creation phase now stays on that intake page: latest profile-job state,
-automatic refresh while processing, per-candidate collapsed preview/error
-details, durable retry, and explicit batch confirmation are inline. The worker
-remains separate and continuous; nothing is auto-confirmed. No migration was
-required. Focused candidate/background coverage: `46 passed`.
+On 2026-10-05 profile confirmation was corrected for vacancies that contain no
+must-have or nice-to-have skills. Their deterministic shortlist entries may
+legitimately have a zero score and an empty `score_breakdown`; the model now
+allows that value through migration `matching.0009`. Vacancy-scoped batch
+confirmation and its automatic shortlist refresh run in one outer transaction,
+preventing partial confirmation if refresh validation fails. The focused
+confirmation/shortlist regression set passes with `3 passed`; the full suite was
+left for local verification.

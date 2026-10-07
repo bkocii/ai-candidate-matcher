@@ -2017,20 +2017,25 @@ also corrected to enforce the already-approved administrator-only boundary.
   under Other requirements, no applicant skills or certification requirement,
   identical education/summary/ambiguities, no redundant programme/experience
   warnings, and no empty target-role or seniority controls.
-# 2026-10-05 — Unified candidate CV intake
 
-- General and vacancy-scoped CV intake now share one compact start page.
-- General intake can optionally select an organization-owned open vacancy with
-  confirmed requirements.
-- Vacancy selection is enforced server-side and records the automatic source,
-  organization policy, unknown consent, and application-only contact scope.
-- Generic pool intake keeps source/privacy controls; consent and notes are
-  collapsed. Per-upload retention fields and routine CSV matching are hidden.
-- Focused verification: `30 passed`; Django check, Ruff, and migration-drift
-  check passed. The complete suite was not run during this manual-review step.
-- Follow-up alignment: both pool and vacancy review now use one **Intake
-  details** summary after the candidate cards and before the final action.
-- Profile-processing follow-up: the intake detail page now shows automatic
-  processing refresh, inline candidate results, collapsed previews/reasons,
-  retry, and batch confirmation. Standalone job/profile pages are secondary.
-  Focused coverage: `46 passed`; Ruff, Django check, and migration drift pass.
+### MT-047 — Profile confirmation without skill requirements
+
+- **Date:** 2026-10-05
+- **Route:** Candidate intake → Confirm ready profiles
+- **Visual status:** Browser confirmation pending
+- **Functional status:** Focused regression coverage passes (`3 passed`)
+
+#### Resolved finding
+
+- Confirming a profile for a vacancy with no must-have or nice-to-have skills
+  attempted to save a legitimate empty shortlist score breakdown, but model
+  validation rejected the empty list and returned HTTP 500.
+- Empty score breakdowns are now valid. Batch profile confirmation and its
+  automatic shortlist refresh also share one transaction, so a later validation
+  failure cannot leave profiles confirmed without the corresponding refresh.
+
+#### Pending browser check
+
+- Apply migration `matching.0009`, confirm a ready profile against a vacancy
+  with no skills, and verify the candidate appears in the current shortlist
+  without an error.

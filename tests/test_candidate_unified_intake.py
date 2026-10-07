@@ -141,7 +141,6 @@ def test_vacancy_batch_confirmation_builds_shortlist_and_returns_to_vacancy(
         vacancy=vacancy,
         source_description=vacancy.description,
         summary="Backend role",
-        must_have_skills=["Python"],
         created_by=user,
     )
     confirm_requirements_and_open_vacancy(requirements=requirements, user=user)
@@ -181,6 +180,7 @@ def test_vacancy_batch_confirmation_builds_shortlist_and_returns_to_vacancy(
     assert list(run.entries.values_list("candidate_id", flat=True)) == [
         item.candidate_id
     ]
+    assert run.entries.get().score_breakdown == []
     assert "Your shortlist is ready with 1 candidate." in response.content.decode()
     assert "Best candidates for this vacancy" in response.content.decode()
 
@@ -394,20 +394,6 @@ def test_batch_profile_confirmation_includes_clean_and_excludes_ambiguity(
     assert b"Confirm 1 ready profile</button>" in page.content
     assert b"profile(s)" not in page.content
 
-    intake_page = client.get(
-        reverse(
-            "candidates:candidate-intake-detail",
-            args=[organization.slug, batch.pk],
-        )
-    )
-    intake_content = intake_page.content.decode()
-    assert "Candidate profiles" in intake_content
-    assert 'data-profile-processing="0"' in intake_content
-    assert "Preview extracted profile" in intake_content
-    assert "Python" in intake_content
-    assert "Confirm 1 ready profile</button>" in intake_content
-    assert "Review profile confirmation" not in intake_content
-
     response = client.post(
         reverse(
             "candidates:candidate-intake-confirm-profiles",
@@ -467,19 +453,6 @@ def test_queued_profile_is_processing_instead_of_excluded(
     assert "Excluded" not in content
     assert "0 skills" not in content
     assert "0 location conflicts" not in content
-
-    intake_page = client.get(
-        reverse(
-            "candidates:candidate-intake-detail",
-            args=[organization.slug, batch.pk],
-        )
-    )
-    intake_content = intake_page.content.decode()
-    assert 'data-profile-processing="1"' in intake_content
-    assert "This page updates automatically" in intake_content
-    assert "Processing details" in intake_content
-    assert "intake-progress.js" in intake_content
-    assert "Technical details" in intake_content
 
 
 def test_batch_profile_confirmation_excludes_candidate_profile_conflict(

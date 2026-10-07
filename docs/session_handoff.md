@@ -1541,20 +1541,13 @@ bordered summary. **Select all ready** now toggles to **Clear selection**. The
 vacancy path omits the advanced CSV mapper (generic bulk intake still has it),
 and the repeat-upload button now says **Add CVs** beneath the **Add more CVs**
 disclosure. No migration was added.
-# Handoff update — 2026-10-05
 
-Unified the general and vacancy candidate-CV entry experience. Both routes now
-render `candidate_intake_form.html`; general intake can optionally select a
-tenant-scoped open vacancy. `CandidateIntakeBatchForm.clean()` applies vacancy
-source/privacy defaults server-side, so hidden browser fields cannot weaken the
-application-only boundary. The normal review page no longer advertises CSV
-mapping, while the legacy endpoint/report remains intact. Added
-`static/js/intake-start.js` for progressive disclosure. Focused tests: `30
-passed`; Ruff, Django check, and migration-drift check pass. No full suite run.
-The review hierarchy was then aligned: both variants render **Intake details**
-in the same post-card position, with conditional pool or vacancy content.
-The next simplification removed job/profile-page navigation from the routine
-path. Intake detail now derives its latest profile job, auto-refreshes during
-processing, shows collapsed saved-profile previews or bounded reasons, retries
-exceptions back to the intake, and posts batch confirmation inline. Diagnostic
-pages remain accessible. Focused result: `46 passed`; no migration.
+On 2026-10-05 a profile-confirmation HTTP 500 was traced to automatic shortlist
+refresh for a vacancy with no skill requirements. Such an entry correctly has a
+zero score and empty `score_breakdown`, but Django model validation rejected the
+empty JSON list. `ShortlistEntry.score_breakdown` now permits blank values and
+migration `matching.0009` records the state change. Vacancy-scoped batch profile
+confirmation and shortlist refresh now share one transaction. Regression tests
+cover both the intake route and direct automatic refresh; the focused set passes
+with `3 passed`, Ruff and Django checks pass, migration drift is clean, and the
+complete suite was not run at the user's request.

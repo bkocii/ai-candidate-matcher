@@ -113,6 +113,31 @@ def test_automatic_refresh_builds_current_vacancy_shortlist() -> None:
     assert list(run.entries.values_list("candidate_id", flat=True)) == [candidate.pk]
 
 
+def test_automatic_refresh_allows_no_skill_requirements() -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_requirements(
+        organization=organization,
+        user=user,
+    )
+    confirm(requirements, user)
+    vacancy.status = Vacancy.Status.OPEN
+    vacancy.save(update_fields=("status", "updated_at"))
+    candidate = Candidate.objects.create(
+        organization=organization,
+        full_name="No Skill Requirements Candidate",
+    )
+    associate_candidate_with_vacancy(
+        candidate=candidate,
+        vacancy=vacancy,
+        user=user,
+    )
+
+    entry = refresh_vacancy_shortlist(vacancy=vacancy, user=user).entries.get()
+
+    assert entry.score == Decimal("0.00")
+    assert entry.score_breakdown == []
+
+
 def test_vacancy_candidates_show_missing_and_draft_profile_actions(client):
     user, organization = make_workspace()
     vacancy, requirements = make_requirements(

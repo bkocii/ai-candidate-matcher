@@ -2474,27 +2474,18 @@ uv run python manage.py createsuperuser
 Do not run the removal commands against a shared, production, or valuable local
 environment. The SQLite database and `media/` directory are ignored by Git and
 must not be committed.
-# Unified candidate CV intake — 2026-10-05
 
-1. Open **Candidates → Add candidate CVs**. Confirm the page shows CV upload,
-   an optional Vacancy selector, compact Source and privacy fields, and one
-   **Upload and review candidates** action.
-2. Leave Vacancy blank, enter a source, upload a CV, and confirm the review batch
-   is a candidate-pool intake.
-3. Repeat with an open vacancy selected. Confirm source/privacy inputs collapse,
-   the review names the vacancy, and the created candidate is linked to it.
-4. Open **Add candidate CVs** from a vacancy. Confirm the same layout appears,
-   the vacancy is fixed, contact says **This vacancy only**, and no CSV-matching
-   control appears on the review page.
-5. On both review variants, confirm **Intake details** appears after the candidate
-   cards and immediately before the AI-profile option/final action. There should
-   be no separate top-level **Shared provenance** card.
-6. Create the selected candidates with AI profiles enabled while the continuous
-   worker is running. Stay on the intake page and confirm it shows processing
-   counts and refreshes automatically until drafts finish.
-7. Expand **Preview extracted profile** for a ready row. Confirm the compact
-   summary and skills appear, with a link to full evidence review.
-8. Confirm all ready profiles from this page. Candidate-pool intake stays on the
-   intake; vacancy intake proceeds to its refreshed shortlist.
-9. For a failed extraction, expand the reason and use **Retry failed profile
-   extraction**. Confirm it returns to the same intake page.
+## 39. Confirm a profile when the vacancy has no skills
+
+1. Apply migrations, then create or open a vacancy with no must-have or
+   nice-to-have skills.
+2. Upload a CV, complete extraction, and confirm the ready profile.
+3. Confirm the request returns to the vacancy without a server error and the
+   candidate appears in the current shortlist. A zero score with an empty score
+   breakdown is valid for this case.
+
+Focused check:
+
+```powershell
+uv run pytest -q tests/test_candidate_unified_intake.py::test_vacancy_batch_confirmation_builds_shortlist_and_returns_to_vacancy tests/test_matching_shortlist.py::test_automatic_refresh_allows_no_skill_requirements tests/test_matching_shortlist.py::test_automatic_refresh_builds_current_vacancy_shortlist
+```

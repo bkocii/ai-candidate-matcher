@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaultfilters import pluralize
@@ -39,7 +40,7 @@ from candidates.profile_batch import (
 )
 from candidates.services import CandidateDuplicateFinder
 from matching.automation import refresh_vacancy_shortlist
-from operations.models import BackgroundJob, BackgroundTask
+from operations.models import BackgroundJob
 from operations.services import queue_candidate_profile_documents
 from organizations.forms import VacancyCandidatePrivacyDefaultForm
 from organizations.models import Organization
@@ -69,27 +70,6 @@ class IntakeReviewRow:
     form: CandidateIntakeReviewForm
     duplicate: object | None
     flag_labels: tuple[str, ...]
-
-
-def _latest_profile_job(batch: CandidateIntakeBatch) -> BackgroundJob | None:
-    document_ids = list(
-        batch.items.filter(
-            status=CandidateIntakeItem.Status.CREATED,
-            accepted_document_id__isnull=False,
-        ).values_list("accepted_document_id", flat=True)
-    )
-    if not document_ids:
-        return None
-    return (
-        BackgroundJob.objects.for_organization(batch.organization)
-        .filter(
-            workflow=BackgroundJob.Workflow.CANDIDATE_PROFILE_BATCH,
-            tasks__target_type=BackgroundTask.TargetType.CANDIDATE_DOCUMENT,
-            tasks__target_id__in=document_ids,
-        )
-        .distinct()
-        .first()
-    )
 
 
 def _mapping_report_key(batch_id: int) -> str:
@@ -257,7 +237,6 @@ def _render_batch(
     created_items = items.filter(status=CandidateIntakeItem.Status.CREATED)
     skipped_count = items.filter(status=CandidateIntakeItem.Status.SKIPPED).count()
     profile_review = review_intake_profiles(batch=batch, user=request.user)
-    queued_job = queued_job or _latest_profile_job(batch)
     return render(
         request,
         "candidates/candidate_intake_detail.html",
@@ -308,12 +287,7 @@ def candidate_intake_list(request, organization_slug: str):
 @login_required
 def candidate_intake_create(request, organization_slug: str):
     organization = _organization(request, organization_slug)
-    policy = get_retention_policy(organization)
-    form = CandidateIntakeBatchForm(
-        request.POST if request.method == "POST" else None,
-        organization=organization,
-        vacancy_lawful_basis=policy.vacancy_candidate_lawful_basis,
-    )
+    form = CandidateIntakeBatchForm(request.POST or None)
     upload_form = CandidateIntakeUploadForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid() and upload_form.is_valid():
         batch = create_candidate_intake_batch(
@@ -334,12 +308,7 @@ def candidate_intake_create(request, organization_slug: str):
     return render(
         request,
         "candidates/candidate_intake_form.html",
-        {
-            "organization": organization,
-            "form": form,
-            "upload_form": upload_form,
-            "vacancy": None,
-        },
+        {"organization": organization, "form": form, "upload_form": upload_form},
     )
 
 
@@ -368,12 +337,6 @@ def vacancy_candidate_intake_create(request, organization_slug: str, vacancy_id:
         instance=policy,
         prefix="privacy",
     )
-    form = CandidateIntakeBatchForm(
-        request.POST if request.method == "POST" else None,
-        organization=organization,
-        fixed_vacancy=vacancy,
-        vacancy_lawful_basis=policy.vacancy_candidate_lawful_basis,
-    )
     upload_form = CandidateIntakeUploadForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and intent == "save_privacy_default":
         require_organization_admin(request.user, organization)
@@ -389,11 +352,21 @@ def vacancy_candidate_intake_create(request, organization_slug: str, vacancy_id:
                 organization_slug=organization.slug,
                 vacancy_id=vacancy.pk,
             )
-    elif request.method == "POST" and form.is_valid() and upload_form.is_valid():
+    elif request.method == "POST" and upload_form.is_valid():
         batch = create_candidate_intake_batch(
             organization=organization,
             user=request.user,
-            values=form.cleaned_data,
+            values={
+                "vacancy": vacancy,
+                "source_name": f"CV received for {vacancy.title}"[:200],
+                "lawful_basis": policy.vacancy_candidate_lawful_basis,
+                "consent_status": "unknown",
+                "contact_permission": "restricted",
+                "permission_notes": "",
+                "candidate_retention_until": None,
+                "source_retention_until": None,
+                "document_retention_until": None,
+            },
         )
         _upload_intake_files(
             request=request,
@@ -408,11 +381,10 @@ def vacancy_candidate_intake_create(request, organization_slug: str, vacancy_id:
 
     return render(
         request,
-        "candidates/candidate_intake_form.html",
+        "candidates/candidate_vacancy_intake_form.html",
         {
             "organization": organization,
             "vacancy": vacancy,
-            "form": form,
             "upload_form": upload_form,
             "lawful_basis_configured": (
                 policy.vacancy_candidate_lawful_basis != "not_recorded"
@@ -668,18 +640,22 @@ def candidate_intake_confirm_profiles(request, organization_slug: str, batch_id:
     batch = _batch(organization, batch_id)
     if request.method == "POST":
         try:
-            confirmed = confirm_all_eligible_intake_profiles(
-                batch=batch,
-                user=request.user,
-            )
+            with transaction.atomic():
+                confirmed = confirm_all_eligible_intake_profiles(
+                    batch=batch,
+                    user=request.user,
+                )
+                run = (
+                    refresh_vacancy_shortlist(
+                        vacancy=batch.vacancy,
+                        user=request.user,
+                    )
+                    if batch.vacancy_id
+                    else None
+                )
         except ValidationError as error:
             messages.error(request, "; ".join(error.messages))
         else:
-            run = (
-                refresh_vacancy_shortlist(vacancy=batch.vacancy, user=request.user)
-                if batch.vacancy_id
-                else None
-            )
             messages.success(
                 request,
                 f"Confirmed {len(confirmed)} profile{pluralize(len(confirmed))}. "
@@ -697,7 +673,7 @@ def candidate_intake_confirm_profiles(request, organization_slug: str, batch_id:
                     vacancy_id=batch.vacancy_id,
                 )
         return redirect(
-            "candidates:candidate-intake-detail",
+            "candidates:candidate-intake-confirm-profiles",
             organization.slug,
             batch.pk,
         )
