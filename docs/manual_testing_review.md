@@ -2039,3 +2039,25 @@ also corrected to enforce the already-approved administrator-only boundary.
 - Apply migration `matching.0009`, confirm a ready profile against a vacancy
   with no skills, and verify the candidate appears in the current shortlist
   without an error.
+
+### MT-048 — Empty vacancy dropdown after confirmation hotfix
+
+- **Date:** 2026-10-07
+- **Route:** Candidates → Add candidate CVs
+- **Visual status:** Browser confirmation pending
+- **Functional status:** Focused regression coverage passes
+
+#### Resolved finding
+
+- The profile-confirmation emergency bundle accidentally carried an older
+  candidate-intake view. It stopped passing the active organization into the
+  unified intake form, whose secure default is an empty vacancy queryset.
+- The cumulative correction preserves the unified/inline intake workflow and
+  passes the active organization again. Only open vacancies with confirmed
+  requirements from that organization are selectable; cross-tenant vacancies
+  remain hidden.
+
+#### Pending browser check
+
+- Open generic candidate intake and verify the organization's open confirmed
+  vacancy appears in the dropdown, then select it and upload one disposable CV.

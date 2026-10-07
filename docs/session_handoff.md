@@ -1551,3 +1551,13 @@ confirmation and shortlist refresh now share one transaction. Regression tests
 cover both the intake route and direct automatic refresh; the focused set passes
 with `3 passed`, Ruff and Django checks pass, migration drift is clean, and the
 complete suite was not run at the user's request.
+
+On 2026-10-07 the generic **Add candidate CVs** vacancy dropdown was found empty
+because the emergency profile-confirmation ZIP had overwritten the latest
+unified intake view with an older copy. Since `CandidateIntakeBatchForm` safely
+uses an empty vacancy queryset until an organization is provided, this removed
+all choices. The cumulative correction restores the latest unified and inline
+processing view, passes `organization=organization`, and retains the atomic
+profile-confirmation/shortlist fix. A focused route test now asserts that the
+tenant's open confirmed vacancy is shown and a different tenant's vacancy is
+not. No migration was added.

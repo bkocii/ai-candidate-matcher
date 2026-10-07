@@ -2489,3 +2489,19 @@ Focused check:
 ```powershell
 uv run pytest -q tests/test_candidate_unified_intake.py::test_vacancy_batch_confirmation_builds_shortlist_and_returns_to_vacancy tests/test_matching_shortlist.py::test_automatic_refresh_allows_no_skill_requirements tests/test_matching_shortlist.py::test_automatic_refresh_builds_current_vacancy_shortlist
 ```
+
+## 40. Check the generic intake vacancy choices
+
+1. Create an open vacancy with confirmed requirements, then open **Candidates →
+   Add candidate CVs**.
+2. Confirm the vacancy appears in the optional **Vacancy** dropdown.
+3. Confirm draft, closed, deleted, and other organizations' vacancies do not
+   appear.
+4. Select the vacancy, upload a test CV, and confirm the resulting intake is
+   linked to that vacancy.
+
+Focused check:
+
+```powershell
+uv run pytest -q tests/test_vacancy_candidate_intake.py::test_general_intake_can_select_vacancy_and_uses_automatic_context
+```

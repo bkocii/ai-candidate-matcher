@@ -502,7 +502,43 @@ def test_general_intake_can_select_vacancy_and_uses_automatic_context(
             OrganizationRetentionPolicy.CandidateLawfulBasis.CONTRACT
         ),
     )
+    other_user = User.objects.create_user(username="other-vacancy-recruiter")
+    other_organization = Organization.objects.create(
+        name="Other agency",
+        slug="other-agency",
+    )
+    OrganizationMembership.objects.create(
+        user=other_user,
+        organization=other_organization,
+        role=OrganizationMembership.Role.ADMIN,
+    )
+    other_vacancy = Vacancy.objects.create(
+        organization=other_organization,
+        title="Private vacancy",
+        description="Must remain tenant-private.",
+        created_by=other_user,
+    )
+    other_requirements = VacancyRequirements.objects.create(
+        vacancy=other_vacancy,
+        source_description=other_vacancy.description,
+        summary="Private vacancy",
+        created_by=other_user,
+    )
+    confirm_requirements_and_open_vacancy(
+        requirements=other_requirements,
+        user=other_user,
+    )
     client.force_login(user)
+
+    page = client.get(
+        reverse("candidates:candidate-intake-create", args=[organization.slug])
+    )
+    page_content = page.content.decode()
+    assert page.status_code == 200
+    assert f'value="{vacancy.pk}"' in page_content
+    assert vacancy.title in page_content
+    assert f'value="{other_vacancy.pk}"' not in page_content
+    assert other_vacancy.title not in page_content
 
     response = client.post(
         reverse("candidates:candidate-intake-create", args=[organization.slug]),

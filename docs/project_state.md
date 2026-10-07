@@ -2135,3 +2135,12 @@ confirmation and its automatic shortlist refresh run in one outer transaction,
 preventing partial confirmation if refresh validation fails. The focused
 confirmation/shortlist regression set passes with `3 passed`; the full suite was
 left for local verification.
+
+On 2026-10-07 the generic candidate-intake vacancy dropdown was restored after
+the preceding emergency bundle unintentionally supplied an older intake view.
+The view again initializes `CandidateIntakeBatchForm` with the active
+organization and its retention policy, so the secure default empty queryset is
+replaced by that tenant's open vacancies with confirmed requirements. Focused
+coverage verifies the expected vacancy is present and another organization's
+vacancy is absent. The unified upload and inline profile-processing workflow is
+otherwise unchanged; no migration was added.
