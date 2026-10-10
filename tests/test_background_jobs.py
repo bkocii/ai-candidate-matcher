@@ -152,12 +152,43 @@ def _add_skill_only_candidate(*, user, organization, vacancy):
         vacancy=vacancy,
         user=user,
     )
-    return candidate
+    document = CandidateDocument.objects.create(
+        candidate=candidate,
+        document_type=CandidateDocument.DocumentType.CV,
+        original_filename="second-candidate.pdf",
+        file="candidate_documents/second-candidate.pdf",
+        content_type="application/pdf",
+        size_bytes=24,
+        sha256="f" * 64,
+        extraction_status=CandidateDocument.ExtractionStatus.SUCCEEDED,
+        extracted_text="Python: five years",
+        extracted_at=timezone.now(),
+        uploaded_by=user,
+    )
+    profile = CandidateProfile.objects.create(
+        candidate=candidate,
+        source_document=document,
+        version=1,
+        status=CandidateProfile.Status.CONFIRMED,
+        source_document_sha256=document.sha256,
+        source_text_sha256="e" * 64,
+        skills=[
+            {
+                "name": "Python",
+                "evidence": "Python: five years",
+                "years_experience": "5.0",
+            }
+        ],
+        confirmed_by=user,
+        confirmed_at=timezone.now(),
+        created_by=user,
+    )
+    return candidate, profile
 
 
 def test_shortlist_batch_isolates_failures_and_explicit_retry_resumes_work():
     user, organization, _, _, _, _, original_run, _ = make_match_workspace()
-    _add_skill_only_candidate(
+    _, second_profile = _add_skill_only_candidate(
         user=user,
         organization=organization,
         vacancy=original_run.vacancy,
@@ -173,6 +204,12 @@ def test_shortlist_batch_isolates_failures_and_explicit_retry_resumes_work():
         job_id=queued.job.pk,
         gateway=FakeAIGateway(error=AIGatewayUnavailableError()),
     )
+    confirmed_at = second_profile.confirmed_at
+    CandidateProfile.objects.filter(pk=second_profile.pk).update(
+        status=CandidateProfile.Status.DRAFT,
+        confirmed_by=None,
+        confirmed_at=None,
+    )
     skipped = process_next_background_task(
         job_id=queued.job.pk,
         gateway=ConfiguredAssessmentGateway(),
@@ -187,6 +224,11 @@ def test_shortlist_batch_isolates_failures_and_explicit_retry_resumes_work():
     assert queued.job.failed_count == 1
     assert queued.job.skipped_count == 1
 
+    CandidateProfile.objects.filter(pk=second_profile.pk).update(
+        status=CandidateProfile.Status.CONFIRMED,
+        confirmed_by=user,
+        confirmed_at=confirmed_at,
+    )
     assert retry_background_job(job=queued.job, user=user) == 2
     retried = process_next_background_task(
         job_id=queued.job.pk,

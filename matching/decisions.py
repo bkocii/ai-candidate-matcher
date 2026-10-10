@@ -5,6 +5,7 @@ from django.db import transaction
 
 from accounts.models import User
 from candidates.models import Candidate, CandidateProfile
+from matching.evaluation import evaluate_candidate_constraints
 from matching.models import MatchAssessment, ReviewDecision, ShortlistEntry
 from matching.staleness import assess_match_run_staleness
 from organizations.permissions import require_organization_object_access
@@ -25,6 +26,13 @@ def assess_review_decision_eligibility(
     require_organization_object_access(user, assessment)
     entry = assessment.shortlist_entry
     candidate = entry.candidate
+
+    if entry.filter_outcome != ShortlistEntry.FilterOutcome.PASSED:
+        return ReviewDecisionEligibility(
+            False,
+            "Only a confirmed, eligible candidate can receive a decision. Resolve "
+            "the eligibility warning and update the shortlist first.",
+        )
 
     if candidate.status != Candidate.Status.ACTIVE:
         return ReviewDecisionEligibility(
@@ -62,6 +70,18 @@ def assess_review_decision_eligibility(
             False,
             "The candidate's confirmed profile changed. Generate a current "
             "shortlist and assessment before deciding.",
+        )
+
+    current_filter_result = evaluate_candidate_constraints(
+        requirements=entry.match_run.requirements,
+        candidate=candidate,
+        user=user,
+    )
+    if not current_filter_result.is_shortlist_eligible:
+        return ReviewDecisionEligibility(
+            False,
+            "The candidate is not currently eligible. Resolve the eligibility "
+            "warning and update the shortlist before deciding.",
         )
 
     staleness = assess_match_run_staleness(run=entry.match_run, user=user)

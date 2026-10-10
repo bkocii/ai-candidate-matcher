@@ -961,7 +961,7 @@ def test_recruiter_extracts_reviews_and_confirms_profile(client) -> None:
     detail = client.get(response.url)
     content = detail.content.decode()
     assert detail.status_code == 200
-    assert "Not yet confirmed for matching" in content
+    assert "Check before matching" in content
     assert "Python: 5 years" in content
     assert CV_TEXT not in content
     assert candidate.email not in content

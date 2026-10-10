@@ -3,9 +3,15 @@ from decimal import Decimal
 import pytest
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import OrganizationMembership, User
-from candidates.models import Candidate, CandidateSource
+from candidates.models import (
+    Candidate,
+    CandidateDocument,
+    CandidateProfile,
+    CandidateSource,
+)
 from candidates.reuse import add_candidates_from_pool
 from candidates.services import delete_candidate, request_candidate_deletion
 from matching.models import MatchRun
@@ -81,6 +87,30 @@ def make_run() -> tuple[User, Organization, Vacancy, Candidate, MatchRun]:
         candidate=candidate,
         vacancy=vacancy,
         user=user,
+    )
+    document = CandidateDocument.objects.create(
+        candidate=candidate,
+        document_type=CandidateDocument.DocumentType.CV,
+        original_filename="synthetic-candidate.pdf",
+        file="candidate_documents/synthetic-candidate.pdf",
+        content_type="application/pdf",
+        size_bytes=26,
+        sha256="a" * 64,
+        extraction_status=CandidateDocument.ExtractionStatus.SUCCEEDED,
+        extracted_text="Synthetic Python evidence.",
+        extracted_at=timezone.now(),
+        uploaded_by=user,
+    )
+    CandidateProfile.objects.create(
+        candidate=candidate,
+        source_document=document,
+        version=1,
+        status=CandidateProfile.Status.CONFIRMED,
+        source_document_sha256=document.sha256,
+        source_text_sha256="b" * 64,
+        confirmed_by=user,
+        confirmed_at=timezone.now(),
+        created_by=user,
     )
     return (
         user,

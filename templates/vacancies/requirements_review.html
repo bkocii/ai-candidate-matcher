@@ -15,6 +15,30 @@
 <form class="stacked-form requirements-review-form" method="post">
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
+    {% if vacancy_form.non_field_errors %}<div class="form-error">{{ vacancy_form.non_field_errors }}</div>{% endif %}
+
+    <section class="form-panel requirements-page-block requirements-review-card vacancy-identity-card" aria-labelledby="vacancy-identity-title">
+        <header class="review-card-heading">
+            <div>
+                <p class="eyebrow">Vacancy</p>
+                <h2 id="vacancy-identity-title">Name and hiring client</h2>
+            </div>
+            <p>These labels can change without altering the original vacancy text.</p>
+        </header>
+        <div class="requirements-field-grid">
+            <div class="field">
+                {{ vacancy_form.title.label_tag }}
+                {{ vacancy_form.title }}
+                {% if vacancy_form.title.errors %}<div class="field-errors">{{ vacancy_form.title.errors }}</div>{% endif %}
+            </div>
+            <div class="field">
+                {{ vacancy_form.client_company.label_tag }}
+                {{ vacancy_form.client_company }}
+                {% if vacancy_form.client_company.help_text %}<small class="help-text">{{ vacancy_form.client_company.help_text }}</small>{% endif %}
+                {% if vacancy_form.client_company.errors %}<div class="field-errors">{{ vacancy_form.client_company.errors }}</div>{% endif %}
+            </div>
+        </div>
+    </section>
 
     <section class="form-panel requirements-page-block requirements-review-card" aria-labelledby="essentials-title">
         <header class="review-card-heading">
@@ -155,7 +179,7 @@
             {% else %}
                 <button class="primary-button" type="submit" name="intent" value="confirm_and_upload">Save vacancy and add candidates</button>
             {% endif %}
-            <a class="secondary-button" href="{% url 'vacancies:vacancy-list' organization.slug %}">Cancel</a>
+            <a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Cancel</a>
         </div>
     </section>
 </form>

@@ -5,9 +5,11 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from ai_gateway import AIGatewayError
@@ -151,7 +153,7 @@ def vacancy_candidate_pool_add(request, organization_slug: str, vacancy_id: int)
         Candidate.objects.for_organization(organization)
         .not_deleted()
         .exclude(vacancy_considerations__vacancy=vacancy)
-        .prefetch_related("sources")
+        .prefetch_related("sources", "profile_versions")
         .order_by("full_name", "id")
         .distinct()
     )
@@ -169,6 +171,10 @@ def vacancy_candidate_pool_add(request, organization_slug: str, vacancy_id: int)
             "eligibility": assess_candidate_pool_reuse(
                 candidate=candidate,
                 vacancy=vacancy,
+            ),
+            "has_confirmed_profile": any(
+                profile.status == CandidateProfile.Status.CONFIRMED
+                for profile in candidate.profile_versions.all()
             ),
         }
         for candidate in page.object_list
@@ -378,6 +384,70 @@ def candidate_profile_extract(
     )
 
 
+def _profile_skill_options(form, profile):
+    retained_values = form["retained_skills"].value() or []
+    if isinstance(retained_values, str):
+        retained_values = [retained_values]
+    retained_values = {str(value) for value in retained_values}
+    return [
+        {
+            "value": str(index),
+            "name": skill["name"],
+            "evidence": skill["evidence"],
+            "selected": str(index) in retained_values,
+        }
+        for index, skill in enumerate(profile.skills)
+    ]
+
+
+def _profile_detail_context(
+    *,
+    organization,
+    candidate,
+    profile,
+    correction_form=None,
+    correction_open=False,
+    return_to="",
+):
+    missing_facts = []
+    if not profile.relevant_experience_summary:
+        missing_facts.append("Relevant experience summary")
+    if not profile.location:
+        missing_facts.append("Location")
+    if profile.work_mode_preference == CandidateProfile.WorkMode.UNKNOWN:
+        missing_facts.append("Work mode preference")
+    if not profile.employment_type_preferences:
+        missing_facts.append("Employment preferences")
+    if not profile.availability:
+        missing_facts.append("Availability")
+    if not profile.languages:
+        missing_facts.append("Languages")
+    if not profile.education:
+        missing_facts.append("Education")
+    if not profile.certifications:
+        missing_facts.append("Certifications")
+    if correction_form is None:
+        correction_form = CandidateProfileCorrectionForm(profile=profile)
+    conflicts = candidate_profile_conflicts(candidate=candidate, profile=profile)
+    return {
+        "organization": organization,
+        "candidate": candidate,
+        "profile": profile,
+        "profile_versions": candidate.profile_versions.select_related(
+            "source_document", "created_by"
+        ),
+        "profile_conflicts": conflicts,
+        "profile_missing_facts": missing_facts,
+        "profile_has_skill_years": any(
+            skill.get("years_experience") is not None for skill in profile.skills
+        ),
+        "correction_form": correction_form,
+        "profile_skill_options": _profile_skill_options(correction_form, profile),
+        "correction_open": correction_open or bool(conflicts),
+        "return_to": return_to,
+    }
+
+
 @login_required
 def candidate_profile_detail(
     request,
@@ -399,46 +469,23 @@ def candidate_profile_detail(
         pk=profile_id,
         candidate=candidate,
     )
-    missing_facts = []
-    if profile.role_family == "unknown":
-        missing_facts.append("Likely role")
-    if profile.seniority == "unknown":
-        missing_facts.append("Seniority")
-    if not profile.relevant_experience_summary:
-        missing_facts.append("Relevant experience summary")
-    if not profile.location:
-        missing_facts.append("Location")
-    if profile.work_mode_preference == CandidateProfile.WorkMode.UNKNOWN:
-        missing_facts.append("Work mode preference")
-    if not profile.employment_type_preferences:
-        missing_facts.append("Employment preferences")
-    if not profile.availability:
-        missing_facts.append("Availability")
-    if not profile.languages:
-        missing_facts.append("Languages")
-    if not profile.education:
-        missing_facts.append("Education")
-    if not profile.certifications:
-        missing_facts.append("Certifications")
     return render(
         request,
         "candidates/candidate_profile_detail.html",
-        {
-            "organization": organization,
-            "candidate": candidate,
-            "profile": profile,
-            "profile_versions": candidate.profile_versions.select_related(
-                "source_document", "created_by"
+        _profile_detail_context(
+            organization=organization,
+            candidate=candidate,
+            profile=profile,
+            return_to=(
+                request.GET.get("return_to", "")
+                if url_has_allowed_host_and_scheme(
+                    request.GET.get("return_to", ""),
+                    allowed_hosts={request.get_host()},
+                    require_https=request.is_secure(),
+                )
+                else ""
             ),
-            "profile_conflicts": candidate_profile_conflicts(
-                candidate=candidate,
-                profile=profile,
-            ),
-            "profile_missing_facts": missing_facts,
-            "profile_has_skill_years": any(
-                skill.get("years_experience") is not None for skill in profile.skills
-            ),
-        },
+        ),
     )
 
 
@@ -461,52 +508,75 @@ def candidate_profile_correct(
         pk=profile_id,
         candidate=candidate,
     )
+    if request.method == "GET":
+        return redirect(
+            "candidates:candidate-profile-detail",
+            organization_slug=organization.slug,
+            candidate_id=candidate.pk,
+            profile_id=profile.pk,
+        )
     form = CandidateProfileCorrectionForm(
-        request.POST or None,
+        request.POST,
         profile=profile,
     )
     if request.method == "POST" and form.is_valid():
         try:
-            corrected = create_corrected_profile_version(
-                profile=profile,
-                user=request.user,
-                values=form.cleaned_data,
-            )
+            with transaction.atomic():
+                corrected = create_corrected_profile_version(
+                    profile=profile,
+                    user=request.user,
+                    values=form.cleaned_data,
+                )
+                should_confirm = request.POST.get("intent") == "save_and_confirm"
+                if should_confirm:
+                    confirm_candidate_profile(profile=corrected, user=request.user)
         except ValidationError as error:
             form.add_error(None, "; ".join(error.messages))
         else:
-            messages.success(
-                request,
-                f"Corrected profile v{corrected.version} created for review.",
-            )
+            if should_confirm:
+                refreshed_runs = refresh_candidate_shortlists(
+                    candidate=candidate,
+                    user=request.user,
+                )
+                messages.success(
+                    request,
+                    f"Corrections saved and profile v{corrected.version} confirmed."
+                    + (
+                        f" Updated {len(refreshed_runs)} vacancy shortlist"
+                        f"{'s' if len(refreshed_runs) != 1 else ''}."
+                        if refreshed_runs
+                        else ""
+                    ),
+                )
+            else:
+                messages.success(
+                    request,
+                    f"Corrected profile v{corrected.version} saved as a draft.",
+                )
+            return_to = request.POST.get("return_to", "")
+            if should_confirm and url_has_allowed_host_and_scheme(
+                return_to,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+            ):
+                return redirect(return_to)
             return redirect(
                 "candidates:candidate-profile-detail",
                 organization_slug=organization.slug,
                 candidate_id=candidate.pk,
                 profile_id=corrected.pk,
             )
-    retained_values = form["retained_skills"].value() or []
-    if isinstance(retained_values, str):
-        retained_values = [retained_values]
-    retained_values = {str(value) for value in retained_values}
     return render(
         request,
-        "candidates/candidate_profile_correct.html",
-        {
-            "organization": organization,
-            "candidate": candidate,
-            "profile": profile,
-            "form": form,
-            "profile_skill_options": [
-                {
-                    "value": str(index),
-                    "name": skill["name"],
-                    "evidence": skill["evidence"],
-                    "selected": str(index) in retained_values,
-                }
-                for index, skill in enumerate(profile.skills)
-            ],
-        },
+        "candidates/candidate_profile_detail.html",
+        _profile_detail_context(
+            organization=organization,
+            candidate=candidate,
+            profile=profile,
+            correction_form=form,
+            correction_open=True,
+            return_to=request.POST.get("return_to", ""),
+        ),
     )
 
 
@@ -547,6 +617,13 @@ def candidate_profile_confirm(
                 else "are now available to deterministic matching."
             ),
         )
+        return_to = request.POST.get("return_to", "")
+        if url_has_allowed_host_and_scheme(
+            return_to,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            return redirect(return_to)
     return redirect(
         "candidates:candidate-profile-detail",
         organization_slug=organization.slug,

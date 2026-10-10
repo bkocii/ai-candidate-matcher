@@ -1,195 +1,115 @@
 {% extends "base.html" %}
 
-{% block title %}Profile v{{ profile.version }} | {{ candidate.full_name }}{% endblock %}
+{% block title %}Check profile | {{ candidate.full_name }}{% endblock %}
 
 {% block content %}
-<section class="page-heading action-heading" aria-labelledby="profile-title">
+<section class="page-heading action-heading candidate-profile-heading" aria-labelledby="profile-title">
     <div>
         <p class="eyebrow">Candidate profile · version {{ profile.version }}</p>
         <h1 id="profile-title">{{ candidate.full_name }}</h1>
-        <p class="lede">{{ profile.get_status_display }} · source {{ profile.source_document.original_filename }}</p>
+        <p class="lede">{{ profile.source_document.original_filename }} · <span class="status-pill status-{{ profile.status }}">{{ profile.get_status_display }}</span></p>
     </div>
-    <div class="button-row">
-        <a class="secondary-button" href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">Candidate details</a>
-    </div>
+    <a class="secondary-button" href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">Candidate details</a>
 </section>
 
 {% if profile.status == "draft" %}
-<section class="review-callout" aria-labelledby="profile-review-title">
+<section class="review-callout profile-review-primary" aria-labelledby="profile-review-title">
     <div>
-        <p class="eyebrow">Recruiter review required</p>
-        <h2 id="profile-review-title">Not yet confirmed for matching</h2>
-        <p>Check every fact against its displayed CV excerpt. Confirming publishes grounded skills and profile facts; it does not approve, reject, or assess this candidate.</p>
+        <p class="eyebrow">Check before matching</p>
+        <h2 id="profile-review-title">{% if profile_conflicts or profile.ambiguities %}This profile needs attention{% else %}Profile ready to confirm{% endif %}</h2>
+        <p>{% if profile_conflicts %}Resolve the conflicting candidate detail below.{% elif profile.ambiguities %}Review the {{ profile.ambiguities|length }} extraction question{{ profile.ambiguities|length|pluralize }} below.{% else %}The extracted facts have grounded CV evidence. Confirm to make them available for matching.{% endif %}</p>
+    </div>
+    <div class="button-row">
+        {% if not profile_conflicts %}<form method="post" action="{% url 'candidates:candidate-profile-confirm' organization.slug candidate.pk profile.pk %}">{% csrf_token %}{% if return_to %}<input type="hidden" name="return_to" value="{{ return_to }}">{% endif %}<button class="primary-button" type="submit">{% if return_to %}Confirm and return to vacancy{% else %}Confirm profile{% endif %}</button></form>{% endif %}
+        <a class="secondary-button" href="#correct-profile">Correct details</a>
     </div>
 </section>
+{% else %}
+<section class="success-callout profile-confirmed-banner"><div><p class="eyebrow">Confirmed profile</p><h2>Available for matching</h2><p>This version is immutable. Corrections create and confirm a new version.</p></div><a class="secondary-button" href="#correct-profile">Correct details</a></section>
 {% endif %}
 
 {% if profile_conflicts %}
-<section class="detail-panel danger-panel" aria-labelledby="profile-conflict-title">
+<section class="detail-panel danger-panel profile-exception-panel" aria-labelledby="profile-conflict-title">
     <p class="eyebrow">Confirmation blocked</p>
-    <h2 id="profile-conflict-title">Candidate details conflict with the CV profile</h2>
-    {% for conflict in profile_conflicts %}
-        <p><strong>{{ conflict.field|title }}:</strong> candidate record “{{ conflict.candidate_value }}”; CV profile “{{ conflict.profile_value }}”.</p>
-    {% endfor %}
-    <p>Correct the candidate record when its value is wrong, or create a corrected evidence-backed profile version. This draft is excluded from batch confirmation until the conflict is resolved.</p>
-    <div class="button-row">
-        <a class="secondary-button" href="{% url 'candidates:candidate-edit' organization.slug candidate.pk %}">Edit candidate details</a>
-        <a class="secondary-button" href="{% url 'candidates:candidate-profile-correct' organization.slug candidate.pk profile.pk %}">Correct profile</a>
-    </div>
+    <h2 id="profile-conflict-title">Candidate details conflict with the CV</h2>
+    {% for conflict in profile_conflicts %}<p><strong>{{ conflict.field|title }}:</strong> candidate record “{{ conflict.candidate_value }}”; CV profile “{{ conflict.profile_value }}”.</p>{% endfor %}
+    <div class="button-row"><a class="secondary-button" href="{% url 'candidates:candidate-edit' organization.slug candidate.pk %}">Edit candidate details</a><a class="secondary-button" href="#correct-profile">Correct extracted profile</a></div>
 </section>
 {% endif %}
 
-<section class="detail-grid" aria-label="Candidate profile summary">
-    <article class="detail-panel profile-summary-panel">
-        <p class="eyebrow">Profile summary</p>
-        <h2>Core profile facts</h2>
-        <div class="profile-fact-grid">
-            <section class="profile-fact-card">
-                <h3>Likely role</h3>
-                <p class="profile-fact-value">{{ profile.get_role_family_display }}</p>
-                {% if profile.fact_evidence.role_family %}<blockquote class="profile-fact-evidence"><strong>CV evidence</strong><p>{{ profile.fact_evidence.role_family }}</p></blockquote>{% endif %}
-            </section>
-            <section class="profile-fact-card">
-                <h3>Seniority</h3>
-                <p class="profile-fact-value">{{ profile.get_seniority_display }}</p>
-                {% if profile.fact_evidence.seniority %}<blockquote class="profile-fact-evidence"><strong>CV evidence</strong><p>{{ profile.fact_evidence.seniority }}</p></blockquote>{% endif %}
-            </section>
-            {% if profile.relevant_experience_summary %}<section class="profile-fact-card profile-fact-wide">
-                <h3>Relevant experience</h3>
-                <p class="profile-fact-value">{{ profile.relevant_experience_summary }}</p>
-                {% if profile.fact_evidence.relevant_experience_summary %}
-                    {% if profile.fact_evidence.relevant_experience_summary == profile.relevant_experience_summary %}<span class="profile-evidence-match">Matches CV wording</span>
-                    {% else %}<blockquote class="profile-fact-evidence"><strong>CV evidence</strong><p>{{ profile.fact_evidence.relevant_experience_summary }}</p></blockquote>{% endif %}
-                {% endif %}
-            </section>{% endif %}
-            {% if profile.location %}<section class="profile-fact-card">
-                <h3>Location</h3>
-                <p class="profile-fact-value">{{ profile.location }}</p>
-                {% if profile.fact_evidence.location %}
-                    {% if profile.fact_evidence.location == profile.location %}<span class="profile-evidence-match">Matches CV wording</span>
-                    {% else %}<blockquote class="profile-fact-evidence"><strong>CV evidence</strong><p>{{ profile.fact_evidence.location }}</p></blockquote>{% endif %}
-                {% endif %}
-            </section>{% endif %}
-            {% if profile.work_mode_preference != "unknown" %}<section class="profile-fact-card">
-                <h3>Work mode preference</h3>
-                <p class="profile-fact-value">{{ profile.get_work_mode_preference_display }}</p>
-                {% if profile.fact_evidence.work_mode_preference %}<blockquote class="profile-fact-evidence"><strong>CV evidence</strong><p>{{ profile.fact_evidence.work_mode_preference }}</p></blockquote>{% endif %}
-            </section>{% endif %}
-            {% if profile.employment_type_preferences %}<section class="profile-fact-card">
-                <h3>Employment preferences</h3>
-                <p class="profile-fact-value">{{ profile.employment_type_preferences|join:", " }}</p>
-                {% if profile.fact_evidence.employment_type_preferences %}<blockquote class="profile-fact-evidence"><strong>CV evidence</strong><p>{{ profile.fact_evidence.employment_type_preferences }}</p></blockquote>{% endif %}
-            </section>{% endif %}
-            {% if profile.availability %}<section class="profile-fact-card">
-                <h3>Availability</h3>
-                <p class="profile-fact-value">{{ profile.availability }}</p>
-                {% if profile.fact_evidence.availability %}
-                    {% if profile.fact_evidence.availability == profile.availability %}<span class="profile-evidence-match">Matches CV wording</span>
-                    {% else %}<blockquote class="profile-fact-evidence"><strong>CV evidence</strong><p>{{ profile.fact_evidence.availability }}</p></blockquote>{% endif %}
-                {% endif %}
-            </section>{% endif %}
+{% if profile.ambiguities %}
+<section class="detail-panel profile-ambiguity-panel profile-exception-panel" aria-labelledby="profile-ambiguities-title">
+    <p class="eyebrow">Needs attention</p><h2 id="profile-ambiguities-title">Extraction questions</h2>
+    <ul>{% for ambiguity in profile.ambiguities %}<li>{{ ambiguity }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+<section class="profile-review-summary" aria-labelledby="profile-summary-title">
+    <div class="profile-review-summary-heading"><div><p class="eyebrow">AI-prepared profile</p><h2 id="profile-summary-title">Matching facts</h2></div><span>{{ profile.skills|length }} skill{{ profile.skills|length|pluralize }}</span></div>
+    <dl class="profile-review-facts">
+        <div><dt>Relevant experience</dt><dd>{{ profile.relevant_experience_summary|default:"Not stated in CV" }}</dd></div>
+        <div><dt>Location</dt><dd>{{ profile.location|default:"Not stated in CV" }}</dd></div>
+        {% if profile.work_mode_preference != "unknown" %}<div><dt>Work mode</dt><dd>{{ profile.get_work_mode_preference_display }}</dd></div>{% endif %}
+        {% if profile.availability %}<div><dt>Availability</dt><dd>{{ profile.availability }}</dd></div>{% endif %}
+    </dl>
+    {% if profile.skills %}<div class="profile-skill-chips" aria-label="Extracted skills">{% for skill in profile.skills %}<span>{{ skill.name }}{% if skill.years_experience is not None %} · {{ skill.years_experience }}y{% endif %}</span>{% endfor %}</div>{% else %}<p class="section-note">No supported skills were extracted.</p>{% endif %}
+    {% if profile_missing_facts %}<details class="profile-missing-details"><summary>Not stated in CV · {{ profile_missing_facts|length }}</summary><ul class="profile-missing-list">{% for fact in profile_missing_facts %}<li>{{ fact }}</li>{% endfor %}</ul></details>{% endif %}
+</section>
+
+<div class="profile-evidence-sections" aria-label="CV evidence and background">
+    <details class="profile-evidence-section">
+        <summary><span>Skills and source evidence</span><small>{{ profile.skills|length }} extracted</small></summary>
+        <div class="profile-evidence-content"><div class="table-wrap"><table><thead><tr><th>Skill</th>{% if profile_has_skill_years %}<th>Years</th>{% endif %}<th>CV evidence</th></tr></thead><tbody>{% for skill in profile.skills %}<tr><th>{{ skill.name }}</th>{% if profile_has_skill_years %}<td>{{ skill.years_experience|default:"—" }}</td>{% endif %}<td>{{ skill.evidence }}</td></tr>{% empty %}<tr><td colspan="{% if profile_has_skill_years %}3{% else %}2{% endif %}">No skills were explicitly supported.</td></tr>{% endfor %}</tbody></table></div></div>
+    </details>
+
+    <details class="profile-evidence-section">
+        <summary><span>Profile fact evidence</span><small>Experience, location, and preferences</small></summary>
+        <div class="profile-evidence-content"><dl class="profile-review-facts evidence-facts">
+            {% if profile.fact_evidence.relevant_experience_summary %}<div><dt>Relevant experience</dt><dd>{{ profile.fact_evidence.relevant_experience_summary }}</dd></div>{% endif %}
+            {% if profile.fact_evidence.location %}<div><dt>Location</dt><dd>{{ profile.fact_evidence.location }}</dd></div>{% endif %}
+            {% if profile.fact_evidence.work_mode_preference %}<div><dt>Work mode</dt><dd>{{ profile.fact_evidence.work_mode_preference }}</dd></div>{% endif %}
+            {% if profile.fact_evidence.availability %}<div><dt>Availability</dt><dd>{{ profile.fact_evidence.availability }}</dd></div>{% endif %}
+            {% if profile.role_family != "unknown" or profile.seniority != "unknown" %}<div><dt>Optional role classification</dt><dd>{{ profile.get_role_family_display }} · {{ profile.get_seniority_display }}</dd></div>{% endif %}
+        </dl></div>
+    </details>
+
+    <details class="profile-evidence-section">
+        <summary><span>Employment history</span><small>{{ profile.employment_history|length }} record{{ profile.employment_history|length|pluralize }}</small></summary>
+        <div class="profile-evidence-content"><div class="table-wrap"><table><thead><tr><th>Role</th><th>Employer</th><th>Period</th><th>CV evidence</th></tr></thead><tbody>{% for item in profile.employment_history %}<tr><th>{{ item.job_title }}</th><td>{{ item.employer|default:"Not recorded" }}</td><td>{{ item.period|default:"Not recorded" }}</td><td>{{ item.evidence }}</td></tr>{% empty %}<tr><td colspan="4">No employment history was explicitly supported.</td></tr>{% endfor %}</tbody></table></div></div>
+    </details>
+
+    {% if profile.languages or profile.education or profile.certifications %}<details class="profile-evidence-section"><summary><span>Languages, education, and certifications</span><small>Additional extracted facts</small></summary><div class="profile-evidence-content profile-qualification-compact">{% if profile.languages %}<section><h3>Languages</h3><ul>{% for item in profile.languages %}<li><strong>{{ item.language }}{% if item.proficiency %} · {{ item.proficiency }}{% endif %}</strong><br>{{ item.evidence }}</li>{% endfor %}</ul></section>{% endif %}{% if profile.education %}<section><h3>Education</h3><ul>{% for item in profile.education %}<li><strong>{{ item.qualification }}{% if item.institution %} · {{ item.institution }}{% endif %}</strong><br>{{ item.evidence }}</li>{% endfor %}</ul></section>{% endif %}{% if profile.certifications %}<section><h3>Certifications</h3><ul>{% for item in profile.certifications %}<li><strong>{{ item.name }}{% if item.issuer %} · {{ item.issuer }}{% endif %}</strong><br>{{ item.evidence }}</li>{% endfor %}</ul></section>{% endif %}</div></details>{% endif %}
+</div>
+
+<details class="profile-correction-inline" id="correct-profile"{% if correction_open %} open{% endif %}>
+    <summary><span>Correct extracted details</span><small>Edit only values supported by this CV</small></summary>
+    <form class="profile-correction-form profile-correction-compact" method="post" action="{% url 'candidates:candidate-profile-correct' organization.slug candidate.pk profile.pk %}">
+        {% csrf_token %}
+        {% if return_to %}<input type="hidden" name="return_to" value="{{ return_to }}">{% endif %}
+        {% if correction_form.non_field_errors %}<div class="form-error">{{ correction_form.non_field_errors }}</div>{% endif %}
+        <div class="profile-correction-grid">
+            <div class="field profile-correction-wide">{{ correction_form.relevant_experience_summary.label_tag }}{{ correction_form.relevant_experience_summary }}{{ correction_form.relevant_experience_summary.errors }}</div>
+            <div class="field">{{ correction_form.location.label_tag }}{{ correction_form.location }}{{ correction_form.location.errors }}</div>
+            <div class="field">{{ correction_form.work_mode_preference.label_tag }}{{ correction_form.work_mode_preference }}{{ correction_form.work_mode_preference.errors }}</div>
+            <div class="field profile-correction-wide">{{ correction_form.availability.label_tag }}{{ correction_form.availability }}{{ correction_form.availability.errors }}</div>
         </div>
-        {% if profile_missing_facts %}<div class="profile-missing-summary"><strong>Not stated in CV</strong><ul class="profile-missing-list">{% for fact in profile_missing_facts %}<li>{{ fact }}</li>{% endfor %}</ul></div>{% endif %}
-        {% if not profile.ambiguities %}<p class="profile-clear-note">No unresolved ambiguities recorded.</p>{% endif %}
-    </article>
-    {% if profile.ambiguities %}<article class="detail-panel profile-ambiguity-panel">
-        <p class="eyebrow">Uncertainty</p>
-        <h2>Ambiguities</h2>
-        <ul>{% for ambiguity in profile.ambiguities %}<li>{{ ambiguity }}</li>{% endfor %}</ul>
-    </article>{% endif %}
-</section>
+        <section class="profile-correction-skills"><h3>Keep supported skills</h3><p class="section-note">Uncheck anything misclassified.</p>{% if profile_skill_options %}<div class="profile-skill-options profile-skill-options-compact">{% for option in profile_skill_options %}<label class="profile-skill-option" for="id_retained_skills_{{ forloop.counter0 }}"><input id="id_retained_skills_{{ forloop.counter0 }}" type="checkbox" name="retained_skills" value="{{ option.value }}"{% if option.selected %} checked{% endif %}><span><strong>{{ option.name }}</strong><small>{{ option.evidence }}</small></span></label>{% endfor %}</div>{% else %}<p class="section-note">No supported skills are present.</p>{% endif %}{{ correction_form.retained_skills.errors }}</section>
+        <div class="field">{{ correction_form.ambiguities.label_tag }}{{ correction_form.ambiguities }}{% if correction_form.ambiguities.help_text %}<small class="help-text">{{ correction_form.ambiguities.help_text }}</small>{% endif %}{{ correction_form.ambiguities.errors }}</div>
+        <details class="technical-details correction-optional-evidence"><summary><span>Evidence and optional classification</span><small>Needed only when changing these values</small></summary><div class="profile-correction-grid">
+            <div class="field">{{ correction_form.relevant_experience_summary_evidence.label_tag }}{{ correction_form.relevant_experience_summary_evidence }}{{ correction_form.relevant_experience_summary_evidence.errors }}</div>
+            <div class="field">{{ correction_form.location_evidence.label_tag }}{{ correction_form.location_evidence }}{{ correction_form.location_evidence.errors }}</div>
+            <div class="field">{{ correction_form.work_mode_preference_evidence.label_tag }}{{ correction_form.work_mode_preference_evidence }}{{ correction_form.work_mode_preference_evidence.errors }}</div>
+            <div class="field">{{ correction_form.availability_evidence.label_tag }}{{ correction_form.availability_evidence }}{{ correction_form.availability_evidence.errors }}</div>
+            <div class="field">{{ correction_form.role_family.label_tag }}{{ correction_form.role_family }}{{ correction_form.role_family.errors }}</div>
+            <div class="field">{{ correction_form.role_family_evidence.label_tag }}{{ correction_form.role_family_evidence }}{{ correction_form.role_family_evidence.errors }}</div>
+            <div class="field">{{ correction_form.seniority.label_tag }}{{ correction_form.seniority }}{{ correction_form.seniority.errors }}</div>
+            <div class="field">{{ correction_form.seniority_evidence.label_tag }}{{ correction_form.seniority_evidence }}{{ correction_form.seniority_evidence.errors }}</div>
+        </div></details>
+        <div class="button-row"><button class="primary-button" type="submit" name="intent" value="save_and_confirm">Save corrections and confirm</button><button class="secondary-button" type="submit" name="intent" value="save_draft">Save as draft</button></div>
+    </form>
+</details>
 
-<section class="version-history" aria-labelledby="skills-title">
-    <h2 id="skills-title">Skills and source evidence</h2>
-    <div class="table-wrap">
-        <table>
-            <thead><tr><th>Skill</th>{% if profile_has_skill_years %}<th>Years</th>{% endif %}<th>CV evidence</th></tr></thead>
-            <tbody>
-                {% for skill in profile.skills %}
-                    <tr><th>{{ skill.name }}</th>{% if profile_has_skill_years %}<td>{{ skill.years_experience|default:"—" }}</td>{% endif %}<td>{{ skill.evidence }}</td></tr>
-                {% empty %}
-                    <tr><td colspan="{% if profile_has_skill_years %}3{% else %}2{% endif %}">No skills were explicitly supported.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
+<details class="profile-evidence-section profile-history-section"><summary><span>Profile history and AI retry</span><small>{{ profile_versions|length }} version{{ profile_versions|length|pluralize }}</small></summary><div class="profile-evidence-content"><div class="button-row"><form method="post" action="{% url 'candidates:candidate-profile-extract' organization.slug candidate.pk profile.source_document.pk %}">{% csrf_token %}<button class="secondary-button" type="submit">Re-extract from CV</button></form></div><p class="section-note">Re-extraction runs AI again and creates another reviewable draft.</p><div class="table-wrap"><table><thead><tr><th>Version</th><th>Status</th><th>Created by</th><th>Created</th></tr></thead><tbody>{% for version in profile_versions %}<tr><th><a href="{% url 'candidates:candidate-profile-detail' organization.slug candidate.pk version.pk %}">v{{ version.version }}</a></th><td><span class="status-pill status-{{ version.status }}">{{ version.get_status_display }}</span></td><td>{{ version.created_by.username|default:"System" }}</td><td>{{ version.created_at|date:"Y-m-d H:i" }}</td></tr>{% endfor %}</tbody></table></div></div></details>
 
-<section class="version-history" aria-labelledby="employment-title">
-    <h2 id="employment-title">Employment history</h2>
-    <div class="table-wrap">
-        <table>
-            <thead><tr><th>Role</th><th>Employer</th><th>Period</th><th>CV evidence</th></tr></thead>
-            <tbody>
-                {% for item in profile.employment_history %}
-                    <tr><th>{{ item.job_title }}</th><td>{{ item.employer|default:"Not recorded" }}</td><td>{{ item.period|default:"Not recorded" }}</td><td>{{ item.evidence }}</td></tr>
-                {% empty %}
-                    <tr><td colspan="4">No employment history was explicitly supported.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
-
-{% if profile.languages or profile.education or profile.certifications %}
-<section class="profile-qualification-grid" aria-label="Qualifications and evidence">
-    {% if profile.languages %}<article class="detail-panel">
-        <h2>Languages</h2>
-        <ul>{% for item in profile.languages %}<li><strong>{{ item.language }}{% if item.proficiency %} · {{ item.proficiency }}{% endif %}</strong><br>{{ item.evidence }}</li>{% endfor %}</ul>
-    </article>{% endif %}
-    {% if profile.education %}<article class="detail-panel">
-        <h2>Education</h2>
-        <ul>{% for item in profile.education %}<li><strong>{{ item.qualification }}{% if item.institution %} · {{ item.institution }}{% endif %}</strong><br>{{ item.evidence }}</li>{% endfor %}</ul>
-    </article>{% endif %}
-    {% if profile.certifications %}<article class="detail-panel">
-        <h2>Certifications</h2>
-        <ul>{% for item in profile.certifications %}<li><strong>{{ item.name }}{% if item.issuer %} · {{ item.issuer }}{% endif %}</strong><br>{{ item.evidence }}</li>{% endfor %}</ul>
-    </article>{% endif %}
-</section>
-{% endif %}
-
-<section class="detail-panel profile-review-actions" id="profile-review-actions" aria-labelledby="profile-review-actions-title">
-    <div>
-        <p class="eyebrow">Review decision</p>
-        <h2 id="profile-review-actions-title">{% if profile.status == "draft" %}Finish reviewing this profile{% else %}Profile version confirmed{% endif %}</h2>
-        {% if profile.status == "draft" %}<p>Confirm only when the profile values and CV evidence above are accurate. Correcting or re-extracting creates a new draft and keeps this version unchanged.</p>{% else %}<p>This immutable version is available to matching. Any correction or re-extraction creates a separate draft.</p>{% endif %}
-    </div>
-    <div class="button-row">
-        {% if profile.status == "draft" and not profile_conflicts %}
-            <form method="post" action="{% url 'candidates:candidate-profile-confirm' organization.slug candidate.pk profile.pk %}">
-                {% csrf_token %}
-                <button class="primary-button" type="submit">Confirm profile for matching</button>
-            </form>
-        {% endif %}
-        <a class="secondary-button" href="{% url 'candidates:candidate-profile-correct' organization.slug candidate.pk profile.pk %}">Correct profile</a>
-        <form method="post" action="{% url 'candidates:candidate-profile-extract' organization.slug candidate.pk profile.source_document.pk %}">
-            {% csrf_token %}
-            <button class="secondary-button" type="submit">Re-extract from CV</button>
-        </form>
-    </div>
-    <p class="section-note">Re-extraction runs AI again against the current CV and creates another reviewable draft. It does not edit or confirm this version.</p>
-</section>
-
-<p class="section-note">The source CV text, contact details, prompt, and raw provider response are not displayed on this page.</p>
-
-<section class="version-history" aria-labelledby="profile-history-title">
-    <h2 id="profile-history-title">Profile history</h2>
-    <p class="section-note">Confirmed versions are immutable. Re-extraction or recruiter correction creates a separate numbered draft.</p>
-    <div class="table-wrap">
-        <table>
-            <thead><tr><th>Version</th><th>Status</th><th>Source</th><th>Created by</th><th>Created</th></tr></thead>
-            <tbody>
-                {% for version in profile_versions %}
-                    <tr>
-                        <th><a href="{% url 'candidates:candidate-profile-detail' organization.slug candidate.pk version.pk %}">v{{ version.version }}</a></th>
-                        <td><span class="status-pill status-{{ version.status }}">{{ version.get_status_display }}</span></td>
-                        <td>{{ version.source_document.original_filename }}</td>
-                        <td>{{ version.created_by.username|default:"System" }}</td>
-                        <td>{{ version.created_at|date:"Y-m-d H:i" }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
+<p class="section-note profile-private-note">The source CV text, contact details, prompt, and raw provider response are not displayed on this page.</p>
 {% endblock %}

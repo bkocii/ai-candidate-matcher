@@ -450,6 +450,21 @@ def test_missing_profile_and_stale_run_are_rejected_before_gateway():
     assert gateway.calls == []
 
 
+def test_candidate_needing_eligibility_review_cannot_be_ai_assessed():
+    user, _, _, _, _, _, _, entry = make_workspace()
+    ShortlistEntry.objects.filter(pk=entry.pk).update(
+        filter_outcome=ShortlistEntry.FilterOutcome.REVIEW
+    )
+    entry.refresh_from_db()
+    gateway = RecordingGateway()
+
+    with pytest.raises(ValidationError, match="confirmed, eligible candidate"):
+        assess_shortlist_entry(entry=entry, user=user, gateway=gateway)
+
+    assert gateway.calls == []
+    assert MatchAssessment.objects.count() == 0
+
+
 def test_concurrent_profile_confirmation_discards_completed_output():
     user, _, candidate, document, profile, _, _, entry = make_workspace()
     context = build_assessment_context(entry=entry, profile=profile)

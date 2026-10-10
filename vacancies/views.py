@@ -269,16 +269,41 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
                 None,
             )
             entry.latest_assessment = next(iter(entry.assessments.all()), None)
-    excluded_candidates = []
+    candidate_attention = []
     if current_requirements is not None:
-        excluded_candidates = [
-            result
-            for result in filter_candidates(
-                requirements=current_requirements,
-                user=request.user,
-            ).results
-            if result.outcome == FilterOutcome.FAILED
-        ]
+        filter_report = filter_candidates(
+            requirements=current_requirements,
+            user=request.user,
+        )
+        for result in filter_report.results:
+            latest_profile = next(iter(result.candidate.profile_versions.all()), None)
+            if result.confirmed_profile is None:
+                candidate_attention.append(
+                    {
+                        "result": result,
+                        "status": "Profile not confirmed",
+                        "reason": "Confirm the extracted profile before matching.",
+                        "latest_profile": latest_profile,
+                    }
+                )
+            elif result.outcome == FilterOutcome.REVIEW:
+                candidate_attention.append(
+                    {
+                        "result": result,
+                        "status": "Eligibility needs review",
+                        "reason": "One or more eligibility facts are not recorded.",
+                        "latest_profile": latest_profile,
+                    }
+                )
+            elif result.outcome == FilterOutcome.FAILED:
+                candidate_attention.append(
+                    {
+                        "result": result,
+                        "status": "Not eligible",
+                        "reason": "A confirmed fact fails an eligibility rule.",
+                        "latest_profile": latest_profile,
+                    }
+                )
     historical_runs_query = MatchRun.objects.for_organization(organization).filter(
         requirements__vacancy=vacancy
     )
@@ -320,7 +345,7 @@ def vacancy_detail(request, organization_slug: str, vacancy_id: int):
             "latest_match_run": latest_match_run,
             "latest_match_run_staleness": latest_match_run_staleness,
             "latest_match_entries": latest_match_entries,
-            "excluded_candidates": excluded_candidates,
+            "candidate_attention": candidate_attention,
             "historical_match_runs": historical_match_runs,
             "draft": draft,
             "versions": versions,
@@ -541,13 +566,28 @@ def requirements_review(
         request.POST or None,
         requirements=requirements,
     )
+    vacancy_form_data = None
+    if request.method == "POST":
+        vacancy_form_data = request.POST.copy()
+        vacancy_form_data.setdefault("title", vacancy.title)
+        vacancy_form_data.setdefault("client_company", vacancy.client_company_id or "")
+    vacancy_form = VacancyEditForm(
+        vacancy_form_data,
+        organization=organization,
+        vacancy=vacancy,
+    )
     intent = request.POST.get("intent", "")
     eligibility_form = HardConstraintRuleForm(
         request.POST if request.method == "POST" and intent == "add_rule" else None,
         prefix="eligibility",
         requirements=requirements,
     )
-    if request.method == "POST" and intent == "add_rule" and form.is_valid():
+    if (
+        request.method == "POST"
+        and intent == "add_rule"
+        and form.is_valid()
+        and vacancy_form.is_valid()
+    ):
         rule_created = False
         with transaction.atomic():
             try:
@@ -559,6 +599,11 @@ def requirements_review(
                         form=form,
                     ),
                     validate_rules=False,
+                )
+                update_vacancy_details(
+                    vacancy=vacancy,
+                    user=request.user,
+                    values=vacancy_edit_values_from_form(vacancy_form),
                 )
                 requirements.refresh_from_db()
                 sync_structured_eligibility_rules(
@@ -602,7 +647,7 @@ def requirements_review(
                 )
                 + "#eligibility-rules"
             )
-    elif request.method == "POST" and form.is_valid():
+    elif request.method == "POST" and form.is_valid() and vacancy_form.is_valid():
         was_open = vacancy.status == Vacancy.Status.OPEN
         try:
             with transaction.atomic():
@@ -614,6 +659,11 @@ def requirements_review(
                         form=form,
                     ),
                     validate_rules=False,
+                )
+                update_vacancy_details(
+                    vacancy=vacancy,
+                    user=request.user,
+                    values=vacancy_edit_values_from_form(vacancy_form),
                 )
                 requirements.refresh_from_db()
                 sync_structured_eligibility_rules(
@@ -680,6 +730,7 @@ def requirements_review(
             "vacancy": vacancy,
             "requirements": requirements,
             "form": form,
+            "vacancy_form": vacancy_form,
             "eligibility_form": eligibility_form,
             "show_role_classification": (
                 requirements.role_family not in {"unknown", "other"}
@@ -824,7 +875,7 @@ def requirements_new_draft(request, organization_slug: str, vacancy_id: int):
     else:
         messages.info(request, "Opened the existing requirements draft.")
     return redirect(
-        "vacancies:requirements-edit",
+        "vacancies:requirements-review",
         organization_slug=organization.slug,
         vacancy_id=vacancy.pk,
         requirements_id=requirements.pk,

@@ -88,7 +88,7 @@ def test_review_queue_surfaces_latest_draft_profile_exception(client):
     assert "Profile exceptions" in content
     assert candidate.full_name in content
     assert "extracted detail" in content
-    assert "Review candidate" in content
+    assert "Check profile" in content
 
 
 def test_queue_consolidates_versions_and_prioritizes_evidence_exceptions(client):

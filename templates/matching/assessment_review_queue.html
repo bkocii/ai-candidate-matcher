@@ -38,7 +38,7 @@
                     <span class="review-badge review-badge-attention">Needs correction</span>
                 </header>
                 <p class="review-card-summary">{% if item.conflict_count %}{{ item.conflict_count }} candidate detail conflict{{ item.conflict_count|pluralize }} must be resolved.{% else %}{{ item.ambiguity_count }} extracted detail{{ item.ambiguity_count|pluralize }} need individual verification.{% endif %}</p>
-                <a class="primary-button" href="{% url 'candidates:candidate-profile-correct' organization.slug item.profile.candidate.pk item.profile.pk %}">Review candidate</a>
+                <a class="primary-button" href="{% url 'candidates:candidate-profile-detail' organization.slug item.profile.candidate.pk item.profile.pk %}">Check profile</a>
             </article>
         {% endfor %}
     </section>

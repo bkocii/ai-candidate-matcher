@@ -2144,3 +2144,47 @@ replaced by that tenant's open vacancies with confirmed requirements. Focused
 coverage verifies the expected vacancy is present and another organization's
 vacancy is absent. The unified upload and inline profile-processing workflow is
 otherwise unchanged; no migration was added.
+
+On 2026-10-09 the vacancy detail page was reorganized around its primary output:
+the ranked shortlist. Candidate results are compact rows showing rank, skill
+match, AI-assessment state, and one state-appropriate action; routine rows no
+longer spend equal space on role/seniority tie-break signals. Candidate
+management, confirmed criteria, original source, lifecycle controls, immutable
+history, and deletion remain available in clearly labelled disclosures. The
+header keeps only navigation, CV upload, and one **Edit vacancy** action.
+
+That edit action now creates or reuses a correction draft and opens the compact
+vacancy-review page. The same form edits the display title, hiring client,
+matching criteria, and eligibility rules in one transaction, replacing the
+routine split between metadata editing and requirement correction. Existing
+specialized routes remain available for compatibility. No model, migration,
+matching, privacy, lifecycle, or human-decision behavior changed. Focused
+vacancy, shortlist, staleness, eligibility, client, and intake coverage passes
+with `157 passed`; Django system checks and focused Ruff checks also pass.
+
+The 2026-10-09 candidate-profile follow-up makes profile confirmation an
+exception-focused single-page task. The page leads with conflicts or extraction
+questions, shows a compact matching summary, and moves CV evidence, employment,
+qualifications, version history, and AI retry into labelled disclosures. Routine
+review no longer gives role/seniority classification equal visual priority.
+Corrections are embedded on the same page; one **Save corrections and confirm**
+action creates an immutable corrected version and confirms it transactionally,
+while **Save as draft** remains available. A clean draft uses one **Confirm
+profile** action. When the page was opened from a vacancy, successful confirmation
+returns to that vacancy after refreshing affected shortlists. No migration or AI
+contract changed. Focused candidate extraction, correction, intake, review, and
+shortlist coverage passes with `86 passed`.
+
+On 2026-10-10 `MT-051` closed the eligibility enforcement gap. Only active
+candidates with a confirmed current profile and a fully passed deterministic
+eligibility result enter a newly generated shortlist. Unconfirmed profiles,
+unknown eligibility facts, and explicit failures remain linked to the vacancy
+in one visible **Needs attention** section with direct profile or eligibility
+review actions. Pool reuse remains permitted when contact/privacy checks pass;
+profile confirmation is deliberately a separate matching gate.
+
+The same rule is enforced in shortlist generation, direct AI assessment, and
+human decision services, so an older URL or background workflow cannot bypass
+it. Existing runs use algorithm v7 and therefore become stale, prompting a safe
+refresh while preserving immutable history. The candidate-pool and eligibility
+pages now state the gate clearly. No migration was added.

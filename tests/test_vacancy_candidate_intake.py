@@ -289,7 +289,7 @@ def test_add_from_pool_shows_permission_status_and_records_deliberate_reuse(clie
 
     assert page.status_code == 200
     assert "Reusable Candidate" in content
-    assert "Ready to add" in content
+    assert "Add, then confirm profile" in content
     assert "Application Only Candidate" in content
     assert "Application only" in content
     assert "Inactive Candidate" in content

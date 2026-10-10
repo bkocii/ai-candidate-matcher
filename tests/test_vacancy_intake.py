@@ -436,14 +436,15 @@ def test_save_and_review_persists_edits_and_previews_complete_draft(client) -> N
     assert "Save vacancy and add candidates" in content
     assert "Confirm and open only" not in content
     assert 'class="stacked-form requirements-review-form"' in content
-    assert content.count("requirements-page-block") == 4
+    assert "Name and hiring client" in content
+    assert content.count("requirements-page-block") == 5
     assert content.index("Matching essentials") < content.index("Ready to continue")
     assert "Current confirmed requirements" not in content
 
     detail = client.get(
         reverse("vacancies:vacancy-detail", args=[organization.slug, vacancy.pk])
     ).content.decode()
-    assert f'href="{review_url}">Review version 1</a>' in detail
+    assert f'href="{review_url}">Continue editing</a>' in detail
     assert "Confirm version 1</button>" not in detail
 
 
@@ -468,6 +469,8 @@ def test_compact_review_saves_eligibility_and_continues_to_cv_upload(client) -> 
     response = client.post(
         review_url,
         {
+            "title": "Senior Backend Engineer",
+            "client_company": "",
             "summary": "Reviewed backend role",
             "must_have_skills": "Python\nDjango",
             "nice_to_have_skills": "PostgreSQL",
@@ -501,6 +504,7 @@ def test_compact_review_saves_eligibility_and_continues_to_cv_upload(client) -> 
     assert requirements.language_requirements == ["English"]
     assert requirements.hard_constraints == ["Kosovo work eligibility"]
     assert requirements.status == VacancyRequirements.Status.CONFIRMED
+    assert vacancy.title == "Senior Backend Engineer"
     assert vacancy.status == Vacancy.Status.OPEN
     assert [rule.rule_type for rule in rules] == [
         "required_skill",
@@ -993,9 +997,9 @@ def test_recruiter_confirms_and_opens_vacancy_with_focused_next_action(client) -
     assert vacancy.status == Vacancy.Status.OPEN
     assert "Confirmed requirements version 1 and opened the vacancy" in content
     assert "Version 1 is now the matching input" in content
-    assert "The vacancy is open. Add the CVs received for this role" in content
+    assert "The vacancy is open and ready for CVs" in content
     assert "Add candidate CVs" in content
-    assert "Best candidates for this vacancy" in content
+    assert "Candidates to review" in content
     assert "Evaluate candidates" not in content
     assert "data-confirmation-focus" in content
     assert "confirmation-focus.js" in content
@@ -1179,7 +1183,7 @@ def test_new_draft_route_reuses_existing_draft(client) -> None:
     assert response.status_code == 302
     assert vacancy.requirement_versions.count() == 1
     assert response.url == reverse(
-        "vacancies:requirements-edit",
+        "vacancies:requirements-review",
         args=[organization.slug, vacancy.pk, requirements.pk],
     )
 
@@ -1371,8 +1375,8 @@ def test_detail_shows_only_currently_valid_status_controls(client) -> None:
     assert available_vacancy_status_transitions(vacancy) == (
         (Vacancy.Status.OPEN, "Open"),
     )
-    assert "Change to Open" in confirmed_response.content.decode()
-    assert "Change to Paused" not in confirmed_response.content.decode()
+    assert ">Open</button>" in confirmed_response.content.decode()
+    assert ">Paused</button>" not in confirmed_response.content.decode()
 
 
 def test_recruiter_soft_deletes_vacancy_after_confirmation(client) -> None:

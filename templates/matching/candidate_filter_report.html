@@ -20,7 +20,7 @@
         {% if latest_run %}
             <a class="secondary-button" href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_run.pk %}">View latest shortlist{% if latest_run_staleness.is_stale %} (stale){% endif %}</a>
         {% endif %}
-        {% if report and report.eligible_count %}
+        {% if report and report.shortlist_eligible_count %}
             <form method="post" action="{% url 'matching:shortlist-generate' organization.slug vacancy.pk %}">
                 {% csrf_token %}
                 <button class="primary-button" type="submit">Generate shortlist</button>
@@ -35,7 +35,7 @@
             <div>
                 <p class="eyebrow">Scoring continues</p>
                 <h2 id="no-eligibility-rules-title">No eligibility rules are active</h2>
-                <p>No eligibility rules are active; all candidates continue to scoring. Review the vacancy before relying on this result.</p>
+                <p>No eligibility rules are active; confirmed profiles continue to skill ranking. Unconfirmed profiles still require review.</p>
             </div>
             <a class="secondary-button" href="{% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}#confirmed-rules-title">Review eligibility rules</a>
         </section>
@@ -43,24 +43,24 @@
 
     <section class="filter-summary" aria-label="Eligibility summary">
         <article><span>Evaluated</span><strong>{{ report.evaluated_count }}</strong></article>
-        <article><span>Continue to scoring</span><strong>{{ report.eligible_count }}</strong></article>
+        <article><span>Ready for shortlist</span><strong>{{ report.shortlist_eligible_count }}</strong></article>
         <article><span>Needs review</span><strong>{{ report.review_count }}</strong></article>
         <article><span>Excluded</span><strong>{{ report.failed_count }}</strong></article>
     </section>
 
-    <p class="section-note">{{ report.eligible_count }} candidate{{ report.eligible_count|pluralize }} {% if report.eligible_count == 1 %}remains{% else %}remain{% endif %} eligible. Generate a bounded shortlist to rank eligible candidates by recorded must-have and nice-to-have skill evidence. This filter is not a hiring decision.</p>
+    <p class="section-note">{{ report.shortlist_eligible_count }} confirmed candidate{{ report.shortlist_eligible_count|pluralize }} {% if report.shortlist_eligible_count == 1 %}is{% else %}are{% endif %} ready. Candidates needing profile or eligibility review stay visible but do not enter the shortlist.</p>
 
     {% if page.object_list %}
         <div class="filter-results">
             {% for result in page.object_list %}
-                <article class="filter-candidate filter-candidate-{{ result.outcome }}">
+                <article class="filter-candidate filter-candidate-{% if not result.confirmed_profile %}review{% else %}{{ result.outcome }}{% endif %}">
                     <header>
                         <div>
                             <p class="eyebrow">Candidate</p>
                             <h2><a href="{% url 'candidates:candidate-detail' organization.slug result.candidate.pk %}">{{ result.candidate.full_name }}</a></h2>
                         </div>
                         <span class="filter-outcome filter-outcome-{{ result.outcome }}">
-                            {% if result.outcome == "passed" %}Eligible for scoring{% elif result.outcome == "review" %}Needs review{% else %}Not eligible{% endif %}
+                            {% if not result.confirmed_profile %}Profile not confirmed{% elif result.outcome == "passed" %}Ready for shortlist{% elif result.outcome == "review" %}Eligibility needs review{% else %}Not eligible{% endif %}
                         </span>
                     </header>
 

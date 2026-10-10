@@ -34,10 +34,19 @@ class CandidateFilterResult:
     candidate: Candidate
     outcome: str
     rule_results: tuple[RuleEvaluation, ...]
+    confirmed_profile: CandidateProfile | None = None
 
     @property
     def is_eligible(self) -> bool:
         return self.outcome != FilterOutcome.FAILED
+
+    @property
+    def is_shortlist_eligible(self) -> bool:
+        """Only proven eligibility from a confirmed profile enters a shortlist."""
+        return (
+            self.confirmed_profile is not None
+            and self.outcome == FilterOutcome.PASSED
+        )
 
 
 @dataclass(frozen=True)
@@ -66,6 +75,10 @@ class CandidateFilterReport:
     @property
     def eligible_count(self) -> int:
         return self.passed_count + self.review_count
+
+    @property
+    def shortlist_eligible_count(self) -> int:
+        return sum(result.is_shortlist_eligible for result in self.results)
 
 
 class RuleOutcome:
@@ -380,6 +393,7 @@ def _evaluate_candidate(
         candidate=candidate,
         outcome=_aggregate_outcome(results),
         rule_results=results,
+        confirmed_profile=profile,
     )
 
 

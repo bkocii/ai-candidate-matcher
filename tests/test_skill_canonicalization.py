@@ -4,7 +4,7 @@ import pytest
 from django.utils import timezone
 
 from accounts.models import OrganizationMembership, User
-from candidates.models import Candidate
+from candidates.models import Candidate, CandidateDocument, CandidateProfile
 from matching.evaluation import (
     FilterOutcome,
     RuleOutcome,
@@ -70,6 +70,33 @@ def generate_shortlist(*, requirements: VacancyRequirements, user: User):
         vacancy=requirements.vacancy,
         user=user,
     )
+    for candidate in Candidate.objects.filter(organization=requirements.organization):
+        if candidate.current_profile is not None:
+            continue
+        document = CandidateDocument.objects.create(
+            candidate=candidate,
+            document_type=CandidateDocument.DocumentType.CV,
+            original_filename=f"candidate-{candidate.pk}.pdf",
+            file=f"candidate_documents/candidate-{candidate.pk}.pdf",
+            content_type="application/pdf",
+            size_bytes=24,
+            sha256=f"{candidate.pk:064x}",
+            extraction_status=CandidateDocument.ExtractionStatus.SUCCEEDED,
+            extracted_text="Synthetic confirmed CV.",
+            extracted_at=timezone.now(),
+            uploaded_by=user,
+        )
+        CandidateProfile.objects.create(
+            candidate=candidate,
+            source_document=document,
+            version=1,
+            status=CandidateProfile.Status.CONFIRMED,
+            source_document_sha256=document.sha256,
+            source_text_sha256=f"{candidate.pk + 1000:064x}",
+            confirmed_by=user,
+            confirmed_at=timezone.now(),
+            created_by=user,
+        )
     return generate_shortlist_service(requirements=requirements, user=user)
 
 
@@ -223,7 +250,7 @@ def test_existing_saved_aliases_match_for_hard_filter_and_shortlist() -> None:
     )
     assert entry.score_breakdown[0]["candidate_label"] == "Python"
     assert run.algorithm_version == ALGORITHM_VERSION
-    assert ALGORITHM_VERSION == "deterministic_skill_relevance.v6"
+    assert ALGORITHM_VERSION == "deterministic_skill_relevance.v7"
 
 
 def test_existing_pytest_skill_matches_automated_testing_with_source_evidence() -> None:
@@ -262,7 +289,7 @@ def test_existing_pytest_skill_matches_automated_testing_with_source_evidence() 
         entry.score_breakdown[0]["evidence"]
         == "Built automated test suites with pytest."
     )
-    assert run.algorithm_version == "deterministic_skill_relevance.v6"
+    assert run.algorithm_version == "deterministic_skill_relevance.v7"
 
 
 @pytest.mark.parametrize("unsafe_label", ["manual testing", "test management"])
@@ -292,7 +319,7 @@ def test_unsafe_testing_near_matches_score_zero(unsafe_label: str) -> None:
     assert entry.matched_must_have == 0
 
 
-def test_unsafe_near_match_remains_unknown_and_scores_zero() -> None:
+def test_unsafe_near_match_remains_unknown_and_is_not_shortlisted() -> None:
     user, organization = make_workspace()
     candidate = Candidate.objects.create(
         organization=organization,
@@ -327,9 +354,9 @@ def test_unsafe_near_match_remains_unknown_and_scores_zero() -> None:
         candidate=candidate,
         user=user,
     )
-    entry = generate_shortlist(requirements=requirements, user=user).entries.get()
+    run = generate_shortlist(requirements=requirements, user=user)
 
     assert filter_result.outcome == FilterOutcome.REVIEW
     assert filter_result.rule_results[0].outcome == RuleOutcome.UNKNOWN
-    assert entry.score == Decimal("0.00")
-    assert entry.matched_must_have == 0
+    assert run.eligible_count == 0
+    assert run.entries.count() == 0

@@ -19,7 +19,7 @@
     <div class="rule-editor-heading">
         <div>
             <h2 id="available-candidates-title">Available candidates</h2>
-            <p class="section-note">Application-only, unconfirmed, inactive, or withdrawn records cannot be reused for another vacancy.</p>
+            <p class="section-note">Candidates with contact permission can be added now. A confirmed, eligible profile is required before they appear in the shortlist.</p>
         </div>
         <form method="get" class="compact-filter-form">
             <label for="candidate-pool-search">Search</label>
@@ -48,7 +48,11 @@
                                 <td>{{ row.candidate.location|default:"—" }}</td>
                                 <td>
                                     {% if row.eligibility.can_add %}
-                                        <span class="status-pill status-active">Ready to add</span>
+                                        {% if row.has_confirmed_profile %}
+                                            <span class="status-pill status-active">Ready to add</span>
+                                        {% else %}
+                                            <span class="status-pill requirements-draft">Add, then confirm profile</span>
+                                        {% endif %}
                                     {% else %}
                                         {{ row.eligibility.reason }}
                                     {% endif %}

@@ -182,7 +182,7 @@ def test_vacancy_batch_confirmation_builds_shortlist_and_returns_to_vacancy(
     ]
     assert run.entries.get().score_breakdown == []
     assert "Your shortlist is ready with 1 candidate." in response.content.decode()
-    assert "Best candidates for this vacancy" in response.content.decode()
+    assert "Candidates to review" in response.content.decode()
 
 
 def test_exact_csv_mapping_updates_only_one_to_one_pending_filename(

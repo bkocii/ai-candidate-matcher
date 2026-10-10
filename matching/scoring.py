@@ -256,7 +256,7 @@ def generate_shortlist(
             requirements=requirements,
         )
         for result in filter_report.results
-        if result.is_eligible
+        if result.is_shortlist_eligible
     ]
     scores.sort(key=_ranking_key)
 
@@ -270,7 +270,7 @@ def generate_shortlist(
         ),
         shortlist_limit=SHORTLIST_LIMIT,
         evaluated_count=filter_report.evaluated_count,
-        eligible_count=filter_report.eligible_count,
+        eligible_count=filter_report.shortlist_eligible_count,
         shortlisted_count=min(len(scores), SHORTLIST_LIMIT),
         created_by=user,
     )

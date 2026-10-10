@@ -35,6 +35,7 @@ from audit.services import (
     start_ai_usage_event,
 )
 from candidates.models import Candidate, CandidateProfile
+from matching.evaluation import evaluate_candidate_constraints
 from matching.explanation_safety import contains_protected_attribute_language
 from matching.models import (
     MatchAssessment,
@@ -525,6 +526,11 @@ def _load_assessable_entry(
     )
     candidate = entry.candidate
     requirements = entry.match_run.requirements
+    if entry.filter_outcome != ShortlistEntry.FilterOutcome.PASSED:
+        raise ValidationError(
+            "Only a confirmed, eligible candidate can receive an AI assessment. "
+            "Resolve the eligibility warning and update the shortlist first."
+        )
     if candidate.status != Candidate.Status.ACTIVE:
         raise ValidationError("Only an active shortlisted candidate can be assessed.")
     if requirements.vacancy.deleted_at is not None:
@@ -538,6 +544,16 @@ def _load_assessable_entry(
     if profile is None:
         raise ValidationError(
             "Confirm a candidate profile before requesting an AI assessment."
+        )
+    current_filter_result = evaluate_candidate_constraints(
+        requirements=requirements,
+        candidate=candidate,
+        user=user,
+    )
+    if not current_filter_result.is_shortlist_eligible:
+        raise ValidationError(
+            "The candidate is not currently eligible for assessment. Resolve the "
+            "eligibility warning and update the shortlist first."
         )
     staleness = assess_match_run_staleness(run=entry.match_run, user=user)
     if staleness.is_stale:

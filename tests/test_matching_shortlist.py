@@ -83,6 +83,9 @@ def generate_shortlist(*, requirements: VacancyRequirements, user: User) -> Matc
         vacancy=requirements.vacancy,
         user=user,
     )
+    for candidate in Candidate.objects.filter(organization=requirements.organization):
+        if candidate.current_profile is None:
+            add_confirmed_profile(candidate=candidate, user=user)
     return generate_shortlist_service(requirements=requirements, user=user)
 
 
@@ -105,6 +108,7 @@ def test_automatic_refresh_builds_current_vacancy_shortlist() -> None:
         vacancy=vacancy,
         user=user,
     )
+    add_confirmed_profile(candidate=candidate, user=user)
 
     run = refresh_vacancy_shortlist(vacancy=vacancy, user=user)
 
@@ -131,6 +135,7 @@ def test_automatic_refresh_allows_no_skill_requirements() -> None:
         vacancy=vacancy,
         user=user,
     )
+    add_confirmed_profile(candidate=candidate, user=user)
 
     entry = refresh_vacancy_shortlist(vacancy=vacancy, user=user).entries.get()
 
@@ -186,7 +191,11 @@ def test_vacancy_candidates_show_missing_and_draft_profile_actions(client):
     )
     assert response.status_code == 200
     assert "Matching profile" in content
-    assert f'href="{profile_url}">Review and confirm profile v1</a>' in content
+    assert (
+        f'href="{profile_url}?return_to='
+        f"{reverse('vacancies:vacancy-detail', args=[organization.slug, vacancy.pk])}"
+        '">Review and confirm profile v1</a>'
+    ) in content
     assert f'href="{missing_url}#documents-title">Prepare profile</a>' in content
 
 
@@ -322,6 +331,74 @@ def add_confirmed_profile(
         ),
         created_by=user,
     )
+
+
+def test_only_confirmed_passed_candidates_enter_shortlist_and_others_stay_visible(
+    client,
+) -> None:
+    user, organization = make_workspace()
+    vacancy, requirements = make_requirements(
+        organization=organization,
+        user=user,
+    )
+    create_hard_constraint_rule(
+        requirements=requirements,
+        user=user,
+        rule_type="location",
+        source_text="Candidate must be in Prishtina.",
+        expected_value="Prishtina",
+        position=1,
+    )
+    confirm(requirements, user)
+    vacancy.status = Vacancy.Status.OPEN
+    vacancy.save(update_fields=("status", "updated_at"))
+
+    unconfirmed = Candidate.objects.create(
+        organization=organization,
+        full_name="Unconfirmed Candidate",
+        location="Prishtina",
+    )
+    needs_review = Candidate.objects.create(
+        organization=organization,
+        full_name="Missing Eligibility Candidate",
+    )
+    failed = Candidate.objects.create(
+        organization=organization,
+        full_name="Ineligible Candidate",
+        location="Peja",
+    )
+    passed = Candidate.objects.create(
+        organization=organization,
+        full_name="Eligible Candidate",
+        location="Prishtina",
+    )
+    for candidate in (unconfirmed, needs_review, failed, passed):
+        associate_candidate_with_vacancy(
+            candidate=candidate,
+            vacancy=vacancy,
+            user=user,
+        )
+    for candidate in (needs_review, failed, passed):
+        add_confirmed_profile(candidate=candidate, user=user)
+
+    run = generate_shortlist_service(requirements=requirements, user=user)
+
+    assert run.evaluated_count == 4
+    assert run.eligible_count == 1
+    assert list(run.entries.values_list("candidate_id", flat=True)) == [passed.pk]
+
+    client.force_login(user)
+    response = client.get(
+        reverse("vacancies:vacancy-detail", args=[organization.slug, vacancy.pk])
+    )
+    content = response.content.decode()
+    assert "Needs attention · 3" in content
+    assert "Profile not confirmed" in content
+    assert "Eligibility needs review" in content
+    assert "Not eligible" in content
+    assert "Confirm profile" not in content
+    assert "Prepare profile" in content
+    assert "Confirmed and eligible" in content
 
 
 def test_relevance_score_uses_visible_two_to_one_per_skill_weights() -> None:
@@ -491,7 +568,8 @@ def test_explicit_filter_failure_is_never_shortlisted() -> None:
     )
     eligible = Candidate.objects.create(
         organization=organization,
-        full_name="Unknown But Eligible",
+        full_name="Confirmed Eligible",
+        location="Prishtina",
     )
     assign_candidate_skill(candidate=failed, user=user, label="Python")
 
@@ -615,7 +693,6 @@ def test_score_orders_candidates_before_filter_tie_break() -> None:
     run = generate_shortlist(requirements=requirements, user=user)
 
     assert list(run.entries.values_list("candidate_id", "score", "filter_outcome")) == [
-        (review.pk, Decimal("100.00"), "review"),
         (passed.pk, Decimal("0.00"), "passed"),
     ]
 
@@ -636,7 +713,7 @@ def test_passed_candidate_wins_equal_score_tie() -> None:
         position=1,
     )
     confirm(requirements, user)
-    review = Candidate.objects.create(
+    Candidate.objects.create(
         organization=organization,
         full_name="Review",
     )
@@ -648,10 +725,7 @@ def test_passed_candidate_wins_equal_score_tie() -> None:
 
     run = generate_shortlist(requirements=requirements, user=user)
 
-    assert list(run.entries.values_list("candidate_id", flat=True)) == [
-        passed.pk,
-        review.pk,
-    ]
+    assert list(run.entries.values_list("candidate_id", flat=True)) == [passed.pk]
 
 
 def test_run_records_version_algorithm_actor_and_multiple_generations() -> None:
@@ -695,6 +769,7 @@ def test_shortlist_uses_only_candidates_associated_with_the_vacancy() -> None:
         vacancy=vacancy,
         user=user,
     )
+    add_confirmed_profile(candidate=associated, user=user)
 
     run = generate_shortlist_service(requirements=requirements, user=user)
 
@@ -845,6 +920,7 @@ def test_generate_route_is_post_only_and_redirects_to_report(client) -> None:
         vacancy=vacancy,
         user=user,
     )
+    add_confirmed_profile(candidate=candidate, user=user)
     url = reverse(
         "matching:shortlist-generate",
         args=[organization.slug, vacancy.pk],
@@ -860,7 +936,7 @@ def test_generate_route_is_post_only_and_redirects_to_report(client) -> None:
     assert "Visible Candidate" in content
     assert "<strong>67%</strong>" in content
     assert "Score details" in content
-    assert "Review candidate" in content
+    assert "View candidate" in content
     assert "points" in content
     assert "66.67 / 66.67 points" in content
     assert "Inspectable evidence only." in content

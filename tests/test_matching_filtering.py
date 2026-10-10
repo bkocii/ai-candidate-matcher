@@ -3,9 +3,10 @@ from decimal import Decimal
 import pytest
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import OrganizationMembership, User
-from candidates.models import Candidate
+from candidates.models import Candidate, CandidateDocument, CandidateProfile
 from matching.evaluation import (
     FilterOutcome,
     RuleOutcome,
@@ -30,6 +31,33 @@ from vacancies.services import (
 )
 
 pytestmark = pytest.mark.django_db
+
+
+def add_confirmed_profile(*, candidate: Candidate, user: User) -> CandidateProfile:
+    document = CandidateDocument.objects.create(
+        candidate=candidate,
+        document_type=CandidateDocument.DocumentType.CV,
+        original_filename=f"candidate-{candidate.pk}.pdf",
+        file=f"candidate_documents/candidate-{candidate.pk}.pdf",
+        content_type="application/pdf",
+        size_bytes=12,
+        sha256="a" * 64,
+        extraction_status=CandidateDocument.ExtractionStatus.SUCCEEDED,
+        extracted_text="Synthetic confirmed CV.",
+        extracted_at=timezone.now(),
+        uploaded_by=user,
+    )
+    return CandidateProfile.objects.create(
+        candidate=candidate,
+        source_document=document,
+        version=1,
+        status=CandidateProfile.Status.CONFIRMED,
+        source_document_sha256=document.sha256,
+        source_text_sha256="b" * 64,
+        confirmed_by=user,
+        confirmed_at=timezone.now(),
+        created_by=user,
+    )
 
 
 def make_workspace(*, username: str = "recruiter") -> tuple[User, Organization]:
@@ -580,6 +608,7 @@ def test_filter_page_shows_version_summary_results_and_evidence(client) -> None:
         label="Python",
         evidence="Inspectable synthetic evidence.",
     )
+    add_confirmed_profile(candidate=candidate, user=user)
     associate_candidate_with_vacancy(
         candidate=candidate,
         vacancy=vacancy,
@@ -601,10 +630,10 @@ def test_filter_page_shows_version_summary_results_and_evidence(client) -> None:
     assert "Inspectable synthetic evidence." in content
     assert "Candidate record location" in content
     assert "private@example.test" not in content
-    assert "1 candidate remains eligible" in content
+    assert "1 confirmed candidate is ready" in content
     assert "Eligibility check" in content
     assert "No eligibility rules are active" not in content
-    assert "Eligible for scoring" in content
+    assert "Ready for shortlist" in content
 
 
 def test_filter_page_explains_no_rule_result_before_compact_summary(client) -> None:
@@ -632,7 +661,8 @@ def test_filter_page_explains_no_rule_result_before_compact_summary(client) -> N
 
     assert response.status_code == 200
     assert (
-        "No eligibility rules are active; all candidates continue to scoring."
+        "No eligibility rules are active; confirmed profiles continue to skill "
+        "ranking."
         in content
     )
     assert "Review eligibility rules" in content
@@ -644,8 +674,8 @@ def test_filter_page_explains_no_rule_result_before_compact_summary(client) -> N
     assert content.index("No eligibility rules are active") < content.index(
         'class="filter-summary"'
     )
-    assert "Continue to scoring" in content
-    assert "Eligible for scoring" in content
+    assert "Ready for shortlist" in content
+    assert "Profile not confirmed" in content
     assert "No eligibility rules were applied to this candidate." in content
     assert "Deterministic filtering" not in content
     assert "hard-constraint results" not in content
@@ -684,13 +714,13 @@ def test_vacancy_detail_links_to_filter_only_after_confirmation_and_opening(
 
     assert "Best candidates for this vacancy" not in draft_response.content.decode()
     confirmed_content = confirmed_response.content.decode()
-    assert "Best candidates for this vacancy" in confirmed_content
+    assert "Candidates to review" in confirmed_content
     assert "Evaluate candidates" not in confirmed_content
-    assert "Hiring client:" in confirmed_content
+    assert "Direct employer" in confirmed_content
     assert 'class="status-pill status-open"' in confirmed_content
     requirements_position = confirmed_content.index("Current confirmed requirements")
     correction_position = confirmed_content.index("Create correction draft")
     assert requirements_position < correction_position
     assert confirmed_content.index("Requirements history") < confirmed_content.index(
-        "Danger zone"
+        "Delete vacancy"
     )

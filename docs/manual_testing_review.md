@@ -2061,3 +2061,98 @@ also corrected to enforce the already-approved administrator-only boundary.
 
 - Open generic candidate intake and verify the organization's open confirmed
   vacancy appears in the dropdown, then select it and upload one disposable CV.
+
+### MT-049 — Compact vacancy workspace
+
+- **Date:** 2026-10-09
+- **Evidence:** `matcher-vacancy-candidates-mess.mp4`
+- **Route:** Vacancy detail → Edit vacancy
+- **Visual status:** Browser confirmation pending
+- **Functional status:** Focused regression coverage passes (`157 passed`)
+
+#### Resolved findings
+
+- The ranked shortlist is now the page's dominant content and uses compact rows
+  for rank, skill match, AI-assessment state, and the current action.
+- Routine candidate rows no longer display role/seniority tie-break signals.
+- Candidate administration, matching criteria, original description, lifecycle,
+  immutable history, and deletion remain available as collapsed secondary
+  sections instead of competing with the shortlist.
+- The page header has one **Edit vacancy** action. It opens the compact review
+  editor, where the vacancy title and hiring client can now be changed together
+  with matching criteria and eligibility rules.
+- Creating or reusing a correction draft now returns to that same compact review
+  page. Saving metadata and requirements is transactional.
+
+#### Pending browser checks
+
+- Confirm the shortlist rows remain readable at desktop and narrow widths.
+- Expand each secondary section and verify all former management links, profile
+  actions, lifecycle transitions, history, source text, and deletion remain
+  reachable.
+- Use **Edit vacancy** to change the title, hiring client, and one matching
+  requirement together; save and verify the refreshed vacancy and shortlist.
+
+### MT-050 — Compact candidate profile review
+
+- **Date:** 2026-10-09
+- **Evidence:** `matcher-review-candidate.mp4`
+- **Route:** Candidate profile draft → confirm or correct
+- **Visual status:** Browser confirmation pending
+- **Functional status:** Focused regression coverage passes (`86 passed`)
+
+#### Resolved findings
+
+- Conflicts and extraction questions appear first; a clean draft exposes one
+  **Confirm profile** action.
+- The routine summary is limited to matching facts and compact skill chips.
+  Evidence, employment, qualifications, version history, and AI retry remain
+  inspectable in collapsed sections.
+- Role and seniority are no longer routine review cards. They remain available
+  under optional classification when evidence supports them.
+- Profile correction is embedded on the same page. **Save corrections and
+  confirm** creates and confirms a new immutable version transactionally;
+  **Save as draft** remains available.
+- A vacancy-originated profile review returns to that vacancy after successful
+  confirmation and refreshes its shortlist.
+
+#### Pending browser checks
+
+- Review one clean draft and one draft with an ambiguity/conflict.
+- Expand each evidence section and confirm exact evidence remains available.
+- Remove one misclassified skill, save and confirm, and verify return to the
+  originating vacancy with an updated shortlist.
+
+### MT-051 — Enforce confirmed eligibility through review and decisions
+
+- **Date:** 2026-10-10
+- **Status:** Implemented; browser confirmation pending
+- **Severity:** High — workflow correctness
+
+#### Confirmed problem
+
+- Unconfirmed pool candidates and candidates with failed or incomplete
+  eligibility could enter the shortlist, AI assessment, and decision flow.
+
+#### Required behavior
+
+- Only a candidate with a confirmed current profile and a fully passed
+  eligibility result enters a new shortlist.
+- Unconfirmed, incomplete, and failed candidates remain linked and visible in
+  **Needs attention**, with **Prepare/Confirm profile** or **Review eligibility**
+  actions.
+- Pool reuse remains available when contact and lawful-basis checks pass. Its
+  page labels candidates that still need profile confirmation.
+- AI assessment and approve/revisit/reject services independently recheck the
+  same gate; historical records remain readable.
+- Matching algorithm v7 marks older runs stale so recruiters refresh them under
+  the corrected policy.
+
+#### Pending browser checks
+
+- Add an unconfirmed candidate from the organization pool and verify the vacancy
+  shows **Profile not confirmed** without adding the candidate to the shortlist.
+- Confirm a profile with one missing eligibility fact and verify **Eligibility
+  needs review** appears and AI assessment is unavailable.
+- Confirm one passing and one failing profile, update the shortlist, and verify
+  only the passing candidate appears in the ranked rows.

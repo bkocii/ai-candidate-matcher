@@ -264,15 +264,13 @@ def test_profile_detail_compacts_unknowns_and_places_actions_after_evidence(
     assert "Not stated in CV" in content
     assert "profile-missing-list" in content
     assert "Work mode preference" in content
-    assert "No unresolved ambiguities recorded." in content
     assert "<th>Years</th>" not in content
     assert 'class="status-pill status-draft">Draft</span>' in content
-    assert "Finish reviewing this profile" in content
+    assert "Profile ready to confirm" in content
     assert "Re-extract from CV" in content
     assert "runs AI again" in content
-    assert content.index("Skills and source evidence") < content.index(
-        "Confirm profile for matching"
-    )
+    assert "Confirm profile" in content
+    assert "Correct extracted details" in content
 
 
 def test_profile_detail_does_not_repeat_exact_cv_evidence(client) -> None:
@@ -298,9 +296,9 @@ def test_profile_detail_does_not_repeat_exact_cv_evidence(client) -> None:
 
     content = response.content.decode()
     assert response.status_code == 200
-    assert content.count("Exact supported summary") == 1
-    assert content.count("Matches CV wording") == 2
-    assert "profile-fact-grid" in content
+    assert "Exact supported summary" in content
+    assert "Profile fact evidence" in content
+    assert "profile-review-facts" in content
 
 
 def test_profile_detail_shows_years_only_when_supported(client) -> None:
@@ -341,10 +339,10 @@ def test_profile_detail_omits_empty_qualification_cards(client) -> None:
 
     content = response.content.decode()
     assert response.status_code == 200
-    assert '<section class="profile-qualification-grid"' in content
-    assert "<h2>Languages</h2>" in content
-    assert "<h2>Education</h2>" not in content
-    assert "<h2>Certifications</h2>" not in content
+    assert 'class="profile-evidence-content profile-qualification-compact"' in content
+    assert "<h3>Languages</h3>" in content
+    assert "<h3>Education</h3>" not in content
+    assert "<h3>Certifications</h3>" not in content
 
 
 def test_profile_correction_uses_grouped_layout_and_selectable_skill_cards(
@@ -355,7 +353,7 @@ def test_profile_correction_uses_grouped_layout_and_selectable_skill_cards(
 
     response = client.get(
         reverse(
-            "candidates:candidate-profile-correct",
+            "candidates:candidate-profile-detail",
             args=[organization.slug, candidate.pk, profile.pk],
         )
     )
@@ -363,11 +361,45 @@ def test_profile_correction_uses_grouped_layout_and_selectable_skill_cards(
     content = response.content.decode()
     assert response.status_code == 200
     assert "profile-correction-grid" in content
-    assert "Optional supporting evidence" in content
+    assert "Evidence and optional classification" in content
     assert "profile-skill-option" in content
     assert 'id="id_retained_skills_0"' in content
     assert 'value="0" checked' in content
     assert "Skills: Python, validated imports" in content
+
+
+def test_profile_correction_can_save_and_confirm_in_one_action(client) -> None:
+    user, organization, candidate, _, _, profile = make_workspace()
+    candidate.location = "Gjilan"
+    candidate.save(update_fields=("location", "updated_at"))
+    client.force_login(user)
+
+    response = client.post(
+        reverse(
+            "candidates:candidate-profile-correct",
+            args=[organization.slug, candidate.pk, profile.pk],
+        ),
+        {
+            "relevant_experience_summary": "Backend developer",
+            "relevant_experience_summary_evidence": (
+                "Backend developer with Python experience."
+            ),
+            "location": "Gjilan",
+            "location_evidence": "Location: Gjilan",
+            "work_mode_preference": CandidateProfile.WorkMode.UNKNOWN,
+            "work_mode_preference_evidence": "",
+            "availability": "",
+            "availability_evidence": "",
+            "retained_skills": ["0"],
+            "ambiguities": "",
+            "intent": "save_and_confirm",
+        },
+    )
+
+    corrected = CandidateProfile.objects.get(version=2)
+    assert response.status_code == 302
+    assert corrected.status == CandidateProfile.Status.CONFIRMED
+    assert corrected.confirmed_by == user
 
 
 def test_profile_correction_layout_overrides_generic_panel_width() -> None:

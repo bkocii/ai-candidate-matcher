@@ -4,320 +4,155 @@
 {% block title %}{{ vacancy.title }} | {{ organization.name }}{% endblock %}
 
 {% block content %}
-<section class="page-heading action-heading" aria-labelledby="vacancy-title">
+<section class="page-heading action-heading vacancy-workspace-heading" aria-labelledby="vacancy-title">
     <div>
-        <p class="eyebrow">Vacancy</p>
+        <p class="eyebrow">Vacancy workspace</p>
         <h1 id="vacancy-title">{{ vacancy.title }}</h1>
         <div class="vacancy-heading-meta">
-            <span><strong>Hiring client:</strong> {{ vacancy.client_company|default:"Direct employer" }}</span>
+            <span>{{ vacancy.client_company|default:"Direct employer" }}</span>
             <span class="status-pill status-{{ vacancy.status }}">{{ vacancy.get_status_display }}</span>
+            <span>{{ vacancy_candidate_count }} candidate{{ vacancy_candidate_count|pluralize }}</span>
         </div>
     </div>
-    <div class="button-row">
+    <div class="button-row vacancy-heading-actions">
         <a class="secondary-button" href="{% url 'vacancies:vacancy-list' organization.slug %}">All vacancies</a>
-        <a class="secondary-button" href="{% url 'vacancies:vacancy-edit' organization.slug vacancy.pk %}">Edit vacancy</a>
-        {% if not current_requirements and draft %}
-            <a class="primary-button button-link" href="{% url 'vacancies:requirements-review' organization.slug vacancy.pk draft.pk %}">Review draft v{{ draft.version }}</a>
+        {% if vacancy.status == "open" and current_requirements %}
+            <a class="primary-button button-link" href="{% url 'candidates:vacancy-candidate-intake-create' organization.slug vacancy.pk %}">Add CVs</a>
+        {% endif %}
+        {% if draft %}
+            <a class="secondary-button" href="{% url 'vacancies:requirements-review' organization.slug vacancy.pk draft.pk %}">Edit vacancy</a>
+        {% elif current_requirements %}
+            <form method="post" action="{% url 'vacancies:requirements-new-draft' organization.slug vacancy.pk %}">{% csrf_token %}<button class="secondary-button" type="submit">Edit vacancy</button></form>
+        {% else %}
+            <a class="secondary-button" href="{% url 'vacancies:vacancy-edit' organization.slug vacancy.pk %}">Edit vacancy</a>
         {% endif %}
     </div>
-</section>
-
-{% if current_requirements %}
-<section class="report-section" aria-labelledby="shortlist-title">
-    <div class="rule-editor-heading">
-        <div>
-            <p class="eyebrow">Current shortlist</p>
-            <h2 id="shortlist-title">Best candidates for this vacancy</h2>
-            {% if latest_match_run %}
-                <p class="section-note"><strong>Current result:</strong> {{ latest_match_run.shortlisted_count }} shortlisted from {{ latest_match_run.evaluated_count }} confirmed candidate{{ latest_match_run.evaluated_count|pluralize }} · updated {{ latest_match_run.created_at|date:"Y-m-d H:i" }}</p>
-                <p class="section-note">Requirements version {{ latest_match_run.requirements.version }} · ranking supports recruiter review and does not automatically reject candidates.</p>
-            {% else %}
-                <p class="section-note">Confirm candidate profiles and the ranked shortlist will appear here automatically.</p>
-            {% endif %}
-        </div>
-        {% if latest_match_run and latest_match_run_staleness.is_stale %}
-            <form method="post" action="{% url 'matching:shortlist-generate' organization.slug vacancy.pk %}">
-                {% csrf_token %}
-                <button class="primary-button" type="submit">Update shortlist</button>
-            </form>
-        {% elif vacancy.status == "open" and latest_match_run and latest_match_entries %}
-            <form method="post" action="{% url 'operations:shortlist-assessment-batch-queue' organization.slug vacancy.pk latest_match_run.pk %}">
-                {% csrf_token %}
-                <button class="primary-button" type="submit">Assess shortlist with AI</button>
-            </form>
-        {% elif vacancy.status == "open" and not latest_match_run and vacancy_candidate_count %}
-            <form method="post" action="{% url 'matching:shortlist-generate' organization.slug vacancy.pk %}">
-                {% csrf_token %}
-                <button class="primary-button" type="submit">Create shortlist</button>
-            </form>
-        {% endif %}
-    </div>
-
-    {% if latest_match_run_staleness.is_stale %}
-        <div class="stale-result-callout" role="alert">
-            <div>
-                <strong>Candidate or vacancy details changed.</strong>
-                <p>This saved result remains visible as history. Update it before requesting AI assessment or reviewing current candidates.</p>
-            </div>
-        </div>
-    {% endif %}
-
-    {% if latest_match_entries %}
-        <div class="filter-results">
-            {% for entry in latest_match_entries %}
-                <article class="filter-candidate shortlist-candidate">
-                    <header>
-                        <div class="shortlist-rank">
-                            <span>#{{ entry.rank }}</span>
-                            <div><p class="eyebrow">Candidate</p><h3>{{ entry.candidate.full_name }}</h3></div>
-                        </div>
-                        <span class="filter-outcome filter-outcome-{{ entry.filter_outcome }}">{% if entry.filter_outcome == "review" %}Eligibility needs review{% else %}Eligible{% endif %}</span>
-                    </header>
-                    <div class="shortlist-signal-grid">
-                        <article><span>Skill match</span><strong>{{ entry.score|floatformat:0 }}%</strong><small>{{ entry.matched_must_have }}/{{ entry.total_must_have }} must-have · {{ entry.matched_nice_to_have }}/{{ entry.total_nice_to_have }} nice-to-have</small></article>
-                        <article><span>Role / seniority</span><strong>{% for signal in entry.discovery_signals %}{% if signal.signal == "role_family" %}Role{% else %}Seniority{% endif %}: {% if signal.status == "matched" %}Match{% elif signal.status == "different" %}Different{% else %}Verify{% endif %}{% if not forloop.last %} · {% endif %}{% empty %}Not recorded{% endfor %}</strong><small>Tie-break only; does not change skill score</small></article>
-                        <article><span>AI assessment</span>{% if entry.latest_assessment %}<strong>{{ entry.latest_assessment.score }}/100 · {{ entry.latest_assessment.get_traffic_light_display }}</strong><small>Evidence-linked assessment available</small>{% else %}<strong>Not assessed</strong><small>Run the single bulk action above when ready</small>{% endif %}</article>
-                    </div>
-                    {% if not latest_match_run_staleness.is_stale %}
-                        <div class="shortlist-primary-action">
-                            {% if entry.latest_assessment %}
-                                <a class="primary-button" href="{% url 'matching:assessment-review-detail' organization.slug entry.latest_assessment.pk %}">Review candidate</a>
-                            {% else %}
-                                <a class="primary-button" href="{% url 'candidates:candidate-detail' organization.slug entry.candidate.pk %}">Review candidate</a>
-                            {% endif %}
-                        </div>
-                    {% endif %}
-                    <details class="shortlist-detail-disclosure">
-                        <summary>Score details</summary>
-                        {% for item in entry.score_breakdown %}<p><strong>{{ item.skill_label }}</strong> · {% if item.matched %}matched{% else %}not recorded{% endif %} · {{ item.awarded_points }} / {{ item.possible_points }} points<br><small>{{ item.evidence|default:"No source evidence recorded" }}</small></p>{% empty %}<p>No normalized skill requirements were recorded.</p>{% endfor %}
-                    </details>
-                </article>
-            {% endfor %}
-        </div>
-    {% elif latest_match_run %}
-        <div class="empty-state inline-empty"><h3>No eligible candidates yet</h3><p>Review excluded candidates below or add more CVs.</p></div>
-    {% else %}
-        <div class="empty-state inline-empty"><h3>No shortlist yet</h3><p>Add CVs and confirm their extracted profiles. Matching then runs automatically.</p></div>
-    {% endif %}
-
-    {% if excluded_candidates %}
-        <details class="shortlist-detail-disclosure">
-            <summary>Excluded candidates · {{ excluded_candidates|length }}</summary>
-            {% for result in excluded_candidates %}<p><a href="{% url 'candidates:candidate-detail' organization.slug result.candidate.pk %}">{{ result.candidate.full_name }}</a> · failed an explicit eligibility rule</p>{% endfor %}
-        </details>
-    {% endif %}
-    <details class="shortlist-detail-disclosure">
-        <summary>Shortlist history{% if historical_match_runs %} · {{ historical_match_runs|length }} earlier{% endif %}</summary>
-        {% if latest_match_run %}<p><a href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_match_run.pk %}">Open full current run and audit details</a></p>{% endif %}
-        {% for run in historical_match_runs %}<p><a href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk run.pk %}">{{ run.created_at|date:"Y-m-d H:i" }} · {{ run.shortlisted_count }} shortlisted</a></p>{% empty %}<p>No earlier shortlist runs.</p>{% endfor %}
-    </details>
-</section>
-{% endif %}
-
-<section class="report-section" aria-labelledby="vacancy-candidates-title">
-    <div class="rule-editor-heading">
-        <div>
-            <p class="eyebrow">Vacancy candidates</p>
-            <h2 id="vacancy-candidates-title">Candidates for this vacancy · {{ vacancy_candidate_count }}</h2>
-            <p class="section-note">Only candidates explicitly associated with this vacancy enter its eligibility check and new shortlists.</p>
-        </div>
-        <div class="button-row">
-            <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Organization candidate pool</a>
-            {% if vacancy.status == "open" and current_requirements %}<a class="secondary-button" href="{% url 'candidates:vacancy-candidate-pool-add' organization.slug vacancy.pk %}">Add from candidate pool</a>{% endif %}
-            {% if vacancy_candidate_count %}<a class="secondary-button" href="{% url 'candidates:vacancy-candidate-list' organization.slug vacancy.pk %}">View vacancy candidates</a>{% endif %}
-            {% if vacancy.status == "open" and current_requirements %}<a class="primary-button button-link" href="{% url 'candidates:vacancy-candidate-intake-create' organization.slug vacancy.pk %}">Add candidate CVs</a>{% endif %}
-        </div>
-    </div>
-    {% if vacancy_candidates %}
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th scope="col">Name</th><th scope="col">Location</th><th scope="col">Candidate</th><th scope="col">Matching profile</th></tr></thead>
-                <tbody>
-                    {% for candidate in vacancy_candidates %}
-                        <tr>
-                            <th scope="row"><a href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">{{ candidate.full_name }}</a></th>
-                            <td>{{ candidate.location|default:"—" }}</td>
-                            <td><span class="status-pill status-{{ candidate.status }}">{{ candidate.get_status_display }}</span></td>
-                            <td>
-                                {% if candidate.latest_profile and candidate.latest_profile.status == "draft" %}
-                                    <a href="{% url 'candidates:candidate-profile-detail' organization.slug candidate.pk candidate.latest_profile.pk %}">Review and confirm profile v{{ candidate.latest_profile.version }}</a>
-                                {% elif candidate.latest_profile %}
-                                    <a href="{% url 'candidates:candidate-profile-detail' organization.slug candidate.pk candidate.latest_profile.pk %}">Confirmed profile v{{ candidate.latest_profile.version }}</a>
-                                {% else %}
-                                    <a href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}#documents-title">Prepare profile</a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% if vacancy_candidate_count > 5 %}<p class="section-note">Showing 5 of {{ vacancy_candidate_count }} candidates.</p>{% endif %}
-    {% else %}
-        <div class="empty-state inline-empty">
-            <div class="empty-icon" aria-hidden="true">0</div>
-            <h3>No candidates for this vacancy yet</h3>
-            <p>Upload the CVs received for this role. Organization-pool candidates remain separate until deliberately added.</p>
-        </div>
-    {% endif %}
 </section>
 
 {% if requirements_confirmed %}
 <section class="success-callout confirmation-success" id="requirements-confirmed" data-confirmation-focus tabindex="-1" aria-labelledby="requirements-confirmed-title">
-    <div>
-        <p class="eyebrow">Requirements confirmed</p>
-        <h2 id="requirements-confirmed-title">Version {{ current_requirements.version }} is now the matching input</h2>
-        {% if confirmation_opened %}
-            <p>The vacancy is open. Add the CVs received for this role; the app will prepare details and AI profile drafts for review.</p>
-        {% elif vacancy.status == "draft" %}
-            <p>The confirmed version is saved. Open the vacancy when you are ready to evaluate candidates.</p>
-        {% else %}
-            <p>The confirmed correction is active. The vacancy remains {{ vacancy.get_status_display|lower }}.</p>
-        {% endif %}
-    </div>
-    <div class="button-row">
-        {% if vacancy.status == "draft" %}
-            <form method="post" action="{% url 'vacancies:vacancy-status-change' organization.slug vacancy.pk %}">
-                {% csrf_token %}
-                <input type="hidden" name="status" value="open">
-                <button class="primary-button" type="submit">Open vacancy</button>
-            </form>
-        {% elif vacancy.status == "open" %}
-            <a class="primary-button button-link" href="{% url 'candidates:vacancy-candidate-intake-create' organization.slug vacancy.pk %}">Add candidate CVs</a>
-        {% endif %}
-    </div>
+    <div><p class="eyebrow">Vacancy saved</p><h2 id="requirements-confirmed-title">Version {{ current_requirements.version }} is now the matching input</h2><p>{% if confirmation_opened %}The vacancy is open and ready for CVs.{% elif vacancy.status == "draft" %}The confirmed version is saved. Open the vacancy when you are ready to add candidates.{% else %}The corrected matching criteria are now in use.{% endif %}</p></div>
+    {% if vacancy.status == "draft" %}<form method="post" action="{% url 'vacancies:vacancy-status-change' organization.slug vacancy.pk %}">{% csrf_token %}<input type="hidden" name="status" value="open"><button class="primary-button" type="submit">Open vacancy</button></form>{% elif vacancy.status == "open" %}<a class="primary-button button-link" href="{% url 'candidates:vacancy-candidate-intake-create' organization.slug vacancy.pk %}">Add CVs</a>{% endif %}
 </section>
 {% endif %}
-
-<section class="status-actions" aria-labelledby="vacancy-status-title">
-    <div>
-        <p class="eyebrow">Lifecycle</p>
-        <h2 id="vacancy-status-title">Vacancy status: {{ vacancy.get_status_display }}</h2>
-        {% if vacancy.status == "draft" and not current_requirements %}
-            <p>Confirm a requirements version before opening this vacancy.</p>
-        {% elif status_transitions %}
-            <p>Choose the next valid lifecycle state. Status changes do not alter confirmed requirements.</p>
-        {% else %}
-            <p>No recruiter status change is currently available.</p>
-        {% endif %}
-    </div>
-    {% if status_transitions %}
-        <div class="button-row" aria-label="Available status changes">
-            {% for status_value, status_label in status_transitions %}
-                <form method="post" action="{% url 'vacancies:vacancy-status-change' organization.slug vacancy.pk %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="status" value="{{ status_value }}">
-                    <button class="{% if status_value == 'open' %}primary-button{% else %}secondary-button{% endif %}" type="submit">Change to {{ status_label }}</button>
-                </form>
-            {% endfor %}
-        </div>
-    {% endif %}
-</section>
 
 {% if draft %}
-<section class="review-callout" aria-labelledby="draft-title">
-    <div>
-        <p class="eyebrow">Recruiter review required</p>
-        <h2 id="draft-title">Requirements version {{ draft.version }} is still a draft</h2>
-        <p>Save any corrections first. Confirm only when the structured requirements accurately represent the role.</p>
-    </div>
-    <a class="primary-button button-link" href="{% url 'vacancies:requirements-review' organization.slug vacancy.pk draft.pk %}">Review version {{ draft.version }}</a>
+<section class="review-callout vacancy-draft-callout" aria-labelledby="draft-title">
+    <div><p class="eyebrow">Unsaved correction</p><h2 id="draft-title">Vacancy changes need review</h2><p>Version {{ draft.version }} is still a draft and is not used for matching.</p></div>
+    <a class="primary-button button-link" href="{% url 'vacancies:requirements-review' organization.slug vacancy.pk draft.pk %}">Continue editing</a>
 </section>
 {% endif %}
-
-<section class="detail-grid" aria-label="Vacancy details">
-    <article class="detail-panel">
-        <p class="eyebrow">Original input</p>
-        <h2>Vacancy description</h2>
-        <div class="source-description">{{ vacancy.description|linebreaks }}</div>
-    </article>
-
-    <article class="detail-panel">
-        <p class="eyebrow">Matching input</p>
-        <h2>Current confirmed requirements</h2>
-        {% if current_requirements %}
-            <dl class="requirement-list">
-                <div><dt>Version</dt><dd>{{ current_requirements.version }}</dd></div>
-                <div><dt>Summary</dt><dd>{{ current_requirements.summary|default:"Not recorded" }}</dd></div>
-                <div><dt>Target role</dt><dd>{{ current_requirements.get_role_family_display }}</dd></div>
-                <div><dt>Seniority</dt><dd>{{ current_requirements.get_seniority_display }}</dd></div>
-                <div><dt>Must-have skills</dt><dd>{{ current_requirements.must_have_skills|join:", "|default:"Not recorded" }}</dd></div>
-                <div><dt>Nice-to-have skills</dt><dd>{{ current_requirements.nice_to_have_skills|join:", "|default:"Not recorded" }}</dd></div>
-                <div><dt>Minimum experience</dt><dd>{% if current_requirements.minimum_years_experience is not None %}{{ current_requirements.minimum_years_experience }} years{% else %}Not recorded{% endif %}</dd></div>
-                <div><dt>Location / mode</dt><dd>{{ current_requirements.location_requirement|default:"Not recorded" }} · {{ current_requirements.get_work_mode_display }}</dd></div>
-                <div><dt>Languages</dt><dd>{{ current_requirements.language_requirements|join:", "|default:"Not recorded" }}</dd></div>
-                <div><dt>Education</dt><dd>{{ current_requirements.education_requirements|join:", "|default:"Not recorded" }}</dd></div>
-                <div><dt>Certifications</dt><dd>{{ current_requirements.certification_requirements|join:", "|default:"Not recorded" }}</dd></div>
-                <div><dt>Employment type</dt><dd>{{ current_requirements.get_employment_type_display }}</dd></div>
-                <div><dt>Other requirements</dt><dd>{{ current_requirements.hard_constraints|join:", "|default:"Not recorded" }}</dd></div>
-                <div><dt>Ambiguities</dt><dd>{{ current_requirements.ambiguities|join:", "|default:"None recorded" }}</dd></div>
-            </dl>
-        {% else %}
-            <p class="section-note">No version is confirmed yet. Draft requirements do not become matching input until a recruiter confirms them.</p>
-        {% endif %}
-    </article>
-</section>
 
 {% if current_requirements %}
-<section class="rule-editor" aria-labelledby="confirmed-rules-title">
-    <div class="rule-editor-heading">
+<section class="report-section vacancy-shortlist" aria-labelledby="shortlist-title">
+    <div class="rule-editor-heading vacancy-shortlist-heading">
         <div>
-            <p class="eyebrow">Confirmed matching definition</p>
-            <h2 id="confirmed-rules-title">Eligibility rules · v{{ current_requirements.version }}</h2>
-            <p class="section-note">These rules affect candidate filtering and are read-only with the confirmed requirements version. Create a correction draft to change them.</p>
+            <p class="eyebrow">Ranked shortlist</p>
+            <h2 id="shortlist-title">Candidates to review</h2>
+            {% if latest_match_run %}
+                <p class="section-note"><strong>Current result:</strong> {{ latest_match_run.shortlisted_count }} shortlisted from {{ latest_match_run.evaluated_count }} linked candidate{{ latest_match_run.evaluated_count|pluralize }} · updated {{ latest_match_run.created_at|date:"Y-m-d H:i" }} · Requirements version {{ latest_match_run.requirements.version }}</p>
+                <p class="section-note">Ranking supports recruiter review and does not automatically reject candidates.</p>
+            {% else %}<p class="section-note">Add CVs and confirm their extracted profiles. The ranked result will appear here automatically.</p>{% endif %}
         </div>
-        {% if not draft %}
-            <form method="post" action="{% url 'vacancies:requirements-new-draft' organization.slug vacancy.pk %}">
-                {% csrf_token %}
-                <button class="secondary-button" type="submit">Create correction draft</button>
-            </form>
+        {% if latest_match_run and latest_match_run_staleness.is_stale %}
+            <form method="post" action="{% url 'matching:shortlist-generate' organization.slug vacancy.pk %}">{% csrf_token %}<button class="primary-button" type="submit">Update shortlist</button></form>
+        {% elif vacancy.status == "open" and latest_match_run and latest_match_entries %}
+            <form method="post" action="{% url 'operations:shortlist-assessment-batch-queue' organization.slug vacancy.pk latest_match_run.pk %}">{% csrf_token %}<button class="primary-button" type="submit">Assess shortlist with AI</button></form>
+        {% elif vacancy.status == "open" and not latest_match_run and vacancy_candidate_count %}
+            <form method="post" action="{% url 'matching:shortlist-generate' organization.slug vacancy.pk %}">{% csrf_token %}<button class="primary-button" type="submit">Create shortlist</button></form>
         {% endif %}
     </div>
-    {% include "matching/_hard_constraint_rules.html" with rules=confirmed_hard_constraint_rules editable=False requirements=current_requirements %}
+
+    {% if latest_match_run_staleness.is_stale %}<div class="stale-result-callout" role="alert"><div><strong>Candidate or vacancy details changed.</strong><p>This result remains available as history. Update it before continuing.</p></div></div>{% endif %}
+
+    {% if candidate_attention %}
+        <section class="eligibility-warning candidate-attention" role="status" aria-labelledby="candidate-attention-title">
+            <div class="candidate-attention-copy">
+                <p class="eyebrow">Needs attention · {{ candidate_attention|length }}</p>
+                <h2 id="candidate-attention-title">Not included in the shortlist</h2>
+                <p>These candidates remain linked to the vacancy so you can confirm their profile or resolve eligibility.</p>
+            </div>
+            <div class="candidate-attention-list">
+                {% for item in candidate_attention %}
+                    <div class="candidate-attention-row">
+                        <div><strong>{{ item.result.candidate.full_name }}</strong><small>{{ item.status }} · {{ item.reason }}</small></div>
+                        {% if not item.result.confirmed_profile and item.latest_profile %}
+                            <a class="secondary-button" href="{% url 'candidates:candidate-profile-detail' organization.slug item.result.candidate.pk item.latest_profile.pk %}?return_to={% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Confirm profile</a>
+                        {% elif not item.result.confirmed_profile %}
+                            <a class="secondary-button" href="{% url 'candidates:candidate-detail' organization.slug item.result.candidate.pk %}#documents-title">Prepare profile</a>
+                        {% else %}
+                            <a class="secondary-button" href="{% url 'matching:candidate-filter-report' organization.slug vacancy.pk %}">Review eligibility</a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if latest_match_entries %}
+        <div class="vacancy-shortlist-rows">
+            {% for entry in latest_match_entries %}
+                <article class="vacancy-shortlist-row">
+                    <div class="vacancy-shortlist-person"><span class="vacancy-rank">#{{ entry.rank }}</span><div><h3>{{ entry.candidate.full_name }}</h3><small>Confirmed and eligible</small></div></div>
+                    <div class="vacancy-shortlist-signal"><span>Skill match</span><strong>{{ entry.score|floatformat:0 }}%</strong><small>{{ entry.matched_must_have }}/{{ entry.total_must_have }} required · {{ entry.matched_nice_to_have }}/{{ entry.total_nice_to_have }} useful</small></div>
+                    <div class="vacancy-shortlist-signal"><span>AI assessment</span>{% if entry.latest_assessment %}<strong>{{ entry.latest_assessment.score }}/100 · {{ entry.latest_assessment.get_traffic_light_display }}</strong><small>Ready for your decision</small>{% else %}<strong>Not assessed</strong><small>Use the bulk AI action above</small>{% endif %}</div>
+                    <div class="vacancy-shortlist-action">{% if not latest_match_run_staleness.is_stale %}{% if entry.latest_assessment %}<a class="primary-button" href="{% url 'matching:assessment-review-detail' organization.slug entry.latest_assessment.pk %}">Review match</a>{% else %}<a class="secondary-button" href="{% url 'candidates:candidate-detail' organization.slug entry.candidate.pk %}">View candidate</a>{% endif %}{% endif %}</div>
+                    <details class="shortlist-detail-disclosure vacancy-score-details"><summary>Score details</summary>{% for item in entry.score_breakdown %}<p><strong>{{ item.skill_label }}</strong> · {% if item.matched %}matched{% else %}not recorded{% endif %} · {{ item.awarded_points }} / {{ item.possible_points }} points<br><small>{{ item.evidence|default:"No source evidence recorded" }}</small></p>{% empty %}<p>No normalized skill requirements were recorded.</p>{% endfor %}</details>
+                </article>
+            {% endfor %}
+        </div>
+    {% elif latest_match_run %}<div class="empty-state inline-empty"><h3>No eligible candidates yet</h3><p>Review excluded candidates or add more CVs.</p></div>
+    {% else %}<div class="empty-state inline-empty"><h3>No shortlist yet</h3><p>Candidate profiles must be confirmed before matching.</p></div>{% endif %}
+
+    <details class="shortlist-detail-disclosure"><summary>Shortlist history{% if historical_match_runs %} · {{ historical_match_runs|length }} earlier{% endif %}</summary>{% if latest_match_run %}<p><a href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk latest_match_run.pk %}">Open full current run and audit details</a></p>{% endif %}{% for run in historical_match_runs %}<p><a href="{% url 'matching:shortlist-detail' organization.slug vacancy.pk run.pk %}">{{ run.created_at|date:"Y-m-d H:i" }} · {{ run.shortlisted_count }} shortlisted</a></p>{% empty %}<p>No earlier shortlist runs.</p>{% endfor %}</details>
 </section>
 {% endif %}
 
-<section class="version-history" aria-labelledby="history-title">
-    <h2 id="history-title">Requirements history</h2>
-    <p class="section-note">Confirmed versions are immutable. Corrections create a new numbered draft.</p>
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th scope="col">Version</th>
-                    <th scope="col">Status</th>
-                    <th scope="col">Method</th>
-                    <th scope="col">Created by</th>
-                    <th scope="col">Confirmed by</th>
-                    <th scope="col">Created</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for version in versions %}
-                    <tr>
-                        <th scope="row">v{{ version.version }}</th>
-                        <td><span class="status-pill requirements-{{ version.status }}">{{ version.get_status_display }}</span></td>
-                        <td>{{ version.get_creation_method_display }}</td>
-                        <td>{{ version.created_by|default:"Unknown" }}</td>
-                        <td>{{ version.confirmed_by|default:"—" }}</td>
-                        <td>{{ version.created_at|date:"Y-m-d H:i" }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
+<div class="vacancy-secondary-sections" aria-label="Vacancy details and management">
+    <details class="vacancy-secondary-section"{% if not current_requirements %} open{% endif %}>
+        <summary><span>Candidate management</span><small>{{ vacancy_candidate_count }} linked · upload CVs, reuse candidates, or check profiles</small></summary>
+        <div class="vacancy-secondary-content">
+            <div class="button-row vacancy-management-actions">
+                {% if vacancy.status == "open" and current_requirements %}<a class="primary-button button-link" href="{% url 'candidates:vacancy-candidate-intake-create' organization.slug vacancy.pk %}">Add candidate CVs</a><a class="secondary-button" href="{% url 'candidates:vacancy-candidate-pool-add' organization.slug vacancy.pk %}">Add from candidate pool</a>{% endif %}
+                {% if vacancy_candidate_count %}<a class="secondary-button" href="{% url 'candidates:vacancy-candidate-list' organization.slug vacancy.pk %}">View all vacancy candidates</a>{% endif %}
+                <a class="secondary-button" href="{% url 'candidates:candidate-list' organization.slug %}">Organization candidate pool</a>
+            </div>
+            {% if vacancy_candidates %}<div class="table-wrap"><table><thead><tr><th scope="col">Candidate</th><th scope="col">Location</th><th scope="col">Matching profile</th></tr></thead><tbody>{% for candidate in vacancy_candidates %}<tr><th scope="row"><a href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">{{ candidate.full_name }}</a></th><td>{{ candidate.location|default:"—" }}</td><td>{% if candidate.latest_profile and candidate.latest_profile.status == "draft" %}<a href="{% url 'candidates:candidate-profile-detail' organization.slug candidate.pk candidate.latest_profile.pk %}?return_to={% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Review and confirm profile v{{ candidate.latest_profile.version }}</a>{% elif candidate.latest_profile %}<a href="{% url 'candidates:candidate-profile-detail' organization.slug candidate.pk candidate.latest_profile.pk %}?return_to={% url 'vacancies:vacancy-detail' organization.slug vacancy.pk %}">Confirmed profile v{{ candidate.latest_profile.version }}</a>{% else %}<a href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}#documents-title">Prepare profile</a>{% endif %}</td></tr>{% endfor %}</tbody></table></div>{% if vacancy_candidate_count > 5 %}<p class="section-note">Showing 5 of {{ vacancy_candidate_count }} candidates.</p>{% endif %}{% else %}<p class="section-note">No candidates have been added to this vacancy.</p>{% endif %}
+        </div>
+    </details>
 
-<section class="danger-zone" aria-labelledby="delete-vacancy-title">
-    <div>
-        <p class="eyebrow">Danger zone</p>
-        <h2 id="delete-vacancy-title">Delete vacancy</h2>
-        <p class="section-note">Review the vacancy and affected records before scheduling deletion.</p>
-    </div>
-    <a class="danger-button button-link" href="{% url 'vacancies:vacancy-delete' organization.slug vacancy.pk %}">Delete vacancy</a>
-</section>
+    <details class="vacancy-secondary-section">
+        <summary><span>Current confirmed requirements</span><small>{% if current_requirements %}Matching criteria and Eligibility rules · v{{ current_requirements.version }}{% else %}No confirmed version{% endif %}</small></summary>
+        <div class="vacancy-secondary-content">
+            {% if current_requirements %}
+                <dl class="requirement-list vacancy-requirement-list">
+                    <div><dt>Summary</dt><dd>{{ current_requirements.summary|default:"Not recorded" }}</dd></div>
+                    <div><dt>Must-have skills</dt><dd>{{ current_requirements.must_have_skills|join:", "|default:"Not recorded" }}</dd></div>
+                    <div><dt>Nice-to-have skills</dt><dd>{{ current_requirements.nice_to_have_skills|join:", "|default:"Not recorded" }}</dd></div>
+                    <div><dt>Experience</dt><dd>{% if current_requirements.minimum_years_experience is not None %}{{ current_requirements.minimum_years_experience }} years{% else %}Not recorded{% endif %}</dd></div>
+                    <div><dt>Location / mode</dt><dd>{{ current_requirements.location_requirement|default:"Not recorded" }} · {{ current_requirements.get_work_mode_display }}</dd></div>
+                    <div><dt>Languages</dt><dd>{{ current_requirements.language_requirements|join:", "|default:"Not recorded" }}</dd></div>
+                    <div><dt>Education / certification</dt><dd>{{ current_requirements.education_requirements|join:", "|default:"Not recorded" }}{% if current_requirements.certification_requirements %} · {{ current_requirements.certification_requirements|join:", " }}{% endif %}</dd></div>
+                    <div><dt>Other requirements</dt><dd>{{ current_requirements.hard_constraints|join:", "|default:"Not recorded" }}</dd></div>
+                    <div><dt>Ambiguities</dt><dd>{{ current_requirements.ambiguities|join:", "|default:"None recorded" }}</dd></div>
+                </dl>
+                <section class="vacancy-inline-rules" aria-labelledby="confirmed-rules-title"><h3 id="confirmed-rules-title">Eligibility rules · v{{ current_requirements.version }}</h3>{% include "matching/_hard_constraint_rules.html" with rules=confirmed_hard_constraint_rules editable=False requirements=current_requirements %}</section>
+                {% if not draft %}<form method="post" action="{% url 'vacancies:requirements-new-draft' organization.slug vacancy.pk %}">{% csrf_token %}<button class="secondary-button" type="submit">Create correction draft</button></form>{% endif %}
+            {% else %}<p>No version is confirmed yet. Draft requirements do not become matching input until reviewed.</p>{% endif %}
+        </div>
+    </details>
+
+    <details class="vacancy-secondary-section"><summary><span>Original vacancy description</span><small>Source text used for AI preparation</small></summary><div class="vacancy-secondary-content"><div class="source-description">{{ vacancy.description|linebreaks }}</div></div></details>
+
+    <details class="vacancy-secondary-section">
+        <summary><span>Vacancy management and history</span><small>Status, requirement versions, and deletion</small></summary>
+        <div class="vacancy-secondary-content vacancy-management-content">
+            <section aria-labelledby="vacancy-status-title"><h3 id="vacancy-status-title">Vacancy status: {{ vacancy.get_status_display }}</h3>{% if vacancy.status == "draft" and not current_requirements %}<p>Confirm a requirements version before opening this vacancy.</p>{% elif status_transitions %}<p>Change status only when recruitment work should pause, resume, or close.</p>{% else %}<p>No status change is currently available.</p>{% endif %}{% if status_transitions %}<div class="button-row">{% for status_value, status_label in status_transitions %}<form method="post" action="{% url 'vacancies:vacancy-status-change' organization.slug vacancy.pk %}">{% csrf_token %}<input type="hidden" name="status" value="{{ status_value }}"><button class="secondary-button" type="submit">{{ status_label }}</button></form>{% endfor %}</div>{% endif %}</section>
+            <section aria-labelledby="history-title"><h3 id="history-title">Requirements history</h3><div class="table-wrap"><table><thead><tr><th scope="col">Version</th><th scope="col">Status</th><th scope="col">Method</th><th scope="col">Confirmed by</th><th scope="col">Created</th></tr></thead><tbody>{% for version in versions %}<tr><th scope="row">v{{ version.version }}</th><td><span class="status-pill requirements-{{ version.status }}">{{ version.get_status_display }}</span></td><td>{{ version.get_creation_method_display }}</td><td>{{ version.confirmed_by|default:"—" }}</td><td>{{ version.created_at|date:"Y-m-d H:i" }}</td></tr>{% endfor %}</tbody></table></div></section>
+            <section class="vacancy-delete-row" aria-labelledby="delete-vacancy-title"><div><h3 id="delete-vacancy-title">Delete vacancy</h3><p class="section-note">Review affected records before scheduling deletion.</p></div><a class="danger-button button-link" href="{% url 'vacancies:vacancy-delete' organization.slug vacancy.pk %}">Delete vacancy</a></section>
+        </div>
+    </details>
+</div>
 {% endblock %}
 
-{% block scripts %}
-    {% if requirements_confirmed %}<script src="{% static 'js/confirmation-focus.js' %}" defer></script>{% endif %}
-{% endblock %}
+{% block scripts %}{% if requirements_confirmed %}<script src="{% static 'js/confirmation-focus.js' %}" defer></script>{% endif %}{% endblock %}

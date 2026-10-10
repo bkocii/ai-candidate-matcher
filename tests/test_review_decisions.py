@@ -102,6 +102,28 @@ def test_decision_validation_requires_supported_choice_notes_and_matching_entry(
     assert ReviewDecision.objects.count() == 0
 
 
+def test_candidate_needing_eligibility_review_cannot_receive_decision():
+    user, _, _, _, profile, _, _, entry = make_workspace()
+    assessment = create_assessment(user, profile, entry)
+    type(entry).objects.filter(pk=entry.pk).update(filter_outcome="review")
+    assessment.refresh_from_db()
+
+    eligibility = assess_review_decision_eligibility(
+        assessment=assessment,
+        user=user,
+    )
+
+    assert eligibility.can_record is False
+    assert "confirmed, eligible candidate" in eligibility.reason
+    with pytest.raises(ValidationError, match="confirmed, eligible candidate"):
+        record_review_decision(
+            assessment=assessment,
+            user=user,
+            decision=ReviewDecision.Decision.APPROVED,
+            notes="Should remain blocked.",
+        )
+
+
 def test_older_assessment_and_changed_inputs_cannot_receive_current_decision():
     user, _, candidate, _, profile, _, _, entry = make_workspace()
     older = create_assessment(user, profile, entry, score=70)
