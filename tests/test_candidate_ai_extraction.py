@@ -296,6 +296,96 @@ def test_role_and_seniority_require_matching_cv_title_evidence() -> None:
         validate_profile_evidence(output=unsupported, sanitized_source=CV_TEXT)
 
 
+@pytest.mark.parametrize(
+    ("role", "evidence"),
+    [
+        ("backend", "PHP Developer | Willowbench Studio | 2022 - Present"),
+        ("frontend", "Senior Python Engineer at Northstar, 2020-2025."),
+        ("backend", "Python Developer wording not present in the CV"),
+    ],
+)
+def test_unsupported_role_does_not_block_supported_profile(role, evidence):
+    user, _, _, document = make_workspace()
+    document.extracted_text += "\nPHP Developer | Willowbench Studio | 2022 - Present"
+    document.save(update_fields=["extracted_text"])
+    gateway = FakeAIGateway(
+        response=extracted_output(role_family=role, role_family_evidence=evidence),
+        metadata=metadata(),
+    )
+
+    result = extract_candidate_profile(document=document, user=user, gateway=gateway)
+
+    profile = result.profile
+    assert profile.status == CandidateProfile.Status.DRAFT
+    assert profile.role_family == "unknown"
+    assert profile.fact_evidence["role_family"] == ""
+    assert any("Role family could not be verified" in x for x in profile.ambiguities)
+    assert len(profile.skills) == 2
+    assert len(gateway.calls) == 1
+
+
+def test_php_cv_without_python_headline_saves_supported_facts():
+    user, _, _, document = make_workspace()
+    document.extracted_text = """Pero Lela
+Peja, Kosovo | Pero.lela@example.com | 049-136-926
+Professional summary
+Developer working on web applications and internal reporting tools.
+Experience includes API development, database queries and application maintenance.
+Experience
+PHP Developer | Willowbench Studio | 2022 - Present
+Developed REST API endpoints. Maintained PostgreSQL reports, fixed production defects
+and wrote selected automated tests.
+Freelance Web Developer | 2021 - 2023
+Delivered small websites and Python automation scripts alongside other work.
+Skills
+Django, REST APIs, PostgreSQL, Git, HTML, CSS.
+Docker familiarity from local development;
+production deployment responsibility not stated.
+Education
+Computer science coursework | 2018 - 2021
+Languages
+Albanian: native. English: working knowledge.
+"""
+    document.save(update_fields=["extracted_text"])
+    output = CandidateProfileExtraction(
+        role_family="backend",
+        role_family_evidence="PHP Developer | Willowbench Studio | 2022 - Present",
+        skills=[
+            {
+                "name": "Django",
+                "evidence": "Django, REST APIs, PostgreSQL, Git, HTML, CSS.",
+            },
+            {
+                "name": "Python",
+                "evidence": (
+                    "Delivered small websites and Python automation scripts "
+                    "alongside other work."
+                ),
+            },
+        ],
+        employment_history=[
+            {
+                "job_title": "PHP Developer",
+                "employer": "Willowbench Studio",
+                "period": "2022 - Present",
+                "evidence": "PHP Developer | Willowbench Studio | 2022 - Present",
+            }
+        ],
+    )
+    gateway = FakeAIGateway(response=output, metadata=metadata())
+
+    result = extract_candidate_profile(document=document, user=user, gateway=gateway)
+
+    assert result.profile.role_family == "unknown"
+    assert result.profile.fact_evidence["role_family"] == ""
+    assert {skill["name"] for skill in result.profile.skills} == {"Django", "Python"}
+    assert result.profile.employment_history[0]["job_title"] == "PHP Developer"
+    assert any(
+        "Role family could not be verified" in x for x in result.profile.ambiguities
+    )
+    assert len(gateway.calls) == 1
+
+
 def test_contact_redaction_removes_known_and_generic_contact_data() -> None:
     _, _, candidate, _ = make_workspace()
 

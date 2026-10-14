@@ -9,7 +9,7 @@
         <h1 id="profile-title">{{ candidate.full_name }}</h1>
         <p class="lede">{{ profile.source_document.original_filename }} · <span class="status-pill status-{{ profile.status }}">{{ profile.get_status_display }}</span></p>
     </div>
-    <a class="secondary-button" href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">Candidate details</a>
+    <div class="button-row">{% if return_to %}<a class="secondary-button" href="{{ return_to }}">Back to vacancy</a>{% endif %}<a class="secondary-button" href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">Candidate details</a></div>
 </section>
 
 {% if profile.status == "draft" %}

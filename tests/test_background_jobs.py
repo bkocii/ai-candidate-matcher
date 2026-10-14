@@ -44,6 +44,67 @@ def profile_gateway():
     )
 
 
+@pytest.mark.parametrize(
+    ("evidence", "code", "message"),
+    [
+        (
+            "Django statement absent from source",
+            "profile_evidence:source:skill:2",
+            "quoted evidence was not found in the source CV",
+        ),
+        (
+            "Python: 5 years",
+            "profile_evidence:fact:skill:2",
+            "claimed fact was not supported by its quoted evidence",
+        ),
+    ],
+)
+def test_profile_evidence_failure_is_actionable_and_retry_can_recover(
+    client, evidence, code, message
+):
+    user, organization, _, document = make_profile_workspace()
+    job = queue_candidate_profile_batch(organization=organization, user=user).job
+    output = extracted_output()
+    skills = list(output.skills)
+    skills[1] = skills[1].model_copy(update={"evidence": evidence})
+    gateway = FakeAIGateway(
+        response=output.model_copy(update={"skills": skills}),
+        metadata=profile_metadata(),
+    )
+
+    task = process_next_background_task(job_id=job.pk, gateway=gateway)
+
+    assert task.status == BackgroundTask.Status.SKIPPED
+    assert task.failure_code == code
+    assert len(gateway.calls) == 2
+    assert not CandidateProfile.objects.filter(source_document=document).exists()
+    client.force_login(user)
+    response = client.get(
+        reverse("operations:job-detail", args=[organization.slug, job.pk])
+    )
+    content = response.content.decode()
+    assert "skill item 2" in content
+    assert message in content
+    assert "No profile was saved" in content
+    assert "Download original CV" in content
+    assert (
+        reverse(
+            "candidates:candidate-document-download",
+            args=[organization.slug, document.candidate_id, document.pk],
+        )
+        in content
+    )
+    assert document.extracted_text not in content
+    assert evidence not in task.failure_code
+
+    assert retry_background_job(job=job, user=user) == 1
+    task.refresh_from_db()
+    assert task.failure_code == ""
+    recovered = process_next_background_task(job_id=job.pk, gateway=profile_gateway())
+    assert recovered.status == BackgroundTask.Status.SUCCEEDED
+    assert CandidateProfile.objects.filter(source_document=document).count() == 1
+
+
 def test_profile_batch_is_idempotent_and_creates_reviewable_draft():
     user, organization, _, document = make_profile_workspace()
 

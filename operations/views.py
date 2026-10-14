@@ -12,6 +12,7 @@ from django.views.decorators.http import require_POST
 from candidates.models import CandidateDocument, CandidateIntakeItem, CandidateProfile
 from matching.models import MatchAssessment, MatchRun, ShortlistEntry
 from operations.models import BackgroundJob, BackgroundTask
+from operations.profile_failures import profile_evidence_failure_label
 from operations.services import (
     queue_candidate_profile_batch,
     queue_shortlist_assessment_batch,
@@ -121,6 +122,7 @@ def _present_task(task: BackgroundTask, organization: Organization) -> None:
     task.target_label = f"Target {task.target_id}"
     task.target_url = ""
     task.result_url = ""
+    task.source_url = ""
     if task.target_type == BackgroundTask.TargetType.CANDIDATE_DOCUMENT:
         document = (
             CandidateDocument.objects.for_organization(organization)
@@ -129,6 +131,10 @@ def _present_task(task: BackgroundTask, organization: Organization) -> None:
             .first()
         )
         if document is not None:
+            task.source_url = reverse(
+                "candidates:candidate-document-download",
+                args=[organization.slug, document.candidate_id, document.pk],
+            )
             task.target_label = document.candidate.full_name
             task.target_url = reverse(
                 "candidates:candidate-detail",
@@ -169,7 +175,9 @@ def _present_task(task: BackgroundTask, organization: Organization) -> None:
                 "matching:assessment-review-detail",
                 args=[organization.slug, assessment.pk],
             )
-    task.failure_label = FAILURE_LABELS.get(
+    task.failure_label = profile_evidence_failure_label(
+        task.failure_code
+    ) or FAILURE_LABELS.get(
         task.failure_code,
         "Processing exception requires review",
     )

@@ -196,7 +196,7 @@ def test_vacancy_candidates_show_missing_and_draft_profile_actions(client):
         f"{reverse('vacancies:vacancy-detail', args=[organization.slug, vacancy.pk])}"
         '">Review and confirm profile v1</a>'
     ) in content
-    assert f'href="{missing_url}#documents-title">Prepare profile</a>' in content
+    assert f'href="{missing_url}?vacancy={vacancy.pk}">Prepare profile</a>' in content
 
 
 def test_candidate_location_edit_refreshes_linked_open_vacancy_shortlist(client):

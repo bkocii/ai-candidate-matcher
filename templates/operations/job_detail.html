@@ -52,7 +52,9 @@
                     <td>{{ task.get_outcome_display|default:"—" }}</td>
                     <td>
                         {% if task.result_url %}<a href="{{ task.result_url }}">Inspect {{ task.get_result_type_display|lower }}</a>
-                        {% elif task.failure_code %}{{ task.failure_label }}
+                        {% elif task.failure_code %}
+                            <p>{{ task.failure_label }}</p>
+                            {% if task.source_url %}<a href="{{ task.source_url }}">Download original CV</a>{% endif %}
                         {% else %}Waiting for worker{% endif %}
                     </td>
                 </tr>

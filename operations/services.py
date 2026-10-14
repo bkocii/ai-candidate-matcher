@@ -10,12 +10,16 @@ from django.utils import timezone
 
 from accounts.models import User
 from ai_gateway import AIGateway, AIGatewayError
-from candidates.ai_extraction import extract_candidate_profile
+from candidates.ai_extraction import (
+    CandidateProfileEvidenceError,
+    extract_candidate_profile,
+)
 from candidates.models import Candidate, CandidateDocument
 from matching.ai_assessment import assess_shortlist_entry
 from matching.models import MatchAssessment, MatchRun, ShortlistEntry
 from matching.staleness import assess_match_run_staleness
 from operations.models import BackgroundJob, BackgroundTask
+from operations.profile_failures import profile_evidence_failure_code
 from organizations.models import Organization
 from organizations.permissions import (
     require_organization_access,
@@ -449,6 +453,12 @@ def process_next_background_task(
             task,
             status=BackgroundTask.Status.FAILED,
             failure_code="authorization_failed",
+        )
+    except CandidateProfileEvidenceError as error:
+        _complete_task(
+            task,
+            status=BackgroundTask.Status.SKIPPED,
+            failure_code=profile_evidence_failure_code(error),
         )
     except ValidationError:
         _complete_task(

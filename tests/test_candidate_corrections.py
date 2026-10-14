@@ -468,8 +468,91 @@ def test_candidate_detail_uses_responsive_sources_and_shows_phone(client) -> Non
     assert response.status_code == 200
     assert candidate.phone in content
     assert "source-card-grid" in content
-    assert "Edit details" in content
+    assert "Edit contact details" in content
     assert "Source reference" in content
     assert "<strong>Notes</strong><br>Synthetic manual test<br>" in content
     assert "&lt;script&gt;untrusted&lt;/script&gt;" in content
     assert "Created from intake:" not in content
+
+
+def test_candidate_overview_leads_with_profile_and_keeps_vacancy_context(client):
+    from tests.vacancy_candidate_helpers import associate_candidate_with_vacancy
+    from vacancies.models import Vacancy
+
+    user, organization, candidate, _, _, profile = make_workspace()
+    vacancy = Vacancy.objects.create(
+        organization=organization,
+        title="Backend role",
+        description="Python",
+        created_by=user,
+    )
+    associate_candidate_with_vacancy(candidate=candidate, vacancy=vacancy, user=user)
+    client.force_login(user)
+    url = reverse("candidates:candidate-detail", args=[organization.slug, candidate.pk])
+    response = client.get(url, {"vacancy": vacancy.pk})
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert content.index('id="matching-profile-title"') < content.index(
+        "Contact details"
+    )
+    assert "Review and confirm profile" in content
+    assert "Backend developer" in content
+    assert "Back to vacancy" in content
+    assert response.context["origin_vacancy"] == vacancy
+    assert response.context["latest_profile"] == profile
+    assert f'?vacancy={vacancy.pk}">Edit contact details' in content
+    assert "Source and permissions</summary>" in content
+    assert "CV and profile history</summary>" in content
+    edit_url = reverse(
+        "candidates:candidate-edit", args=[organization.slug, candidate.pk]
+    )
+    response = client.post(
+        edit_url,
+        {
+            "full_name": candidate.full_name,
+            "email": candidate.email,
+            "phone": candidate.phone,
+            "location": candidate.location,
+            "vacancy": vacancy.pk,
+        },
+    )
+    assert response.url == f"{url}?vacancy={vacancy.pk}"
+
+
+def test_candidate_overview_ignores_unrelated_vacancy_context(client):
+    from vacancies.models import Vacancy
+
+    user, organization, candidate, _, _, _ = make_workspace()
+    unrelated = Vacancy.objects.create(
+        organization=organization,
+        title="Unrelated role",
+        description="Python",
+        created_by=user,
+    )
+    client.force_login(user)
+    response = client.get(
+        reverse("candidates:candidate-detail", args=[organization.slug, candidate.pk]),
+        {"vacancy": unrelated.pk},
+    )
+    assert response.status_code == 200
+    assert response.context["origin_vacancy"] is None
+    assert "Back to vacancy" not in response.content.decode()
+
+
+def test_newer_cv_is_not_hidden_by_an_older_profile(client):
+    import uuid
+
+    user, organization, candidate, _, document, _ = make_workspace()
+    document.pk = None
+    document.sha256 = "f" * 64
+    document.storage_key = uuid.uuid4().hex
+    document.file = "candidate_documents/updated-cv.docx"
+    document.original_filename = "updated-cv.docx"
+    document.save()
+    client.force_login(user)
+    response = client.get(
+        reverse("candidates:candidate-detail", args=[organization.slug, candidate.pk])
+    )
+    assert response.status_code == 200
+    assert response.context["latest_profile"] is None
+    assert "Prepare profile</button>" in response.content.decode()

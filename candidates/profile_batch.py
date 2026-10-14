@@ -14,6 +14,7 @@ from candidates.models import (
 )
 from candidates.profile_review import candidate_profile_conflicts
 from operations.models import BackgroundJob, BackgroundTask
+from operations.profile_failures import profile_evidence_failure_label
 from organizations.permissions import require_organization_object_access
 
 PROFILE_PROCESSING = "processing"
@@ -174,7 +175,7 @@ def review_intake_profiles(
                 BackgroundTask.Status.SKIPPED,
                 BackgroundTask.Status.FAILED,
             }:
-                reason = (
+                reason = profile_evidence_failure_label(task.failure_code) or (
                     "Profile creation needs attention. Review the background job "
                     "before trying again."
                 )

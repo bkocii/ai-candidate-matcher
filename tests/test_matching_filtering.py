@@ -662,8 +662,7 @@ def test_filter_page_explains_no_rule_result_before_compact_summary(client) -> N
     assert response.status_code == 200
     assert (
         "No eligibility rules are active; confirmed profiles continue to skill "
-        "ranking."
-        in content
+        "ranking." in content
     )
     assert "Review eligibility rules" in content
     vacancy_detail_url = reverse(

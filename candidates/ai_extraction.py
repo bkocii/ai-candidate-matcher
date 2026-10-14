@@ -657,6 +657,29 @@ def _profile_evidence_issues(
     return tuple(dict.fromkeys(issues))
 
 
+def _drop_unsupported_classification(
+    *, output: CandidateProfileExtraction, sanitized_source: str
+) -> CandidateProfileExtraction:
+    updates = {}
+    for issue in _profile_evidence_issues(
+        output=output, sanitized_source=sanitized_source
+    ):
+        if issue.label == "role family":
+            updates.update(role_family="unknown", role_family_evidence="")
+    if not updates:
+        return output
+    warning = "Role family could not be verified from the CV; left Not determined."
+    ambiguities = list(output.ambiguities)
+    if warning not in ambiguities:
+        if len(ambiguities) < 40:
+            ambiguities.append(warning)
+        else:
+            # Keep all existing ambiguity slots while making this review need visible.
+            ambiguities[0] = warning + " " + ambiguities[0][: 299 - len(warning)]
+    updates["ambiguities"] = ambiguities
+    return CandidateProfileExtraction.model_validate(output.model_dump() | updates)
+
+
 def validate_profile_evidence(
     *,
     output: CandidateProfileExtraction,
@@ -766,6 +789,9 @@ def extract_candidate_profile(
         raise
 
     try:
+        output = _drop_unsupported_classification(
+            output=output, sanitized_source=sanitized_source
+        )
         validate_profile_evidence(
             output=output,
             sanitized_source=sanitized_source,
@@ -797,6 +823,9 @@ def extract_candidate_profile(
                 update={
                     "excluded_sensitive_content_detected": (sensitive_content_redacted),
                 }
+            )
+            output = _drop_unsupported_classification(
+                output=output, sanitized_source=sanitized_source
             )
             validate_profile_evidence(
                 output=output,

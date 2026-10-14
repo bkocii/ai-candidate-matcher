@@ -11,10 +11,11 @@
 
 <form class="form-panel stacked-form" method="post">
     {% csrf_token %}
+    {% if origin_vacancy %}<input type="hidden" name="vacancy" value="{{ origin_vacancy.pk }}">{% endif %}
     {% include "candidates/_form_fields.html" %}
     <div class="button-row">
         <button class="primary-button" type="submit">Save source settings</button>
-        <a class="secondary-button" href="{% url 'candidates:candidate-detail' organization.slug candidate.pk %}">Cancel</a>
+        <a class="secondary-button" href="{{ candidate_overview_url }}">Cancel</a>
     </div>
 </form>
 {% endblock %}

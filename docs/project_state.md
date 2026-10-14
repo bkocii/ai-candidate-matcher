@@ -2188,3 +2188,99 @@ human decision services, so an older URL or background workflow cannot bypass
 it. Existing runs use algorithm v7 and therefore become stale, prompting a safe
 refresh while preserving immutable history. The candidate-pool and eligibility
 pages now state the gate clearly. No migration was added.
+
+
+### MT-052 — Preserve background profile evidence failure reasons
+
+- **Date:** 2026-10-13
+- **Status:** Implemented; browser confirmation pending
+- **Problem:** Profile evidence errors were caught as generic application validation.
+  The worker printed skipped and intake showed no actionable explanation.
+- **Change:** Store only an allow-listed evidence reason, schema area and bounded
+  item number in the existing failure code. Intake and job detail explain whether
+  the quote was absent from the source or the fact lacked support in its quote.
+  The first issue is shown; additional issues may exist. No profile is saved for
+  invalid output and no provider response, rejected fact or CV excerpt is stored.
+- Job detail links to the existing authorized original-CV attachment endpoint.
+  Raw extracted text and rejected AI output remain unavailable in recruiter HTML.
+- Existing generic task failures retain their previous label until retried.
+  Retry and the one automatic evidence correction limit are unchanged.
+- **Manual retest:** Restart web and worker, retry the unchanged failing CV, then
+  inspect intake and job detail. If evidence fails again, expect an affected area,
+  a specific reason and No profile was saved. Download original CV from the job.
+  Successful extraction should still create a reviewable draft.
+- No migration. Focused background tests: 10 passed. Full gate recorded below.
+
+Verification: 677 tests passed. Django/system/deployment checks and migration drift passed. The script then found three pre-existing formatting issues in candidates/forms.py, matching/evaluation.py and tests/test_matching_filtering.py. These received formatting-only corrections; repository-wide Ruff lint/format and dependency compatibility checks subsequently passed. No live AI request was run.
+
+
+### MT-053 — Optional role classification must not block profile extraction
+
+- **Date:** 2026-10-13
+- **Status:** Implemented; browser confirmation pending
+- **Problem:** A role-family grounding failure rejected an otherwise supported
+  profile. The reported CV mixes a Python headline, PHP employment and Django
+  skills; rejected provider text is not retained, so the exact chosen quote is
+  unknown. PHP Developer is not a reviewed role-taxonomy alias.
+- **Change:** Extraction drops only an unsupported role-family classification
+  and its evidence, uses unknown, and adds a review ambiguity. The same policy
+  runs on the first response and the one permitted correction response. It
+  does not infer a replacement role or weaken any skill/employment/other-fact
+  validator. Direct profile validation and recruiter corrections remain strict.
+- A profile with this ambiguity remains a draft needing individual review;
+  batch confirmation does not silently accept it. No migration or toolkit change.
+- **Manual retest:** Restart web and worker, retry Nero's unchanged CV. If all
+  other facts pass, expect a reviewable draft with Not determined role and a
+  role-verification warning. Inspect supported skill/employment evidence and
+  confirm individually when correct. A different unsupported fact still blocks
+  saving and should produce the MT-052 specific failure message.
+- **Focused verification:** 68 tests passed across extraction, background jobs,
+  corrections and unified intake. No live AI request ran.
+
+The subsequent supplied Pero CV has no Python Developer headline. A provider-free regression uses that CV text (with equivalent line wrapping), a PHP Developer excerpt and supported Django/Python facts; it saves a draft with unknown role and preserves the supported facts. Verification: 680 full-suite tests plus the additional exact-content CV regression passed. Repository-wide lint/format, Django/deployment checks, migration drift and dependency compatibility passed after correcting fixture line lengths.
+
+
+### MT-054 — Profile-first candidate overview and vacancy navigation
+
+- **Date:** 2026-10-14
+- **Status:** Implemented; browser confirmation pending
+- **Approved scope:** Lead candidate overview with the matching profile. Keep
+  View candidate for shortlisted candidates on the vacancy page.
+- The overview now shows the latest CV's draft/confirmed profile, supported
+  summary and skills, ambiguities/conflicts, and one Review and confirm profile
+  or View profile action. A newer unprofiled CV gets Prepare profile rather
+  than silently displaying an older profile as its result.
+- Contact details, source/permissions, CV/profile history, vacancy history and
+  deletion management are secondary disclosures. Edit details is now Edit
+  contact details. Profile/document links use readable View profile labels.
+- Vacancy candidate links retain their source vacancy. Back to vacancy and
+  profile confirmation return to that vacancy; contact/source edit save/cancel
+  retain this context. The server accepts only a linked, active, same-tenant
+  vacancy, ignoring arbitrary IDs. Extraction success/failure also retains
+  validated navigation context. No migration, evidence or confirmation change.
+- **Manual checks:** Open View candidate from a shortlist: profile comes first
+  and Back to vacancy returns correctly. Open a draft's review, confirm it and
+  verify vacancy return. Edit/cancel contact and permission settings. Expand CV
+  history and download the original. Upload a newer CV and verify Prepare
+  profile appears until it has a draft. Repeat on a narrow screen.
+
+Verification: full `uv run python scripts/check.py` passed with 684 tests, Django/deployment checks, static collection, migration drift, repository-wide Ruff lint/format and dependency compatibility. Additional focused navigation checks passed (17 candidate-correction tests). Rendered HTML structure was inspected; screenshot/browser visual verification remains pending because the local browser runtime was unavailable. No live AI request ran.
+
+
+### MT-055 — Candidate overview spacing and profile action alignment
+
+- **Date:** 2026-10-14
+- **Status:** Implemented; browser confirmation pending
+- Reviewed matcher-cand-det-fix.png. The profile action touched the first
+  disclosure, the summary lacked a container, and collapsed sections had no gaps.
+- The matching profile now sits in a bordered card with its action aligned
+  beside the heading (stacked on mobile). Skills wrap as individual labels,
+  location/availability sit in a separated two-column row, and secondary
+  disclosures have a consistent 14px gap and 24px separation from the card.
+- Scoped CSS only; navigation, matching, extraction, permissions and confirmation
+  behavior are unchanged. No migration.
+- **Manual retest:** Hard refresh the candidate overview. Check View profile
+  beside the profile heading, space before/between collapsed sections, and
+  wrapped skills. Repeat at phone width and expand each secondary section.
+
+Verification: `uv run python scripts/check.py` passed with 684 tests and all system, deployment, static, migration-drift, Ruff and dependency checks. Screenshot reviewed; browser acceptance of the revised layout remains pending.

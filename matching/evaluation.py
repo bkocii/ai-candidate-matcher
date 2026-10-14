@@ -44,8 +44,7 @@ class CandidateFilterResult:
     def is_shortlist_eligible(self) -> bool:
         """Only proven eligibility from a confirmed profile enters a shortlist."""
         return (
-            self.confirmed_profile is not None
-            and self.outcome == FilterOutcome.PASSED
+            self.confirmed_profile is not None and self.outcome == FilterOutcome.PASSED
         )
 
 

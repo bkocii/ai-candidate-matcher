@@ -434,11 +434,15 @@ class CandidateIntakeBatchForm(forms.ModelForm):
         self.vacancy_lawful_basis = vacancy_lawful_basis
         vacancies = Vacancy.objects.none()
         if organization is not None:
-            vacancies = Vacancy.objects.filter(
-                organization=organization,
-                status=Vacancy.Status.OPEN,
-                requirement_versions__status="confirmed",
-            ).distinct().order_by("title", "id")
+            vacancies = (
+                Vacancy.objects.filter(
+                    organization=organization,
+                    status=Vacancy.Status.OPEN,
+                    requirement_versions__status="confirmed",
+                )
+                .distinct()
+                .order_by("title", "id")
+            )
         self.fields["vacancy"].queryset = vacancies
         self.fields["vacancy"].required = False
         self.fields["source_name"].required = False

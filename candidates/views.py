@@ -1,5 +1,6 @@
 import csv
 from io import BytesIO
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -9,6 +10,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
@@ -193,6 +195,41 @@ def vacancy_candidate_pool_add(request, organization_slug: str, vacancy_id: int)
     )
 
 
+def _candidate_navigation(request, organization, candidate):
+    vacancy_id = request.POST.get("vacancy", request.GET.get("vacancy", ""))
+    origin = None
+    if (
+        str(vacancy_id).isascii()
+        and str(vacancy_id).isdigit()
+        and len(str(vacancy_id)) < 12
+    ):
+        origin = (
+            Vacancy.objects.for_organization(organization)
+            .active()
+            .filter(
+                pk=vacancy_id,
+                pk__in=CandidateVacancyConsideration.objects.filter(
+                    candidate=candidate, vacancy__organization=organization
+                ).values("vacancy_id"),
+            )
+            .first()
+        )
+    overview_url = reverse(
+        "candidates:candidate-detail", args=[organization.slug, candidate.pk]
+    )
+    return {
+        "origin_vacancy": origin,
+        "candidate_overview_url": (
+            f"{overview_url}?vacancy={origin.pk}" if origin else overview_url
+        ),
+        "profile_return_to": (
+            reverse("vacancies:vacancy-detail", args=[organization.slug, origin.pk])
+            if origin
+            else ""
+        ),
+    }
+
+
 @login_required
 def candidate_detail(request, organization_slug: str, candidate_id: int):
     organization = _visible_organization(request, organization_slug)
@@ -217,12 +254,25 @@ def candidate_detail(request, organization_slug: str, candidate_id: int):
         .filter(candidate=candidate)
         .select_related("vacancy", "vacancy__client_company", "source", "document")
     )
+    latest_document = documents.filter(document_type="cv").first()
+    latest_profile = (
+        latest_document.profile_versions.first() if latest_document else None
+    )
+    profile_conflicts = (
+        candidate_profile_conflicts(candidate=candidate, profile=latest_profile)
+        if latest_profile is not None
+        else ()
+    )
     return render(
         request,
         "candidates/candidate_detail.html",
         {
             "organization": organization,
             "candidate": candidate,
+            "latest_profile": latest_profile,
+            "latest_document": latest_document,
+            "profile_conflicts": profile_conflicts,
+            **_candidate_navigation(request, organization, candidate),
             "documents": documents,
             "sources": sources,
             "intake_batches": intake_batches,
@@ -268,14 +318,19 @@ def candidate_edit(request, organization_slug: str, candidate_id: int):
                 ),
             )
             return redirect(
-                "candidates:candidate-detail",
-                organization_slug=organization.slug,
-                candidate_id=candidate.pk,
+                _candidate_navigation(request, organization, candidate)[
+                    "candidate_overview_url"
+                ]
             )
     return render(
         request,
         "candidates/candidate_edit.html",
-        {"organization": organization, "candidate": candidate, "form": form},
+        {
+            "organization": organization,
+            "candidate": candidate,
+            "form": form,
+            **_candidate_navigation(request, organization, candidate),
+        },
     )
 
 
@@ -311,9 +366,9 @@ def candidate_source_edit(
                 request, "Source and contact settings updated and audited."
             )
             return redirect(
-                "candidates:candidate-detail",
-                organization_slug=organization.slug,
-                candidate_id=candidate.pk,
+                _candidate_navigation(request, organization, candidate)[
+                    "candidate_overview_url"
+                ]
             )
     return render(
         request,
@@ -323,6 +378,7 @@ def candidate_source_edit(
             "candidate": candidate,
             "source": source,
             "form": form,
+            **_candidate_navigation(request, organization, candidate),
         },
     )
 
@@ -361,9 +417,9 @@ def candidate_profile_extract(
         )
         messages.error(request, public_message)
         return redirect(
-            "candidates:candidate-detail",
-            organization_slug=organization.slug,
-            candidate_id=candidate.pk,
+            _candidate_navigation(request, organization, candidate)[
+                "candidate_overview_url"
+            ]
         )
 
     success_message = (
@@ -376,12 +432,14 @@ def candidate_profile_extract(
         )
     )
     messages.success(request, success_message)
-    return redirect(
+    profile_url = reverse(
         "candidates:candidate-profile-detail",
-        organization_slug=organization.slug,
-        candidate_id=candidate.pk,
-        profile_id=result.profile.pk,
+        args=[organization.slug, candidate.pk, result.profile.pk],
     )
+    navigation = _candidate_navigation(request, organization, candidate)
+    if navigation["profile_return_to"]:
+        profile_url += "?" + urlencode({"return_to": navigation["profile_return_to"]})
+    return redirect(profile_url)
 
 
 def _profile_skill_options(form, profile):
